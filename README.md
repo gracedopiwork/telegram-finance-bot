@@ -1,57 +1,56 @@
-# Telegram Finance Bot (Gemini + Google Sheets)
+# Telegram Finance Bot Monorepo
 
-Bot Telegram untuk mencatat pengeluaran dari bahasa natural, dianalisis oleh Gemini AI lalu disimpan ke Google Sheets.
+Satu repository untuk:
+- Bot Telegram (Python)
+- Admin + landing + checkout (Laravel)
+- Database schema bersama (MySQL)
 
-## Fitur
+## Struktur Folder
 
-- Input natural, contoh: `mkn malm 50rb karena lagi sedih banget jadi iseng beli`
-- Perintah bot:
-  - `/catat <teks>` untuk mencatat transaksi
-  - `/hapuskilat` untuk menghapus data terakhir di sheet
-  - `/sheet` untuk membuka Google Sheet
-  - `/hariini` untuk melihat rangkuman pengeluaran hari ini
-- Gemini mengubah input ke JSON:
-  - `keterangan` (normalisasi typo/singkatan)
-  - `nominal` (integer bersih)
-  - `jenis` (`Needs`, `Wants`, `Saving/Investment`)
-  - `mood` (`Senang`, `Sedih`, `Stres`, `Netral`)
-  - `impulsif` (`Ya` / `Tidak`)
-- Simpan ke Google Sheets mengikuti urutan kolom:
-  - `[Tanggal, Bulan, Jenis, Kategori, Sub Kategori, Nominal, Sifat, Mood, Impulsivitas, Notes]`
-- Hanya merespons `USER_ID` yang diizinkan.
+- `apps/bot-python` -> service bot Telegram + sinkron dashboard
+- `apps/admin-laravel` -> landing page, checkout, webhook Midtrans, admin dashboard
+- `shared/database/schema.sql` -> schema SQL terpadu
+- `shared/docs/PROPOSAL.md` -> proposal paket
+- `shared/docs/API_CONTRACT.md` -> kontrak endpoint utama
+- `shared/docs/DEPLOYMENT.md` -> panduan deploy VPS
 
-## 1) Persiapan Google Sheets
+## Quick Start
 
-1. Buat project di Google Cloud dan aktifkan:
-   - Google Sheets API
-2. Buat Service Account lalu unduh kredensial JSON.
-3. Simpan file JSON tersebut sebagai `service_account.json` di folder project.
-4. Buka Google Spreadsheet Anda, lalu share ke email service account (role Editor).
-
-## 2) Konfigurasi Environment
-
-1. Copy `.env.example` menjadi `.env`
-2. Isi semua nilai:
-   - `TELEGRAM_BOT_TOKEN`
-   - `GEMINI_API_KEY`
-   - `GOOGLE_SHEET_NAME`
-   - `GOOGLE_SHEET_URL` (link spreadsheet untuk command `/sheet`)
-   - `GOOGLE_SERVICE_ACCOUNT_JSON` (biasanya `service_account.json`)
-   - `USER_ID` (Telegram user id Anda)
-
-## 3) Install dan Jalankan
+### 1) Database
 
 ```bash
+mysql -u root -p -e "CREATE DATABASE telegram_finance_bot"
+mysql -u root -p telegram_finance_bot < shared/database/schema.sql
+```
+
+### 2) Bot Python
+
+```bash
+cd apps/bot-python
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
+copy .env.example .env
 python bot.py
 ```
 
-## 4) Contoh Input
+### 3) Admin Laravel
 
-- `mkn malm 50rb karena lagi sedih banget jadi iseng beli`
-- `beli bensin 30000`
-- `nabung 200rb gajian`
+```bash
+cd apps/admin-laravel
+copy .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan serve
+```
 
-Jika input tidak ada angka atau tidak dapat dipahami, bot akan balas format bantuan.
+Endpoint utama:
+- Landing: `http://127.0.0.1:8000/`
+- Admin: `http://127.0.0.1:8000/admin?token=ADMIN_DASHBOARD_TOKEN`
+- Webhook Midtrans: `POST /webhooks/midtrans`
+
+## Catatan Integrasi
+
+- Bot dan Laravel harus memakai database MySQL yang sama.
+- Midtrans webhook akan update `orders` dan membuat `licenses` otomatis saat payment settle.
+- Sinkron dashboard massal dijalankan lewat `apps/bot-python/sync_dashboard.py`.
