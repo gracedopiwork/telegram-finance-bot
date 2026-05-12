@@ -50,7 +50,7 @@ class CheckoutController extends Controller
             'product'    => ['required', 'string', 'exists:cp_digital_products,code'],
             'full_name'  => ['required', 'string', 'max:120'],
             'email'      => ['required', 'email', 'max:190'],
-            'phone'      => ['nullable', 'string', 'max:32'],
+            'phone'      => ['required', 'string', 'max:32'],
             'telegram_username' => ['nullable', 'string', 'max:120'],
         ]);
 
@@ -64,7 +64,7 @@ class CheckoutController extends Controller
             'order_code'         => 'YFD-'.Str::upper(Str::random(10)),
             'full_name'          => $validated['full_name'],
             'email'              => $validated['email'],
-            'phone'              => $validated['phone'] ?? null,
+            'phone'              => $this->normalizePhone($validated['phone']),
             'telegram_username'  => $validated['telegram_username'] ?? null,
             'plan'               => $product->code,           // simpan kode juga untuk kompatibilitas
             'digital_product_id' => $product->id,
@@ -83,6 +83,7 @@ class CheckoutController extends Controller
                 'gross_amount' => $order->amount,
                 'full_name'    => $order->full_name,
                 'email'        => $order->email,
+                'phone'        => $order->phone,
                 'item_details' => [[
                     'id'       => $product->code,
                     'price'    => $finalAmount,
@@ -113,6 +114,7 @@ class CheckoutController extends Controller
         $validated = $request->validate([
             'full_name'         => ['required', 'string', 'max:120'],
             'email'             => ['required', 'email', 'max:190'],
+            'phone'             => ['required', 'string', 'max:32'],
             'telegram_username' => ['nullable', 'string', 'max:120'],
             'plan'              => ['required', 'in:lite,pro,ecosystem'],
         ]);
@@ -127,6 +129,7 @@ class CheckoutController extends Controller
             'order_code'        => 'ORD-'.Str::upper(Str::random(10)),
             'full_name'         => $validated['full_name'],
             'email'             => $validated['email'],
+            'phone'             => $this->normalizePhone($validated['phone']),
             'telegram_username' => $validated['telegram_username'] ?? null,
             'plan'              => $validated['plan'],
             'amount'            => $amountMap[$validated['plan']],
@@ -142,6 +145,7 @@ class CheckoutController extends Controller
                 'gross_amount' => $order->amount,
                 'full_name'    => $order->full_name,
                 'email'        => $order->email,
+                'phone'        => $order->phone,
             ]);
             $order->payment_token = $payment['token'] ?? null;
             $order->payment_url   = $payment['redirect_url'] ?? null;
@@ -173,5 +177,12 @@ class CheckoutController extends Controller
             'active' => 'produk',
             'order'  => $order,
         ]);
+    }
+
+    private function normalizePhone(string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+
+        return $digits !== '' ? $digits : trim($phone);
     }
 }

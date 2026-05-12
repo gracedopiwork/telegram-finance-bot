@@ -61,6 +61,9 @@ CREATE TABLE IF NOT EXISTS orders (
     payment_token VARCHAR(128) NULL,
     paid_at DATETIME NULL,
     license_id BIGINT NULL,
+    spreadsheet_id VARCHAR(128) NULL,
+    spreadsheet_url VARCHAR(512) NULL,
+    purchase_delivery_sent_at DATETIME NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (license_id) REFERENCES licenses(id) ON DELETE SET NULL

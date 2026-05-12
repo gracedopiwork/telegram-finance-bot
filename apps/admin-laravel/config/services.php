@@ -42,4 +42,14 @@ return [
         'finish_url'    => env('MIDTRANS_FINISH_URL'),
     ],
 
+    'google' => [
+        'service_account_json' => env('GOOGLE_SERVICE_ACCOUNT_JSON'),
+        'user_sheet_template_id' => env('GOOGLE_USER_SHEET_TEMPLATE_ID'),
+    ],
+
+    'telegram' => [
+        'bot_url' => env('TELEGRAM_BOT_URL'),
+        'bot_username' => env('TELEGRAM_BOT_USERNAME'),
+    ],
+
 ];

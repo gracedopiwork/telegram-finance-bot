@@ -21,7 +21,7 @@ class MidtransService
             'customer_details' => [
                 'first_name' => $order['full_name'],
                 'email'      => $order['email'],
-                'phone'      => $order['phone'] ?? null,
+                'phone'      => (string) ($order['phone'] ?? ''),
             ],
         ];
 

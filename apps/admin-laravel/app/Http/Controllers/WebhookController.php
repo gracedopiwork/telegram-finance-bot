@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\DeliverPaidOrderJob;
 use App\Models\License;
 use App\Models\Order;
 use App\Models\PaymentEvent;
@@ -28,6 +29,8 @@ class WebhookController extends Controller
         if (!$order) {
             return response()->json(['message' => 'Order not found'], 404);
         }
+
+        $alreadyPaid = $order->status === 'paid';
 
         PaymentEvent::create([
             'order_id' => $order->id,
@@ -67,6 +70,12 @@ class WebhookController extends Controller
 
             $order->save();
         });
+
+        if ($isPaid && ! $alreadyPaid) {
+            DB::afterCommit(function () use ($order): void {
+                DeliverPaidOrderJob::dispatch($order->id);
+            });
+        }
 
         return response()->json(['ok' => true]);
     }

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Setting;
+use App\Support\TelegramBotUrl;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -44,6 +45,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('yfd', $yfd);
                 $view->with('waBookingUrl', $waBookingUrl);
                 $view->with('waDefaultMsg', $waMsg);
+                $view->with('telegramBotUrl', TelegramBotUrl::resolve());
             } catch (\Throwable $e) {
                 // Fallback for fresh installs / migration not yet run.
                 $view->with('yfd', [
@@ -61,6 +63,7 @@ class AppServiceProvider extends ServiceProvider
                 ]);
                 $view->with('waBookingUrl', 'https://wa.me/6285111228911');
                 $view->with('waDefaultMsg', '');
+                $view->with('telegramBotUrl', TelegramBotUrl::resolve());
             }
         });
     }

@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\DeliverPaidOrderJob;
 use App\Models\CpDigitalProduct;
 use App\Models\License;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class OrdersController extends Controller
@@ -72,6 +74,8 @@ class OrdersController extends Controller
             'status' => 'required|in:pending,paid,failed',
         ]);
 
+        $wasPaid = $order->status === 'paid';
+
         $order->status = $data['status'];
 
         if ($data['status'] === 'paid') {
@@ -94,6 +98,12 @@ class OrdersController extends Controller
         }
 
         $order->save();
+
+        if ($data['status'] === 'paid' && ! $wasPaid) {
+            DB::afterCommit(function () use ($order): void {
+                DeliverPaidOrderJob::dispatch($order->id);
+            });
+        }
 
         return redirect()->route('admin.orders.show', $order)
                          ->with('success', "Status order {$order->order_code} di-set menjadi {$order->status}.");

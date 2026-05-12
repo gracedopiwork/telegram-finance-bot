@@ -17,8 +17,8 @@
             Order Anda <strong class="text-primary">{{ $order->order_code }}</strong> sedang kami proses.
         </p>
         <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-8">
-            Status pembayaran akan dikonfirmasi oleh Midtrans dalam beberapa menit. Setelah berhasil,
-            kode lisensi akan dikirim ke email <strong>{{ $order->email }}</strong>.
+            Status pembayaran dikonfirmasi Midtrans dalam beberapa menit. Setelah <strong>lunas</strong>, ke email
+            <strong>{{ $order->email }}</strong> akan dikirim: <strong>tautan bot Telegram</strong>, <strong>kode lisensi</strong>, dan <strong>link Google Sheet</strong>.
         </p>
 
         <div class="bg-white border border-outline-variant rounded-2xl p-6 max-w-md mx-auto text-left mb-8">
@@ -46,10 +46,15 @@
     @endif
 
     <div class="flex flex-wrap gap-3 justify-center">
+        @if(!empty($telegramBotUrl))
+            <a href="{{ $telegramBotUrl }}" target="_blank" rel="noopener" class="btn btn-primary">
+                <span class="material-symbols-outlined text-[18px]">smart_toy</span> Buka bot Telegram
+            </a>
+        @endif
         <a href="{{ route('company.home') }}" class="btn btn-outline-primary">
             <span class="material-symbols-outlined text-[18px]">home</span> Kembali ke Beranda
         </a>
-        <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="btn btn-primary">
+        <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="btn btn-outline-primary">
             <span class="material-symbols-outlined text-[18px]">chat</span> Chat Tim YFD via WA
         </a>
     </div>

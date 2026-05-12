@@ -1,0 +1,65 @@
+<?php
+
+namespace App\Jobs;
+
+use App\Mail\PaidOrderDeliveredMail;
+use App\Models\Order;
+use App\Services\GoogleDriveSheetProvisioner;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+
+class DeliverPaidOrderJob implements ShouldQueue
+{
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
+
+    public int $tries = 5;
+
+    public function __construct(public int $orderId) {}
+
+    /**
+     * @return array<int, int>
+     */
+    public function backoff(): array
+    {
+        return [30, 120, 300, 600];
+    }
+
+    public function handle(GoogleDriveSheetProvisioner $provisioner): void
+    {
+        $order = Order::with('license')->find($this->orderId);
+        if (! $order || $order->status !== 'paid' || ! $order->license) {
+            return;
+        }
+
+        if ($order->purchase_delivery_sent_at !== null) {
+            return;
+        }
+
+        if ($provisioner->isConfigured() && $order->spreadsheet_id === null) {
+            try {
+                $result = $provisioner->copyTemplateForOrder($order);
+                $order->spreadsheet_id = $result['id'];
+                $order->spreadsheet_url = $result['url'];
+                $order->save();
+            } catch (\Throwable $e) {
+                Log::error('Gagal duplikasi Google Sheet untuk order '.$order->order_code, [
+                    'exception' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $order->load('license');
+
+        Mail::to($order->email)->send(new PaidOrderDeliveredMail($order));
+
+        Order::whereKey($order->id)->update(['purchase_delivery_sent_at' => now()]);
+    }
+}

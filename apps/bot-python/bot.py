@@ -144,7 +144,7 @@ def get_env(name: str, required: bool = True) -> str:
     return value
 
 
-def build_sheet_client() -> gspread.Worksheet:
+def build_sheet_client(telegram_user_id: int | None = None) -> gspread.Worksheet:
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/spreadsheets",
@@ -152,11 +152,130 @@ def build_sheet_client() -> gspread.Worksheet:
         "https://www.googleapis.com/auth/drive",
     ]
     json_path = get_env("GOOGLE_SERVICE_ACCOUNT_JSON")
-    sheet_name = get_env("GOOGLE_SHEET_NAME")
-
     credentials = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
     client = gspread.authorize(credentials)
-    return client.open(sheet_name).sheet1
+
+    sid = lookup_user_spreadsheet_id(telegram_user_id) if telegram_user_id else None
+    if sid:
+        return client.open_by_key(sid).sheet1
+
+    sheet_name = get_env("GOOGLE_SHEET_NAME", required=False)
+    if sheet_name:
+        return client.open(sheet_name).sheet1
+
+    raise RuntimeError(
+        "Spreadsheet belum tersedia. Pastikan pembayaran selesai, cek email untuk sheet & lisensi, lalu `/activate`."
+    )
+
+
+def lookup_user_spreadsheet_id(telegram_user_id: int) -> str | None:
+    if not telegram_user_id:
+        return None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT spreadsheet_id FROM user_sheets
+            WHERE telegram_user_id = %s AND status = 'active' LIMIT 1
+            """,
+            (telegram_user_id,),
+        )
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if row and row.get("spreadsheet_id"):
+            return str(row["spreadsheet_id"])
+    except Exception as exc:  # pragma: no cover - external db guard
+        logger.warning("Gagal lookup spreadsheet_id user %s: %s", telegram_user_id, exc)
+    return None
+
+
+def lookup_user_sheet_url(telegram_user_id: int) -> str | None:
+    if not telegram_user_id:
+        return None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT spreadsheet_url FROM user_sheets
+            WHERE telegram_user_id = %s AND status = 'active' LIMIT 1
+            """,
+            (telegram_user_id,),
+        )
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        url = (row or {}).get("spreadsheet_url")
+        if url:
+            return str(url).strip() or None
+    except Exception as exc:  # pragma: no cover - external db guard
+        logger.warning("Gagal lookup spreadsheet_url user %s: %s", telegram_user_id, exc)
+    return None
+
+
+def upsert_user_sheet_row(telegram_user_id: int, spreadsheet_id: str, spreadsheet_url: str | None) -> None:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    url = (spreadsheet_url or "").strip() or f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/edit"
+    cursor.execute(
+        """
+        INSERT INTO user_sheets (telegram_user_id, spreadsheet_id, spreadsheet_url, status, created_at, updated_at)
+        VALUES (%s, %s, %s, 'active', NOW(), NOW())
+        ON DUPLICATE KEY UPDATE spreadsheet_id = VALUES(spreadsheet_id), spreadsheet_url = VALUES(spreadsheet_url),
+            status = 'active', updated_at = NOW()
+        """,
+        (telegram_user_id, spreadsheet_id, url),
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def ensure_user_sheet_from_order(telegram_user_id: int) -> None:
+    """Sinkronkan user_sheets dari order lunas (sheet dikirim lewat email) jika belum ada."""
+    if not telegram_user_id:
+        return
+    if lookup_user_spreadsheet_id(telegram_user_id):
+        return
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT id FROM licenses
+            WHERE assigned_user_id = %s AND status = 'active'
+            ORDER BY id DESC LIMIT 1
+            """,
+            (telegram_user_id,),
+        )
+        lic = cursor.fetchone()
+        if not lic:
+            cursor.close()
+            conn.close()
+            return
+        cursor.execute(
+            """
+            SELECT spreadsheet_id, spreadsheet_url FROM orders
+            WHERE license_id = %s AND status = 'paid'
+              AND spreadsheet_id IS NOT NULL AND spreadsheet_id != ''
+            ORDER BY id DESC LIMIT 1
+            """,
+            (lic["id"],),
+        )
+        order_row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if not order_row:
+            return
+        upsert_user_sheet_row(
+            telegram_user_id,
+            str(order_row["spreadsheet_id"]),
+            str(order_row["spreadsheet_url"]) if order_row.get("spreadsheet_url") else None,
+        )
+    except Exception as exc:  # pragma: no cover - external db guard
+        logger.warning("ensure_user_sheet_from_order gagal user=%s: %s", telegram_user_id, exc)
 
 
 def get_db_connection():
@@ -538,8 +657,11 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
 
 
 async def save_transaction(message, parsed: Dict[str, Any], greeting_name: str) -> None:
+    uid = message.from_user.id if message.from_user else None
     try:
-        worksheet = build_sheet_client()
+        if uid:
+            ensure_user_sheet_from_order(uid)
+        worksheet = build_sheet_client(uid)
         row = build_sheet_row(parsed)
         next_row = get_next_data_row(worksheet)
         worksheet.update(f"A{next_row}:J{next_row}", [row], value_input_option="USER_ENTERED")
@@ -704,6 +826,9 @@ async def activate_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await update.message.reply_text("Aktivasi gagal karena masalah server.")
         return
 
+    if user and user.id:
+        ensure_user_sheet_from_order(user.id)
+
     if user:
         PENDING_NAME_USERS.add(user.id)
     await update.message.reply_text(
@@ -721,7 +846,9 @@ async def hapuskilat_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
         return
     try:
-        worksheet = build_sheet_client()
+        if user_id:
+            ensure_user_sheet_from_order(user_id)
+        worksheet = build_sheet_client(user_id)
         used_rows = len(worksheet.col_values(1))
         if used_rows <= 1:
             await update.message.reply_text("Belum ada data transaksi untuk dihapus.")
@@ -750,10 +877,15 @@ async def sheet_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if not user_id or not is_license_active_for_user(user_id):
         await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
         return
-    sheet_url = get_env("GOOGLE_SHEET_URL", required=False)
+    if user_id:
+        ensure_user_sheet_from_order(user_id)
+    sheet_url = lookup_user_sheet_url(user_id)
+    if not sheet_url:
+        sheet_url = get_env("GOOGLE_SHEET_URL", required=False)
     if not sheet_url:
         await update.message.reply_text(
-            "URL sheet belum diatur. Isi `GOOGLE_SHEET_URL` di file .env."
+            "Belum ada link sheet. Pastikan pembayaran sudah selesai dan cek email (lisensi + link sheet). "
+            "Setelah `/activate`, tunggu beberapa menit lalu coba `/sheet` lagi."
         )
         return
     await update.message.reply_text(f"Buka Google Sheet kamu di sini:\n{sheet_url}")
@@ -769,7 +901,9 @@ async def hariini_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return
 
     try:
-        worksheet = build_sheet_client()
+        if user_id:
+            ensure_user_sheet_from_order(user_id)
+        worksheet = build_sheet_client(user_id)
         rows = worksheet.get_all_values()
     except Exception as exc:  # pragma: no cover - defensive guard for external services
         logger.exception("Gagal ambil data untuk rangkuman harian: %s", exc)
