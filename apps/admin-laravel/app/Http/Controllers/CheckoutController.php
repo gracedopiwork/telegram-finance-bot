@@ -6,6 +6,7 @@ use App\Models\CpDigitalProduct;
 use App\Models\Order;
 use App\Services\MidtransService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -95,6 +96,11 @@ class CheckoutController extends Controller
             $order->payment_url   = $payment['redirect_url'] ?? null;
             $order->save();
         } catch (\Throwable $e) {
+            Log::warning('Midtrans Snap gagal (produk digital)', [
+                'order_code' => $order->order_code,
+                'error'      => $e->getMessage(),
+            ]);
+
             return redirect()
                 ->route('company.produk')
                 ->with('success', "Order {$order->order_code} dibuat, namun gagal membuat link bayar otomatis. Tim YFD akan menghubungi Anda via WA. Cek konfigurasi Midtrans.");
@@ -151,6 +157,11 @@ class CheckoutController extends Controller
             $order->payment_url   = $payment['redirect_url'] ?? null;
             $order->save();
         } catch (\Throwable $e) {
+            Log::warning('Midtrans Snap gagal (legacy plan)', [
+                'order_code' => $order->order_code,
+                'error'      => $e->getMessage(),
+            ]);
+
             return redirect()
                 ->route('landing')
                 ->with('success', "Order {$order->order_code} dibuat, namun gagal membuat link bayar otomatis. Cek konfigurasi Midtrans.");
