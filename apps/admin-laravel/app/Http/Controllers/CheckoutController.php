@@ -171,7 +171,9 @@ class CheckoutController extends Controller
     public function finish(Request $request): View
     {
         $orderCode = $request->query('order_id');
-        $order = $orderCode ? Order::where('order_code', $orderCode)->first() : null;
+        $order = $orderCode
+            ? Order::with('license')->where('order_code', $orderCode)->first()
+            : null;
 
         return view('Companyprofile.checkout-finish', [
             'active' => 'produk',

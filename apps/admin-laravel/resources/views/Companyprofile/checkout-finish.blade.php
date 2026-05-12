@@ -2,6 +2,13 @@
 
 @section('title', 'Pembayaran Diproses — YFD')
 
+@push('head')
+    @if($order && $order->status === 'pending')
+        {{-- Midtrans webhook bisa beberapa detik setelah redirect; muat ulang agar kode lisensi muncul setelah lunas --}}
+        <meta http-equiv="refresh" content="12">
+    @endif
+@endpush
+
 @section('content')
 
 <section class="max-w-3xl mx-auto px-margin-mobile md:px-margin-desktop py-20 md:py-28 text-center">
@@ -16,10 +23,49 @@
         <p class="text-body-md text-on-surface-variant mb-2">
             Order Anda <strong class="text-primary">{{ $order->order_code }}</strong> sedang kami proses.
         </p>
-        <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-8">
-            Status pembayaran dikonfirmasi Midtrans dalam beberapa menit. Setelah <strong>lunas</strong>, ke email
-            <strong>{{ $order->email }}</strong> akan dikirim: <strong>tautan bot Telegram</strong>, <strong>kode lisensi</strong>, dan <strong>link Google Sheet</strong>.
-        </p>
+
+        @if($order->status === 'paid' && $order->license)
+            <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-4">
+                Pembayaran <strong>lunas</strong>. Simpan kode lisensi di bawah ini — kode ini harus sama persis saat Anda
+                <strong>/activate</strong> di bot Telegram. Email ringkasan tetap dikirim jika pengiriman email aktif.
+            </p>
+
+            <div class="bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 max-w-lg mx-auto text-left mb-6">
+                <p class="text-[11px] font-bold uppercase tracking-wider text-primary mb-2">Kode lisensi bot</p>
+                <code id="licenseKeyDisplay" class="block text-base sm:text-lg font-mono font-bold text-primary break-all select-all bg-white px-4 py-3 rounded-xl border border-outline-variant">{{ $order->license->license_key }}</code>
+                <button type="button"
+                        class="mt-4 w-full btn btn-primary text-sm"
+                        onclick="navigator.clipboard.writeText({{ json_encode($order->license->license_key) }}); this.innerText='Tersalin!';">
+                    Salin kode lisensi
+                </button>
+                <p class="text-[12px] text-on-surface-variant mt-4 leading-relaxed">
+                    Di Telegram, buka bot lalu kirim (bisa copy-paste):<br>
+                    <code class="text-[11px] bg-white px-2 py-1 rounded border border-outline-variant inline-block mt-1 select-all">/activate {{ $order->license->license_key }}</code>
+                </p>
+            </div>
+
+            @if($order->spreadsheet_url)
+                <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-3">
+                    <strong>Google Sheet</strong> Anda:
+                    <a href="{{ $order->spreadsheet_url }}" target="_blank" rel="noopener" class="text-primary font-semibold underline break-all">{{ $order->spreadsheet_url }}</a>
+                </p>
+            @elseif($order->spreadsheet_id)
+                <p class="text-[13px] text-on-surface-variant max-w-xl mx-auto mb-3">
+                    Google Sheet sedang disiapkan. Muat ulang halaman ini dalam beberapa saat jika link belum muncul.
+                </p>
+            @endif
+        @else
+            <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-8">
+                @if($order->status === 'pending')
+                    Status pembayaran dikonfirmasi Midtrans dalam beberapa menit. Halaman ini <strong>otomatis dimuat ulang</strong> setiap 12 detik
+                    sampai status berubah. Setelah <strong>lunas</strong>, <strong>kode lisensi</strong> akan tampil di sini
+                    (tidak hanya lewat email). Anda juga bisa menyegarkan manual (F5).
+                @else
+                    Setelah <strong>lunas</strong>, kode lisensi dan tautan Google Sheet tampil di halaman ini
+                    serta dikirim ke email <strong>{{ $order->email }}</strong> bila pengiriman email aktif.
+                @endif
+            </p>
+        @endif
 
         <div class="bg-white border border-outline-variant rounded-2xl p-6 max-w-md mx-auto text-left mb-8">
             <dl class="text-[13.5px] space-y-2">
@@ -41,7 +87,7 @@
         </div>
     @else
         <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-8">
-            Pembayaran sudah disubmit. Cek email Anda untuk update status.
+            Pembayaran sudah disubmit. Jika Anda punya kode order dari Midtrans, buka kembali link selesai bayar dari aplikasi pembayaran atau hubungi tim YFD.
         </p>
     @endif
 

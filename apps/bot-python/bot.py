@@ -68,7 +68,8 @@ CATAT_HELP_TEXT = (
 )
 ACTIVATE_HELP_TEXT = (
     "Lisensi belum aktif.\n"
-    "Aktifkan dulu dengan format:\n"
+    "Gunakan kode yang sama dengan di halaman setelah pembayaran (atau email).\n"
+    "Aktifkan dengan:\n"
     "`/activate KODE-LISENSI-ANDA`"
 )
 
@@ -164,7 +165,7 @@ def build_sheet_client(telegram_user_id: int | None = None) -> gspread.Worksheet
         return client.open(sheet_name).sheet1
 
     raise RuntimeError(
-        "Spreadsheet belum tersedia. Pastikan pembayaran selesai, cek email untuk sheet & lisensi, lalu `/activate`."
+        "Spreadsheet belum tersedia. Pastikan pembayaran selesai, cek halaman sukses pembayaran atau email untuk sheet & lisensi, lalu `/activate`."
     )
 
 
@@ -754,7 +755,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
     if not is_license_active_for_user(user_id):
         await update.message.reply_text(
-            "Selamat datang. Sebelum pakai bot, masukkan nomor lisensi dulu.\n"
+            "Selamat datang. Sebelum pakai bot, masukkan kode lisensi Anda (sama persis dengan di halaman pembayaran lunas atau email).\n"
             "Format: `/activate KODE-LISENSI-ANDA`",
             parse_mode="Markdown",
         )
@@ -884,7 +885,7 @@ async def sheet_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         sheet_url = get_env("GOOGLE_SHEET_URL", required=False)
     if not sheet_url:
         await update.message.reply_text(
-            "Belum ada link sheet. Pastikan pembayaran sudah selesai dan cek email (lisensi + link sheet). "
+            "Belum ada link sheet. Buka lagi halaman setelah pembayaran (sukses) atau cek email. "
             "Setelah `/activate`, tunggu beberapa menit lalu coba `/sheet` lagi."
         )
         return
@@ -963,7 +964,9 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if not is_license_active_for_user(user_id):
         if text:
             await update.message.reply_text(
-                "Lisensi kamu belum aktif.\nMasukkan kode lisensi dengan format:\n`/activate KODE-LISENSI-ANDA`",
+                "Lisensi kamu belum aktif.\n"
+                "Masukkan kode yang sama dengan di halaman pembayaran lunas (copy-paste disarankan):\n"
+                "`/activate KODE-LISENSI-ANDA`",
                 parse_mode="Markdown",
             )
         return

@@ -58,7 +58,14 @@ class DeliverPaidOrderJob implements ShouldQueue
 
         $order->load('license');
 
-        Mail::to($order->email)->send(new PaidOrderDeliveredMail($order));
+        try {
+            Mail::to($order->email)->send(new PaidOrderDeliveredMail($order));
+        } catch (\Throwable $e) {
+            Log::warning('Email pengiriman order lunas gagal (lisensi tetap di halaman checkout & DB)', [
+                'order_code' => $order->order_code,
+                'exception'  => $e->getMessage(),
+            ]);
+        }
 
         Order::whereKey($order->id)->update(['purchase_delivery_sent_at' => now()]);
     }
