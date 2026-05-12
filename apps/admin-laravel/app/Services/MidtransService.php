@@ -11,8 +11,9 @@ class MidtransService
     public function createSnapTransaction(array $order): array
     {
         $isProduction = (bool) config('services.midtrans.is_production', false);
+        // Snap charge: host "app", path "/snap/v1/transactions" (bukan api.*.midtrans.com/v1/transactions — itu 404).
         $base = $isProduction ? 'https://app.midtrans.com' : 'https://app.sandbox.midtrans.com';
-        $apiBase = $isProduction ? 'https://api.midtrans.com' : 'https://api.sandbox.midtrans.com';
+        $chargeUrl = $base.'/snap/v1/transactions';
         $serverKey = $this->normalizeServerKey((string) config('services.midtrans.server_key'));
 
         if ($serverKey === '') {
@@ -62,13 +63,14 @@ class MidtransService
             ->acceptJson()
             ->asJson()
             ->timeout(45)
-            ->post($apiBase.'/v1/transactions', $payload);
+            ->post($chargeUrl, $payload);
 
         if (! $response->successful()) {
             Log::warning('Midtrans API menolak charge Snap', [
                 'http_status' => $response->status(),
                 'body'        => $response->body(),
                 'mode'        => $isProduction ? 'production' : 'sandbox',
+                'charge_url'  => $chargeUrl,
             ]);
             throw new \RuntimeException('Gagal membuat transaksi Midtrans: '.$response->body());
         }
