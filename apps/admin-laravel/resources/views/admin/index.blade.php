@@ -14,6 +14,32 @@
     </div>
 </div>
 
+<div class="card card-outline card-primary mb-4">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-table mr-2"></i>Sync dashboard (Google Sheets)</h3>
+    </div>
+    <div class="card-body">
+        <p class="text-muted">
+            Menyalin tab <strong>Dashboard</strong> dari spreadsheet master (env bot: <code>DASHBOARD_MASTER_SPREADSHEET_ID</code>)
+            ke semua baris <code>user_sheets</code> status aktif. Pastikan server punya Python + dependensi bot (<code>gspread</code>, dll.) dan file <code>.env</code> MySQL/Google sama seperti bot.
+        </p>
+        <form method="post" action="{{ route('admin.dashboard-sync') }}" class="form-inline flex-wrap align-items-end" onsubmit="return confirm('Jalankan sync dashboard dengan versi ini?');">
+            @csrf
+            <div class="form-group mr-2 mb-2">
+                <label for="sync-version" class="d-block small text-muted">Versi (contoh: v1.2)</label>
+                <input type="text" name="version" id="sync-version" class="form-control" placeholder="v1.2" required maxlength="64" pattern="[a-zA-Z0-9._-]+" title="Huruf, angka, titik, strip, underscore">
+            </div>
+            <div class="form-check mr-3 mb-2">
+                <input class="form-check-input" type="checkbox" name="dry_run" id="sync-dry-run" value="1">
+                <label class="form-check-label" for="sync-dry-run">Dry run</label>
+            </div>
+            <button type="submit" class="btn btn-primary mb-2">
+                <i class="fas fa-sync-alt mr-1"></i> Sync sekarang
+            </button>
+        </form>
+    </div>
+</div>
+
 <div class="row">
     @php
         $cards = [

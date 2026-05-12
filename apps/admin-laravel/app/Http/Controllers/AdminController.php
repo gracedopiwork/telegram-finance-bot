@@ -13,13 +13,16 @@ use App\Models\Setting;
 use App\Models\UserSheet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
     private function assertToken(Request $request): void
     {
+        if ($request->user()) {
+            return;
+        }
         $expected = (string) env('ADMIN_DASHBOARD_TOKEN', '');
-        // Token requirement only enforced for legacy actions, not CRUD dashboard.
         if ($expected !== '' && $request->query('token') !== $expected) {
             abort(403, 'Invalid admin token');
         }
@@ -59,33 +62,55 @@ class AdminController extends Controller
             ]
         );
 
-        return redirect()->route('admin.index', ['token' => $request->query('token')])
-            ->with('success', 'User sheet berhasil disimpan.');
+        return $this->redirectAdminIndex($request)->with('success', 'User sheet berhasil disimpan.');
     }
 
     public function runDashboardSync(Request $request)
     {
         $this->assertToken($request);
-        $version = (string) $request->input('version', '');
-        if ($version === '') {
-            return redirect()->route('admin.index', ['token' => $request->query('token')])
-                ->with('success', 'Versi dashboard wajib diisi.');
-        }
+
+        $validated = $request->validate([
+            'version' => ['required', 'string', 'max:64', 'regex:/^[a-zA-Z0-9._-]+$/'],
+            'dry_run' => ['sometimes', 'boolean'],
+        ]);
 
         $scriptPath = base_path('../bot-python/sync_dashboard.py');
-        if (!file_exists($scriptPath)) {
-            return redirect()->route('admin.index', ['token' => $request->query('token')])
-                ->with('success', 'Script sync_dashboard.py tidak ditemukan.');
+        if (! file_exists($scriptPath)) {
+            return $this->redirectAdminIndex($request)
+                ->with('error', 'Script sync_dashboard.py tidak ditemukan di apps/bot-python.');
         }
 
+        $python = (string) config('services.sync_dashboard.python_binary', 'python');
+        $command = array_filter([
+            $python,
+            'sync_dashboard.py',
+            '--version',
+            $validated['version'],
+            $request->boolean('dry_run') ? '--dry-run' : null,
+        ]);
+
         $result = Process::path(base_path('../bot-python'))
-            ->run("python sync_dashboard.py --version {$version}");
+            ->timeout((int) config('services.sync_dashboard.timeout_seconds', 3600))
+            ->run($command);
 
-        $message = $result->successful()
-            ? "Sync dashboard sukses: {$result->output()}"
-            : "Sync dashboard gagal: {$result->errorOutput()}";
+        $out = trim($result->output().$result->errorOutput());
+        $out = Str::limit($out !== '' ? $out : '(tanpa output)', 4000);
 
-        return redirect()->route('admin.index', ['token' => $request->query('token')])
-            ->with('success', $message);
+        if ($result->successful()) {
+            return $this->redirectAdminIndex($request)
+                ->with('success', 'Sync dashboard selesai. '.$out);
+        }
+
+        return $this->redirectAdminIndex($request)
+            ->with('error', 'Sync dashboard gagal (exit '.$result->exitCode().'). '.$out);
+    }
+
+    private function redirectAdminIndex(Request $request)
+    {
+        $token = $request->query('token');
+
+        return $token
+            ? redirect()->route('admin.index', ['token' => $token])
+            : redirect()->route('admin.index');
     }
 }

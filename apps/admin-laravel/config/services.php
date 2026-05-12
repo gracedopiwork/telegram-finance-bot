@@ -52,4 +52,9 @@ return [
         'bot_username' => env('TELEGRAM_BOT_USERNAME'),
     ],
 
+    'sync_dashboard' => [
+        'python_binary' => env('SYNC_DASHBOARD_PYTHON', 'python'),
+        'timeout_seconds' => (int) env('SYNC_DASHBOARD_TIMEOUT', 3600),
+    ],
+
 ];
