@@ -200,7 +200,7 @@ def lookup_user_sheet_url(telegram_user_id: int) -> str | None:
         cursor = conn.cursor(dictionary=True)
         cursor.execute(
             """
-            SELECT spreadsheet_url FROM user_sheets
+            SELECT spreadsheet_id, spreadsheet_url FROM user_sheets
             WHERE telegram_user_id = %s AND status = 'active' LIMIT 1
             """,
             (telegram_user_id,),
@@ -208,9 +208,14 @@ def lookup_user_sheet_url(telegram_user_id: int) -> str | None:
         row = cursor.fetchone()
         cursor.close()
         conn.close()
-        url = (row or {}).get("spreadsheet_url")
+        if not row:
+            return None
+        url = (row.get("spreadsheet_url") or "").strip()
         if url:
-            return str(url).strip() or None
+            return url
+        sid = (row.get("spreadsheet_id") or "").strip()
+        if sid:
+            return f"https://docs.google.com/spreadsheets/d/{sid}/edit"
     except Exception as exc:  # pragma: no cover - external db guard
         logger.warning("Gagal lookup spreadsheet_url user %s: %s", telegram_user_id, exc)
     return None
@@ -885,8 +890,13 @@ async def sheet_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         sheet_url = get_env("GOOGLE_SHEET_URL", required=False)
     if not sheet_url:
         await update.message.reply_text(
-            "Belum ada link sheet. Buka lagi halaman setelah pembayaran (sukses) atau cek email. "
-            "Setelah `/activate`, tunggu beberapa menit lalu coba `/sheet` lagi."
+            "Belum ada link Google Sheet untuk akun ini.\n\n"
+            "• Buka lagi halaman sukses pembayaran (ada link sheet setelah lunas) atau cek email.\n"
+            "• Pastikan sudah /activate dengan kode yang benar.\n"
+            "• Di server Laravel admin: GOOGLE_SERVICE_ACCOUNT_JSON + GOOGLE_USER_SHEET_TEMPLATE_ID "
+            "harus benar, dan queue/worker jalan agar sheet per order terbuat.\n"
+            "• Atau isi GOOGLE_SHEET_URL di .env bot sebagai link fallback (sheet tunggal).\n\n"
+            "Tunggu 1–2 menit setelah lunas lalu coba /sheet lagi."
         )
         return
     await update.message.reply_text(f"Buka Google Sheet kamu di sini:\n{sheet_url}")
