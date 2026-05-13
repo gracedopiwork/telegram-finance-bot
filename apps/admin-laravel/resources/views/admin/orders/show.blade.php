@@ -11,7 +11,16 @@
 
 @section('main')
 
-@php [$lbl, $color] = $order->statusBadge(); @endphp
+@php
+    [$lbl, $color] = $order->statusBadge();
+    $adminSheetHref = null;
+    if (! empty($order->spreadsheet_url)) {
+        $adminSheetHref = $order->spreadsheet_url;
+    } elseif (! empty($order->spreadsheet_id)) {
+        $adminSheetHref = 'https://docs.google.com/spreadsheets/d/' . $order->spreadsheet_id . '/edit';
+    }
+    $adminSheetJobDone = $order->purchase_delivery_sent_at !== null;
+@endphp
 
 <div class="row">
     {{-- ============== KIRI: ringkasan & action ============== --}}
@@ -203,6 +212,51 @@
             </div>
         </div>
 
+        {{-- Google Sheet (hasil DeliverPaidOrderJob) --}}
+        <div class="card card-outline @if($adminSheetHref) card-success @elseif($order->status === 'paid' && $adminSheetJobDone && ! $adminSheetHref) card-danger @else card-secondary @endif">
+            <div class="card-header">
+                <h3 class="card-title mb-0"><i class="fas fa-table mr-2"></i>Google Sheet</h3>
+            </div>
+            <div class="card-body">
+                @if($adminSheetHref)
+                    <p class="mb-2 small text-muted">Spreadsheet untuk order ini (sama dengan email / halaman sukses checkout):</p>
+                    <p class="mb-2">
+                        <a href="{{ $adminSheetHref }}" target="_blank" rel="noopener" class="font-weight-bold break-all">
+                            <i class="fas fa-external-link-alt mr-1"></i>{{ \Illuminate\Support\Str::limit($adminSheetHref, 64) }}
+                        </a>
+                    </p>
+                    <p class="mb-2">
+                        <a href="{{ $adminSheetHref }}" target="_blank" rel="noopener" class="btn btn-sm btn-success">
+                            <i class="fab fa-google-drive mr-1"></i>Buka di Google Sheets
+                        </a>
+                    </p>
+                    @if($order->spreadsheet_id)
+                        <table class="table table-sm table-bordered mb-0">
+                            <tr>
+                                <th class="bg-light" width="110">Spreadsheet ID</th>
+                                <td><code class="small user-select-all">{{ $order->spreadsheet_id }}</code></td>
+                            </tr>
+                        </table>
+                    @endif
+                @elseif($order->status === 'paid' && $adminSheetJobDone && ! $adminSheetHref)
+                    <span class="badge badge-danger mb-2">Tidak ada link / ID di database</span>
+                    <p class="small text-muted mb-0">
+                        Job pengiriman sudah selesai (<code>purchase_delivery_sent_at</code> terisi) tetapi penyalinan template Google gagal atau tidak dikonfigurasi.
+                        Cek <code>GOOGLE_SERVICE_ACCOUNT_JSON</code>, <code>GOOGLE_USER_SHEET_TEMPLATE_ID</code>, izin Drive, dan <code>storage/logs/laravel.log</code>.
+                    </p>
+                @elseif($order->status === 'paid' && ! $adminSheetHref)
+                    <span class="badge badge-warning mb-2">Belum ada spreadsheet</span>
+                    <p class="small text-muted mb-0">
+                        Tunggu antrian <code>DeliverPaidOrderJob</code> (pastikan <code>php artisan queue:work</code> berjalan). Setelah sukses, link akan muncul di sini.
+                    </p>
+                @else
+                    <p class="small text-muted mb-0">
+                        Link Google Sheet akan tersedia setelah order <strong>Lunas</strong> dan proses pengiriman digital selesai.
+                    </p>
+                @endif
+            </div>
+        </div>
+
         {{-- Payment ref --}}
         <div class="card card-outline card-success">
             <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-credit-card mr-2"></i>Pembayaran</h3></div>
@@ -225,8 +279,11 @@
         <div class="card card-outline card-danger">
             <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-trash mr-2"></i>Danger Zone</h3></div>
             <div class="card-body">
-                <p class="small text-muted">Menghapus order tidak menghapus lisensi yang sudah aktif. Gunakan hanya untuk membersihkan order test.</p>
-                <form action="{{ route('admin.orders.destroy', $order) }}" method="POST" class="js-confirm-form" data-msg="Hapus order {{ $order->order_code }}? Tidak bisa dikembalikan.">
+                <p class="small text-muted">
+                    Menghapus order ini juga menghapus <strong>lisensi yang terikat</strong> pada order (jika tidak dipakai order lain).
+                    Baris <code>license_activations</code> ikut terhapus. Gunakan hanya untuk data uji / koreksi.
+                </p>
+                <form action="{{ route('admin.orders.destroy', $order) }}" method="POST" class="js-confirm-form" data-msg="Hapus order {{ $order->order_code }} dan lisensi terkait? Tindakan ini tidak bisa dibatalkan.">
                     @csrf @method('DELETE')
                     <button type="submit" class="btn btn-sm btn-outline-danger btn-block"><i class="fas fa-trash mr-1"></i>Hapus Order</button>
                 </form>
@@ -251,7 +308,12 @@ $(function () {
             confirmButtonText: 'Ya, lanjut',
             cancelButtonText: 'Batal',
             confirmButtonColor: '#28a745',
-        }).then(function (r) { if (r.isConfirmed) $f.off('submit').trigger('submit'); });
+        }).then(function (r) {
+            if (r.isConfirmed) {
+                // Native submit agar tidak memicu ulang handler jQuery di document (trigger('submit') membuat form tidak pernah terkirim).
+                $f[0].submit();
+            }
+        });
     });
 });
 </script>

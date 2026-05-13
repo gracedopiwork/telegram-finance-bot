@@ -94,6 +94,7 @@
                         <th class="text-right">Total</th>
                         <th class="text-center">Status</th>
                         <th class="text-center">Lisensi</th>
+                        <th class="text-center">Sheet</th>
                         <th>Tanggal</th>
                         <th class="text-right">Aksi</th>
                     </tr>
@@ -146,6 +147,26 @@
                                 <span class="text-muted small">—</span>
                             @endif
                         </td>
+                        <td class="text-center">
+                            @php
+                                $listSheetHref = ! empty($o->spreadsheet_url)
+                                    ? $o->spreadsheet_url
+                                    : (! empty($o->spreadsheet_id)
+                                        ? 'https://docs.google.com/spreadsheets/d/' . $o->spreadsheet_id . '/edit'
+                                        : null);
+                            @endphp
+                            @if($listSheetHref)
+                                <a href="{{ $listSheetHref }}" target="_blank" rel="noopener" class="btn btn-xs btn-outline-success" title="Buka Google Sheet">
+                                    <i class="fas fa-table"></i>
+                                </a>
+                            @elseif($o->status === 'paid' && $o->purchase_delivery_sent_at && ! $listSheetHref)
+                                <span class="text-danger" title="Pengiriman selesai tanpa spreadsheet — cek log & konfigurasi Google"><i class="fas fa-exclamation-triangle"></i></span>
+                            @elseif($o->status === 'paid' && ! $listSheetHref)
+                                <span class="text-warning" title="Menunggu job / spreadsheet belum ada"><i class="fas fa-hourglass-half"></i></span>
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
+                        </td>
                         <td>
                             <small>{{ $o->created_at->format('d M Y H:i') }}</small>
                             @if($o->paid_at)
@@ -164,7 +185,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="text-center text-muted py-5">
+                    <tr><td colspan="9" class="text-center text-muted py-5">
                         @if(request()->hasAny(['search', 'status', 'product_id']))
                             Tidak ada order yang cocok dengan filter.
                         @else

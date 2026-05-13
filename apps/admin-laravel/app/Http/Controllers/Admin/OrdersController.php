@@ -111,9 +111,19 @@ class OrdersController extends Controller
 
     public function destroy(Order $order)
     {
-        $order->delete();
+        $licenseId = $order->license_id;
+        $code = $order->order_code;
+
+        DB::transaction(function () use ($order, $licenseId): void {
+            $order->delete();
+
+            if ($licenseId !== null && ! Order::query()->where('license_id', $licenseId)->exists()) {
+                License::query()->whereKey($licenseId)->delete();
+            }
+        });
+
         return redirect()->route('admin.orders.index')
-                         ->with('success', 'Order dihapus.');
+            ->with('success', "Order {$code} dihapus. Lisensi terkait ikut dihapus jika tidak dipakai order lain.");
     }
 
     private function generateLicenseKey(): string

@@ -2,10 +2,38 @@
 
 @section('title', 'Pembayaran Diproses — YFD')
 
+@php
+    $sheetPoll = (int) request()->query('sheet_poll', 0);
+    $sheetHref = null;
+    if ($order) {
+        if (! empty($order->spreadsheet_url)) {
+            $sheetHref = $order->spreadsheet_url;
+        } elseif (! empty($order->spreadsheet_id)) {
+            $sheetHref = 'https://docs.google.com/spreadsheets/d/' . $order->spreadsheet_id . '/edit';
+        }
+    }
+    $sheetOk = $sheetHref !== null;
+    $sheetFailedAfterJob = $order
+        && $order->status === 'paid'
+        && $order->license
+        && ! $sheetOk
+        && $order->purchase_delivery_sent_at !== null;
+    $sheetWaitingForJob = $order
+        && $order->status === 'paid'
+        && $order->license
+        && ! $sheetOk
+        && $order->purchase_delivery_sent_at === null;
+    $sheetPollMax = 45;
+    $sheetPollInterval = 8;
+@endphp
+
 @push('head')
     @if($order && $order->status === 'pending')
         {{-- Midtrans webhook bisa beberapa detik setelah redirect; muat ulang agar kode lisensi muncul setelah lunas --}}
         <meta http-equiv="refresh" content="12">
+    @elseif($sheetWaitingForJob && $sheetPoll < $sheetPollMax)
+        {{-- Job DeliverPaidOrderJob async: polling sampai spreadsheet_id/url terisi atau batas waktu --}}
+        <meta http-equiv="refresh" content="{{ $sheetPollInterval }};url={{ request()->fullUrlWithQuery(['sheet_poll' => $sheetPoll + 1]) }}">
     @endif
 @endpush
 
@@ -44,16 +72,61 @@
                 </p>
             </div>
 
-            @if($order->spreadsheet_url)
-                <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-3">
-                    <strong>Google Sheet</strong> Anda:
-                    <a href="{{ $order->spreadsheet_url }}" target="_blank" rel="noopener" class="text-primary font-semibold underline break-all">{{ $order->spreadsheet_url }}</a>
+            <div class="max-w-lg mx-auto text-left mb-6 border-2 rounded-2xl p-5
+                @if($sheetOk) border-emerald-200 bg-emerald-50/80
+                @elseif($sheetFailedAfterJob) border-red-200 bg-red-50/70
+                @else border-amber-200 bg-amber-50/70 @endif">
+                <p class="text-[11px] font-bold uppercase tracking-wider mb-2
+                    @if($sheetOk) text-emerald-800
+                    @elseif($sheetFailedAfterJob) text-red-800
+                    @else text-amber-900 @endif">
+                    Status Google Sheet
                 </p>
-            @elseif($order->spreadsheet_id)
-                <p class="text-[13px] text-on-surface-variant max-w-xl mx-auto mb-3">
-                    Google Sheet sedang disiapkan. Muat ulang halaman ini dalam beberapa saat jika link belum muncul.
-                </p>
-            @endif
+                @if($sheetOk)
+                    <p class="text-body-md text-on-surface-variant mb-2">
+                        <span class="inline-flex items-center gap-1 font-semibold text-emerald-800">
+                            <span class="material-symbols-outlined text-[20px]">check_circle</span> Berhasil
+                        </span>
+                        — spreadsheet untuk order ini sudah dibuat.
+                    </p>
+                    <p class="text-[13px] mb-0">
+                        <a href="{{ $sheetHref }}" target="_blank" rel="noopener" class="text-primary font-semibold underline break-all">{{ $sheetHref }}</a>
+                    </p>
+                @elseif($sheetFailedAfterJob)
+                    <p class="text-body-md text-on-surface-variant mb-2">
+                        <span class="inline-flex items-center gap-1 font-semibold text-red-800">
+                            <span class="material-symbols-outlined text-[20px]">error</span> Tidak terbuat otomatis
+                        </span>
+                        — proses pengiriman order sudah selesai di server, tetapi tidak ada ID/link spreadsheet di database.
+                    </p>
+                    <p class="text-[12px] text-on-surface-variant leading-relaxed mb-0">
+                        Cek di server Laravel: variabel <code class="text-[11px] bg-white/80 px-1 rounded">GOOGLE_SERVICE_ACCOUNT_JSON</code> +
+                        <code class="text-[11px] bg-white/80 px-1 rounded">GOOGLE_USER_SHEET_TEMPLATE_ID</code>, izin Drive ke service account, dan jalankan
+                        <code class="text-[11px] bg-white/80 px-1 rounded">php artisan queue:work</code>. Lihat juga <code class="text-[11px] bg-white/80 px-1 rounded">storage/logs/laravel.log</code>.
+                    </p>
+                @elseif($sheetWaitingForJob && $sheetPoll < $sheetPollMax)
+                    <p class="text-body-md text-on-surface-variant mb-2">
+                        <span class="inline-flex items-center gap-1 font-semibold text-amber-900">
+                            <span class="material-symbols-outlined text-[20px] animate-pulse">hourglass_top</span> Menunggu
+                        </span>
+                        — sistem sedang menyalin template Google Sheet (antrian). Halaman ini memuat ulang otomatis setiap {{ $sheetPollInterval }} detik
+                        ({{ $sheetPoll + 1 }}/{{ $sheetPollMax }}).
+                    </p>
+                    <p class="text-[12px] text-on-surface-variant mb-0">
+                        Jika lama tidak berubah, pastikan worker antrian jalan di VPS.
+                    </p>
+                @else
+                    <p class="text-body-md text-on-surface-variant mb-2">
+                        <span class="inline-flex items-center gap-1 font-semibold text-amber-900">
+                            <span class="material-symbols-outlined text-[20px]">schedule</span> Batas polling
+                        </span>
+                        — setelah beberapa kali refresh, spreadsheet masih belum muncul.
+                    </p>
+                    <p class="text-[12px] text-on-surface-variant mb-0">
+                        Muat ulang manual (F5) atau cek antrian worker, konfigurasi Google, dan log Laravel. Anda tetap bisa memakai kode lisensi di atas untuk <strong>/activate</strong> di bot.
+                    </p>
+                @endif
+            </div>
         @else
             <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-8">
                 @if($order->status === 'pending')
@@ -83,6 +156,22 @@
                         @endif
                     </dd>
                 </div>
+                @if($order->status === 'paid' && $order->license)
+                    <div class="flex justify-between gap-2 pt-1 border-t border-outline-variant/60">
+                        <dt class="text-on-surface-variant shrink-0">Google Sheet</dt>
+                        <dd class="text-right font-semibold text-[12px]">
+                            @if($sheetOk)
+                                <span class="text-emerald-700">Siap</span>
+                            @elseif($sheetFailedAfterJob)
+                                <span class="text-red-700">Gagal / tidak ada</span>
+                            @elseif($sheetWaitingForJob && $sheetPoll < $sheetPollMax)
+                                <span class="text-amber-800">Memproses…</span>
+                            @else
+                                <span class="text-amber-800">Belum terlihat</span>
+                            @endif
+                        </dd>
+                    </div>
+                @endif
             </dl>
         </div>
     @else
