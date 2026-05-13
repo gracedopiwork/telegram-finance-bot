@@ -31,11 +31,17 @@ class GoogleDriveSheetProvisioner
 
         $token = $this->accessToken();
 
+        $body = ['name' => $title];
+        $parentId = trim((string) config('services.google.copy_parent_folder_id', ''));
+        if ($parentId !== '') {
+            $body['parents'] = [$parentId];
+        }
+
         $response = Http::withToken($token)
             ->timeout(60)
             ->post(
                 "https://www.googleapis.com/drive/v3/files/{$templateId}/copy?supportsAllDrives=true&fields=id,name,webViewLink",
-                ['name' => $title]
+                $body
             );
 
         if (! $response->successful()) {

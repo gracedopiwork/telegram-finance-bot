@@ -101,7 +101,8 @@
                     </p>
                     <p class="text-[12px] text-on-surface-variant leading-relaxed mb-0">
                         Cek di server Laravel: variabel <code class="text-[11px] bg-white/80 px-1 rounded">GOOGLE_SERVICE_ACCOUNT_JSON</code> +
-                        <code class="text-[11px] bg-white/80 px-1 rounded">GOOGLE_USER_SHEET_TEMPLATE_ID</code>, izin Drive ke service account, dan jalankan
+                        <code class="text-[11px] bg-white/80 px-1 rounded">GOOGLE_USER_SHEET_TEMPLATE_ID</code>, izin Drive ke service account,
+                        <code class="text-[11px] bg-white/80 px-1 rounded">GOOGLE_DRIVE_COPY_PARENT_ID</code> (folder/Shared drive jika kuota service account penuh), dan jalankan
                         <code class="text-[11px] bg-white/80 px-1 rounded">php artisan queue:work</code>. Lihat juga <code class="text-[11px] bg-white/80 px-1 rounded">storage/logs/laravel.log</code>.
                     </p>
                 @elseif($sheetWaitingForJob && $sheetPoll < $sheetPollMax)

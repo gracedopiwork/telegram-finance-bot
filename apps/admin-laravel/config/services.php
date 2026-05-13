@@ -46,6 +46,8 @@ return [
     'google' => [
         'service_account_json' => env('GOOGLE_SERVICE_ACCOUNT_JSON'),
         'user_sheet_template_id' => env('GOOGLE_USER_SHEET_TEMPLATE_ID'),
+        /** Optional: Drive folder ID (e.g. di Shared drive) supaya salinan tidak memakai kuota My Drive service account */
+        'copy_parent_folder_id' => env('GOOGLE_DRIVE_COPY_PARENT_ID'),
     ],
 
     'telegram' => [

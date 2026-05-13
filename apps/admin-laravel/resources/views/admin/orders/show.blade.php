@@ -242,7 +242,7 @@
                     <span class="badge badge-danger mb-2">Tidak ada link / ID di database</span>
                     <p class="small text-muted mb-0">
                         Job pengiriman sudah selesai (<code>purchase_delivery_sent_at</code> terisi) tetapi penyalinan template Google gagal atau tidak dikonfigurasi.
-                        Cek <code>GOOGLE_SERVICE_ACCOUNT_JSON</code>, <code>GOOGLE_USER_SHEET_TEMPLATE_ID</code>, izin Drive, dan <code>storage/logs/laravel.log</code>.
+                        Cek <code>GOOGLE_SERVICE_ACCOUNT_JSON</code>, <code>GOOGLE_USER_SHEET_TEMPLATE_ID</code>, <code>GOOGLE_DRIVE_COPY_PARENT_ID</code> (jika kuota Drive service account penuh), izin Drive, dan <code>storage/logs/laravel.log</code>.
                     </p>
                 @elseif($order->status === 'paid' && ! $adminSheetHref)
                     <span class="badge badge-warning mb-2">Belum ada spreadsheet</span>
