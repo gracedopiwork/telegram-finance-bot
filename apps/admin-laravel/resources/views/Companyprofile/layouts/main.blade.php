@@ -504,15 +504,15 @@
             <p class="text-label-md italic text-secondary-fixed">"{{ $yfd['motto'] }}"</p>
 
             <div class="flex items-center gap-3 mt-6">
-                <a href="https://instagram.com/{{ $yfd['instagram'] }}" target="_blank" rel="noopener"
+                <a href="{{ \App\Support\SocialUrl::instagram($yfd['instagram']) }}" target="_blank" rel="noopener"
                    class="w-10 h-10 grid place-items-center rounded-full bg-white/10 hover:bg-secondary-container/90 hover:text-on-secondary-container transition-colors" aria-label="Instagram">
                     <span class="material-symbols-outlined text-[20px]">photo_camera</span>
                 </a>
-                <a href="{{ 'https://www.tiktok.com/@' . $yfd['tiktok'] }}" target="_blank" rel="noopener"
+                <a href="{{ \App\Support\SocialUrl::tiktok($yfd['tiktok']) }}" target="_blank" rel="noopener"
                    class="w-10 h-10 grid place-items-center rounded-full bg-white/10 hover:bg-secondary-container/90 hover:text-on-secondary-container transition-colors" aria-label="TikTok">
                     <span class="material-symbols-outlined text-[20px]">music_note</span>
                 </a>
-                <a href="{{ 'https://www.threads.net/@' . $yfd['threads'] }}" target="_blank" rel="noopener"
+                <a href="{{ \App\Support\SocialUrl::threads($yfd['threads']) }}" target="_blank" rel="noopener"
                    class="w-10 h-10 grid place-items-center rounded-full bg-white/10 hover:bg-secondary-container/90 hover:text-on-secondary-container transition-colors" aria-label="Threads">
                     <span class="material-symbols-outlined text-[20px]">alternate_email</span>
                 </a>

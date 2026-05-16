@@ -37,9 +37,9 @@ class CompanyProfileSeeder extends Seeder
             ['key' => 'contact.wa_number',   'value' => '6285111228911',                                          'type' => 'text',     'group' => 'contact', 'label' => 'WhatsApp Number (intl)', 'sort' => 2],
             ['key' => 'contact.wa_message',  'value' => 'Halo YFD, saya tertarik untuk konsultasi finansial. Mohon info jadwal dan paket yang tersedia. Terima kasih.', 'type' => 'textarea', 'group' => 'contact', 'label' => 'Default Pesan WA',    'sort' => 3],
             ['key' => 'contact.email',       'value' => 'yfinancialdoctor@gmail.com',                              'type' => 'text',     'group' => 'contact', 'label' => 'Email',                'sort' => 4],
-            ['key' => 'contact.instagram',   'value' => 'your_financial_doctor',                                   'type' => 'text',     'group' => 'contact', 'label' => 'Instagram (tanpa @)',  'sort' => 5],
-            ['key' => 'contact.tiktok',      'value' => 'your_financial_doctor',                                   'type' => 'text',     'group' => 'contact', 'label' => 'TikTok (tanpa @)',     'sort' => 6],
-            ['key' => 'contact.threads',     'value' => 'your_financial_doctor',                                   'type' => 'text',     'group' => 'contact', 'label' => 'Threads (tanpa @)',    'sort' => 7],
+            ['key' => 'contact.instagram',   'value' => 'your_financial_doctor',                                   'type' => 'text',     'group' => 'contact', 'label' => 'Instagram: username atau URL lengkap',  'sort' => 5],
+            ['key' => 'contact.tiktok',      'value' => 'your_financial_doctor',                                   'type' => 'text',     'group' => 'contact', 'label' => 'TikTok: username atau URL lengkap',     'sort' => 6],
+            ['key' => 'contact.threads',     'value' => 'your_financial_doctor',                                   'type' => 'text',     'group' => 'contact', 'label' => 'Threads: username atau URL lengkap',    'sort' => 7],
             ['key' => 'contact.address',     'value' => 'Indonesia',                                              'type' => 'text',     'group' => 'contact', 'label' => 'Alamat',               'sort' => 8],
 
             // ===== Hero (Home) =====

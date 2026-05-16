@@ -118,17 +118,17 @@
                     Konten singkat, praktis, dan langsung bisa dipraktikkan — terbit reguler di Instagram, TikTok, dan Threads YFD.
                 </p>
                 <div class="flex flex-wrap gap-3">
-                    <a href="https://instagram.com/{{ $yfd['instagram'] }}" target="_blank" rel="noopener"
+                    <a href="{{ \App\Support\SocialUrl::instagram($yfd['instagram']) }}" target="_blank" rel="noopener"
                        class="inline-flex items-center gap-2 bg-white text-primary-container px-6 py-3 rounded font-label-md text-label-md hover:scale-105 transition-transform">
-                        <span class="material-symbols-outlined">photo_camera</span> {{ '@' . $yfd['instagram'] }}
+                        <span class="material-symbols-outlined">photo_camera</span> Instagram
                     </a>
-                    <a href="{{ 'https://www.tiktok.com/@' . $yfd['tiktok'] }}" target="_blank" rel="noopener"
+                    <a href="{{ \App\Support\SocialUrl::tiktok($yfd['tiktok']) }}" target="_blank" rel="noopener"
                        class="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded font-label-md text-label-md hover:scale-105 transition-transform">
-                        <span class="material-symbols-outlined">music_note</span> {{ '@' . $yfd['tiktok'] }}
+                        <span class="material-symbols-outlined">music_note</span> TikTok
                     </a>
-                    <a href="{{ 'https://www.threads.net/@' . $yfd['threads'] }}" target="_blank" rel="noopener"
+                    <a href="{{ \App\Support\SocialUrl::threads($yfd['threads']) }}" target="_blank" rel="noopener"
                        class="inline-flex items-center gap-2 bg-[#101010] text-white border border-white/15 px-6 py-3 rounded font-label-md text-label-md hover:scale-105 transition-transform">
-                        <span class="material-symbols-outlined">alternate_email</span> {{ '@' . $yfd['threads'] }}
+                        <span class="material-symbols-outlined">alternate_email</span> Threads
                     </a>
                 </div>
             </div>
@@ -154,12 +154,12 @@
         <p class="font-body-md text-body-md text-on-surface-variant mb-6 max-w-xl mx-auto">
             Untuk diagnosis yang personal, lakukan Financial Health Check Up bersama tim YFD.
         </p>
-        <div class="flex flex-col sm:flex-row justify-center gap-3">
-            <a href="{{ route('company.paket') }}" class="bg-primary-container text-on-primary px-8 py-3 rounded-lg font-label-md text-label-md hover:opacity-90">
+        <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center gap-3 mx-auto w-fit max-w-full">
+            <a href="{{ route('company.paket') }}" class="inline-flex items-center justify-center text-center bg-primary-container text-on-primary px-8 py-3 rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity">
                 Mulai Health Check Up
             </a>
             <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener"
-               class="inline-flex items-center gap-2 border border-primary-container text-primary-container px-8 py-3 rounded-lg font-label-md text-label-md hover:bg-primary-container/5">
+               class="inline-flex items-center justify-center gap-2 border border-primary-container text-primary-container px-8 py-3 rounded-lg font-label-md text-label-md hover:bg-primary-container/5 transition-colors">
                 <span class="material-symbols-outlined">chat</span> Chat Tim YFD
             </a>
         </div>

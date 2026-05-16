@@ -63,7 +63,7 @@
             </a>
 
             {{-- Instagram --}}
-            <a href="https://instagram.com/{{ $yfd['instagram'] }}" target="_blank" rel="noopener"
+            <a href="{{ \App\Support\SocialUrl::instagram($yfd['instagram']) }}" target="_blank" rel="noopener"
                class="bg-gradient-to-br from-pink-500 via-red-500 to-yellow-500 text-white p-8 rounded-2xl flex flex-col group hover:scale-[1.02] transition-transform shadow-lg">
                 <div class="flex items-center justify-between mb-6">
                     <div class="bg-white/20 p-3 rounded-lg">
@@ -72,13 +72,12 @@
                     <span class="material-symbols-outlined opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all">arrow_forward</span>
                 </div>
                 <h3 class="font-headline-md text-headline-md mb-2">Instagram</h3>
-                <p class="font-body-md text-body-md opacity-90 mb-3">Konten edukasi finansial harian & update kegiatan.</p>
-                <p class="font-label-md text-label-md font-bold mt-auto">{{ '@' . $yfd['instagram'] }}</p>
+                <p class="font-body-md text-body-md opacity-90">Konten edukasi finansial harian & update kegiatan.</p>
             </a>
 
             {{-- TikTok + Threads: satu kolom di kiri (lg), menumpuk — Founder menghabiskan 2 kolom di kanan seperti referensi --}}
             <div class="flex flex-col gap-gutter">
-                <a href="{{ 'https://www.tiktok.com/@' . $yfd['tiktok'] }}" target="_blank" rel="noopener"
+                <a href="{{ \App\Support\SocialUrl::tiktok($yfd['tiktok']) }}" target="_blank" rel="noopener"
                    class="bg-black text-white p-8 rounded-2xl flex flex-col group hover:scale-[1.02] transition-transform shadow-lg flex-1">
                     <div class="flex items-center justify-between mb-6">
                         <div class="bg-white/10 p-3 rounded-lg">
@@ -87,11 +86,10 @@
                         <span class="material-symbols-outlined opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all">arrow_forward</span>
                     </div>
                     <h3 class="font-headline-md text-headline-md mb-2">TikTok</h3>
-                    <p class="font-body-md text-body-md opacity-90 mb-3">Mini-edukasi finansial dengan format singkat.</p>
-                    <p class="font-label-md text-label-md font-bold mt-auto">{{ '@' . $yfd['tiktok'] }}</p>
+                    <p class="font-body-md text-body-md opacity-90">Mini-edukasi finansial dengan format singkat.</p>
                 </a>
 
-                <a href="{{ 'https://www.threads.net/@' . $yfd['threads'] }}" target="_blank" rel="noopener"
+                <a href="{{ \App\Support\SocialUrl::threads($yfd['threads']) }}" target="_blank" rel="noopener"
                    class="bg-black text-white p-8 rounded-2xl flex flex-col group hover:scale-[1.02] transition-transform shadow-lg flex-1 ring-1 ring-inset ring-white/10">
                     <div class="flex items-center justify-between mb-6">
                         <div class="bg-white/10 p-3 rounded-lg">
@@ -100,8 +98,7 @@
                         <span class="material-symbols-outlined opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all">arrow_forward</span>
                     </div>
                     <h3 class="font-headline-md text-headline-md mb-2">Threads</h3>
-                    <p class="font-body-md text-body-md opacity-90 mb-3">Update singkat & diskusi ringan seputar finansial.</p>
-                    <p class="font-label-md text-label-md font-bold mt-auto">{{ '@' . $yfd['threads'] }}</p>
+                    <p class="font-body-md text-body-md opacity-90">Update singkat & diskusi ringan seputar finansial.</p>
                 </a>
             </div>
 
