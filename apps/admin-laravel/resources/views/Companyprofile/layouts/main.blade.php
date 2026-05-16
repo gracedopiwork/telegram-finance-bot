@@ -491,7 +491,7 @@
     <div class="relative max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-16 grid grid-cols-1 md:grid-cols-12 gap-10">
         <div class="md:col-span-5">
             <div class="flex items-center gap-3 mb-5">
-                <img alt="{{ $yfd['brand'] }} Logo" class="h-12 w-auto" src="{{ asset($yfd['logo'] ?? 'images/yfd-logo.png') }}">
+                <img alt="{{ $yfd['brand'] }} Logo" class="h-12 w-auto" src="{{ asset($yfd['logo_footer'] ?? $yfd['logo'] ?? 'images/yfd-logo.png') }}">
                 <div class="leading-tight">
                     <div class="text-[20px] font-extrabold tracking-tight">{{ $yfd['brand'] }}</div>
                     <div class="text-caption opacity-70">{{ $yfd['tagline'] }}</div>

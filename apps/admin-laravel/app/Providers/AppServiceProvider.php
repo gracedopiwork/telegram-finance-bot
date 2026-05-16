@@ -22,12 +22,19 @@ class AppServiceProvider extends ServiceProvider
     {
         View::composer('*', function ($view) {
             try {
+                $logo = Setting::val('brand.logo', 'images/yfd-logo.png');
+                $logoFooter = trim((string) (Setting::val('brand.logo_footer') ?? ''));
+                if ($logoFooter === '') {
+                    $logoFooter = $logo;
+                }
+
                 $yfd = [
                     'brand'     => Setting::val('brand.name', 'Your Financial Doctor'),
                     'short'     => Setting::val('brand.short', 'YFD'),
                     'tagline'   => Setting::val('brand.tagline', "Indonesia's First Financial Health Center"),
                     'motto'     => Setting::val('brand.motto', 'Building Financially Healthy Generations.'),
-                    'logo'      => Setting::val('brand.logo', 'images/yfd-logo.png'),
+                    'logo'      => $logo,
+                    'logo_footer' => $logoFooter,
                     'phone'     => Setting::val('contact.phone', '+6285111228911'),
                     'wa_number' => Setting::val('contact.wa_number', '6285111228911'),
                     'email'     => Setting::val('contact.email', 'yfinancialdoctor@gmail.com'),
@@ -55,6 +62,7 @@ class AppServiceProvider extends ServiceProvider
                     'tagline' => "Indonesia's First Financial Health Center",
                     'motto' => 'Building Financially Healthy Generations.',
                     'logo' => 'images/yfd-logo.png',
+                    'logo_footer' => 'images/yfd-logo.png',
                     'phone' => '+6285111228911',
                     'wa_number' => '6285111228911',
                     'email' => 'yfinancialdoctor@gmail.com',

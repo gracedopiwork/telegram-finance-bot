@@ -30,7 +30,8 @@ class CompanyProfileSeeder extends Seeder
             ['key' => 'brand.short',         'value' => 'YFD',                                                    'type' => 'text',     'group' => 'brand',   'label' => 'Singkatan',            'sort' => 2],
             ['key' => 'brand.tagline',       'value' => "Indonesia's First Financial Health Center",              'type' => 'text',     'group' => 'brand',   'label' => 'Tagline',              'sort' => 3],
             ['key' => 'brand.motto',         'value' => 'Building Financially Healthy Generations.',              'type' => 'text',     'group' => 'brand',   'label' => 'Motto',                'sort' => 4],
-            ['key' => 'brand.logo',          'value' => 'images/yfd-logo.png',                                    'type' => 'image',    'group' => 'brand',   'label' => 'Logo (path public/)',  'sort' => 5],
+            ['key' => 'brand.logo',          'value' => 'images/yfd-logo.png',                                    'type' => 'image',    'group' => 'brand',   'label' => 'Logo header (navbar)',  'sort' => 5],
+            ['key' => 'brand.logo_footer',   'value' => '',                                                         'type' => 'image',    'group' => 'brand',   'label' => 'Logo footer (kosong = sama dengan header)', 'sort' => 6],
 
             // ===== Contact =====
             ['key' => 'contact.phone',       'value' => '+6285111228911',                                         'type' => 'text',     'group' => 'contact', 'label' => 'Nomor Telepon',        'sort' => 1],

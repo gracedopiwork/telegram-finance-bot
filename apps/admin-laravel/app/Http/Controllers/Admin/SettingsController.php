@@ -62,6 +62,15 @@ class SettingsController extends Controller
             Setting::where('key', 'brand.logo')->update(['value' => 'storage/' . $path]);
         }
 
+        if ($request->hasFile('logo_footer_file')) {
+            $file = $request->file('logo_footer_file');
+            $request->validate([
+                'logo_footer_file' => 'image|max:2048',
+            ]);
+            $path = $file->store('cp/brand', 'public');
+            Setting::where('key', 'brand.logo_footer')->update(['value' => 'storage/' . $path]);
+        }
+
         Setting::bust();
 
         return redirect()

@@ -55,8 +55,15 @@
                                     @if($s->key === 'brand.logo')
                                         <div class="custom-file">
                                             <input type="file" name="logo_file" accept="image/*" class="custom-file-input" id="logoUpload">
-                                            <label class="custom-file-label" for="logoUpload">Upload logo baru…</label>
+                                            <label class="custom-file-label" for="logoUpload">Upload logo header…</label>
                                         </div>
+                                    @endif
+                                    @if($s->key === 'brand.logo_footer')
+                                        <div class="custom-file">
+                                            <input type="file" name="logo_footer_file" accept="image/*" class="custom-file-input" id="logoFooterUpload">
+                                            <label class="custom-file-label" for="logoFooterUpload">Upload logo footer…</label>
+                                        </div>
+                                        <small class="form-text text-muted">Kosongkan path di atas jika footer harus memakai logo header.</small>
                                     @endif
                                 @elseif($s->type === 'number')
                                     <input type="number" name="settings[{{ $s->key }}]" value="{{ $s->value }}" class="form-control form-control-sm">
