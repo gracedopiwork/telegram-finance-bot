@@ -9,7 +9,7 @@
             'title' => 'Jasa & Pendampingan',
             'icon'  => 'stethoscope',
             'items' => [
-                ['key' => 'paket',     'label' => 'Health Check Up',  'desc' => 'Diagnosa kesehatan finansial — paket 3 tier',  'url' => $primaryCheckupUrl, 'new_tab' => $primaryCheckupNewTab, 'icon' => 'monitor_heart',     'badge' => 'Mulai Di Sini'],
+                ['key' => 'paket',     'label' => 'Health Check Up',  'desc' => 'Diagnosa kesehatan finansial — paket 3 tier',  'route' => 'company.paket',     'icon' => 'monitor_heart',     'badge' => 'Mulai Di Sini'],
                 ['key' => 'pertemuan', 'label' => 'Konsultasi 1-on-1','desc' => 'Sesi privat dengan dokter QWP',                 'route' => 'company.pertemuan', 'icon' => 'forum',             'badge' => null],
                 ['key' => 'layanan',   'label' => 'Recovery Program', 'desc' => 'Pendampingan 6 bulan untuk kondisi finansial darurat', 'route' => 'company.layanan',  'icon' => 'healing',     'badge' => null],
             ],
@@ -291,8 +291,8 @@
                                             @foreach($col['items'] as $sub)
                                                 @php
                                                     $href = '#';
-                                                    if (!empty($sub['url'])) { $href = $sub['url']; }
-                                                    elseif (!empty($sub['route'])) { try { $href = route($sub['route']); } catch (\Throwable $e) {} }
+                                                    if (!empty($sub['route'])) { try { $href = route($sub['route']); } catch (\Throwable $e) {} }
+                                                    elseif (!empty($sub['url'])) { $href = $sub['url']; }
                                                     $isDisabled = $href === '#' || $href === null;
                                                 @endphp
                                                 <li>
@@ -419,8 +419,8 @@
                                     @foreach($col['items'] as $sub)
                                         @php
                                             $href = '#';
-                                            if (!empty($sub['url'])) { $href = $sub['url']; }
-                                            elseif (!empty($sub['route'])) { try { $href = route($sub['route']); } catch (\Throwable $e) {} }
+                                            if (!empty($sub['route'])) { try { $href = route($sub['route']); } catch (\Throwable $e) {} }
+                                            elseif (!empty($sub['url'])) { $href = $sub['url']; }
                                             $isDisabled = $href === '#' || $href === null;
                                         @endphp
                                         <a href="{{ $href }}"
@@ -534,7 +534,7 @@
         <div class="md:col-span-3">
             <h5 class="text-label-md text-secondary-fixed mb-4">Layanan</h5>
             <ul class="space-y-2.5 text-[13.5px] opacity-90">
-                <li><a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif class="hover:text-secondary-fixed-dim transition-all">Health Check Up</a></li>
+                <li><a href="{{ route('company.paket') }}" class="hover:text-secondary-fixed-dim transition-all">Health Check Up</a></li>
                 <li><a href="{{ route('company.layanan') }}" class="hover:text-secondary-fixed-dim transition-all">Konsultasi</a></li>
                 <li><a href="{{ route('company.wealthpedia') }}" class="hover:text-secondary-fixed-dim transition-all">Education Platform</a></li>
                 <li><a href="{{ route('company.layanan') }}" class="hover:text-secondary-fixed-dim transition-all">Recovery Program</a></li>

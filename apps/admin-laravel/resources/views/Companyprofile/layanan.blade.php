@@ -145,7 +145,7 @@
             kami bantu Anda menemukan area mana yang paling butuh perhatian.
         </p>
         <div class="flex flex-col sm:flex-row justify-center gap-4">
-            <a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif class="bg-secondary-container text-on-secondary-container px-12 py-4 rounded-lg font-label-md text-label-md hover:brightness-105 transition-all shadow-lg flex items-center justify-center gap-2">
+            <a href="{{ route('company.paket') }}" class="bg-secondary-container text-on-secondary-container px-12 py-4 rounded-lg font-label-md text-label-md hover:brightness-105 transition-all shadow-lg flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined">monitor_heart</span>
                 Mulai Health Check Up
             </a>

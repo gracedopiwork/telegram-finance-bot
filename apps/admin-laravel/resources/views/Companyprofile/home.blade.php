@@ -70,7 +70,7 @@
                 // Setiap item HARUS punya halaman tersendiri biar nggak duplikat / dead-end.
                 // Item pertama dihighlight jadi "pintu masuk utama" YFD.
                 $quick = [
-                    ['type' => 'url', 'target' => $primaryCheckupUrl, 'new_tab' => $primaryCheckupNewTab, 'icon' => 'monitor_heart',        'label' => 'Health Check Up', 'badge' => 'Mulai Di Sini'],
+                    ['type' => 'route', 'target' => 'company.paket',       'icon' => 'monitor_heart',        'label' => 'Health Check Up', 'badge' => 'Mulai Di Sini'],
                     ['type' => 'route', 'target' => 'company.pertemuan',   'icon' => 'forum',                'label' => 'Konsultasi'],
                     ['type' => 'route', 'target' => 'company.penasihat',   'icon' => 'medical_information',  'label' => 'Tim Dokter'],
                     ['type' => 'route', 'target' => 'company.layanan',     'icon' => 'apps',                 'label' => 'Semua Layanan'],
