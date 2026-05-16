@@ -33,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
                     'email'     => Setting::val('contact.email', 'yfinancialdoctor@gmail.com'),
                     'instagram' => Setting::val('contact.instagram', 'your_financial_doctor'),
                     'tiktok'    => Setting::val('contact.tiktok', 'your_financial_doctor'),
+                    'threads'   => Setting::val('contact.threads', 'your_financial_doctor'),
                     'address'   => Setting::val('contact.address', 'Indonesia'),
                 ];
 
@@ -59,6 +60,7 @@ class AppServiceProvider extends ServiceProvider
                     'email' => 'yfinancialdoctor@gmail.com',
                     'instagram' => 'your_financial_doctor',
                     'tiktok' => 'your_financial_doctor',
+                    'threads' => 'your_financial_doctor',
                     'address' => 'Indonesia',
                 ]);
                 $view->with('waBookingUrl', 'https://wa.me/6285111228911');

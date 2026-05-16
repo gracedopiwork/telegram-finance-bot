@@ -33,8 +33,22 @@
                 {!! nl2br(e($hero['hero.subtitle'] ?? 'Your Financial Doctor (YFD) didirikan oleh dua dokter umum yang melihat bahwa masyarakat tidak hanya butuh kesehatan jasmani, tetapi juga kesehatan finansial.')) !!}
             </p>
 
+            @php
+                $heroPrimaryUrl = trim((string) ($hero['hero.cta_primary_url'] ?? ''));
+                if ($heroPrimaryUrl === '') {
+                    $heroPrimaryUrl = route('company.paket');
+                    $heroPrimaryNewTab = false;
+                } elseif (preg_match('#^https?://#i', $heroPrimaryUrl)) {
+                    $host = parse_url($heroPrimaryUrl, PHP_URL_HOST);
+                    $heroPrimaryNewTab = $host && strcasecmp($host, request()->getHost()) !== 0;
+                } else {
+                    $heroPrimaryUrl = url('/' . ltrim($heroPrimaryUrl, '/'));
+                    $heroPrimaryNewTab = false;
+                }
+            @endphp
+
             <div class="flex flex-wrap gap-3 mt-10">
-                <a href="{{ route('company.paket') }}" class="btn btn-gold btn-lg">
+                <a href="{{ $heroPrimaryUrl }}" class="btn btn-gold btn-lg" @if($heroPrimaryNewTab) target="_blank" rel="noopener noreferrer" @endif>
                     <span class="material-symbols-outlined text-[20px]">monitor_heart</span>
                     {{ $hero['hero.cta_primary'] ?? 'Mulai Financial Health Check Up' }}
                 </a>

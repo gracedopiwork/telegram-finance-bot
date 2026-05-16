@@ -163,7 +163,15 @@
                     </a>
                     <a href="https://instagram.com/{{ $yfd['instagram'] }}" target="_blank" rel="noopener" class="flex items-center gap-3 hover:text-secondary-fixed-dim">
                         <span class="material-symbols-outlined">photo_camera</span>
-                        <span class="font-body-md text-body-md">@{{ $yfd['instagram'] }}</span>
+                        <span class="font-body-md text-body-md">{{ '@' . $yfd['instagram'] }}</span>
+                    </a>
+                    <a href="{{ 'https://www.tiktok.com/@' . $yfd['tiktok'] }}" target="_blank" rel="noopener" class="flex items-center gap-3 hover:text-secondary-fixed-dim">
+                        <span class="material-symbols-outlined">music_note</span>
+                        <span class="font-body-md text-body-md">{{ '@' . $yfd['tiktok'] }}</span>
+                    </a>
+                    <a href="{{ 'https://www.threads.net/@' . $yfd['threads'] }}" target="_blank" rel="noopener" class="flex items-center gap-3 hover:text-secondary-fixed-dim">
+                        <span class="material-symbols-outlined">alternate_email</span>
+                        <span class="font-body-md text-body-md">{{ '@' . $yfd['threads'] }}</span>
                     </a>
                 </div>
 

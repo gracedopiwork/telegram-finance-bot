@@ -161,8 +161,8 @@
 
     {{-- ============== Pulse CTA ============== --}}
     <div class="bg-primary-container text-on-primary rounded-xl p-10 shadow-xl relative overflow-hidden">
-        <div class="absolute right-0 top-0 opacity-10">
-            <span class="material-symbols-outlined text-[240px]">ecg_heart</span>
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-end pr-4 md:pr-10 opacity-10">
+            <span class="material-symbols-outlined text-[240px] leading-none select-none">ecg_heart</span>
         </div>
         <div class="relative z-10 lg:w-2/3">
             <h2 class="font-headline-lg text-headline-lg mb-4">Siap Bertemu Dokter Finansial?</h2>

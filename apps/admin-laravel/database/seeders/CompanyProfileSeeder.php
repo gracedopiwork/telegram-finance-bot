@@ -39,14 +39,16 @@ class CompanyProfileSeeder extends Seeder
             ['key' => 'contact.email',       'value' => 'yfinancialdoctor@gmail.com',                              'type' => 'text',     'group' => 'contact', 'label' => 'Email',                'sort' => 4],
             ['key' => 'contact.instagram',   'value' => 'your_financial_doctor',                                   'type' => 'text',     'group' => 'contact', 'label' => 'Instagram (tanpa @)',  'sort' => 5],
             ['key' => 'contact.tiktok',      'value' => 'your_financial_doctor',                                   'type' => 'text',     'group' => 'contact', 'label' => 'TikTok (tanpa @)',     'sort' => 6],
-            ['key' => 'contact.address',     'value' => 'Indonesia',                                              'type' => 'text',     'group' => 'contact', 'label' => 'Alamat',               'sort' => 7],
+            ['key' => 'contact.threads',     'value' => 'your_financial_doctor',                                   'type' => 'text',     'group' => 'contact', 'label' => 'Threads (tanpa @)',    'sort' => 7],
+            ['key' => 'contact.address',     'value' => 'Indonesia',                                              'type' => 'text',     'group' => 'contact', 'label' => 'Alamat',               'sort' => 8],
 
             // ===== Hero (Home) =====
             ['key' => 'hero.eyebrow',        'value' => "INDONESIA'S FIRST FINANCIAL HEALTH CENTER",              'type' => 'text',     'group' => 'hero',    'label' => 'Hero Eyebrow',         'sort' => 1],
             ['key' => 'hero.title',          'value' => 'Tubuh Bisa Sakit, Begitu Juga Dompet — Saatnya ke Dokter Finansial.', 'type' => 'textarea', 'group' => 'hero', 'label' => 'Hero Headline',  'sort' => 2],
             ['key' => 'hero.subtitle',       'value' => 'Your Financial Doctor (YFD) didirikan oleh dua dokter umum yang melihat bahwa masyarakat tidak hanya butuh kesehatan jasmani, tetapi juga kesehatan finansial. Kami hadir dengan pendekatan personal untuk membantu Anda mencapai Herd Financial Immunity.', 'type' => 'textarea', 'group' => 'hero', 'label' => 'Hero Subtitle', 'sort' => 3],
             ['key' => 'hero.cta_primary',    'value' => 'Mulai Financial Health Check Up',                        'type' => 'text',     'group' => 'hero',    'label' => 'CTA Utama',            'sort' => 4],
-            ['key' => 'hero.cta_secondary',  'value' => 'Konsultasi Gratis via WA',                               'type' => 'text',     'group' => 'hero',    'label' => 'CTA Sekunder',         'sort' => 5],
+            ['key' => 'hero.cta_primary_url', 'value' => '',                                                      'type' => 'text',     'group' => 'hero',    'label' => 'Link CTA utama (diagnosa / eksternal, kosong = halaman Paket)', 'sort' => 5],
+            ['key' => 'hero.cta_secondary',  'value' => 'Konsultasi Gratis via WA',                               'type' => 'text',     'group' => 'hero',    'label' => 'CTA Sekunder',         'sort' => 6],
 
             // ===== Stats (Latar Belakang) =====
             ['key' => 'stats.s1.value',      'value' => '82,2%',                                                  'type' => 'text',     'group' => 'stats',   'label' => 'Stat 1 — Angka',       'sort' => 1],

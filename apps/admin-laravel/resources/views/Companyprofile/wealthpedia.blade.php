@@ -115,16 +115,20 @@
                 <span class="font-label-md text-label-md text-secondary-fixed tracking-widest block mb-3">FOLLOW US</span>
                 <h2 class="font-headline-lg text-headline-lg mb-4">Mini-Edukasi Harian di Social Media</h2>
                 <p class="font-body-md text-body-md opacity-90 mb-6">
-                    Konten singkat, praktis, dan langsung bisa dipraktikkan — terbit reguler di Instagram &amp; TikTok YFD.
+                    Konten singkat, praktis, dan langsung bisa dipraktikkan — terbit reguler di Instagram, TikTok, dan Threads YFD.
                 </p>
                 <div class="flex flex-wrap gap-3">
                     <a href="https://instagram.com/{{ $yfd['instagram'] }}" target="_blank" rel="noopener"
                        class="inline-flex items-center gap-2 bg-white text-primary-container px-6 py-3 rounded font-label-md text-label-md hover:scale-105 transition-transform">
-                        <span class="material-symbols-outlined">photo_camera</span> @{{ $yfd['instagram'] }}
+                        <span class="material-symbols-outlined">photo_camera</span> {{ '@' . $yfd['instagram'] }}
                     </a>
-                    <a href="https://tiktok.com/@{{ $yfd['tiktok'] }}" target="_blank" rel="noopener"
+                    <a href="{{ 'https://www.tiktok.com/@' . $yfd['tiktok'] }}" target="_blank" rel="noopener"
                        class="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded font-label-md text-label-md hover:scale-105 transition-transform">
-                        <span class="material-symbols-outlined">music_note</span> @{{ $yfd['tiktok'] }}
+                        <span class="material-symbols-outlined">music_note</span> {{ '@' . $yfd['tiktok'] }}
+                    </a>
+                    <a href="{{ 'https://www.threads.net/@' . $yfd['threads'] }}" target="_blank" rel="noopener"
+                       class="inline-flex items-center gap-2 bg-[#101010] text-white border border-white/15 px-6 py-3 rounded font-label-md text-label-md hover:scale-105 transition-transform">
+                        <span class="material-symbols-outlined">alternate_email</span> {{ '@' . $yfd['threads'] }}
                     </a>
                 </div>
             </div>

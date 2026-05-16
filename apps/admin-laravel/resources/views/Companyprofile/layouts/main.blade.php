@@ -508,9 +508,13 @@
                    class="w-10 h-10 grid place-items-center rounded-full bg-white/10 hover:bg-secondary-container/90 hover:text-on-secondary-container transition-colors" aria-label="Instagram">
                     <span class="material-symbols-outlined text-[20px]">photo_camera</span>
                 </a>
-                <a href="https://tiktok.com/@{{ $yfd['tiktok'] }}" target="_blank" rel="noopener"
+                <a href="{{ 'https://www.tiktok.com/@' . $yfd['tiktok'] }}" target="_blank" rel="noopener"
                    class="w-10 h-10 grid place-items-center rounded-full bg-white/10 hover:bg-secondary-container/90 hover:text-on-secondary-container transition-colors" aria-label="TikTok">
                     <span class="material-symbols-outlined text-[20px]">music_note</span>
+                </a>
+                <a href="{{ 'https://www.threads.net/@' . $yfd['threads'] }}" target="_blank" rel="noopener"
+                   class="w-10 h-10 grid place-items-center rounded-full bg-white/10 hover:bg-secondary-container/90 hover:text-on-secondary-container transition-colors" aria-label="Threads">
+                    <span class="material-symbols-outlined text-[20px]">alternate_email</span>
                 </a>
                 <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener"
                    class="w-10 h-10 grid place-items-center rounded-full bg-white/10 hover:bg-[#25D366] transition-colors" aria-label="WhatsApp">
