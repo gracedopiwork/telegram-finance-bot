@@ -155,7 +155,7 @@
             Untuk diagnosis yang personal, lakukan Financial Health Check Up bersama tim YFD.
         </p>
         <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center gap-3 mx-auto w-fit max-w-full">
-            <a href="{{ route('company.paket') }}" class="inline-flex items-center justify-center text-center bg-primary-container text-on-primary px-8 py-3 rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity">
+            <a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif class="inline-flex items-center justify-center text-center bg-primary-container text-on-primary px-8 py-3 rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity">
                 Mulai Health Check Up
             </a>
             <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener"

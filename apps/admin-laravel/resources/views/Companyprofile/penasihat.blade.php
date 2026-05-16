@@ -171,7 +171,7 @@
                 WhatsApp. Tim YFD siap mendampingi Anda dari level dasar hingga advance.
             </p>
             <div class="flex flex-wrap gap-3">
-                <a href="{{ route('company.paket') }}" class="inline-block bg-secondary-container text-on-secondary-container px-8 py-3 rounded font-bold shadow-lg hover:scale-105 transition-transform">
+                <a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif class="inline-block bg-secondary-container text-on-secondary-container px-8 py-3 rounded font-bold shadow-lg hover:scale-105 transition-transform">
                     Lihat Paket Health Check Up
                 </a>
                 <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 border border-white/30 text-white px-8 py-3 rounded hover:bg-white/10 transition-colors">

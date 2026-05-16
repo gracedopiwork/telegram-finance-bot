@@ -20,7 +20,7 @@
                 untuk membangun <em>Herd Financial Immunity</em>.
             </p>
             <div class="flex flex-wrap gap-4">
-                <a href="{{ route('company.paket') }}" class="bg-secondary-container text-on-secondary-container px-8 py-3 rounded-lg font-label-md text-label-md hover:brightness-110 transition-all">
+                <a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif class="bg-secondary-container text-on-secondary-container px-8 py-3 rounded-lg font-label-md text-label-md hover:brightness-110 transition-all">
                     Mulai Diagnosa
                 </a>
                 <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="border border-white/30 bg-white/10 backdrop-blur-sm text-white px-8 py-3 rounded-lg font-label-md text-label-md hover:bg-white/20 transition-all flex items-center gap-2">
@@ -145,7 +145,7 @@
             kami bantu Anda menemukan area mana yang paling butuh perhatian.
         </p>
         <div class="flex flex-col sm:flex-row justify-center gap-4">
-            <a href="{{ route('company.paket') }}" class="bg-secondary-container text-on-secondary-container px-12 py-4 rounded-lg font-label-md text-label-md hover:brightness-105 transition-all shadow-lg flex items-center justify-center gap-2">
+            <a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif class="bg-secondary-container text-on-secondary-container px-12 py-4 rounded-lg font-label-md text-label-md hover:brightness-105 transition-all shadow-lg flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined">monitor_heart</span>
                 Mulai Health Check Up
             </a>

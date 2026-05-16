@@ -33,22 +33,8 @@
                 {!! nl2br(e($hero['hero.subtitle'] ?? 'Your Financial Doctor (YFD) didirikan oleh dua dokter umum yang melihat bahwa masyarakat tidak hanya butuh kesehatan jasmani, tetapi juga kesehatan finansial.')) !!}
             </p>
 
-            @php
-                $heroPrimaryUrl = trim((string) ($hero['hero.cta_primary_url'] ?? ''));
-                if ($heroPrimaryUrl === '') {
-                    $heroPrimaryUrl = route('company.paket');
-                    $heroPrimaryNewTab = false;
-                } elseif (preg_match('#^https?://#i', $heroPrimaryUrl)) {
-                    $host = parse_url($heroPrimaryUrl, PHP_URL_HOST);
-                    $heroPrimaryNewTab = $host && strcasecmp($host, request()->getHost()) !== 0;
-                } else {
-                    $heroPrimaryUrl = url('/' . ltrim($heroPrimaryUrl, '/'));
-                    $heroPrimaryNewTab = false;
-                }
-            @endphp
-
             <div class="flex flex-wrap gap-3 mt-10">
-                <a href="{{ $heroPrimaryUrl }}" class="btn btn-gold btn-lg" @if($heroPrimaryNewTab) target="_blank" rel="noopener noreferrer" @endif>
+                <a href="{{ $primaryCheckupUrl }}" class="btn btn-gold btn-lg" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif>
                     <span class="material-symbols-outlined text-[20px]">monitor_heart</span>
                     {{ $hero['hero.cta_primary'] ?? 'Mulai Financial Health Check Up' }}
                 </a>
@@ -84,7 +70,7 @@
                 // Setiap item HARUS punya halaman tersendiri biar nggak duplikat / dead-end.
                 // Item pertama dihighlight jadi "pintu masuk utama" YFD.
                 $quick = [
-                    ['type' => 'route', 'target' => 'company.paket',       'icon' => 'monitor_heart',        'label' => 'Health Check Up', 'badge' => 'Mulai Di Sini'],
+                    ['type' => 'url', 'target' => $primaryCheckupUrl, 'new_tab' => $primaryCheckupNewTab, 'icon' => 'monitor_heart',        'label' => 'Health Check Up', 'badge' => 'Mulai Di Sini'],
                     ['type' => 'route', 'target' => 'company.pertemuan',   'icon' => 'forum',                'label' => 'Konsultasi'],
                     ['type' => 'route', 'target' => 'company.penasihat',   'icon' => 'medical_information',  'label' => 'Tim Dokter'],
                     ['type' => 'route', 'target' => 'company.layanan',     'icon' => 'apps',                 'label' => 'Semua Layanan'],
@@ -99,7 +85,7 @@
                     elseif ($q['type'] === 'url') { $href = $q['target']; }
                     $isFeatured = !empty($q['badge']);
                 @endphp
-                <a href="{{ $href }}" @if($q['type']==='wa') target="_blank" rel="noopener" @endif
+                <a href="{{ $href }}" @if($q['type']==='wa' || !empty($q['new_tab'])) target="_blank" rel="noopener noreferrer" @endif
                    class="relative flex flex-col items-center justify-center py-7 px-3 hover:bg-surface-container-low transition-colors group">
                     @if($isFeatured)
                         <span class="absolute top-2 right-2 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-bold">

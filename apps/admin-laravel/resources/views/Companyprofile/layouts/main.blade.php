@@ -9,7 +9,7 @@
             'title' => 'Jasa & Pendampingan',
             'icon'  => 'stethoscope',
             'items' => [
-                ['key' => 'paket',     'label' => 'Health Check Up',  'desc' => 'Diagnosa kesehatan finansial — paket 3 tier',  'route' => 'company.paket',     'icon' => 'monitor_heart',     'badge' => 'Mulai Di Sini'],
+                ['key' => 'paket',     'label' => 'Health Check Up',  'desc' => 'Diagnosa kesehatan finansial — paket 3 tier',  'url' => $primaryCheckupUrl, 'new_tab' => $primaryCheckupNewTab, 'icon' => 'monitor_heart',     'badge' => 'Mulai Di Sini'],
                 ['key' => 'pertemuan', 'label' => 'Konsultasi 1-on-1','desc' => 'Sesi privat dengan dokter QWP',                 'route' => 'company.pertemuan', 'icon' => 'forum',             'badge' => null],
                 ['key' => 'layanan',   'label' => 'Recovery Program', 'desc' => 'Pendampingan 6 bulan untuk kondisi finansial darurat', 'route' => 'company.layanan',  'icon' => 'healing',     'badge' => null],
             ],
@@ -291,12 +291,13 @@
                                             @foreach($col['items'] as $sub)
                                                 @php
                                                     $href = '#';
-                                                    if (!empty($sub['route'])) { try { $href = route($sub['route']); } catch (\Throwable $e) {} }
-                                                    elseif (!empty($sub['url'])) { $href = $sub['url']; }
+                                                    if (!empty($sub['url'])) { $href = $sub['url']; }
+                                                    elseif (!empty($sub['route'])) { try { $href = route($sub['route']); } catch (\Throwable $e) {} }
                                                     $isDisabled = $href === '#' || $href === null;
                                                 @endphp
                                                 <li>
                                                     <a href="{{ $href }}"
+                                                       @if(!empty($sub['new_tab'])) target="_blank" rel="noopener noreferrer" @endif
                                                        class="flex items-start gap-3 p-3 rounded-xl hover:bg-surface-container-low transition-colors group {{ $isDisabled ? 'pointer-events-none opacity-60' : '' }}">
                                                         <span class="w-9 h-9 rounded-lg bg-primary-container/10 grid place-items-center flex-shrink-0 group-hover:bg-secondary-container transition-colors">
                                                             <span class="material-symbols-outlined text-primary-container text-[20px] group-hover:text-on-secondary-container">{{ $sub['icon'] }}</span>
@@ -329,15 +330,21 @@
                                     </div>
                                 @endforeach
                             </div>
-                            <div class="bg-surface-container-low border-t border-outline-variant px-5 py-3 flex items-center justify-between gap-3">
+                            <div class="bg-surface-container-low border-t border-outline-variant px-5 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                                 <span class="text-[12.5px] text-on-surface-variant">
                                     <span class="material-symbols-outlined text-secondary text-[16px] align-middle">tips_and_updates</span>
                                     Belum tahu mulai dari mana? Mulai dengan <strong>Health Check Up</strong>.
                                 </span>
-                                <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener"
-                                   class="text-[13px] font-semibold text-primary-container hover:underline">
-                                    Tanya tim YFD →
-                                </a>
+                                <div class="flex flex-wrap items-center gap-4">
+                                    <a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif
+                                       class="text-[13px] font-semibold text-primary-container hover:underline whitespace-nowrap">
+                                        Mulai Health Check Up →
+                                    </a>
+                                    <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener"
+                                       class="text-[13px] font-semibold text-primary-container hover:underline whitespace-nowrap">
+                                        Tanya tim YFD →
+                                    </a>
+                                </div>
                             </div>
                             </div>{{-- /panel inner --}}
                         </div>{{-- /panel outer with bridge --}}
@@ -412,11 +419,12 @@
                                     @foreach($col['items'] as $sub)
                                         @php
                                             $href = '#';
-                                            if (!empty($sub['route'])) { try { $href = route($sub['route']); } catch (\Throwable $e) {} }
-                                            elseif (!empty($sub['url'])) { $href = $sub['url']; }
+                                            if (!empty($sub['url'])) { $href = $sub['url']; }
+                                            elseif (!empty($sub['route'])) { try { $href = route($sub['route']); } catch (\Throwable $e) {} }
                                             $isDisabled = $href === '#' || $href === null;
                                         @endphp
                                         <a href="{{ $href }}"
+                                           @if(!empty($sub['new_tab'])) target="_blank" rel="noopener noreferrer" @endif
                                            class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-surface-container-low {{ $isDisabled ? 'pointer-events-none opacity-60' : '' }}">
                                             <span class="material-symbols-outlined text-primary-container text-[20px]">{{ $sub['icon'] }}</span>
                                             <span class="flex-1">
@@ -526,7 +534,7 @@
         <div class="md:col-span-3">
             <h5 class="text-label-md text-secondary-fixed mb-4">Layanan</h5>
             <ul class="space-y-2.5 text-[13.5px] opacity-90">
-                <li><a href="{{ route('company.paket') }}" class="hover:text-secondary-fixed-dim transition-all">Health Check Up</a></li>
+                <li><a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif class="hover:text-secondary-fixed-dim transition-all">Health Check Up</a></li>
                 <li><a href="{{ route('company.layanan') }}" class="hover:text-secondary-fixed-dim transition-all">Konsultasi</a></li>
                 <li><a href="{{ route('company.wealthpedia') }}" class="hover:text-secondary-fixed-dim transition-all">Education Platform</a></li>
                 <li><a href="{{ route('company.layanan') }}" class="hover:text-secondary-fixed-dim transition-all">Recovery Program</a></li>
