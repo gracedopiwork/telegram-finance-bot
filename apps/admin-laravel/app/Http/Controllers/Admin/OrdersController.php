@@ -7,6 +7,7 @@ use App\Jobs\DeliverPaidOrderJob;
 use App\Models\CpDigitalProduct;
 use App\Models\License;
 use App\Models\Order;
+use App\Services\GoogleSheetPrivacyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -117,8 +118,18 @@ class OrdersController extends Controller
         }
 
         if ($order->spreadsheet_id) {
+            try {
+                app(GoogleSheetPrivacyService::class)->configureSpreadsheetForOrder(
+                    (string) $order->spreadsheet_id,
+                    $order
+                );
+            } catch (\Throwable $e) {
+                return redirect()->route('admin.orders.show', $order)
+                    ->with('error', 'Gagal terapkan privasi/izin: '.$e->getMessage());
+            }
+
             return redirect()->route('admin.orders.show', $order)
-                ->with('success', 'Order sudah punya Google Sheet.');
+                ->with('success', 'Privasi & izin sheet diperbarui (proteksi tab, akses pelanggan).');
         }
 
         DeliverPaidOrderJob::dispatch($order->id);

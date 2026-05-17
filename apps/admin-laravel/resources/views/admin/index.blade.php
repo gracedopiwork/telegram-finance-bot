@@ -19,9 +19,13 @@
         <h3 class="card-title"><i class="fas fa-table mr-2"></i>Sync dashboard (Google Sheets)</h3>
     </div>
     <div class="card-body">
-        <p class="text-muted">
+        <p class="text-muted mb-2">
             Menyalin tab <strong>Dashboard</strong> dari spreadsheet master (env bot: <code>DASHBOARD_MASTER_SPREADSHEET_ID</code>)
-            ke semua baris <code>user_sheets</code> status aktif. Pastikan server punya Python + dependensi bot (<code>gspread</code>, dll.) dan file <code>.env</code> MySQL/Google sama seperti bot.
+            ke semua baris <code>user_sheets</code> status aktif. Tab <strong>Transaksi</strong> tidak diubah.
+            Setelah sync, proteksi sheet diterapkan ulang (hanya service account yang bisa edit; pelanggan <em>viewer</em> — tidak melihat rumus).
+        </p>
+        <p class="small text-muted mb-0">
+            Template wajib punya tab <code>Transaksi</code> + <code>Dashboard</code>. Folder salinan disarankan Shared drive yang hanya berisi service account agar admin tidak melihat data transaksi di Drive.
         </p>
         <form method="post" action="{{ route('admin.dashboard-sync') }}" class="form-inline flex-wrap align-items-end" onsubmit="return confirm('Jalankan sync dashboard dengan versi ini?');">
             @csrf

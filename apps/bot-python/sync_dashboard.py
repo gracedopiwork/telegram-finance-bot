@@ -8,6 +8,8 @@ import mysql.connector
 from dotenv import load_dotenv
 from oauth2client.service_account import ServiceAccountCredentials
 
+from sheet_privacy import apply_sheet_protections, dashboard_tab_title
+
 load_dotenv()
 
 logging.basicConfig(
@@ -136,7 +138,8 @@ def mark_synced(spreadsheet_id: str, version: str) -> None:
 def main() -> None:
     args = parse_args()
     master_spreadsheet_id = get_env("DASHBOARD_MASTER_SPREADSHEET_ID")
-    master_sheet_title = get_env("DASHBOARD_MASTER_SHEET_TITLE", required=False) or "Dashboard"
+    master_sheet_title = dashboard_tab_title()
+    json_path = get_env("GOOGLE_SERVICE_ACCOUNT_JSON")
 
     client = build_gspread_client()
     targets = load_targets(args.limit)
@@ -163,6 +166,7 @@ def main() -> None:
                 master_sheet_title=master_sheet_title,
                 target_spreadsheet_id=spreadsheet_id,
             )
+            apply_sheet_protections(spreadsheet_id, json_path)
             mark_synced(spreadsheet_id=spreadsheet_id, version=args.version)
             logger.info(
                 "Sukses sync user=%s spreadsheet=%s (%sx%s).",

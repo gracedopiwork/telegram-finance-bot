@@ -145,6 +145,18 @@ def get_env(name: str, required: bool = True) -> str:
     return value
 
 
+def transaction_sheet_title() -> str:
+    return get_env("GOOGLE_SHEET_TRANSACTION_TITLE", required=False) or "Transaksi"
+
+
+def open_transaction_worksheet(spreadsheet: gspread.Spreadsheet) -> gspread.Worksheet:
+    title = transaction_sheet_title()
+    try:
+        return spreadsheet.worksheet(title)
+    except gspread.WorksheetNotFound:
+        return spreadsheet.sheet1
+
+
 def build_sheet_client(telegram_user_id: int | None = None) -> gspread.Worksheet:
     scope = [
         "https://spreadsheets.google.com/feeds",
@@ -158,11 +170,11 @@ def build_sheet_client(telegram_user_id: int | None = None) -> gspread.Worksheet
 
     sid = lookup_user_spreadsheet_id(telegram_user_id) if telegram_user_id else None
     if sid:
-        return client.open_by_key(sid).sheet1
+        return open_transaction_worksheet(client.open_by_key(sid))
 
     sheet_name = get_env("GOOGLE_SHEET_NAME", required=False)
     if sheet_name:
-        return client.open(sheet_name).sheet1
+        return open_transaction_worksheet(client.open(sheet_name))
 
     raise RuntimeError(
         "Spreadsheet belum tersedia. Pastikan pembayaran selesai, cek halaman sukses pembayaran atau email untuk sheet & lisensi, lalu `/activate`."

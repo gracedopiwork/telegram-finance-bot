@@ -57,13 +57,25 @@ class GoogleDriveSheetProvisioner
 
         $url = (string) ($response->json('webViewLink') ?: "https://docs.google.com/spreadsheets/d/{$id}/edit");
 
+        try {
+            app(GoogleSheetPrivacyService::class)->configureSpreadsheetForOrder($id, $order);
+        } catch (\Throwable $e) {
+            Log::error('Google Sheet privacy/permission gagal untuk order '.$order->order_code, [
+                'spreadsheet_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
+        }
+
         return ['id' => $id, 'url' => $url];
     }
 
     private function accessToken(): string
     {
         $path = $this->credentialsPath();
-        $scopes = ['https://www.googleapis.com/auth/drive'];
+        $scopes = [
+            'https://www.googleapis.com/auth/drive',
+            'https://www.googleapis.com/auth/spreadsheets',
+        ];
         $creds = new ServiceAccountCredentials($scopes, $path);
         $token = $creds->fetchAuthToken();
         if (empty($token['access_token'])) {

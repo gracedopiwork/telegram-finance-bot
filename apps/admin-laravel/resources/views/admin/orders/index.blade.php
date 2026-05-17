@@ -149,16 +149,22 @@
                         </td>
                         <td class="text-center">
                             @php
-                                $listSheetHref = ! empty($o->spreadsheet_url)
-                                    ? $o->spreadsheet_url
-                                    : (! empty($o->spreadsheet_id)
-                                        ? 'https://docs.google.com/spreadsheets/d/' . $o->spreadsheet_id . '/edit'
-                                        : null);
+                                $hideUserSheet = (bool) config('services.google.hide_user_sheet_from_admin', true);
+                                $listSheetHref = null;
+                                if (! $hideUserSheet) {
+                                    $listSheetHref = ! empty($o->spreadsheet_url)
+                                        ? $o->spreadsheet_url
+                                        : (! empty($o->spreadsheet_id)
+                                            ? 'https://docs.google.com/spreadsheets/d/' . $o->spreadsheet_id . '/edit'
+                                            : null);
+                                }
                             @endphp
                             @if($listSheetHref)
                                 <a href="{{ $listSheetHref }}" target="_blank" rel="noopener" class="btn btn-xs btn-outline-success" title="Buka Google Sheet">
                                     <i class="fas fa-table"></i>
                                 </a>
+                            @elseif(! empty($o->spreadsheet_id) && $hideUserSheet)
+                                <span class="text-success" title="Sheet terkirim (privasi admin)"><i class="fas fa-check-circle"></i></span>
                             @elseif($o->status === 'paid' && $o->purchase_delivery_sent_at && ! $listSheetHref)
                                 <span class="text-danger" title="Pengiriman selesai tanpa spreadsheet — cek log & konfigurasi Google"><i class="fas fa-exclamation-triangle"></i></span>
                             @elseif($o->status === 'paid' && ! $listSheetHref)

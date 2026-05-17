@@ -13,13 +13,17 @@
 
 @php
     [$lbl, $color] = $order->statusBadge();
+    $hideUserSheetFromAdmin = (bool) config('services.google.hide_user_sheet_from_admin', true);
     $adminSheetHref = null;
-    if (! empty($order->spreadsheet_url)) {
-        $adminSheetHref = $order->spreadsheet_url;
-    } elseif (! empty($order->spreadsheet_id)) {
-        $adminSheetHref = 'https://docs.google.com/spreadsheets/d/' . $order->spreadsheet_id . '/edit';
+    if (! $hideUserSheetFromAdmin) {
+        if (! empty($order->spreadsheet_url)) {
+            $adminSheetHref = $order->spreadsheet_url;
+        } elseif (! empty($order->spreadsheet_id)) {
+            $adminSheetHref = 'https://docs.google.com/spreadsheets/d/' . $order->spreadsheet_id . '/edit';
+        }
     }
     $adminSheetJobDone = $order->purchase_delivery_sent_at !== null;
+    $adminSheetProvisioned = ! empty($order->spreadsheet_id);
 @endphp
 
 <div class="row">
@@ -218,7 +222,13 @@
                 <h3 class="card-title mb-0"><i class="fas fa-table mr-2"></i>Google Sheet</h3>
             </div>
             <div class="card-body">
-                @if($adminSheetHref)
+                @if($adminSheetProvisioned && $hideUserSheetFromAdmin)
+                    <span class="badge badge-success mb-2">Spreadsheet terkirim ke pelanggan</span>
+                    <p class="small text-muted mb-0">
+                        Mode privasi aktif: link &amp; tab <strong>Transaksi</strong> tidak ditampilkan di admin.
+                        Pelanggan mengakses lewat email/checkout; dashboard di-update lewat Sync di beranda admin.
+                    </p>
+                @elseif($adminSheetHref)
                     <p class="mb-2 small text-muted">Spreadsheet untuk order ini (sama dengan email / halaman sukses checkout):</p>
                     <p class="mb-2">
                         <a href="{{ $adminSheetHref }}" target="_blank" rel="noopener" class="font-weight-bold break-all">
@@ -247,7 +257,7 @@
                     <form method="post" action="{{ route('admin.orders.provisionSheet', $order) }}" class="mb-2">
                         @csrf
                         <button type="submit" class="btn btn-sm btn-warning">
-                            <i class="fas fa-redo mr-1"></i>Salin ulang Google Sheet
+                            <i class="fas fa-redo mr-1"></i>Salin ulang / terapkan privasi sheet
                         </button>
                     </form>
                     <p class="small text-muted mb-0">

@@ -46,8 +46,14 @@ return [
     'google' => [
         'service_account_json' => env('GOOGLE_SERVICE_ACCOUNT_JSON'),
         'user_sheet_template_id' => env('GOOGLE_USER_SHEET_TEMPLATE_ID'),
-        /** Optional: Drive folder ID (e.g. di Shared drive) supaya salinan tidak memakai kuota My Drive service account */
+        /** Optional: Drive folder ID (disarankan Shared drive yang hanya berisi service account) */
         'copy_parent_folder_id' => env('GOOGLE_DRIVE_COPY_PARENT_ID'),
+        'sheet_transaction_tab' => env('GOOGLE_SHEET_TRANSACTION_TAB', 'Transaksi'),
+        'sheet_dashboard_tab' => env('GOOGLE_SHEET_DASHBOARD_TAB', 'Dashboard'),
+        /** Transfer kepemilikan ke email pembeli setelah salin (privasi dari folder admin) */
+        'transfer_sheet_ownership' => env('GOOGLE_TRANSFER_SHEET_OWNERSHIP', true),
+        /** Sembunyikan link sheet user di panel admin */
+        'hide_user_sheet_from_admin' => env('GOOGLE_HIDE_USER_SHEET_FROM_ADMIN', true),
     ],
 
     'telegram' => [
