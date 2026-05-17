@@ -45,8 +45,9 @@ class GoogleDriveSheetProvisioner
             );
 
         if (! $response->successful()) {
-            Log::warning('Drive files.copy gagal', ['body' => $response->body(), 'status' => $response->status()]);
-            throw new \RuntimeException('Drive API copy gagal: HTTP '.$response->status());
+            $detail = $this->formatDriveError($response->body(), $response->status());
+            Log::warning('Drive files.copy gagal', ['detail' => $detail, 'body' => $response->body(), 'status' => $response->status()]);
+            throw new \RuntimeException('Drive API copy gagal: '.$detail);
         }
 
         $id = (string) $response->json('id', '');
@@ -75,5 +76,58 @@ class GoogleDriveSheetProvisioner
     private function credentialsPath(): string
     {
         return (string) config('services.google.service_account_json', '');
+    }
+
+    /**
+     * Cek akses Drive ke file/folder (tanpa menyalin).
+     *
+     * @return array{ok: bool, status: int, name: ?string, error: ?string}
+     */
+    public function inspectDriveFile(string $fileId): array
+    {
+        $fileId = trim($fileId);
+        if ($fileId === '') {
+            return ['ok' => false, 'status' => 0, 'name' => null, 'error' => 'ID kosong'];
+        }
+
+        $response = Http::withToken($this->accessToken())
+            ->timeout(30)
+            ->get(
+                "https://www.googleapis.com/drive/v3/files/{$fileId}",
+                ['supportsAllDrives' => 'true', 'fields' => 'id,name,mimeType']
+            );
+
+        if ($response->successful()) {
+            return [
+                'ok' => true,
+                'status' => $response->status(),
+                'name' => $response->json('name'),
+                'error' => null,
+            ];
+        }
+
+        return [
+            'ok' => false,
+            'status' => $response->status(),
+            'name' => null,
+            'error' => $this->formatDriveError($response->body(), $response->status()),
+        ];
+    }
+
+    private function formatDriveError(string $body, int $status): string
+    {
+        $json = json_decode($body, true);
+        if (is_array($json)) {
+            $reason = $json['error']['errors'][0]['reason'] ?? null;
+            $message = $json['error']['message'] ?? null;
+            if ($reason && $message) {
+                return "HTTP {$status} ({$reason}): {$message}";
+            }
+            if ($message) {
+                return "HTTP {$status}: {$message}";
+            }
+        }
+
+        return 'HTTP '.$status.(strlen($body) > 0 ? ' — '.substr($body, 0, 400) : '');
     }
 }
