@@ -240,9 +240,18 @@
                     @endif
                 @elseif($order->status === 'paid' && $adminSheetJobDone && ! $adminSheetHref)
                     <span class="badge badge-danger mb-2">Tidak ada link / ID di database</span>
+                    <p class="small text-muted mb-2">
+                        Job pengiriman sudah selesai (<code>purchase_delivery_sent_at</code> terisi) tetapi penyalinan template Google gagal atau belum dijalankan ulang setelah perbaikan env.
+                        Cek log, lalu salin ulang (konfigurasi sudah OK di <code>google:sheet-setup</code> tidak memperbaiki order lama otomatis).
+                    </p>
+                    <form method="post" action="{{ route('admin.orders.provisionSheet', $order) }}" class="mb-2">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-warning">
+                            <i class="fas fa-redo mr-1"></i>Salin ulang Google Sheet
+                        </button>
+                    </form>
                     <p class="small text-muted mb-0">
-                        Job pengiriman sudah selesai (<code>purchase_delivery_sent_at</code> terisi) tetapi penyalinan template Google gagal atau tidak dikonfigurasi.
-                        Cek <code>GOOGLE_SERVICE_ACCOUNT_JSON</code>, <code>GOOGLE_USER_SHEET_TEMPLATE_ID</code>, <code>GOOGLE_DRIVE_COPY_PARENT_ID</code> (jika kuota Drive service account penuh), izin Drive, dan <code>storage/logs/laravel.log</code>.
+                        Atau di server: <code>php artisan google:sheet-setup --provision={{ $order->order_code }}</code>
                     </p>
                 @elseif($order->status === 'paid' && ! $adminSheetHref)
                     <span class="badge badge-warning mb-2">Belum ada spreadsheet</span>

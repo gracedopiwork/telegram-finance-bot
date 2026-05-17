@@ -39,7 +39,9 @@ class DeliverPaidOrderJob implements ShouldQueue
             return;
         }
 
-        if ($order->purchase_delivery_sent_at !== null) {
+        $deliveryAlreadySent = $order->purchase_delivery_sent_at !== null;
+
+        if ($deliveryAlreadySent && $order->spreadsheet_id !== null) {
             return;
         }
 
@@ -54,6 +56,10 @@ class DeliverPaidOrderJob implements ShouldQueue
                     'exception' => $e->getMessage(),
                 ]);
             }
+        }
+
+        if ($deliveryAlreadySent) {
+            return;
         }
 
         $order->load('license');

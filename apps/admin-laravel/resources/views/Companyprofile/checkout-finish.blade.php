@@ -100,10 +100,9 @@
                         — proses pengiriman order sudah selesai di server, tetapi tidak ada ID/link spreadsheet di database.
                     </p>
                     <p class="text-[12px] text-on-surface-variant leading-relaxed mb-0">
-                        Cek di server Laravel: variabel <code class="text-[11px] bg-white/80 px-1 rounded">GOOGLE_SERVICE_ACCOUNT_JSON</code> +
-                        <code class="text-[11px] bg-white/80 px-1 rounded">GOOGLE_USER_SHEET_TEMPLATE_ID</code>, izin Drive ke service account,
-                        <code class="text-[11px] bg-white/80 px-1 rounded">GOOGLE_DRIVE_COPY_PARENT_ID</code> (folder/Shared drive jika kuota service account penuh), dan jalankan
-                        <code class="text-[11px] bg-white/80 px-1 rounded">php artisan queue:work</code>. Lihat juga <code class="text-[11px] bg-white/80 px-1 rounded">storage/logs/laravel.log</code>.
+                        Konfigurasi sudah benar di server tetapi order ini gagal saat pembayaran pertama — minta admin jalankan
+                        <code class="text-[11px] bg-white/80 px-1 rounded">php artisan google:sheet-setup --provision={{ $order->order_code }}</code>
+                        atau tombol &quot;Salin ulang&quot; di panel admin. Tanpa itu halaman ini tidak berubah meskipun <code class="text-[11px] bg-white/80 px-1 rounded">google:sheet-setup</code> tanpa <code class="text-[11px] bg-white/80 px-1 rounded">--provision</code> sudah OK.
                     </p>
                 @elseif($sheetWaitingForJob && $sheetPoll < $sheetPollMax)
                     <p class="text-body-md text-on-surface-variant mb-2">

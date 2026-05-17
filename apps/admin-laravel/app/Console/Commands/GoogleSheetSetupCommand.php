@@ -90,8 +90,16 @@ class GoogleSheetSetupCommand extends Command
             return $this->provisionOrder($provisioner, (string) $orderCode);
         }
 
+        if ($parentId === '') {
+            $this->newLine();
+            $this->warn('GOOGLE_DRIVE_COPY_PARENT_ID kosong — salinan masuk My Drive service account (kuota ~0).');
+            $this->warn('Jika copy gagal (storageQuotaExceeded), buat folder di Shared Drive, share ke service account, isi ID folder di .env.');
+        }
+
         $this->newLine();
-        $this->comment('Setup terlihat OK. Uji salin: php artisan google:sheet-setup --provision=KODE_ORDER');
+        $this->comment('Setup terlihat OK (akses baca template). Uji salin nyata:');
+        $this->comment('  php artisan google:sheet-setup --provision=KODE_ORDER');
+        $this->comment('Order yang sudah gagal di checkout tidak otomatis diperbaiki — wajib perintah di atas atau tombol di admin.');
         $this->comment('Worker antrian: php artisan queue:work --queue=default');
 
         return self::SUCCESS;

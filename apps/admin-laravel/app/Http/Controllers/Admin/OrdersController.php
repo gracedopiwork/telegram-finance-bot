@@ -109,6 +109,24 @@ class OrdersController extends Controller
                          ->with('success', "Status order {$order->order_code} di-set menjadi {$order->status}.");
     }
 
+    public function provisionSheet(Order $order)
+    {
+        if ($order->status !== 'paid') {
+            return redirect()->route('admin.orders.show', $order)
+                ->with('error', 'Hanya order lunas yang bisa dibuatkan spreadsheet.');
+        }
+
+        if ($order->spreadsheet_id) {
+            return redirect()->route('admin.orders.show', $order)
+                ->with('success', 'Order sudah punya Google Sheet.');
+        }
+
+        DeliverPaidOrderJob::dispatch($order->id);
+
+        return redirect()->route('admin.orders.show', $order)
+            ->with('success', 'Job pembuatan Google Sheet dimasukkan antrian. Refresh halaman ini setelah beberapa detik (pastikan queue:work berjalan).');
+    }
+
     public function destroy(Order $order)
     {
         $licenseId = $order->license_id;
