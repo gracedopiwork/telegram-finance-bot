@@ -255,11 +255,80 @@ def _sheet_url_from_id(spreadsheet_id: str, spreadsheet_url: str | None = None) 
     return f"https://docs.google.com/spreadsheets/d/{sid}/edit"
 
 
+def _lookup_user_sheets_row(telegram_user_id: int) -> dict | None:
+    if not telegram_user_id:
+        return None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT spreadsheet_id, spreadsheet_url FROM user_sheets
+            WHERE telegram_user_id = %s AND status = 'active' LIMIT 1
+            """,
+            (telegram_user_id,),
+        )
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if row and row.get("spreadsheet_id"):
+            return row
+    except Exception as exc:  # pragma: no cover - external db guard
+        logger.warning("Gagal lookup user_sheets user %s: %s", telegram_user_id, exc)
+    return None
+
+
+def describe_sheet_missing_for_user(telegram_user_id: int) -> str:
+    """Penjelasan kenapa sheet tidak ditemukan (untuk pesan Telegram)."""
+    if not telegram_user_id:
+        return "Akun Telegram tidak dikenali."
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT l.license_key, o.order_code, o.status AS order_status, o.spreadsheet_id
+            FROM licenses l
+            LEFT JOIN orders o ON o.license_id = l.id
+            WHERE l.assigned_user_id = %s AND l.status = 'active'
+            ORDER BY l.id DESC
+            LIMIT 1
+            """,
+            (telegram_user_id,),
+        )
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if not row:
+            return "Belum ada lisensi aktif. Gunakan `/activate KODE-LISENSI` dulu."
+        lic = row.get("license_key") or "?"
+        code = row.get("order_code")
+        if not code:
+            return f"Lisensi `{lic}` aktif, tapi tidak ada order terhubung. Hubungi admin."
+        if row.get("order_status") != "paid":
+            return f"Order `{code}` belum lunas. Selesaikan pembayaran dulu."
+        if not (row.get("spreadsheet_id") or "").strip():
+            return (
+                f"Lisensi `{lic}` aktif, order `{code}` sudah lunas, "
+                f"tetapi **Google Sheet belum dibuat**.\n\n"
+                f"Admin jalankan di server:\n"
+                f"`php artisan google:sheet-setup --provision={code}`\n\n"
+                f"Atau tombol buat sheet di panel admin, lalu `/sheet` lagi."
+            )
+        return "Sheet ada di database tapi bot belum bisa membacanya. Coba `/sheet` lalu `/catat` lagi."
+    except Exception as exc:  # pragma: no cover - external db guard
+        logger.warning("describe_sheet_missing gagal user=%s: %s", telegram_user_id, exc)
+    return "Belum ada Google Sheet. Pastikan `/activate` dan order sudah punya sheet."
+
+
 def lookup_user_spreadsheet_id(telegram_user_id: int) -> str | None:
     ensure_user_sheet_from_order(telegram_user_id)
     order_sheet = lookup_order_sheet_for_user(telegram_user_id)
     if order_sheet:
         return order_sheet["spreadsheet_id"]
+    row = _lookup_user_sheets_row(telegram_user_id)
+    if row:
+        return str(row["spreadsheet_id"]).strip()
     return None
 
 
@@ -268,6 +337,9 @@ def lookup_user_sheet_url(telegram_user_id: int) -> str | None:
     order_sheet = lookup_order_sheet_for_user(telegram_user_id)
     if order_sheet:
         return _sheet_url_from_id(order_sheet["spreadsheet_id"])
+    row = _lookup_user_sheets_row(telegram_user_id)
+    if row:
+        return _sheet_url_from_id(str(row["spreadsheet_id"]), row.get("spreadsheet_url"))
     return None
 
 
@@ -810,11 +882,7 @@ async def save_transaction(message, parsed: Dict[str, Any], greeting_name: str) 
         sid = lookup_user_spreadsheet_id(uid) if uid else None
         json_path = get_env("GOOGLE_SERVICE_ACCOUNT_JSON", required=False)
         if not sid:
-            await message.reply_text(
-                "Belum ada Google Sheet untuk akun ini.\n"
-                "Pastikan sudah `/activate` dan order sudah punya sheet (lunas).",
-                parse_mode="Markdown",
-            )
+            await message.reply_text(describe_sheet_missing_for_user(uid or 0), parse_mode="Markdown")
             return
         if not json_path or not os.path.isfile(json_path):
             await message.reply_text("Konfigurasi `GOOGLE_SERVICE_ACCOUNT_JSON` belum benar di server.")
@@ -1001,14 +1069,23 @@ async def activate_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await update.message.reply_text("Aktivasi gagal karena masalah server.")
         return
 
+    sheet_note = ""
     if user and user.id:
-        ensure_user_sheet_for_license(user.id, license_id)
-        ensure_sheet_drive_access(user.id)
+        order_sheet = lookup_order_sheet_for_license(license_id)
+        if order_sheet:
+            ensure_user_sheet_for_license(user.id, license_id)
+            ensure_sheet_drive_access(user.id)
+            sheet_note = (
+                f"\n\nGoogle Sheet siap (order `{order_sheet.get('order_code', '')}`).\n"
+                "Kamu bisa `/catat` atau `/sheet`."
+            )
+        else:
+            sheet_note = "\n\n" + describe_sheet_missing_for_user(user.id)
 
     if user:
         PENDING_NAME_USERS.add(user.id)
     await update.message.reply_text(
-        f"Lisensi aktif. Kode: `{activated_key}`\nSekarang kamu mau dipanggil siapa?",
+        f"Lisensi aktif. Kode: `{activated_key}`\nSekarang kamu mau dipanggil siapa?{sheet_note}",
         parse_mode="Markdown",
     )
 
