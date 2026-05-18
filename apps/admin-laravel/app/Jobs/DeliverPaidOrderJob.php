@@ -45,21 +45,26 @@ class DeliverPaidOrderJob implements ShouldQueue
             return;
         }
 
-        if ($provisioner->isConfigured() && $order->spreadsheet_id === null) {
-            try {
-                $result = $provisioner->copyTemplateForOrder($order);
-                $order->spreadsheet_id = $result['id'];
-                $order->spreadsheet_url = $result['url'];
-                $order->save();
-            } catch (\Throwable $e) {
-                Log::error('Gagal duplikasi Google Sheet untuk order '.$order->order_code, [
-                    'exception' => $e->getMessage(),
-                ]);
-            }
+        $sheetRequired = $provisioner->isConfigured();
+
+        if ($sheetRequired && $order->spreadsheet_id === null) {
+            $result = $provisioner->copyTemplateForOrder($order);
+            $order->spreadsheet_id = $result['id'];
+            $order->spreadsheet_url = $result['url'];
+            $order->save();
         }
 
         if ($deliveryAlreadySent) {
             return;
+        }
+
+        $order->refresh();
+
+        if ($sheetRequired && $order->spreadsheet_id === null) {
+            Log::error('Gagal duplikasi Google Sheet untuk order '.$order->order_code, [
+                'exception' => 'spreadsheet_id masih kosong setelah copy',
+            ]);
+            throw new \RuntimeException('Google Sheet belum terbuat untuk order '.$order->order_code);
         }
 
         $order->load('license');
