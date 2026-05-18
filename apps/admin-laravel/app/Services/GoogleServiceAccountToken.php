@@ -3,10 +3,13 @@
 namespace App\Services;
 
 use Google\Auth\Credentials\ServiceAccountCredentials;
+use Illuminate\Support\Facades\Http;
 
 class GoogleServiceAccountToken
 {
     /**
+     * Token untuk Drive/Sheets API: OAuth user (refresh token) atau service account (+ impersonate).
+     *
      * @param  list<string>  $scopes
      */
     public static function get(array $scopes = []): string
@@ -16,6 +19,10 @@ class GoogleServiceAccountToken
                 'https://www.googleapis.com/auth/drive',
                 'https://www.googleapis.com/auth/spreadsheets',
             ];
+        }
+
+        if (self::useOAuthRefreshToken()) {
+            return self::oauthAccessToken();
         }
 
         $path = (string) config('services.google.service_account_json', '');
@@ -36,5 +43,33 @@ class GoogleServiceAccountToken
         }
 
         return (string) $token['access_token'];
+    }
+
+    public static function useOAuthRefreshToken(): bool
+    {
+        return trim((string) config('services.google.oauth_refresh_token', '')) !== ''
+            && trim((string) config('services.google.oauth_client_id', '')) !== ''
+            && trim((string) config('services.google.oauth_client_secret', '')) !== '';
+    }
+
+    public static function oauthAccessToken(): string
+    {
+        $response = Http::asForm()->timeout(30)->post('https://oauth2.googleapis.com/token', [
+            'client_id' => (string) config('services.google.oauth_client_id'),
+            'client_secret' => (string) config('services.google.oauth_client_secret'),
+            'refresh_token' => (string) config('services.google.oauth_refresh_token'),
+            'grant_type' => 'refresh_token',
+        ]);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException('OAuth refresh token gagal: '.$response->body());
+        }
+
+        $access = (string) $response->json('access_token', '');
+        if ($access === '') {
+            throw new \RuntimeException('OAuth: access_token kosong.');
+        }
+
+        return $access;
     }
 }

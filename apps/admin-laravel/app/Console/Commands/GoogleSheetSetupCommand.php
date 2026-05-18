@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Order;
 use App\Services\GoogleDriveSheetProvisioner;
+use App\Services\GoogleServiceAccountToken;
 use Illuminate\Console\Command;
 
 class GoogleSheetSetupCommand extends Command
@@ -48,10 +49,14 @@ class GoogleSheetSetupCommand extends Command
             $this->line('Bagikan file template (dan folder salinan jika dipakai) ke email ini dengan peran Editor.');
         }
 
-        $impersonate = trim((string) config('services.google.drive_impersonate_user', ''));
-        if ($impersonate !== '') {
-            $this->line("Impersonate (salin pakai kuota user): <comment>{$impersonate}</comment>");
-            $this->line('Wajib: domain-wide delegation di Google Cloud + Admin (lihat .env.example).');
+        if (GoogleServiceAccountToken::useOAuthRefreshToken()) {
+            $this->line('Auth Drive: <info>OAuth refresh token (akun Anda)</info> — tidak perlu Domain-wide delegation.');
+        } else {
+            $impersonate = trim((string) config('services.google.drive_impersonate_user', ''));
+            if ($impersonate !== '') {
+                $this->line("Impersonate (salin pakai kuota user): <comment>{$impersonate}</comment>");
+                $this->line('Wajib: domain-wide delegation di Admin, ATAU isi GOOGLE_OAUTH_* (OAuth Playground).');
+            }
         }
 
         if (! $provisioner->isConfigured()) {

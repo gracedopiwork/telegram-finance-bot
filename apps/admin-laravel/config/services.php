@@ -59,6 +59,10 @@ return [
          * Mengatasi storageQuotaExceeded tanpa Shared drive. Contoh: yfinancialdoctor@gmail.com
          */
         'drive_impersonate_user' => env('GOOGLE_DRIVE_IMPERSONATE_USER'),
+        /** Alternatif jika Domain-wide delegation tidak ada di Admin: OAuth refresh token akun Workspace Anda */
+        'oauth_client_id' => env('GOOGLE_OAUTH_CLIENT_ID'),
+        'oauth_client_secret' => env('GOOGLE_OAUTH_CLIENT_SECRET'),
+        'oauth_refresh_token' => env('GOOGLE_OAUTH_REFRESH_TOKEN'),
     ],
 
     'telegram' => [
