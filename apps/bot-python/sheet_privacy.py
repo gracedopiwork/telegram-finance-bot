@@ -15,16 +15,19 @@ from oauth2client.service_account import ServiceAccountCredentials
 logger = logging.getLogger(__name__)
 
 
-def get_env(name: str, default: str = "") -> str:
-    return os.getenv(name, default).strip() or default
+def get_env(name: str, required: bool = True) -> str:
+    value = os.getenv(name, "").strip()
+    if required and not value:
+        raise RuntimeError(f"Environment variable '{name}' belum diisi.")
+    return value
 
 
 def transaction_tab_title() -> str:
-    return get_env("GOOGLE_SHEET_TRANSACTION_TITLE", "Transaksi")
+    return get_env("GOOGLE_SHEET_TRANSACTION_TITLE", required=False) or "Transaksi"
 
 
 def dashboard_tab_title() -> str:
-    return get_env("DASHBOARD_MASTER_SHEET_TITLE", "Dashboard")
+    return get_env("DASHBOARD_MASTER_SHEET_TITLE", required=False) or "Dashboard"
 
 
 def resolve_service_account_json_path() -> str:
@@ -108,9 +111,9 @@ def trigger_laravel_sheet_repair(order_code: str) -> bool:
 
 def _oauth_configured() -> bool:
     return bool(
-        get_env("GOOGLE_OAUTH_REFRESH_TOKEN")
-        and get_env("GOOGLE_OAUTH_CLIENT_ID")
-        and get_env("GOOGLE_OAUTH_CLIENT_SECRET")
+        get_env("GOOGLE_OAUTH_REFRESH_TOKEN", required=False)
+        and get_env("GOOGLE_OAUTH_CLIENT_ID", required=False)
+        and get_env("GOOGLE_OAUTH_CLIENT_SECRET", required=False)
     )
 
 
@@ -480,7 +483,11 @@ def share_sheet_with_customer_email(spreadsheet_id: str, json_path: str, email: 
         _grant_drive_role(spreadsheet_id, json_path, email, "reader")
     if _customer_has_drive_access(spreadsheet_id, json_path, email):
         return True
-    fallback = get_env("GOOGLE_SHEET_FALLBACK_LINK_READER", "true").lower() in ("1", "true", "yes")
+    fallback = (get_env("GOOGLE_SHEET_FALLBACK_LINK_READER", required=False) or "true").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
     if fallback:
         _grant_anyone_with_link(spreadsheet_id, json_path)
         return True
