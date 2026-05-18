@@ -889,7 +889,14 @@ async def save_transaction(
         if uid:
             ensure_user_sheet_from_order(uid)
         sid = lookup_user_spreadsheet_id(uid) if uid else None
-        json_path = get_env("GOOGLE_SERVICE_ACCOUNT_JSON", required=False)
+        from sheet_privacy import append_transaction_row, prepare_sheet_for_bot_write, resolve_service_account_json_path
+
+        json_path = resolve_service_account_json_path()
+        order_code = None
+        if uid:
+            osheet = lookup_order_sheet_for_user(uid)
+            if osheet:
+                order_code = osheet.get("order_code")
         if not sid:
             await message.reply_text(describe_sheet_missing_for_user(uid or 0), parse_mode="Markdown")
             return
@@ -897,11 +904,9 @@ async def save_transaction(
             await message.reply_text("Konfigurasi `GOOGLE_SERVICE_ACCOUNT_JSON` belum benar di server.")
             return
 
-        from sheet_privacy import append_transaction_row, prepare_sheet_for_bot_write
-
         prepare_sheet_for_bot_write(sid, json_path)
         row = build_sheet_row(parsed)
-        append_transaction_row(sid, json_path, row)
+        append_transaction_row(sid, json_path, row, order_code=order_code)
         logger.info("Transaksi berhasil disimpan ke Google Sheets %s.", sid)
     except Exception as exc:  # pragma: no cover - defensive guard for external services
         logger.exception("Gagal tulis ke Google Sheets: %s", exc)
@@ -917,15 +922,17 @@ async def save_transaction(
             and get_env("GOOGLE_OAUTH_CLIENT_SECRET", required=False)
         )
         oauth_line = (
-            "OAuth bot sudah terisi — coba `/catat` sekali lagi (bot akan perbaiki izin otomatis)."
+            "OAuth bot sudah terisi."
             if oauth_ok
-            else "Di server: salin `GOOGLE_OAUTH_*` dari `apps/admin-laravel/.env` ke `apps/bot-python/.env`, restart bot."
+            else "Salin `GOOGLE_OAUTH_*` dari Laravel ke `apps/bot-python/.env`."
         )
         await message.reply_text(
             f"Gagal simpan ke Google Sheet.\n\n`{err_short}`\n\n"
-            f"{oauth_line}"
-            f"{order_hint}\n\n"
-            "Admin VPS: jalankan perintah reshare di atas, lalu `pkill -f python3 bot.py` dan start ulang bot.",
+            f"{oauth_line}\n"
+            "Di VPS: `git pull`, set `BOT_INTERNAL_API_TOKEN` (sama di Laravel & bot), "
+            "`LARAVEL_APP_PATH` atau `LARAVEL_APP_URL`, lalu reshare:"
+            f"{order_hint}\n"
+            "Restart bot, coba `/catat` lagi.",
             parse_mode="Markdown",
         )
         return

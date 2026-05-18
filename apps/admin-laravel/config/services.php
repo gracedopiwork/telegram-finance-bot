@@ -77,6 +77,11 @@ return [
         'bot_username' => env('TELEGRAM_BOT_USERNAME'),
     ],
 
+    'bot' => [
+        /** Token untuk POST /api/bot/orders/{code}/ensure-sheet (sama dengan BOT_INTERNAL_API_TOKEN di bot-python/.env) */
+        'internal_api_token' => env('BOT_INTERNAL_API_TOKEN', ''),
+    ],
+
     'sync_dashboard' => [
         'python_binary' => env('SYNC_DASHBOARD_PYTHON', 'python'),
         'timeout_seconds' => (int) env('SYNC_DASHBOARD_TIMEOUT', 3600),

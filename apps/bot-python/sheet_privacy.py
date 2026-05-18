@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import subprocess
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
@@ -26,10 +27,83 @@ def dashboard_tab_title() -> str:
     return get_env("DASHBOARD_MASTER_SHEET_TITLE", "Dashboard")
 
 
+def resolve_service_account_json_path() -> str:
+    """Path absolut ke service account JSON (hindari gagal karena cwd systemd)."""
+    path = get_env("GOOGLE_SERVICE_ACCOUNT_JSON", required=False)
+    if not path:
+        return ""
+    if not os.path.isabs(path):
+        base = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(base, path)
+    return path if os.path.isfile(path) else ""
+
+
 def service_account_email(json_path: str) -> str:
     with open(json_path, encoding="utf-8") as fh:
         data = json.load(fh)
     return str(data.get("client_email", "")).strip()
+
+
+def trigger_laravel_sheet_repair(order_code: str) -> bool:
+    """
+    Minta Laravel perbarui izin (OAuth pemilik file). HTTP atau artisan di server yang sama.
+    """
+    order_code = (order_code or "").strip()
+    if not order_code:
+        return False
+
+    app_url = get_env("LARAVEL_APP_URL", required=False).rstrip("/")
+    token = get_env("BOT_INTERNAL_API_TOKEN", required=False)
+    if app_url and token:
+        url = f"{app_url}/api/bot/orders/{quote(order_code, safe='')}/ensure-sheet"
+        try:
+            resp = requests.post(
+                url,
+                headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+                timeout=120,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("ok"):
+                    logger.info("sheet_privacy: Laravel ensure-sheet OK order=%s", order_code)
+                    return True
+                logger.warning(
+                    "sheet_privacy: Laravel ensure-sheet order=%s: %s",
+                    order_code,
+                    data.get("message") or data.get("sa_error") or data,
+                )
+            else:
+                logger.warning(
+                    "sheet_privacy: Laravel ensure-sheet HTTP %s: %s",
+                    resp.status_code,
+                    resp.text[:400],
+                )
+        except Exception as exc:
+            logger.warning("sheet_privacy: Laravel HTTP gagal: %s", exc)
+
+    laravel_path = get_env("LARAVEL_APP_PATH", required=False)
+    if laravel_path and os.path.isdir(laravel_path):
+        try:
+            result = subprocess.run(
+                ["php", "artisan", "google:sheet-setup", f"--reshare={order_code}"],
+                cwd=laravel_path,
+                capture_output=True,
+                text=True,
+                timeout=120,
+                check=False,
+            )
+            if result.returncode == 0:
+                logger.info("sheet_privacy: artisan reshare OK order=%s", order_code)
+                return True
+            logger.warning(
+                "sheet_privacy: artisan reshare gagal order=%s: %s",
+                order_code,
+                (result.stderr or result.stdout or "")[:500],
+            )
+        except Exception as exc:
+            logger.warning("sheet_privacy: artisan reshare exception: %s", exc)
+
+    return False
 
 
 def _oauth_configured() -> bool:
@@ -315,8 +389,14 @@ def _append_row_oauth_api(spreadsheet_id: str, json_path: str, row: List[Any]) -
     return False
 
 
-def append_transaction_row(spreadsheet_id: str, json_path: str, row: List[Any]) -> None:
-    """Tulis baris transaksi: SA → perbaiki izin (OAuth) → ulang → cadangan OAuth tanpa proteksi."""
+def append_transaction_row(
+    spreadsheet_id: str,
+    json_path: str,
+    row: List[Any],
+    *,
+    order_code: str | None = None,
+) -> None:
+    """Tulis baris transaksi: SA → perbaiki izin → Laravel reshare → ulang."""
     if _append_row_gspread_sa(spreadsheet_id, json_path, row):
         return
 
@@ -324,6 +404,13 @@ def append_transaction_row(spreadsheet_id: str, json_path: str, row: List[Any]) 
         spreadsheet_id, json_path, row
     ):
         return
+
+    if order_code and trigger_laravel_sheet_repair(order_code):
+        if _append_row_gspread_sa(spreadsheet_id, json_path, row):
+            return
+        repair_sheet_for_bot_write(spreadsheet_id, json_path)
+        if _append_row_gspread_sa(spreadsheet_id, json_path, row):
+            return
 
     if _oauth_configured():
         try:
@@ -440,22 +527,17 @@ def apply_sheet_protections(spreadsheet_id: str, json_path: str) -> None:
     for sheet in meta.get("sheets", []):
         props = sheet.get("properties", {})
         title = str(props.get("title", ""))
-        if title not in (transaction_tab, dashboard_tab):
+        if title != dashboard_tab:
             continue
         sheet_id = props.get("sheetId")
         if sheet_id is None:
             continue
-        desc = (
-            "Dashboard — hanya service account (sync admin)"
-            if title == dashboard_tab
-            else "Transaksi — hanya service account (bot)"
-        )
         requests_body.append(
             {
                 "addProtectedRange": {
                     "protectedRange": {
                         "range": {"sheetId": sheet_id},
-                        "description": desc,
+                        "description": "Dashboard — hanya service account (sync admin)",
                         "warningOnly": False,
                         "editors": {"users": [sa_email]},
                     },
@@ -465,8 +547,7 @@ def apply_sheet_protections(spreadsheet_id: str, json_path: str) -> None:
 
     if not requests_body:
         logger.warning(
-            "sheet_privacy: tab %s / %s tidak ditemukan di %s",
-            transaction_tab,
+            "sheet_privacy: tab %s tidak ditemukan di %s",
             dashboard_tab,
             spreadsheet_id,
         )

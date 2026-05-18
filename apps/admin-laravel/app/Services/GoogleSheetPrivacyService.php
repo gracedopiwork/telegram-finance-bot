@@ -399,7 +399,9 @@ class GoogleSheetPrivacyService
 
         foreach ($meta['sheets'] ?? [] as $sheet) {
             $title = (string) ($sheet['properties']['title'] ?? '');
-            if (! in_array($title, [$transactionTab, $dashboardTab], true)) {
+            // Tab Transaksi: tidak diproteksi (bot tulis lewat izin Drive writer SA).
+            // Proteksi ketat di tab Transaksi sering memblokir gspread meskipun SA sudah editor.
+            if ($title !== $dashboardTab) {
                 continue;
             }
 
@@ -412,9 +414,7 @@ class GoogleSheetPrivacyService
                 'addProtectedRange' => [
                     'protectedRange' => [
                         'range' => ['sheetId' => $sheetId],
-                        'description' => $title === $dashboardTab
-                            ? 'Dashboard — hanya service account (sync admin)'
-                            : 'Transaksi — hanya service account (bot)',
+                        'description' => 'Dashboard — hanya service account (sync admin)',
                         'warningOnly' => false,
                         'editors' => [
                             'users' => [$saEmail],
@@ -425,7 +425,7 @@ class GoogleSheetPrivacyService
         }
 
         if ($requests === []) {
-            Log::warning('GoogleSheetPrivacy: tab Transaksi/Dashboard tidak ditemukan.', ['spreadsheet_id' => $spreadsheetId]);
+            Log::warning('GoogleSheetPrivacy: tab Dashboard tidak ditemukan.', ['spreadsheet_id' => $spreadsheetId]);
 
             return;
         }
