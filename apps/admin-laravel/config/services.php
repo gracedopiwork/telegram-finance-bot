@@ -54,6 +54,11 @@ return [
         'transfer_sheet_ownership' => env('GOOGLE_TRANSFER_SHEET_OWNERSHIP', true),
         /** Sembunyikan link sheet user di panel admin */
         'hide_user_sheet_from_admin' => env('GOOGLE_HIDE_USER_SHEET_FROM_ADMIN', true),
+        /**
+         * Salin file sebagai user Workspace ini (domain-wide delegation).
+         * Mengatasi storageQuotaExceeded tanpa Shared drive. Contoh: yfinancialdoctor@gmail.com
+         */
+        'drive_impersonate_user' => env('GOOGLE_DRIVE_IMPERSONATE_USER'),
     ],
 
     'telegram' => [

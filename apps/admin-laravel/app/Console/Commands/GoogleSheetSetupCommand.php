@@ -48,6 +48,12 @@ class GoogleSheetSetupCommand extends Command
             $this->line('Bagikan file template (dan folder salinan jika dipakai) ke email ini dengan peran Editor.');
         }
 
+        $impersonate = trim((string) config('services.google.drive_impersonate_user', ''));
+        if ($impersonate !== '') {
+            $this->line("Impersonate (salin pakai kuota user): <comment>{$impersonate}</comment>");
+            $this->line('Wajib: domain-wide delegation di Google Cloud + Admin (lihat .env.example).');
+        }
+
         if (! $provisioner->isConfigured()) {
             $this->error('isConfigured() false — cek path & template ID.');
 

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Order;
-use Google\Auth\Credentials\ServiceAccountCredentials;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -79,18 +78,7 @@ class GoogleDriveSheetProvisioner
 
     private function accessToken(): string
     {
-        $path = $this->credentialsPath();
-        $scopes = [
-            'https://www.googleapis.com/auth/drive',
-            'https://www.googleapis.com/auth/spreadsheets',
-        ];
-        $creds = new ServiceAccountCredentials($scopes, $path);
-        $token = $creds->fetchAuthToken();
-        if (empty($token['access_token'])) {
-            throw new \RuntimeException('Gagal ambil access token Google: '.json_encode($token));
-        }
-
-        return (string) $token['access_token'];
+        return GoogleServiceAccountToken::get();
     }
 
     private function credentialsPath(): string
