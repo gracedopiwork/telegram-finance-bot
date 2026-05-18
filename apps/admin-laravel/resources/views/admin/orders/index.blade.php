@@ -1,9 +1,25 @@
 @extends('admin.layouts.page')
 
-@section('page_heading', 'Transaksi')
-@section('page_subheading', 'Daftar order produk digital. Webhook Midtrans otomatis update status & generate kode lisensi.')
+@section('page_heading', 'Order & Pembayaran')
+@section('page_subheading', 'Daftar pembelian produk (Midtrans) — bukan isi catatan keuangan user di Google Sheet.')
 
 @section('main')
+
+@php $hideUserSheet = (bool) config('services.google.hide_user_sheet_from_admin', true); @endphp
+@if(! $hideUserSheet)
+    <div class="alert alert-warning">
+        <strong>Mode privasi sheet nonaktif.</strong>
+        Link Google Sheet pelanggan (termasuk tab <strong>Transaksi</strong>) bisa dibuka dari admin.
+        Set <code>GOOGLE_HIDE_USER_SHEET_FROM_ADMIN=true</code> di <code>.env</code> lalu <code>php artisan config:clear</code>.
+    </div>
+@else
+    <div class="alert alert-info small mb-3">
+        <i class="fas fa-lock mr-1"></i>
+        Catatan keuangan user (<code>/catat</code>) hanya di sheet milik pelanggan — tidak ditampilkan di panel ini.
+        Jika Anda masih melihatnya di <strong>Google Drive</strong>, file mungkin tersimpan di Drive akun OAuth Anda;
+        gunakan folder <strong>Shared drive</strong> khusus service account (<code>GOOGLE_DRIVE_COPY_PARENT_ID</code>).
+    </div>
+@endif
 
 {{-- ===== Stat cards ===== --}}
 <div class="row">

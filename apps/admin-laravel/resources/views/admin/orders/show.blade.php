@@ -1,6 +1,6 @@
 @extends('admin.layouts.page')
 
-@section('page_heading', 'Detail Transaksi')
+@section('page_heading', 'Detail Order')
 @section('page_subheading', $order->order_code)
 
 @section('page_actions')

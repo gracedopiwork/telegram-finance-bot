@@ -353,9 +353,9 @@ return [
             'label_color' => 'success',
         ],
 
-        ['header' => 'Transaksi'],
+        ['header' => 'Pesanan'],
         [
-            'text' => 'Order Produk Digital',
+            'text' => 'Order & Pembayaran',
             'route' => 'admin.orders.index',
             'icon' => 'fas fa-fw fa-receipt',
         ],
