@@ -181,34 +181,21 @@ def build_sheet_client(telegram_user_id: int | None = None) -> gspread.Worksheet
     )
 
 
-def lookup_order_sheet_for_user(telegram_user_id: int) -> dict | None:
-    """Sheet dari order lunas (sumber utama — sama dengan email / halaman checkout)."""
-    if not telegram_user_id:
+def lookup_order_sheet_for_license(license_id: int) -> dict | None:
+    """Sheet untuk satu lisensi (sama dengan halaman checkout order itu)."""
+    if not license_id:
         return None
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         cursor.execute(
             """
-            SELECT id FROM licenses
-            WHERE assigned_user_id = %s AND status = 'active'
-            ORDER BY id DESC LIMIT 1
-            """,
-            (telegram_user_id,),
-        )
-        lic = cursor.fetchone()
-        if not lic:
-            cursor.close()
-            conn.close()
-            return None
-        cursor.execute(
-            """
-            SELECT spreadsheet_id, spreadsheet_url FROM orders
+            SELECT order_code, spreadsheet_id, spreadsheet_url FROM orders
             WHERE license_id = %s AND status = 'paid'
               AND spreadsheet_id IS NOT NULL AND spreadsheet_id != ''
             ORDER BY id DESC LIMIT 1
             """,
-            (lic["id"],],
+            (license_id,),
         )
         row = cursor.fetchone()
         cursor.close()
@@ -216,6 +203,42 @@ def lookup_order_sheet_for_user(telegram_user_id: int) -> dict | None:
         if not row or not row.get("spreadsheet_id"):
             return None
         return {
+            "order_code": str(row.get("order_code") or "").strip(),
+            "spreadsheet_id": str(row["spreadsheet_id"]).strip(),
+            "spreadsheet_url": (row.get("spreadsheet_url") or "").strip() or None,
+        }
+    except Exception as exc:  # pragma: no cover - external db guard
+        logger.warning("Gagal lookup order sheet license %s: %s", license_id, exc)
+    return None
+
+
+def lookup_order_sheet_for_user(telegram_user_id: int) -> dict | None:
+    """Order lunas terbaru untuk user (sumber sama dengan checkout)."""
+    if not telegram_user_id:
+        return None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT o.order_code, o.spreadsheet_id, o.spreadsheet_url
+            FROM orders o
+            INNER JOIN licenses l ON l.id = o.license_id
+            WHERE l.assigned_user_id = %s AND l.status = 'active'
+              AND o.status = 'paid'
+              AND o.spreadsheet_id IS NOT NULL AND o.spreadsheet_id != ''
+            ORDER BY o.id DESC
+            LIMIT 1
+            """,
+            (telegram_user_id,),
+        )
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if not row or not row.get("spreadsheet_id"):
+            return None
+        return {
+            "order_code": str(row.get("order_code") or "").strip(),
             "spreadsheet_id": str(row["spreadsheet_id"]).strip(),
             "spreadsheet_url": (row.get("spreadsheet_url") or "").strip() or None,
         }
@@ -225,10 +248,11 @@ def lookup_order_sheet_for_user(telegram_user_id: int) -> dict | None:
 
 
 def _sheet_url_from_id(spreadsheet_id: str, spreadsheet_url: str | None = None) -> str:
-    url = (spreadsheet_url or "").strip()
-    if url:
-        return url
-    return f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/edit"
+    """URL kanonik dari spreadsheet_id (hindari URL lama di user_sheets)."""
+    sid = (spreadsheet_id or "").strip()
+    if not sid:
+        return ""
+    return f"https://docs.google.com/spreadsheets/d/{sid}/edit"
 
 
 def lookup_user_spreadsheet_id(telegram_user_id: int) -> str | None:
@@ -236,25 +260,6 @@ def lookup_user_spreadsheet_id(telegram_user_id: int) -> str | None:
     order_sheet = lookup_order_sheet_for_user(telegram_user_id)
     if order_sheet:
         return order_sheet["spreadsheet_id"]
-    if not telegram_user_id:
-        return None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            """
-            SELECT spreadsheet_id FROM user_sheets
-            WHERE telegram_user_id = %s AND status = 'active' LIMIT 1
-            """,
-            (telegram_user_id,),
-        )
-        row = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        if row and row.get("spreadsheet_id"):
-            return str(row["spreadsheet_id"])
-    except Exception as exc:  # pragma: no cover - external db guard
-        logger.warning("Gagal lookup spreadsheet_id user %s: %s", telegram_user_id, exc)
     return None
 
 
@@ -262,33 +267,7 @@ def lookup_user_sheet_url(telegram_user_id: int) -> str | None:
     ensure_user_sheet_from_order(telegram_user_id)
     order_sheet = lookup_order_sheet_for_user(telegram_user_id)
     if order_sheet:
-        return _sheet_url_from_id(
-            order_sheet["spreadsheet_id"],
-            order_sheet.get("spreadsheet_url"),
-        )
-    if not telegram_user_id:
-        return None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            """
-            SELECT spreadsheet_id, spreadsheet_url FROM user_sheets
-            WHERE telegram_user_id = %s AND status = 'active' LIMIT 1
-            """,
-            (telegram_user_id,),
-        )
-        row = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        if not row:
-            return None
-        return _sheet_url_from_id(
-            str(row.get("spreadsheet_id") or ""),
-            str(row.get("spreadsheet_url") or "") or None,
-        )
-    except Exception as exc:  # pragma: no cover - external db guard
-        logger.warning("Gagal lookup spreadsheet_url user %s: %s", telegram_user_id, exc)
+        return _sheet_url_from_id(order_sheet["spreadsheet_id"])
     return None
 
 
@@ -377,6 +356,26 @@ def ensure_sheet_drive_access(telegram_user_id: int) -> str | None:
     except Exception as exc:  # pragma: no cover - external API guard
         logger.warning("ensure_sheet_drive_access gagal user=%s: %s", telegram_user_id, exc)
     return order_email
+
+
+def ensure_user_sheet_for_license(telegram_user_id: int, license_id: int) -> None:
+    """Paksa user_sheets = sheet order untuk lisensi yang baru di-activate."""
+    order_sheet = lookup_order_sheet_for_license(license_id)
+    if not order_sheet or not telegram_user_id:
+        return
+    try:
+        upsert_user_sheet_row(
+            telegram_user_id,
+            order_sheet["spreadsheet_id"],
+            order_sheet.get("spreadsheet_url"),
+        )
+    except Exception as exc:  # pragma: no cover - external db guard
+        logger.warning(
+            "ensure_user_sheet_for_license gagal user=%s license=%s: %s",
+            telegram_user_id,
+            license_id,
+            exc,
+        )
 
 
 def ensure_user_sheet_from_order(telegram_user_id: int) -> None:
@@ -477,7 +476,7 @@ def is_license_active_for_user(user_id: int) -> bool:
     return True
 
 
-def activate_license_for_user(license_key: str, user_id: int, username: str | None) -> str:
+def activate_license_for_user(license_key: str, user_id: int, username: str | None) -> tuple[str, int]:
     key = license_key.strip().upper()
     if not key:
         raise ValueError("empty_key")
@@ -534,9 +533,10 @@ def activate_license_for_user(license_key: str, user_id: int, username: str | No
         (row["id"], user_id, username),
     )
     conn.commit()
+    license_id = int(row["id"])
     cursor.close()
     conn.close()
-    return key
+    return key, license_id
 
 
 def set_user_display_name(user_id: int, display_name: str) -> None:
@@ -956,7 +956,9 @@ async def activate_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     user = update.effective_user
     try:
-        activated_key = activate_license_for_user(key, user.id if user else 0, user.username if user else None)
+        activated_key, license_id = activate_license_for_user(
+            key, user.id if user else 0, user.username if user else None
+        )
     except ValueError as exc:
         mapping = {
             "empty_key": "Kode lisensi tidak boleh kosong.",
@@ -973,7 +975,7 @@ async def activate_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
 
     if user and user.id:
-        ensure_user_sheet_from_order(user.id)
+        ensure_user_sheet_for_license(user.id, license_id)
         ensure_sheet_drive_access(user.id)
 
     if user:
@@ -1026,12 +1028,18 @@ async def sheet_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
     share_ok = True
     order_email = None
+    order_code = None
+    order_sheet = lookup_order_sheet_for_user(user_id) if user_id else None
     if user_id:
         from sheet_privacy import share_sheet_with_customer_email
 
         ensure_user_sheet_from_order(user_id)
-        spreadsheet_id = lookup_user_spreadsheet_id(user_id)
+        if not order_sheet:
+            order_sheet = lookup_order_sheet_for_user(user_id)
         order_email = lookup_order_email_for_user(user_id)
+        if order_sheet:
+            order_code = order_sheet.get("order_code") or None
+        spreadsheet_id = order_sheet["spreadsheet_id"] if order_sheet else None
         json_path = get_env("GOOGLE_SERVICE_ACCOUNT_JSON", required=False)
         if spreadsheet_id and order_email and json_path and os.path.isfile(json_path):
             try:
@@ -1043,9 +1051,7 @@ async def sheet_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 logger.warning("sheet_handler share gagal user=%s: %s", user_id, exc)
         elif user_id:
             order_email = ensure_sheet_drive_access(user_id)
-    sheet_url = lookup_user_sheet_url(user_id)
-    if not sheet_url:
-        sheet_url = get_env("GOOGLE_SHEET_URL", required=False)
+    sheet_url = _sheet_url_from_id(order_sheet["spreadsheet_id"]) if order_sheet else None
     if not sheet_url:
         await update.message.reply_text(
             "Belum ada link Google Sheet untuk akun ini.\n\n"
@@ -1053,12 +1059,13 @@ async def sheet_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             "• Pastikan sudah /activate dengan kode yang benar.\n"
             "• Di server Laravel admin: GOOGLE_SERVICE_ACCOUNT_JSON + GOOGLE_USER_SHEET_TEMPLATE_ID "
             "harus benar, dan queue/worker jalan agar sheet per order terbuat.\n"
-            "• Atau isi GOOGLE_SHEET_URL di .env bot sebagai link fallback (sheet tunggal).\n\n"
             "Tunggu 1–2 menit setelah lunas lalu coba /sheet lagi."
         )
         return
 
     lines = [f"Buka Google Sheet kamu di sini:\n{sheet_url}"]
+    if order_code:
+        lines.append(f"\nOrder: `{order_code}` (sama dengan halaman checkout).")
     if order_email:
         lines.append(
             f"\nBuka dengan Gmail yang *sama dengan yang Anda input saat checkout*:\n`{order_email}`\n\n"
