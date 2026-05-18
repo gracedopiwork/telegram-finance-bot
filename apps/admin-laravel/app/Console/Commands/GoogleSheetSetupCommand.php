@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Order;
+use App\Models\UserSheet;
 use App\Services\GoogleDriveSheetProvisioner;
 use App\Services\GoogleSheetPrivacyService;
 use App\Services\GoogleServiceAccountToken;
@@ -195,6 +196,8 @@ class GoogleSheetSetupCommand extends Command
 
             return self::FAILURE;
         }
+
+        UserSheet::syncFromOrder($order);
 
         $diag = $privacy->diagnoseAccess((string) $order->spreadsheet_id, $order);
         $this->table(['Item', 'Nilai'], [

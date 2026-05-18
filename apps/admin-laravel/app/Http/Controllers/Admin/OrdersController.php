@@ -7,6 +7,7 @@ use App\Jobs\DeliverPaidOrderJob;
 use App\Models\CpDigitalProduct;
 use App\Models\License;
 use App\Models\Order;
+use App\Models\UserSheet;
 use App\Services\GoogleSheetPrivacyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -127,6 +128,8 @@ class OrdersController extends Controller
                 return redirect()->route('admin.orders.show', $order)
                     ->with('error', 'Gagal terapkan privasi/izin: '.$e->getMessage());
             }
+
+            UserSheet::syncFromOrder($order);
 
             return redirect()->route('admin.orders.show', $order)
                 ->with('success', 'Privasi & izin sheet diperbarui. Akses dibagikan ke email checkout: '.$order->email);

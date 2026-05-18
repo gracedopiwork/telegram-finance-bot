@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\PaidOrderDeliveredMail;
 use App\Models\Order;
+use App\Models\UserSheet;
 use App\Services\GoogleDriveSheetProvisioner;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -52,6 +53,7 @@ class DeliverPaidOrderJob implements ShouldQueue
             $order->spreadsheet_id = $result['id'];
             $order->spreadsheet_url = $result['url'];
             $order->save();
+            UserSheet::syncFromOrder($order);
         }
 
         if ($deliveryAlreadySent) {
@@ -77,6 +79,8 @@ class DeliverPaidOrderJob implements ShouldQueue
                 'exception'  => $e->getMessage(),
             ]);
         }
+
+        UserSheet::syncFromOrder($order->fresh(['license']));
 
         Order::whereKey($order->id)->update(['purchase_delivery_sent_at' => now()]);
     }

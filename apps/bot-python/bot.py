@@ -181,7 +181,61 @@ def build_sheet_client(telegram_user_id: int | None = None) -> gspread.Worksheet
     )
 
 
+def lookup_order_sheet_for_user(telegram_user_id: int) -> dict | None:
+    """Sheet dari order lunas (sumber utama — sama dengan email / halaman checkout)."""
+    if not telegram_user_id:
+        return None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT id FROM licenses
+            WHERE assigned_user_id = %s AND status = 'active'
+            ORDER BY id DESC LIMIT 1
+            """,
+            (telegram_user_id,),
+        )
+        lic = cursor.fetchone()
+        if not lic:
+            cursor.close()
+            conn.close()
+            return None
+        cursor.execute(
+            """
+            SELECT spreadsheet_id, spreadsheet_url FROM orders
+            WHERE license_id = %s AND status = 'paid'
+              AND spreadsheet_id IS NOT NULL AND spreadsheet_id != ''
+            ORDER BY id DESC LIMIT 1
+            """,
+            (lic["id"],],
+        )
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if not row or not row.get("spreadsheet_id"):
+            return None
+        return {
+            "spreadsheet_id": str(row["spreadsheet_id"]).strip(),
+            "spreadsheet_url": (row.get("spreadsheet_url") or "").strip() or None,
+        }
+    except Exception as exc:  # pragma: no cover - external db guard
+        logger.warning("Gagal lookup order sheet user %s: %s", telegram_user_id, exc)
+    return None
+
+
+def _sheet_url_from_id(spreadsheet_id: str, spreadsheet_url: str | None = None) -> str:
+    url = (spreadsheet_url or "").strip()
+    if url:
+        return url
+    return f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/edit"
+
+
 def lookup_user_spreadsheet_id(telegram_user_id: int) -> str | None:
+    ensure_user_sheet_from_order(telegram_user_id)
+    order_sheet = lookup_order_sheet_for_user(telegram_user_id)
+    if order_sheet:
+        return order_sheet["spreadsheet_id"]
     if not telegram_user_id:
         return None
     try:
@@ -205,6 +259,13 @@ def lookup_user_spreadsheet_id(telegram_user_id: int) -> str | None:
 
 
 def lookup_user_sheet_url(telegram_user_id: int) -> str | None:
+    ensure_user_sheet_from_order(telegram_user_id)
+    order_sheet = lookup_order_sheet_for_user(telegram_user_id)
+    if order_sheet:
+        return _sheet_url_from_id(
+            order_sheet["spreadsheet_id"],
+            order_sheet.get("spreadsheet_url"),
+        )
     if not telegram_user_id:
         return None
     try:
@@ -222,12 +283,10 @@ def lookup_user_sheet_url(telegram_user_id: int) -> str | None:
         conn.close()
         if not row:
             return None
-        url = (row.get("spreadsheet_url") or "").strip()
-        if url:
-            return url
-        sid = (row.get("spreadsheet_id") or "").strip()
-        if sid:
-            return f"https://docs.google.com/spreadsheets/d/{sid}/edit"
+        return _sheet_url_from_id(
+            str(row.get("spreadsheet_id") or ""),
+            str(row.get("spreadsheet_url") or "") or None,
+        )
     except Exception as exc:  # pragma: no cover - external db guard
         logger.warning("Gagal lookup spreadsheet_url user %s: %s", telegram_user_id, exc)
     return None
@@ -294,7 +353,8 @@ def ensure_sheet_drive_access(telegram_user_id: int) -> str | None:
     """Pastikan izin Drive untuk email checkout; kembalikan email tersebut."""
     from sheet_privacy import share_sheet_with_customer_email
 
-    spreadsheet_id = lookup_user_spreadsheet_id(telegram_user_id)
+    order_sheet = lookup_order_sheet_for_user(telegram_user_id)
+    spreadsheet_id = order_sheet["spreadsheet_id"] if order_sheet else lookup_user_spreadsheet_id(telegram_user_id)
     if not spreadsheet_id:
         return None
     json_path = get_env("GOOGLE_SERVICE_ACCOUNT_JSON", required=False)
@@ -320,46 +380,46 @@ def ensure_sheet_drive_access(telegram_user_id: int) -> str | None:
 
 
 def ensure_user_sheet_from_order(telegram_user_id: int) -> None:
-    """Sinkronkan user_sheets dari order lunas (sheet dikirim lewat email) jika belum ada."""
+    """Selaraskan user_sheets dengan order lunas (perbarui jika ID sheet berubah)."""
     if not telegram_user_id:
         return
-    if lookup_user_spreadsheet_id(telegram_user_id):
+    order_sheet = lookup_order_sheet_for_user(telegram_user_id)
+    if not order_sheet:
         return
+    order_id = order_sheet["spreadsheet_id"]
+    previous_id = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         cursor.execute(
             """
-            SELECT id FROM licenses
-            WHERE assigned_user_id = %s AND status = 'active'
-            ORDER BY id DESC LIMIT 1
+            SELECT spreadsheet_id FROM user_sheets
+            WHERE telegram_user_id = %s LIMIT 1
             """,
             (telegram_user_id,),
         )
-        lic = cursor.fetchone()
-        if not lic:
-            cursor.close()
-            conn.close()
-            return
-        cursor.execute(
-            """
-            SELECT spreadsheet_id, spreadsheet_url FROM orders
-            WHERE license_id = %s AND status = 'paid'
-              AND spreadsheet_id IS NOT NULL AND spreadsheet_id != ''
-            ORDER BY id DESC LIMIT 1
-            """,
-            (lic["id"],),
-        )
-        order_row = cursor.fetchone()
+        row = cursor.fetchone()
         cursor.close()
         conn.close()
-        if not order_row:
-            return
+        if row:
+            previous_id = str(row.get("spreadsheet_id") or "")
+            if previous_id == order_id:
+                return
+    except Exception as exc:  # pragma: no cover - external db guard
+        logger.warning("ensure_user_sheet_from_order cek gagal user=%s: %s", telegram_user_id, exc)
+    try:
         upsert_user_sheet_row(
             telegram_user_id,
-            str(order_row["spreadsheet_id"]),
-            str(order_row["spreadsheet_url"]) if order_row.get("spreadsheet_url") else None,
+            order_id,
+            order_sheet.get("spreadsheet_url"),
         )
+        if previous_id and previous_id != order_id:
+            logger.info(
+                "user_sheets diperbarui user=%s: %s -> %s",
+                telegram_user_id,
+                previous_id,
+                order_id,
+            )
     except Exception as exc:  # pragma: no cover - external db guard
         logger.warning("ensure_user_sheet_from_order gagal user=%s: %s", telegram_user_id, exc)
 
