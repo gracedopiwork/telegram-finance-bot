@@ -190,7 +190,7 @@ class GoogleSheetSetupCommand extends Command
         $privacy = app(GoogleSheetPrivacyService::class);
 
         try {
-            $privacy->configureSpreadsheetForOrder((string) $order->spreadsheet_id, $order);
+            $diag = $privacy->ensureOrderAccessible($order);
         } catch (\Throwable $e) {
             $this->error('Gagal: '.$e->getMessage());
 
@@ -198,8 +198,6 @@ class GoogleSheetSetupCommand extends Command
         }
 
         UserSheet::syncFromOrder($order);
-
-        $diag = $privacy->diagnoseAccess((string) $order->spreadsheet_id, $order);
         $this->table(['Item', 'Nilai'], [
             ['Email checkout', $diag['email'] ?? '-'],
             ['Pemilik file', implode(', ', $diag['owners']) ?: '-'],

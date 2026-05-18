@@ -6,6 +6,7 @@ use App\Mail\PaidOrderDeliveredMail;
 use App\Models\Order;
 use App\Models\UserSheet;
 use App\Services\GoogleDriveSheetProvisioner;
+use App\Services\GoogleSheetPrivacyService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -41,19 +42,25 @@ class DeliverPaidOrderJob implements ShouldQueue
         }
 
         $deliveryAlreadySent = $order->purchase_delivery_sent_at !== null;
-
-        if ($deliveryAlreadySent && $order->spreadsheet_id !== null) {
-            return;
-        }
-
         $sheetRequired = $provisioner->isConfigured();
+        $privacy = app(GoogleSheetPrivacyService::class);
 
         if ($sheetRequired && $order->spreadsheet_id === null) {
             $result = $provisioner->copyTemplateForOrder($order);
             $order->spreadsheet_id = $result['id'];
             $order->spreadsheet_url = $result['url'];
             $order->save();
-            UserSheet::syncFromOrder($order);
+        }
+
+        // Sheet sudah ada di DB tetapi izin sering gagal diam-diam — selalu perbaiki akses.
+        if ($sheetRequired && $order->spreadsheet_id !== null) {
+            $diag = $privacy->ensureOrderAccessible($order->fresh(), (string) $order->spreadsheet_id);
+            if (! $diag['ok']) {
+                throw new \RuntimeException(
+                    'Google Sheet ada tetapi tidak bisa diakses untuk '.$order->order_code.': '.$diag['message']
+                );
+            }
+            UserSheet::syncFromOrder($order->fresh(['license']));
         }
 
         if ($deliveryAlreadySent) {

@@ -1074,7 +1074,15 @@ async def activate_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         order_sheet = lookup_order_sheet_for_license(license_id)
         if order_sheet:
             ensure_user_sheet_for_license(user.id, license_id)
-            ensure_sheet_drive_access(user.id)
+            json_path = get_env("GOOGLE_SERVICE_ACCOUNT_JSON", required=False)
+            sid = order_sheet["spreadsheet_id"]
+            if json_path and os.path.isfile(json_path):
+                from sheet_privacy import prepare_sheet_for_bot_write, share_sheet_with_customer_email
+
+                prepare_sheet_for_bot_write(sid, json_path)
+                order_email = lookup_order_email_for_user(user.id)
+                if order_email:
+                    share_sheet_with_customer_email(sid, json_path, order_email)
             sheet_note = (
                 f"\n\nGoogle Sheet siap (order `{order_sheet.get('order_code', '')}`).\n"
                 "Kamu bisa `/catat` atau `/sheet`."

@@ -85,6 +85,38 @@ class GoogleSheetPrivacyService
     }
 
     /**
+     * Terapkan izin + pastikan pelanggan (atau link) bisa akses. Throw jika gagal.
+     *
+     * @return array{ok: bool, email: ?string, owners: list<string>, permissions: list<string>, message: string}
+     */
+    public function ensureOrderAccessible(Order $order, ?string $spreadsheetId = null): array
+    {
+        $spreadsheetId = trim($spreadsheetId ?? (string) $order->spreadsheet_id);
+        if ($spreadsheetId === '') {
+            return [
+                'ok' => false,
+                'email' => $this->customerEmailFromOrder($order),
+                'owners' => [],
+                'permissions' => [],
+                'message' => 'spreadsheet_id kosong',
+            ];
+        }
+
+        $this->configureSpreadsheetForOrder($spreadsheetId, $order);
+
+        $diag = $this->diagnoseAccess($spreadsheetId, $order);
+        if (! $diag['ok']) {
+            Log::error('GoogleSheetPrivacy: ensureOrderAccessible gagal', [
+                'order' => $order->order_code,
+                'spreadsheet_id' => $spreadsheetId,
+                'diag' => $diag,
+            ]);
+        }
+
+        return $diag;
+    }
+
+    /**
      * Bagikan ulang sheet ke email yang diinput saat checkout (idempotent).
      */
     public function shareSpreadsheetWithOrderEmail(Order $order): ?string
@@ -96,11 +128,7 @@ class GoogleSheetPrivacyService
         }
 
         $saEmail = $this->serviceAccountEmail();
-        if ($saEmail !== '') {
-            $this->ensureServiceAccountWriter($spreadsheetId, $saEmail);
-            $this->shareSpreadsheetWithCustomerEmail($spreadsheetId, $customerEmail, $saEmail, $order->order_code);
-            $this->ensureServiceAccountWriter($spreadsheetId, $saEmail);
-        }
+        $this->ensureOrderAccessible($order, $spreadsheetId);
 
         return $customerEmail;
     }

@@ -64,13 +64,11 @@ class GoogleDriveSheetProvisioner
 
         $url = (string) ($response->json('webViewLink') ?: "https://docs.google.com/spreadsheets/d/{$id}/edit");
 
-        try {
-            app(GoogleSheetPrivacyService::class)->configureSpreadsheetForOrder($id, $order);
-        } catch (\Throwable $e) {
-            Log::error('Google Sheet privacy/permission gagal untuk order '.$order->order_code, [
-                'spreadsheet_id' => $id,
-                'exception' => $e->getMessage(),
-            ]);
+        $diag = app(GoogleSheetPrivacyService::class)->ensureOrderAccessible($order->fresh(), $id);
+        if (! $diag['ok']) {
+            throw new \RuntimeException(
+                'Sheet tersalin tetapi akses gagal untuk '.$order->order_code.': '.$diag['message']
+            );
         }
 
         return ['id' => $id, 'url' => $url];

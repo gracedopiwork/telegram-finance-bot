@@ -120,10 +120,11 @@ class OrdersController extends Controller
 
         if ($order->spreadsheet_id) {
             try {
-                app(GoogleSheetPrivacyService::class)->configureSpreadsheetForOrder(
-                    (string) $order->spreadsheet_id,
-                    $order
-                );
+                $diag = app(GoogleSheetPrivacyService::class)->ensureOrderAccessible($order);
+                if (! $diag['ok']) {
+                    return redirect()->route('admin.orders.show', $order)
+                        ->with('error', 'Izin sheet gagal: '.$diag['message']);
+                }
             } catch (\Throwable $e) {
                 return redirect()->route('admin.orders.show', $order)
                     ->with('error', 'Gagal terapkan privasi/izin: '.$e->getMessage());
@@ -132,7 +133,7 @@ class OrdersController extends Controller
             UserSheet::syncFromOrder($order);
 
             return redirect()->route('admin.orders.show', $order)
-                ->with('success', 'Privasi & izin sheet diperbarui. Akses dibagikan ke email checkout: '.$order->email);
+                ->with('success', 'Sheet bisa diakses. Dibagikan ke: '.$order->email.'. '.$diag['message']);
         }
 
         DeliverPaidOrderJob::dispatch($order->id);
