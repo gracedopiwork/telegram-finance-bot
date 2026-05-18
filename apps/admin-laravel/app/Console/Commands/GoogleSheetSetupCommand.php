@@ -4,13 +4,15 @@ namespace App\Console\Commands;
 
 use App\Models\Order;
 use App\Services\GoogleDriveSheetProvisioner;
+use App\Services\GoogleSheetPrivacyService;
 use App\Services\GoogleServiceAccountToken;
 use Illuminate\Console\Command;
 
 class GoogleSheetSetupCommand extends Command
 {
     protected $signature = 'google:sheet-setup
-                            {--provision= : Order code untuk salin ulang template (hanya jika spreadsheet_id masih kosong)}';
+                            {--provision= : Order code untuk salin ulang template (hanya jika spreadsheet_id masih kosong)}
+                            {--reshare= : Order code — perbarui izin Drive ke email checkout (sheet sudah ada)}';
 
     protected $description = 'Cek konfigurasi Google Drive (service account, template, folder) dan opsional salin ulang sheet untuk satu order';
 
@@ -103,6 +105,11 @@ class GoogleSheetSetupCommand extends Command
             return self::FAILURE;
         }
 
+        $reshareCode = $this->option('reshare');
+        if ($reshareCode) {
+            return $this->reshareOrder((string) $reshareCode);
+        }
+
         $orderCode = $this->option('provision');
         if ($orderCode) {
             return $this->provisionOrder($provisioner, (string) $orderCode);
@@ -140,6 +147,7 @@ class GoogleSheetSetupCommand extends Command
 
         if ($order->spreadsheet_id) {
             $this->warn("Order sudah punya spreadsheet_id: {$order->spreadsheet_id}");
+            $this->line('Perbarui izin ke email checkout: php artisan google:sheet-setup --reshare='.$orderCode);
 
             return self::SUCCESS;
         }
@@ -158,6 +166,56 @@ class GoogleSheetSetupCommand extends Command
 
             return self::FAILURE;
         }
+    }
+
+    private function reshareOrder(string $orderCode): int
+    {
+        $order = Order::where('order_code', $orderCode)->first();
+        if (! $order) {
+            $this->error("Order tidak ditemukan: {$orderCode}");
+
+            return self::FAILURE;
+        }
+
+        if ($order->status !== 'paid' || ! $order->spreadsheet_id) {
+            $this->error('Order harus lunas dan sudah punya spreadsheet_id.');
+
+            return self::FAILURE;
+        }
+
+        $this->info("Email checkout: {$order->email}");
+        $this->line("Spreadsheet: {$order->spreadsheet_id}");
+
+        $privacy = app(GoogleSheetPrivacyService::class);
+
+        try {
+            $privacy->configureSpreadsheetForOrder((string) $order->spreadsheet_id, $order);
+        } catch (\Throwable $e) {
+            $this->error('Gagal: '.$e->getMessage());
+
+            return self::FAILURE;
+        }
+
+        $diag = $privacy->diagnoseAccess((string) $order->spreadsheet_id, $order);
+        $this->table(['Item', 'Nilai'], [
+            ['Email checkout', $diag['email'] ?? '-'],
+            ['Pemilik file', implode(', ', $diag['owners']) ?: '-'],
+            ['Izin saat ini', implode("\n", $diag['permissions']) ?: '-'],
+            ['Status', $diag['message']],
+        ]);
+
+        if (! $diag['ok']) {
+            $this->warn('Email checkout belum terdaftar di izin. Cek GOOGLE_OAUTH_* dan storage/logs/laravel.log');
+            $this->warn('Fallback "siapa pun dengan link" seharusnya aktif (GOOGLE_SHEET_FALLBACK_LINK_READER=true).');
+        } else {
+            $this->info('Buka link dengan akun Google: '.$order->email);
+        }
+
+        if ($order->spreadsheet_url) {
+            $this->line($order->spreadsheet_url);
+        }
+
+        return $diag['ok'] ? self::SUCCESS : self::FAILURE;
     }
 
     private function serviceAccountEmail(string $jsonPath): ?string

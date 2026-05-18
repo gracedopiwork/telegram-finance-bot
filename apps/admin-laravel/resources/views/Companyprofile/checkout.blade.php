@@ -26,7 +26,7 @@
         <div class="lg:col-span-7">
             <div class="bg-white rounded-2xl border border-outline-variant shadow-soft p-7 md:p-9">
                 <h2 class="font-heading text-[20px] font-bold text-primary mb-1">Data Pembeli</h2>
-                <p class="text-[13px] text-on-surface-variant mb-6">Email dan nomor telepon aktif wajib diisi. Setelah pembayaran lunas, <strong>kode lisensi</strong> langsung tampil di halaman konfirmasi; email berisi ringkasan dikirim bila pengiriman email aktif.</p>
+                <p class="text-[13px] text-on-surface-variant mb-6">Email dan nomor telepon aktif wajib diisi. <strong>Email harus akun Gmail yang sama</strong> dengan yang akan Anda pakai untuk membuka Google Sheet setelah bayar. Setelah lunas, <strong>kode lisensi</strong> tampil di halaman konfirmasi; ringkasan juga dikirim ke email ini bila pengiriman email aktif.</p>
 
                 <div class="space-y-4">
                     <div>
@@ -40,11 +40,13 @@
 
                     <div class="grid sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[12.5px] font-semibold text-on-surface mb-1.5">Email <span class="text-red-500">*</span></label>
+                            <label class="block text-[12.5px] font-semibold text-on-surface mb-1.5">Email Gmail (akses Google Sheet) <span class="text-red-500">*</span></label>
                             <input type="email" name="email" required maxlength="190"
                                    value="{{ old('email') }}"
                                    class="w-full rounded-xl border-outline-variant focus:border-primary focus:ring-primary text-[14px] @error('email') border-red-400 @enderror"
-                                   placeholder="kamu@email.com">
+                                   placeholder="nama@gmail.com"
+                                   autocomplete="email">
+                            <p class="text-[11px] text-on-surface-variant mt-1">Isi Gmail yang akan dipakai membuka spreadsheet — bukan email lain.</p>
                             @error('email') <p class="text-[12px] text-red-600 mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div>

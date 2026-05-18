@@ -129,7 +129,7 @@ class OrdersController extends Controller
             }
 
             return redirect()->route('admin.orders.show', $order)
-                ->with('success', 'Privasi & izin sheet diperbarui (proteksi tab, akses pelanggan).');
+                ->with('success', 'Privasi & izin sheet diperbarui. Akses dibagikan ke email checkout: '.$order->email);
         }
 
         DeliverPaidOrderJob::dispatch($order->id);

@@ -89,8 +89,12 @@
                         </span>
                         — spreadsheet untuk order ini sudah dibuat.
                     </p>
-                    <p class="text-[13px] mb-0">
+                    <p class="text-[13px] mb-2">
                         <a href="{{ $sheetHref }}" target="_blank" rel="noopener" class="text-primary font-semibold underline break-all">{{ $sheetHref }}</a>
+                    </p>
+                    <p class="text-[12px] text-on-surface-variant mb-0 leading-relaxed">
+                        Buka link di atas dengan akun Google <strong>{{ $order->email }}</strong> (email yang Anda isi saat checkout).
+                        Jika browser memakai Gmail lain, klik foto profil → <strong>Ganti akun</strong>.
                     </p>
                 @elseif($sheetFailedAfterJob)
                     <p class="text-body-md text-on-surface-variant mb-2">

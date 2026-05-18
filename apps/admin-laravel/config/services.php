@@ -50,8 +50,15 @@ return [
         'copy_parent_folder_id' => env('GOOGLE_DRIVE_COPY_PARENT_ID'),
         'sheet_transaction_tab' => env('GOOGLE_SHEET_TRANSACTION_TAB', 'Transaksi'),
         'sheet_dashboard_tab' => env('GOOGLE_SHEET_DASHBOARD_TAB', 'Dashboard'),
-        /** Transfer kepemilikan ke email pembeli setelah salin (privasi dari folder admin) */
-        'transfer_sheet_ownership' => env('GOOGLE_TRANSFER_SHEET_OWNERSHIP', true),
+        /**
+         * Transfer ownership ke email checkout. Default false: transfer ke Gmail luar
+         * sering menunggu persetujuan sehingga sheet tetap "Anda memerlukan akses".
+         */
+        'transfer_sheet_ownership' => env('GOOGLE_TRANSFER_SHEET_OWNERSHIP', false),
+        /** Selalu izinkan siapa pun yang punya link (akun Google mana pun) */
+        'sheet_anyone_with_link_reader' => env('GOOGLE_SHEET_ANYONE_WITH_LINK_READER', false),
+        /** Jika share ke email checkout gagal, otomatis buka akses "siapa pun dengan link" */
+        'sheet_fallback_link_reader' => env('GOOGLE_SHEET_FALLBACK_LINK_READER', true),
         /** Sembunyikan link sheet user di panel admin */
         'hide_user_sheet_from_admin' => env('GOOGLE_HIDE_USER_SHEET_FROM_ADMIN', true),
         /**

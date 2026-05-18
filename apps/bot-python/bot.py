@@ -251,6 +251,74 @@ def upsert_user_sheet_row(telegram_user_id: int, spreadsheet_id: str, spreadshee
     conn.close()
 
 
+def lookup_order_email_for_user(telegram_user_id: int) -> str | None:
+    if not telegram_user_id:
+        return None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT id FROM licenses
+            WHERE assigned_user_id = %s AND status = 'active'
+            ORDER BY id DESC LIMIT 1
+            """,
+            (telegram_user_id,),
+        )
+        lic = cursor.fetchone()
+        if not lic:
+            cursor.close()
+            conn.close()
+            return None
+        cursor.execute(
+            """
+            SELECT email FROM orders
+            WHERE license_id = %s AND status = 'paid'
+            ORDER BY id DESC LIMIT 1
+            """,
+            (lic["id"],],
+        )
+        order_row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if not order_row:
+            return None
+        email = (order_row.get("email") or "").strip().lower()
+        return email or None
+    except Exception as exc:  # pragma: no cover - external db guard
+        logger.warning("Gagal lookup order email user %s: %s", telegram_user_id, exc)
+    return None
+
+
+def ensure_sheet_drive_access(telegram_user_id: int) -> str | None:
+    """Pastikan izin Drive untuk email checkout; kembalikan email tersebut."""
+    from sheet_privacy import share_sheet_with_customer_email
+
+    spreadsheet_id = lookup_user_spreadsheet_id(telegram_user_id)
+    if not spreadsheet_id:
+        return None
+    json_path = get_env("GOOGLE_SERVICE_ACCOUNT_JSON", required=False)
+    if not json_path or not os.path.isfile(json_path):
+        return lookup_order_email_for_user(telegram_user_id)
+
+    order_email = lookup_order_email_for_user(telegram_user_id)
+    if not order_email:
+        return None
+    order_email = order_email.strip().lower()
+    try:
+        ok = share_sheet_with_customer_email(spreadsheet_id, json_path, order_email)
+        if not ok:
+            logger.warning(
+                "ensure_sheet_drive_access: share gagal user=%s email=%s sheet=%s",
+                telegram_user_id,
+                order_email,
+                spreadsheet_id,
+            )
+    except Exception as exc:  # pragma: no cover - external API guard
+        logger.warning("ensure_sheet_drive_access gagal user=%s: %s", telegram_user_id, exc)
+    return order_email
+
+
 def ensure_user_sheet_from_order(telegram_user_id: int) -> None:
     """Sinkronkan user_sheets dari order lunas (sheet dikirim lewat email) jika belum ada."""
     if not telegram_user_id:
@@ -846,6 +914,7 @@ async def activate_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     if user and user.id:
         ensure_user_sheet_from_order(user.id)
+        ensure_sheet_drive_access(user.id)
 
     if user:
         PENDING_NAME_USERS.add(user.id)
@@ -895,8 +964,25 @@ async def sheet_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if not user_id or not is_license_active_for_user(user_id):
         await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
         return
+    share_ok = True
+    order_email = None
     if user_id:
+        from sheet_privacy import share_sheet_with_customer_email
+
         ensure_user_sheet_from_order(user_id)
+        spreadsheet_id = lookup_user_spreadsheet_id(user_id)
+        order_email = lookup_order_email_for_user(user_id)
+        json_path = get_env("GOOGLE_SERVICE_ACCOUNT_JSON", required=False)
+        if spreadsheet_id and order_email and json_path and os.path.isfile(json_path):
+            try:
+                share_ok = share_sheet_with_customer_email(
+                    spreadsheet_id, json_path, order_email
+                )
+            except Exception as exc:
+                share_ok = False
+                logger.warning("sheet_handler share gagal user=%s: %s", user_id, exc)
+        elif user_id:
+            order_email = ensure_sheet_drive_access(user_id)
     sheet_url = lookup_user_sheet_url(user_id)
     if not sheet_url:
         sheet_url = get_env("GOOGLE_SHEET_URL", required=False)
@@ -911,7 +997,28 @@ async def sheet_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             "Tunggu 1–2 menit setelah lunas lalu coba /sheet lagi."
         )
         return
-    await update.message.reply_text(f"Buka Google Sheet kamu di sini:\n{sheet_url}")
+
+    lines = [f"Buka Google Sheet kamu di sini:\n{sheet_url}"]
+    if order_email:
+        lines.append(
+            f"\nBuka dengan Gmail yang *sama dengan yang Anda input saat checkout*:\n`{order_email}`\n\n"
+            "Di browser Google, klik foto profil → *Ganti akun* jika perlu."
+        )
+        if not share_ok:
+            lines.append(
+                "\n⚠️ Share ke email checkout gagal. Pastikan `GOOGLE_OAUTH_*` di .env bot = Laravel. "
+                "Admin: `php artisan google:sheet-setup --reshare=KODE_ORDER`."
+            )
+        elif get_env("GOOGLE_SHEET_FALLBACK_LINK_READER", "true").lower() in ("1", "true", "yes"):
+            lines.append(
+                "\nJika tetap diminta akses, muat ulang link — mode fallback link aktif; "
+                f"login sebagai `{order_email}` atau akun Google mana pun yang punya link."
+            )
+    else:
+        lines.append(
+            "\nBuka dengan Gmail yang sama dengan email yang Anda input saat checkout."
+        )
+    await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
 
 
 async def hariini_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

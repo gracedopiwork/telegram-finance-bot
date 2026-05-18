@@ -30,7 +30,10 @@
     <h2 style="font-size: 1rem; margin-top: 1.75rem;">3) Google Sheet Anda</h2>
     @if($order->spreadsheet_url)
         <p><a href="{{ $order->spreadsheet_url }}" style="color: #2563eb; font-weight: 600;">Buka spreadsheet</a></p>
-        <p style="font-size: 0.875rem; color: #52525b;">Link ini juga bisa ditampilkan lagi di bot dengan perintah <strong>/sheet</strong> setelah aktivasi.</p>
+        <p style="font-size: 0.875rem; color: #52525b;">
+            Login ke Google dengan <strong>{{ $order->email }}</strong> (email yang Anda isi saat checkout), lalu buka tautan di atas.
+            Link ini juga bisa ditampilkan lagi di bot dengan perintah <strong>/sheet</strong> setelah aktivasi.
+        </p>
     @else
         <p style="font-size: 0.875rem; color: #52525b;">Spreadsheet sedang disiapkan. Coba lagi nanti perintah <strong>/sheet</strong> di bot, atau hubungi support.</p>
     @endif
