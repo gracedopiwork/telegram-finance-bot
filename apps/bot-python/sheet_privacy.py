@@ -6,6 +6,7 @@ import json
 import logging
 import os
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote
 
 import requests
 from oauth2client.service_account import ServiceAccountCredentials
@@ -225,7 +226,90 @@ def prepare_sheet_for_bot_write(spreadsheet_id: str, json_path: str) -> bool:
             spreadsheet_id,
         )
         return False
+    try:
+        apply_sheet_protections(spreadsheet_id, json_path)
+    except Exception as exc:
+        logger.warning("sheet_privacy: apply protections gagal: %s", exc)
     return True
+
+
+def _transaction_worksheet_title(spreadsheet_id: str, json_path: str) -> str:
+    tab = transaction_tab_title()
+    try:
+        token = _drive_access_token(json_path)
+        meta = _sheets_get_with_token(spreadsheet_id, "sheets.properties(title)", token)
+        titles = [str(s.get("properties", {}).get("title", "")) for s in meta.get("sheets", [])]
+        if tab in titles:
+            return tab
+        if titles:
+            return titles[0]
+    except Exception as exc:
+        logger.warning("sheet_privacy: tidak bisa baca daftar tab: %s", exc)
+    return tab
+
+
+def _append_row_gspread_sa(spreadsheet_id: str, json_path: str, row: List[Any]) -> bool:
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
+
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+    try:
+        creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
+        client = gspread.authorize(creds)
+        sh = client.open_by_key(spreadsheet_id)
+        tab = _transaction_worksheet_title(spreadsheet_id, json_path)
+        try:
+            ws = sh.worksheet(tab)
+        except gspread.WorksheetNotFound:
+            ws = sh.sheet1
+        ws.append_row(row, value_input_option="USER_ENTERED")
+        return True
+    except Exception as exc:
+        logger.warning("sheet_privacy: gspread append gagal: %s", exc)
+        return False
+
+
+def _append_row_oauth_api(spreadsheet_id: str, json_path: str, row: List[Any]) -> bool:
+    """Fallback: tulis sebagai pemilik file (OAuth) — mengatasi proteksi/izin SA."""
+    if not _oauth_configured():
+        return False
+    tab = _transaction_worksheet_title(spreadsheet_id, json_path)
+    range_a1 = f"'{tab}'!A:J" if " " in tab else f"{tab}!A:J"
+    url = (
+        f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/"
+        f"{quote(range_a1, safe='')}:append"
+    )
+    try:
+        token = _oauth_access_token()
+        resp = requests.post(
+            url,
+            params={"valueInputOption": "USER_ENTERED", "insertDataOption": "INSERT_ROWS"},
+            headers={"Authorization": f"Bearer {token}"},
+            json={"values": [row]},
+            timeout=60,
+        )
+        if resp.status_code in (200, 201):
+            logger.info("sheet_privacy: append via OAuth OK pada tab %s", tab)
+            return True
+        logger.warning("sheet_privacy: OAuth append gagal %s: %s", resp.status_code, resp.text[:500])
+    except Exception as exc:
+        logger.warning("sheet_privacy: OAuth append exception: %s", exc)
+    return False
+
+
+def append_transaction_row(spreadsheet_id: str, json_path: str, row: List[Any]) -> None:
+    """Tulis baris transaksi: coba service account, lalu OAuth (pemilik file)."""
+    if _append_row_gspread_sa(spreadsheet_id, json_path, row):
+        return
+    if _append_row_oauth_api(spreadsheet_id, json_path, row):
+        return
+    raise RuntimeError(
+        "Tidak bisa menulis ke sheet (service account & OAuth gagal). "
+        "Jalankan: php artisan google:sheet-setup --reshare=KODE_ORDER"
+    )
 
 
 def verify_service_account_can_open(spreadsheet_id: str, json_path: str) -> bool:
