@@ -874,8 +874,17 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
     )
 
 
-async def save_transaction(message, parsed: Dict[str, Any], greeting_name: str) -> None:
-    uid = message.from_user.id if message.from_user else None
+async def save_transaction(
+    message,
+    parsed: Dict[str, Any],
+    greeting_name: str,
+    *,
+    telegram_user_id: int | None = None,
+) -> None:
+    # Callback "Ya" memakai pesan bot (preview); from_user = bot, bukan pelanggan.
+    uid = telegram_user_id
+    if uid is None and message.from_user:
+        uid = message.from_user.id
     try:
         if uid:
             ensure_user_sheet_from_order(uid)
@@ -1361,7 +1370,9 @@ async def confirm_callback_handler(update: Update, context: ContextTypes.DEFAULT
             await query.edit_message_text("Transaksi dikonfirmasi. Menyimpan ke Google Sheet...")
         except Exception:
             pass
-        await save_transaction(query.message, parsed, greeting_name)
+        await save_transaction(
+            query.message, parsed, greeting_name, telegram_user_id=user_id
+        )
         return
 
     if action == "no":
