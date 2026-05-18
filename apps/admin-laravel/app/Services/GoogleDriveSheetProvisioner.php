@@ -37,10 +37,18 @@ class GoogleDriveSheetProvisioner
             $body['parents'] = [$parentId];
         }
 
+        $query = http_build_query([
+            'supportsAllDrives' => 'true',
+            'includeItemsFromAllDrives' => 'true',
+            'fields' => 'id,name,webViewLink',
+        ]);
+
         $response = Http::withToken($token)
+            ->acceptJson()
+            ->asJson()
             ->timeout(60)
             ->post(
-                "https://www.googleapis.com/drive/v3/files/{$templateId}/copy?supportsAllDrives=true&fields=id,name,webViewLink",
+                "https://www.googleapis.com/drive/v3/files/{$templateId}/copy?{$query}",
                 $body
             );
 
@@ -106,15 +114,23 @@ class GoogleDriveSheetProvisioner
             ->timeout(30)
             ->get(
                 "https://www.googleapis.com/drive/v3/files/{$fileId}",
-                ['supportsAllDrives' => 'true', 'fields' => 'id,name,mimeType']
+                [
+                    'supportsAllDrives' => 'true',
+                    'includeItemsFromAllDrives' => 'true',
+                    'fields' => 'id,name,mimeType,driveId',
+                ]
             );
 
         if ($response->successful()) {
+            $driveId = $response->json('driveId');
+
             return [
                 'ok' => true,
                 'status' => $response->status(),
                 'name' => $response->json('name'),
                 'error' => null,
+                'in_shared_drive' => $driveId !== null && $driveId !== '',
+                'drive_id' => $driveId,
             ];
         }
 

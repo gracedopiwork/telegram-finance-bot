@@ -72,6 +72,13 @@ class GoogleSheetSetupCommand extends Command
                 $folder = $provisioner->inspectDriveFile($parentId);
                 if ($folder['ok']) {
                     $this->line("Folder salinan OK: <info>{$folder['name']}</info> ({$parentId})");
+                    if (empty($folder['in_shared_drive'])) {
+                        $this->newLine();
+                        $this->warn('Folder ini di My Drive (bukan Shared drive). Salinan sering gagal storageQuotaExceeded.');
+                        $this->warn('Buat Shared drive di drive.google.com → tambah laravel-drive@... sebagai Content manager → pakai folder di dalamnya.');
+                    } else {
+                        $this->line('<info>Folder di Shared drive — cocok untuk salinan.</info>');
+                    }
                 } else {
                     $this->error("Folder salinan GAGAL: {$folder['error']}");
                     $this->line('Untuk Shared drive: service account harus anggota Shared drive + folder dibagikan Editor.');
