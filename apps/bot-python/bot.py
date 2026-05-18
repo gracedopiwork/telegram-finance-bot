@@ -314,7 +314,7 @@ def lookup_order_email_for_user(telegram_user_id: int) -> str | None:
             WHERE license_id = %s AND status = 'paid'
             ORDER BY id DESC LIMIT 1
             """,
-            (lic["id"],],
+            (lic["id"],),
         )
         order_row = cursor.fetchone()
         cursor.close()
