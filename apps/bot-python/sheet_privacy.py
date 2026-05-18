@@ -210,17 +210,18 @@ def ensure_service_account_writer(spreadsheet_id: str, json_path: str) -> bool:
 
 def prepare_sheet_for_bot_write(spreadsheet_id: str, json_path: str) -> bool:
     """
-    Pastikan service account punya writer di file Drive (butuh OAuth di .env bot).
-    Proteksi tab sudah diatur Laravel saat provision — tidak diulang di sini.
+    Usahakan SA punya writer (OAuth). Jika Laravel sudah share, cukup verifikasi buka sheet.
     """
+    if verify_service_account_can_open(spreadsheet_id, json_path):
+        return True
     if not _oauth_configured():
-        logger.error(
-            "sheet_privacy: GOOGLE_OAUTH_CLIENT_ID/SECRET/REFRESH_TOKEN wajib di .env bot "
-            "(sama dengan Laravel) agar service account bisa ditambahkan sebagai editor."
+        logger.warning(
+            "sheet_privacy: SA belum bisa buka %s dan GOOGLE_OAUTH_* kosong di .env bot",
+            spreadsheet_id,
         )
         return False
     if not ensure_service_account_writer(spreadsheet_id, json_path):
-        logger.error(
+        logger.warning(
             "sheet_privacy: gagal grant writer ke %s pada %s",
             service_account_email(json_path),
             spreadsheet_id,
@@ -230,7 +231,7 @@ def prepare_sheet_for_bot_write(spreadsheet_id: str, json_path: str) -> bool:
         apply_sheet_protections(spreadsheet_id, json_path)
     except Exception as exc:
         logger.warning("sheet_privacy: apply protections gagal: %s", exc)
-    return True
+    return verify_service_account_can_open(spreadsheet_id, json_path)
 
 
 def _transaction_worksheet_title(spreadsheet_id: str, json_path: str) -> str:

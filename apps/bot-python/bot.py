@@ -899,24 +899,24 @@ async def save_transaction(
 
         from sheet_privacy import append_transaction_row, prepare_sheet_for_bot_write
 
-        if not prepare_sheet_for_bot_write(sid, json_path):
-            await message.reply_text(
-                "Gagal simpan: bot belum bisa akses tulis.\n\n"
-                "Pastikan `GOOGLE_OAUTH_*` di .env bot = Laravel, lalu:\n"
-                "`php artisan google:sheet-setup --reshare=KODE_ORDER`",
-                parse_mode="Markdown",
-            )
-            return
-
+        prepare_sheet_for_bot_write(sid, json_path)
         row = build_sheet_row(parsed)
         append_transaction_row(sid, json_path, row)
         logger.info("Transaksi berhasil disimpan ke Google Sheets %s.", sid)
     except Exception as exc:  # pragma: no cover - defensive guard for external services
         logger.exception("Gagal tulis ke Google Sheets: %s", exc)
         err_short = str(exc).replace("\n", " ")[:200]
+        order_hint = ""
+        if uid:
+            osheet = lookup_order_sheet_for_user(uid)
+            if osheet and osheet.get("order_code"):
+                order_hint = f"\n\nAdmin: `php artisan google:sheet-setup --reshare={osheet['order_code']}`"
         await message.reply_text(
             f"Gagal simpan ke Google Sheets.\n\nDetail: `{err_short}`\n\n"
-            "Coba: `php artisan google:sheet-setup --reshare=KODE_ORDER` lalu `/catat` lagi.",
+            "Pastikan `GOOGLE_OAUTH_*` di `.env` bot **sama** dengan Laravel, "
+            "lalu jalankan perintah reshare di server."
+            f"{order_hint}\n"
+            "Setelah itu `/catat` lagi.",
             parse_mode="Markdown",
         )
         return
