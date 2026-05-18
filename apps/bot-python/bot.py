@@ -807,16 +807,32 @@ async def save_transaction(message, parsed: Dict[str, Any], greeting_name: str) 
     try:
         if uid:
             ensure_user_sheet_from_order(uid)
-            sid = lookup_user_spreadsheet_id(uid)
-            json_path = get_env("GOOGLE_SERVICE_ACCOUNT_JSON", required=False)
-            if sid and json_path and os.path.isfile(json_path):
-                from sheet_privacy import prepare_sheet_for_bot_write
+        sid = lookup_user_spreadsheet_id(uid) if uid else None
+        json_path = get_env("GOOGLE_SERVICE_ACCOUNT_JSON", required=False)
+        if sid and json_path and os.path.isfile(json_path):
+            from sheet_privacy import prepare_sheet_for_bot_write, verify_service_account_can_open
 
-                prepare_sheet_for_bot_write(sid, json_path)
+            if not prepare_sheet_for_bot_write(sid, json_path):
+                await message.reply_text(
+                    "Gagal simpan: bot belum bisa akses tulis ke sheet.\n\n"
+                    "Isi di `.env` bot (sama dengan Laravel):\n"
+                    "`GOOGLE_OAUTH_CLIENT_ID`\n"
+                    "`GOOGLE_OAUTH_CLIENT_SECRET`\n"
+                    "`GOOGLE_OAUTH_REFRESH_TOKEN`\n\n"
+                    "Lalu di server: `php artisan google:sheet-setup --reshare=KODE_ORDER` "
+                    "dan restart bot.",
+                    parse_mode="Markdown",
+                )
+                return
+            if not verify_service_account_can_open(sid, json_path):
+                await message.reply_text(
+                    "Gagal simpan: service account belum bisa membuka spreadsheet.\n"
+                    "Jalankan `php artisan google:sheet-setup --reshare=KODE_ORDER` lalu coba lagi.",
+                )
+                return
         worksheet = build_sheet_client(uid)
         row = build_sheet_row(parsed)
-        next_row = get_next_data_row(worksheet)
-        worksheet.update(f"A{next_row}:J{next_row}", [row], value_input_option="USER_ENTERED")
+        worksheet.append_row(row, value_input_option="USER_ENTERED", table_range="A:J")
         logger.info("Transaksi berhasil disimpan ke Google Sheets.")
     except Exception as exc:  # pragma: no cover - defensive guard for external services
         logger.exception("Gagal tulis ke Google Sheets: %s", exc)
@@ -824,9 +840,8 @@ async def save_transaction(message, parsed: Dict[str, Any], greeting_name: str) 
         err = str(exc).lower()
         if "403" in err or "permission" in err:
             hint = (
-                "\n\nBot perlu akses tulis (service account). "
-                "Pastikan GOOGLE_OAUTH_* di .env bot = Laravel, lalu admin jalankan "
-                "`php artisan google:sheet-setup --reshare=KODE_ORDER`."
+                "\n\nPastikan GOOGLE_OAUTH_* di .env bot = Laravel, lalu:\n"
+                "`php artisan google:sheet-setup --reshare=KODE_ORDER`"
             )
         await message.reply_text(f"Gagal simpan ke Google Sheets. Coba lagi sebentar.{hint}")
         return

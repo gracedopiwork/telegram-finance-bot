@@ -207,15 +207,53 @@ def ensure_service_account_writer(spreadsheet_id: str, json_path: str) -> bool:
     return _grant_drive_role(spreadsheet_id, json_path, sa_email, "writer")
 
 
-def prepare_sheet_for_bot_write(spreadsheet_id: str, json_path: str) -> None:
-    """Pastikan SA bisa menulis ke sheet (share writer + proteksi tab jika perlu)."""
+def prepare_sheet_for_bot_write(spreadsheet_id: str, json_path: str) -> bool:
+    """
+    Pastikan service account punya writer di file Drive (butuh OAuth di .env bot).
+    Proteksi tab sudah diatur Laravel saat provision — tidak diulang di sini.
+    """
+    if not _oauth_configured():
+        logger.error(
+            "sheet_privacy: GOOGLE_OAUTH_CLIENT_ID/SECRET/REFRESH_TOKEN wajib di .env bot "
+            "(sama dengan Laravel) agar service account bisa ditambahkan sebagai editor."
+        )
+        return False
     if not ensure_service_account_writer(spreadsheet_id, json_path):
-        logger.warning("sheet_privacy: gagal grant writer ke service account pada %s", spreadsheet_id)
-        return
+        logger.error(
+            "sheet_privacy: gagal grant writer ke %s pada %s",
+            service_account_email(json_path),
+            spreadsheet_id,
+        )
+        return False
+    return True
+
+
+def verify_service_account_can_open(spreadsheet_id: str, json_path: str) -> bool:
+    """Cek gspread bisa buka spreadsheet sebagai service account."""
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
+
+    sa_email = service_account_email(json_path)
+    if not sa_email:
+        return False
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
     try:
-        apply_sheet_protections(spreadsheet_id, json_path)
+        creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
+        client = gspread.authorize(creds)
+        sh = client.open_by_key(spreadsheet_id)
+        tab = transaction_tab_title()
+        try:
+            sh.worksheet(tab)
+        except gspread.WorksheetNotFound:
+            sh.sheet1
+        logger.info("sheet_privacy: SA %s bisa akses %s", sa_email, spreadsheet_id)
+        return True
     except Exception as exc:
-        logger.warning("sheet_privacy: apply protections gagal (tulis mungkin tetap OK): %s", exc)
+        logger.error("sheet_privacy: SA tidak bisa buka %s: %s", spreadsheet_id, exc)
+        return False
 
 
 def share_sheet_with_customer_email(spreadsheet_id: str, json_path: str, email: str) -> bool:
