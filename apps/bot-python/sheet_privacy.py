@@ -214,24 +214,38 @@ def prepare_sheet_for_bot_write(spreadsheet_id: str, json_path: str) -> bool:
     """
     if verify_service_account_can_open(spreadsheet_id, json_path):
         return True
+    return repair_sheet_for_bot_write(spreadsheet_id, json_path)
+
+
+def repair_sheet_for_bot_write(spreadsheet_id: str, json_path: str) -> bool:
+    """
+    Perbaiki izin lewat OAuth (pemilik file): SA = editor + proteksi tab Transaksi.
+    Butuh GOOGLE_OAUTH_* di .env bot (salin dari Laravel).
+    """
     if not _oauth_configured():
         logger.warning(
-            "sheet_privacy: SA belum bisa buka %s dan GOOGLE_OAUTH_* kosong di .env bot",
-            spreadsheet_id,
+            "sheet_privacy: repair gagal — GOOGLE_OAUTH_* kosong di .env bot (harus sama dengan Laravel)"
         )
         return False
-    if not ensure_service_account_writer(spreadsheet_id, json_path):
-        logger.warning(
-            "sheet_privacy: gagal grant writer ke %s pada %s",
-            service_account_email(json_path),
-            spreadsheet_id,
-        )
+    sa_email = service_account_email(json_path)
+    if not sa_email:
         return False
+    ensure_service_account_writer(spreadsheet_id, json_path)
     try:
+        clear_sheet_protections(spreadsheet_id, json_path)
         apply_sheet_protections(spreadsheet_id, json_path)
     except Exception as exc:
-        logger.warning("sheet_privacy: apply protections gagal: %s", exc)
-    return verify_service_account_can_open(spreadsheet_id, json_path)
+        logger.warning("sheet_privacy: repair protections gagal: %s", exc)
+    ok = verify_service_account_can_open(spreadsheet_id, json_path)
+    if ok:
+        logger.info("sheet_privacy: repair OK untuk SA %s pada %s", sa_email, spreadsheet_id)
+    else:
+        logger.error(
+            "sheet_privacy: repair selesai tetapi SA %s masih tidak bisa buka %s",
+            sa_email,
+            spreadsheet_id,
+        )
+    return ok
 
 
 def _transaction_worksheet_title(spreadsheet_id: str, json_path: str) -> str:
@@ -302,14 +316,41 @@ def _append_row_oauth_api(spreadsheet_id: str, json_path: str, row: List[Any]) -
 
 
 def append_transaction_row(spreadsheet_id: str, json_path: str, row: List[Any]) -> None:
-    """Tulis baris transaksi: coba service account, lalu OAuth (pemilik file)."""
+    """Tulis baris transaksi: SA → perbaiki izin (OAuth) → ulang → cadangan OAuth tanpa proteksi."""
     if _append_row_gspread_sa(spreadsheet_id, json_path, row):
         return
-    if _append_row_oauth_api(spreadsheet_id, json_path, row):
+
+    if repair_sheet_for_bot_write(spreadsheet_id, json_path) and _append_row_gspread_sa(
+        spreadsheet_id, json_path, row
+    ):
         return
+
+    if _oauth_configured():
+        try:
+            clear_sheet_protections(spreadsheet_id, json_path)
+            if _append_row_gspread_sa(spreadsheet_id, json_path, row):
+                try:
+                    apply_sheet_protections(spreadsheet_id, json_path)
+                except Exception as exc:
+                    logger.warning("sheet_privacy: re-apply protections gagal: %s", exc)
+                return
+            if _append_row_oauth_api(spreadsheet_id, json_path, row):
+                try:
+                    apply_sheet_protections(spreadsheet_id, json_path)
+                except Exception as exc:
+                    logger.warning("sheet_privacy: re-apply protections gagal: %s", exc)
+                return
+        except Exception as exc:
+            logger.warning("sheet_privacy: cadangan tanpa proteksi gagal: %s", exc)
+
+    sa_email = service_account_email(json_path) or "(email SA tidak terbaca)"
+    oauth_hint = (
+        "OAuth bot belum di-set — salin GOOGLE_OAUTH_* dari Laravel ke apps/bot-python/.env"
+        if not _oauth_configured()
+        else "OAuth ada tetapi tulis masih gagal — jalankan reshare di Laravel"
+    )
     raise RuntimeError(
-        "Tidak bisa menulis ke sheet (service account & OAuth gagal). "
-        "Jalankan: php artisan google:sheet-setup --reshare=KODE_ORDER"
+        f"Bot tidak bisa menulis ke sheet. Service account: {sa_email}. {oauth_hint}."
     )
 
 

@@ -89,6 +89,74 @@ class GoogleSheetPrivacyService
      *
      * @return array{ok: bool, email: ?string, owners: list<string>, permissions: list<string>, message: string}
      */
+    /**
+     * @return array{ok: bool, email: string, error: ?string}
+     */
+    public function verifyServiceAccountOpensSpreadsheet(string $spreadsheetId): array
+    {
+        $spreadsheetId = trim($spreadsheetId);
+        $saEmail = $this->serviceAccountEmail();
+        if ($spreadsheetId === '' || $saEmail === '') {
+            return ['ok' => false, 'email' => $saEmail, 'error' => 'spreadsheet_id atau service account kosong'];
+        }
+
+        $path = (string) config('services.google.service_account_json', '');
+        if ($path === '' || ! is_readable($path)) {
+            return ['ok' => false, 'email' => $saEmail, 'error' => 'GOOGLE_SERVICE_ACCOUNT_JSON tidak terbaca'];
+        }
+
+        try {
+            $scopes = [
+                'https://www.googleapis.com/auth/spreadsheets',
+                'https://www.googleapis.com/auth/drive',
+            ];
+            $creds = new \Google\Auth\Credentials\ServiceAccountCredentials($scopes, $path);
+            $token = $creds->fetchAuthToken();
+            $access = (string) ($token['access_token'] ?? '');
+            if ($access === '') {
+                return ['ok' => false, 'email' => $saEmail, 'error' => 'token service account kosong'];
+            }
+
+            $response = Http::withToken($access)
+                ->timeout(30)
+                ->get(
+                    "https://sheets.googleapis.com/v4/spreadsheets/{$spreadsheetId}",
+                    ['fields' => 'spreadsheetId,properties.title']
+                );
+
+            if ($response->successful()) {
+                return ['ok' => true, 'email' => $saEmail, 'error' => null];
+            }
+
+            return [
+                'ok' => false,
+                'email' => $saEmail,
+                'error' => $this->formatApiError($response->body(), $response->status()),
+            ];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'email' => $saEmail, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function serviceAccountHasDriveWriter(string $spreadsheetId): bool
+    {
+        $saEmail = strtolower($this->serviceAccountEmail());
+        if ($saEmail === '') {
+            return false;
+        }
+
+        foreach ($this->listPermissionEmails($spreadsheetId) as $entry) {
+            $parts = explode(':', $entry, 2);
+            if (count($parts) === 2
+                && strtolower($parts[0]) === $saEmail
+                && in_array($parts[1], ['writer', 'owner', 'organizer', 'fileOrganizer'], true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function ensureOrderAccessible(Order $order, ?string $spreadsheetId = null): array
     {
         $spreadsheetId = trim($spreadsheetId ?? (string) $order->spreadsheet_id);

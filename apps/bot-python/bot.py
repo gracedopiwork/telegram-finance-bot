@@ -911,12 +911,21 @@ async def save_transaction(
             osheet = lookup_order_sheet_for_user(uid)
             if osheet and osheet.get("order_code"):
                 order_hint = f"\n\nAdmin: `php artisan google:sheet-setup --reshare={osheet['order_code']}`"
+        oauth_ok = bool(
+            get_env("GOOGLE_OAUTH_REFRESH_TOKEN", required=False)
+            and get_env("GOOGLE_OAUTH_CLIENT_ID", required=False)
+            and get_env("GOOGLE_OAUTH_CLIENT_SECRET", required=False)
+        )
+        oauth_line = (
+            "OAuth bot sudah terisi — coba `/catat` sekali lagi (bot akan perbaiki izin otomatis)."
+            if oauth_ok
+            else "Di server: salin `GOOGLE_OAUTH_*` dari `apps/admin-laravel/.env` ke `apps/bot-python/.env`, restart bot."
+        )
         await message.reply_text(
-            f"Gagal simpan ke Google Sheets.\n\nDetail: `{err_short}`\n\n"
-            "Pastikan `GOOGLE_OAUTH_*` di `.env` bot **sama** dengan Laravel, "
-            "lalu jalankan perintah reshare di server."
-            f"{order_hint}\n"
-            "Setelah itu `/catat` lagi.",
+            f"Gagal simpan ke Google Sheet.\n\n`{err_short}`\n\n"
+            f"{oauth_line}"
+            f"{order_hint}\n\n"
+            "Admin VPS: jalankan perintah reshare di atas, lalu `pkill -f python3 bot.py` dan start ulang bot.",
             parse_mode="Markdown",
         )
         return

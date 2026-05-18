@@ -198,12 +198,29 @@ class GoogleSheetSetupCommand extends Command
         }
 
         UserSheet::syncFromOrder($order);
+
+        $saCheck = $privacy->verifyServiceAccountOpensSpreadsheet((string) $order->spreadsheet_id);
+        $saWriter = $privacy->serviceAccountHasDriveWriter((string) $order->spreadsheet_id);
+
         $this->table(['Item', 'Nilai'], [
             ['Email checkout', $diag['email'] ?? '-'],
             ['Pemilik file', implode(', ', $diag['owners']) ?: '-'],
+            ['Service account (bot)', $saCheck['email'] ?: '-'],
+            ['SA editor di Drive', $saWriter ? 'ya' : 'tidak'],
+            ['SA bisa buka sheet', $saCheck['ok'] ? 'ya' : 'tidak — '.$saCheck['error']],
             ['Izin saat ini', implode("\n", $diag['permissions']) ?: '-'],
-            ['Status', $diag['message']],
+            ['Status pelanggan', $diag['message']],
         ]);
+
+        if (! $saCheck['ok']) {
+            $this->error('Bot /catat akan gagal sampai service account bisa akses sheet. Jalankan ulang setelah perbaiki OAuth/reshare.');
+            $this->line('Pastikan file JSON SA di Laravel = yang dipakai bot (GOOGLE_SERVICE_ACCOUNT_JSON).');
+            $this->line('Salin GOOGLE_OAUTH_* ke apps/bot-python/.env lalu restart bot Python.');
+
+            return self::FAILURE;
+        }
+
+        $this->info('Service account siap untuk /catat (setelah OAuth bot = Laravel).');
 
         if (! $diag['ok']) {
             $this->warn('Email checkout belum terdaftar di izin. Cek GOOGLE_OAUTH_* dan storage/logs/laravel.log');
