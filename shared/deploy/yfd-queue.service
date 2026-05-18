@@ -1,0 +1,17 @@
+[Unit]
+Description=YFD Laravel Queue Worker (Google Sheet + email setelah bayar)
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+Restart=always
+RestartSec=5
+WorkingDirectory=/var/www/telegram-finance-bot/apps/admin-laravel
+ExecStart=/usr/bin/php artisan queue:work database --queue=default --sleep=3 --tries=5 --timeout=120
+StandardOutput=append:/var/www/telegram-finance-bot/apps/admin-laravel/storage/logs/queue-worker.log
+StandardError=append:/var/www/telegram-finance-bot/apps/admin-laravel/storage/logs/queue-worker.log
+
+[Install]
+WantedBy=multi-user.target
