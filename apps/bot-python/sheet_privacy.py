@@ -81,18 +81,20 @@ def _access_token(json_path: str) -> str:
     return _service_account_access_token(json_path)
 
 
-def _sheets_get(spreadsheet_id: str, json_path: str, fields: str) -> Dict[str, Any]:
-    token = _access_token(json_path)
+def _sheets_get_with_token(spreadsheet_id: str, fields: str, token: str) -> Dict[str, Any]:
     url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}"
     resp = requests.get(url, params={"fields": fields}, headers={"Authorization": f"Bearer {token}"}, timeout=60)
     resp.raise_for_status()
     return resp.json()
 
 
-def _batch_update(spreadsheet_id: str, json_path: str, requests_body: List[Dict[str, Any]]) -> None:
+def _sheets_get(spreadsheet_id: str, json_path: str, fields: str) -> Dict[str, Any]:
+    return _sheets_get_with_token(spreadsheet_id, fields, _access_token(json_path))
+
+
+def _batch_update_with_token(spreadsheet_id: str, token: str, requests_body: List[Dict[str, Any]]) -> None:
     if not requests_body:
         return
-    token = _access_token(json_path)
     url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}:batchUpdate"
     resp = requests.post(
         url,
@@ -103,8 +105,19 @@ def _batch_update(spreadsheet_id: str, json_path: str, requests_body: List[Dict[
     resp.raise_for_status()
 
 
-def clear_sheet_protections(spreadsheet_id: str, json_path: str) -> None:
-    meta = _sheets_get(spreadsheet_id, json_path, "sheets(protectedRanges(protectedRangeId),properties(sheetId))")
+def _batch_update(spreadsheet_id: str, json_path: str, requests_body: List[Dict[str, Any]]) -> None:
+    _batch_update_with_token(spreadsheet_id, _access_token(json_path), requests_body)
+
+
+def _clear_sheet_protections_with_token(
+    spreadsheet_id: str, token: str, meta: Optional[Dict[str, Any]] = None
+) -> None:
+    if meta is None:
+        meta = _sheets_get_with_token(
+            spreadsheet_id,
+            "sheets(protectedRanges(protectedRangeId),properties(sheetId))",
+            token,
+        )
     deletes: List[Dict[str, Any]] = []
     for sheet in meta.get("sheets", []):
         for pr in sheet.get("protectedRanges", []) or []:
@@ -112,7 +125,17 @@ def clear_sheet_protections(spreadsheet_id: str, json_path: str) -> None:
             if pr_id is not None:
                 deletes.append({"deleteProtectedRange": {"protectedRangeId": pr_id}})
     if deletes:
-        _batch_update(spreadsheet_id, json_path, deletes)
+        _batch_update_with_token(spreadsheet_id, token, deletes)
+
+
+def clear_sheet_protections(spreadsheet_id: str, json_path: str) -> None:
+    token = _drive_access_token(json_path)
+    meta = _sheets_get_with_token(
+        spreadsheet_id,
+        "sheets(protectedRanges(protectedRangeId),properties(sheetId))",
+        token,
+    )
+    _clear_sheet_protections_with_token(spreadsheet_id, token, meta)
 
 
 def _grant_drive_role(spreadsheet_id: str, json_path: str, email: str, role: str) -> bool:
@@ -175,11 +198,32 @@ def _grant_anyone_with_link(spreadsheet_id: str, json_path: str) -> bool:
     return resp.status_code in (200, 201, 409)
 
 
+def ensure_service_account_writer(spreadsheet_id: str, json_path: str) -> bool:
+    """Bot menulis pakai service account — wajib punya role writer di file Drive."""
+    sa_email = service_account_email(json_path)
+    if not sa_email:
+        logger.warning("sheet_privacy: client_email kosong, tidak bisa grant writer SA")
+        return False
+    return _grant_drive_role(spreadsheet_id, json_path, sa_email, "writer")
+
+
+def prepare_sheet_for_bot_write(spreadsheet_id: str, json_path: str) -> None:
+    """Pastikan SA bisa menulis ke sheet (share writer + proteksi tab jika perlu)."""
+    if not ensure_service_account_writer(spreadsheet_id, json_path):
+        logger.warning("sheet_privacy: gagal grant writer ke service account pada %s", spreadsheet_id)
+        return
+    try:
+        apply_sheet_protections(spreadsheet_id, json_path)
+    except Exception as exc:
+        logger.warning("sheet_privacy: apply protections gagal (tulis mungkin tetap OK): %s", exc)
+
+
 def share_sheet_with_customer_email(spreadsheet_id: str, json_path: str, email: str) -> bool:
     """Bagikan sheet ke email checkout (writer dulu), fallback link jika gagal."""
     email = (email or "").strip().lower()
     if not email:
         return False
+    ensure_service_account_writer(spreadsheet_id, json_path)
     _grant_drive_role(spreadsheet_id, json_path, email, "writer")
     if not _customer_has_drive_access(spreadsheet_id, json_path, email):
         _grant_drive_role(spreadsheet_id, json_path, email, "reader")
@@ -224,9 +268,9 @@ def apply_sheet_protections(spreadsheet_id: str, json_path: str) -> None:
     transaction_tab = transaction_tab_title()
     dashboard_tab = dashboard_tab_title()
 
-    clear_sheet_protections(spreadsheet_id, json_path)
-
-    meta = _sheets_get(spreadsheet_id, json_path, "sheets.properties(sheetId,title)")
+    token = _drive_access_token(json_path)
+    _clear_sheet_protections_with_token(spreadsheet_id, token)
+    meta = _sheets_get_with_token(spreadsheet_id, "sheets.properties(sheetId,title)", token)
     requests_body: List[Dict[str, Any]] = []
 
     for sheet in meta.get("sheets", []):
@@ -264,5 +308,5 @@ def apply_sheet_protections(spreadsheet_id: str, json_path: str) -> None:
         )
         return
 
-    _batch_update(spreadsheet_id, json_path, requests_body)
+    _batch_update_with_token(spreadsheet_id, token, requests_body)
     logger.debug("sheet_privacy: proteksi diterapkan pada %s", spreadsheet_id)
