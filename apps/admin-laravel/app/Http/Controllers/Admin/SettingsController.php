@@ -21,6 +21,7 @@ class SettingsController extends Controller
         'vision'   => ['label' => 'Visi', 'icon' => 'fas fa-flag'],
         'mission'  => ['label' => 'Misi (8 poin)', 'icon' => 'fas fa-list-ol'],
         'values'   => ['label' => 'Core Values (6)', 'icon' => 'fas fa-heart'],
+        'bot'      => ['label' => 'Integrasi Bot & Email', 'icon' => 'fab fa-telegram'],
     ];
 
     public function index(Request $request)

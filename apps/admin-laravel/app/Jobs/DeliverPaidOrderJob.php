@@ -2,18 +2,17 @@
 
 namespace App\Jobs;
 
-use App\Mail\PaidOrderDeliveredMail;
 use App\Models\Order;
 use App\Models\UserSheet;
 use App\Services\GoogleDriveSheetProvisioner;
 use App\Services\GoogleSheetPrivacyService;
+use App\Services\OrderDeliveryMailer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class DeliverPaidOrderJob implements ShouldQueue
 {
@@ -79,7 +78,7 @@ class DeliverPaidOrderJob implements ShouldQueue
         $order->load('license');
 
         try {
-            Mail::to($order->email)->send(new PaidOrderDeliveredMail($order));
+            app(OrderDeliveryMailer::class)->send($order);
         } catch (\Throwable $e) {
             Log::warning('Email pengiriman order lunas gagal (lisensi tetap di halaman checkout & DB)', [
                 'order_code' => $order->order_code,

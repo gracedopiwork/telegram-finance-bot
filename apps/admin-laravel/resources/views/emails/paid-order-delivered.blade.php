@@ -1,3 +1,10 @@
+@php
+    $licenseKey = $order->license?->license_key ?? '';
+    $sheetHref = $order->spreadsheet_url;
+    if (! $sheetHref && $order->spreadsheet_id) {
+        $sheetHref = 'https://docs.google.com/spreadsheets/d/' . $order->spreadsheet_id . '/edit';
+    }
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -17,19 +24,26 @@
         <p style="font-size: 0.875rem; color: #52525b;">Atau salin tautan: <span style="word-break: break-all;">{{ $telegramBotUrl }}</span></p>
     @else
         <p style="font-size: 0.875rem; color: #b45309; background: #fffbeb; padding: 12px 14px; border-radius: 8px;">
-            Tautan bot belum diatur di server (env <code>TELEGRAM_BOT_URL</code> atau <code>TELEGRAM_BOT_USERNAME</code>, atau pengaturan <code>telegram.bot_url</code> di admin). Hubungi penyedia layanan untuk tautan bot resmi.
+            Tautan bot belum diatur di server. Hubungi tim YFD untuk link bot resmi.
         </p>
     @endif
 
     <h2 style="font-size: 1rem; margin-top: 1.75rem;">2) Aktivasi lisensi</h2>
-    <p style="font-size: 1.1rem; font-weight: 700; letter-spacing: 0.04em;">{{ $order->license->license_key }}</p>
-    <p>Di dalam chat bot, kirim persis baris berikut (bisa copy-paste):</p>
-    <p style="background: #f4f4f5; padding: 12px 16px; border-radius: 8px; font-family: ui-monospace, monospace; font-size: 0.9rem;">/activate {{ $order->license->license_key }}</p>
-    <p style="font-size: 0.875rem; color: #52525b;">Setelah aktif, Anda bisa memakai fitur catat transaksi, <strong>/sheet</strong>, dan lainnya.</p>
+    @if($licenseKey !== '')
+        <p style="font-size: 1.1rem; font-weight: 700; letter-spacing: 0.04em;">{{ $licenseKey }}</p>
+        <p>Di dalam chat bot, kirim persis baris berikut (bisa copy-paste):</p>
+        <p style="background: #f4f4f5; padding: 12px 16px; border-radius: 8px; font-family: ui-monospace, monospace; font-size: 0.9rem;">/activate {{ $licenseKey }}</p>
+        <p style="font-size: 0.875rem; color: #52525b;">Setelah aktif, Anda bisa memakai fitur catat transaksi, <strong>/sheet</strong>, voice note, dan lainnya.</p>
+    @else
+        <p style="font-size: 0.875rem; color: #52525b;">Kode lisensi sedang disiapkan. Cek halaman sukses pembayaran atau hubungi support.</p>
+    @endif
 
     <h2 style="font-size: 1rem; margin-top: 1.75rem;">3) Google Sheet Anda</h2>
-    @if($order->spreadsheet_url)
-        <p><a href="{{ $order->spreadsheet_url }}" style="color: #2563eb; font-weight: 600;">Buka spreadsheet</a></p>
+    @if($sheetHref)
+        <p>
+            <a href="{{ $sheetHref }}" style="display: inline-block; background: #16a34a; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 600;">Buka Google Sheet</a>
+        </p>
+        <p style="font-size: 0.875rem; color: #52525b; word-break: break-all;">{{ $sheetHref }}</p>
         <p style="font-size: 0.875rem; color: #52525b;">
             Login ke Google dengan <strong>{{ $order->email }}</strong> (email yang Anda isi saat checkout), lalu buka tautan di atas.
             Link ini juga bisa ditampilkan lagi di bot dengan perintah <strong>/sheet</strong> setelah aktivasi.
@@ -38,6 +52,6 @@
         <p style="font-size: 0.875rem; color: #52525b;">Spreadsheet sedang disiapkan. Coba lagi nanti perintah <strong>/sheet</strong> di bot, atau hubungi support.</p>
     @endif
 
-    <p style="margin-top: 2rem; font-size: 0.8125rem; color: #71717a;">Email otomatis. Mohon tidak membalas ke alamat pengirim.</p>
+    <p style="margin-top: 2rem; font-size: 0.8125rem; color: #71717a;">Email otomatis dari YFD. Mohon tidak membalas ke alamat pengirim.</p>
 </body>
 </html>

@@ -125,6 +125,8 @@ class CompanyProfileSeeder extends Seeder
             ['key' => 'values.v6.title',     'value' => 'Healers of Financial Trauma',                             'type' => 'text',     'group' => 'values',  'label' => 'Value 6 — Judul',      'sort' => 16],
             ['key' => 'values.v6.icon',      'value' => 'healing',                                                 'type' => 'text',     'group' => 'values',  'label' => 'Value 6 — Icon',       'sort' => 17],
             ['key' => 'values.v6.desc',      'value' => 'YFD hadir sebagai pemutus pola dan trauma finansial. Membantu mengenali luka finansial masa lalu, memahami pola perilaku uang, lalu membangun strategi yang lebih sehat.', 'type' => 'textarea', 'group' => 'values', 'label' => 'Value 6 — Deskripsi', 'sort' => 18],
+
+            ['key' => 'telegram.bot_url', 'value' => '', 'type' => 'text', 'group' => 'bot', 'label' => 'Tautan bot (https://t.me/... atau @usernameBot)', 'sort' => 1],
         ];
 
         foreach ($settings as $s) {
