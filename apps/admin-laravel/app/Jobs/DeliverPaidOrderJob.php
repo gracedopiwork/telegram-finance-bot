@@ -55,6 +55,12 @@ class DeliverPaidOrderJob implements ShouldQueue
     private function provisionSheetBestEffort(Order $order, GoogleDriveSheetProvisioner $provisioner): void
     {
         if (! $provisioner->isConfigured()) {
+            Log::error('Google Sheet provisioning dilewati — konfigurasi tidak lengkap', [
+                'order_code' => $order->order_code,
+                'template_id' => (string) config('services.google.user_sheet_template_id', ''),
+                'service_account_json' => (string) config('services.google.service_account_json', ''),
+            ]);
+
             return;
         }
 

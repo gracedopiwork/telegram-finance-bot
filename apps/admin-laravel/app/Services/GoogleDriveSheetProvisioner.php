@@ -64,11 +64,22 @@ class GoogleDriveSheetProvisioner
 
         $url = (string) ($response->json('webViewLink') ?: "https://docs.google.com/spreadsheets/d/{$id}/edit");
 
-        $diag = app(GoogleSheetPrivacyService::class)->ensureOrderAccessible($order->fresh(), $id);
-        if (! $diag['ok']) {
-            throw new \RuntimeException(
-                'Sheet tersalin tetapi akses gagal untuk '.$order->order_code.': '.$diag['message']
-            );
+        // Izin/share bisa gagal (email luar, OAuth, dll.) — jangan buang salinan yang sudah jadi.
+        try {
+            $diag = app(GoogleSheetPrivacyService::class)->ensureOrderAccessible($order->fresh(), $id);
+            if (! $diag['ok']) {
+                Log::warning('Sheet tersalin tetapi izin belum lengkap', [
+                    'order_code' => $order->order_code,
+                    'spreadsheet_id' => $id,
+                    'message' => $diag['message'],
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Sheet tersalin tetapi ensureOrderAccessible error', [
+                'order_code' => $order->order_code,
+                'spreadsheet_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
         }
 
         return ['id' => $id, 'url' => $url];
