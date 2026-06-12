@@ -87,4 +87,15 @@ return [
         'timeout_seconds' => (int) env('SYNC_DASHBOARD_TIMEOUT', 3600),
     ],
 
+    'order_delivery' => [
+        /** wa | email | both */
+        'channel' => env('ORDER_DELIVERY_CHANNEL', 'wa'),
+    ],
+
+    'fonnte' => [
+        'api_url' => env('FONNTE_API_URL', 'https://api.fonnte.com/send'),
+        'token' => env('FONNTE_TOKEN'),
+        'timeout' => (int) env('FONNTE_TIMEOUT', 30),
+    ],
+
 ];

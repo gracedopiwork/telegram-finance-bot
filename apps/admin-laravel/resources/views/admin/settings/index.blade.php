@@ -71,7 +71,7 @@
                                     <input type="text" name="settings[{{ $s->key }}]" value="{{ $s->value }}" class="form-control form-control-sm">
                                     @if($s->key === 'telegram.bot_url')
                                         <small class="form-text text-muted">
-                                            Dipakai di email pembeli & halaman sukses checkout. Contoh: <code>https://t.me/NamaBot</code> atau <code>@NamaBot</code>.
+                                            Dipakai di WA/email pembeli & halaman sukses checkout. Contoh: <code>https://t.me/NamaBot</code> atau <code>@NamaBot</code>.
                                             Bisa juga lewat env <code>TELEGRAM_BOT_USERNAME</code>.
                                         </small>
                                     @endif

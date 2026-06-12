@@ -9,7 +9,7 @@ use App\Models\License;
 use App\Models\Order;
 use App\Models\UserSheet;
 use App\Services\GoogleSheetPrivacyService;
-use App\Services\OrderDeliveryMailer;
+use App\Services\OrderDeliveryNotifier;
 use App\Support\TelegramBotUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -69,6 +69,7 @@ class OrdersController extends Controller
         return view('admin.orders.show', [
             'order' => $order,
             'telegramBotUrl' => TelegramBotUrl::resolve(),
+            'deliveryChannelLabel' => app(OrderDeliveryNotifier::class)->primaryChannelLabel(),
         ]);
     }
 
@@ -148,11 +149,11 @@ class OrdersController extends Controller
             ->with('success', 'Job pembuatan Google Sheet dimasukkan antrian. Refresh halaman ini setelah beberapa detik (pastikan queue:work berjalan).');
     }
 
-    public function resendDeliveryEmail(Order $order, OrderDeliveryMailer $mailer)
+    public function resendDelivery(Order $order, OrderDeliveryNotifier $notifier)
     {
         if ($order->status !== 'paid' || ! $order->license) {
             return redirect()->route('admin.orders.show', $order)
-                ->with('error', 'Hanya order lunas dengan lisensi yang bisa dikirim email.');
+                ->with('error', 'Hanya order lunas dengan lisensi yang bisa dikirim ringkasan.');
         }
 
         if (! TelegramBotUrl::resolve()) {
@@ -161,18 +162,22 @@ class OrdersController extends Controller
         }
 
         try {
-            $mailer->send($order);
+            $notifier->send($order);
         } catch (\Throwable $e) {
             return redirect()->route('admin.orders.show', $order)
-                ->with('error', 'Gagal kirim email: '.$e->getMessage());
+                ->with('error', 'Gagal kirim: '.$e->getMessage());
         }
 
         if (! $order->purchase_delivery_sent_at) {
             $order->update(['purchase_delivery_sent_at' => now()]);
         }
 
+        $destination = in_array('wa', $notifier->enabledChannels(), true)
+            ? 'WhatsApp '.$order->phone
+            : $order->email;
+
         return redirect()->route('admin.orders.show', $order)
-            ->with('success', 'Email terkirim ke '.$order->email.' (bot, lisensi, Google Sheet).');
+            ->with('success', 'Ringkasan terkirim ke '.$destination.' (bot, lisensi, Google Sheet).');
     }
 
     public function destroy(Order $order)

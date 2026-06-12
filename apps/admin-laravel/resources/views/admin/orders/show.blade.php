@@ -276,21 +276,34 @@
             </div>
         </div>
 
-        {{-- Email pengiriman (bot + lisensi + sheet) --}}
+        {{-- Pengiriman ringkasan (bot + lisensi + sheet) --}}
         @if($order->status === 'paid' && $order->license)
+            @php
+                $deliveryChannel = config('services.order_delivery.channel', 'wa');
+                $deliveryUsesWa = in_array($deliveryChannel, ['wa', 'both'], true);
+                $deliveryUsesEmail = in_array($deliveryChannel, ['email', 'both'], true);
+                $deliveryTarget = $deliveryUsesWa ? $order->phone : $order->email;
+            @endphp
             <div class="card card-outline card-info">
                 <div class="card-header">
-                    <h3 class="card-title mb-0"><i class="fas fa-envelope mr-2"></i>Email ke pelanggan</h3>
+                    <h3 class="card-title mb-0">
+                        @if($deliveryUsesWa)
+                            <i class="fab fa-whatsapp mr-2 text-success"></i>Pengiriman ke pelanggan
+                        @else
+                            <i class="fas fa-envelope mr-2"></i>Pengiriman ke pelanggan
+                        @endif
+                    </h3>
                 </div>
                 <div class="card-body">
                     <p class="small text-muted mb-2">
-                        Isi email: tautan bot Telegram, kode lisensi + <code>/activate</code>, link Google Sheet.
+                        Channel: <strong>{{ $deliveryChannelLabel ?? $deliveryChannel }}</strong> —
+                        tautan bot Telegram, kode lisensi + <code>/activate</code>, link Google Sheet.
                     </p>
                     @if($order->purchase_delivery_sent_at)
                         <p class="small mb-2">
                             <span class="badge badge-success">Terkirim</span>
                             {{ $order->purchase_delivery_sent_at->format('d M Y H:i') }}
-                            → <strong>{{ $order->email }}</strong>
+                            → <strong>{{ $deliveryTarget }}</strong>
                         </p>
                     @else
                         <p class="small mb-2"><span class="badge badge-warning">Belum terkirim</span> — pastikan queue jalan atau kirim manual.</p>
@@ -301,15 +314,20 @@
                             Tautan bot belum di-set (<code>TELEGRAM_BOT_USERNAME</code> atau Site Settings → Integrasi Bot).
                         </p>
                     @endif
-                    <p class="small text-muted mb-2">MAIL: <code>{{ config('mail.default') }}</code> dari <code>{{ config('mail.from.address') }}</code></p>
-                    <form method="post" action="{{ route('admin.orders.resendDeliveryEmail', $order) }}" class="js-confirm-form" data-msg="Kirim email ke {{ $order->email }}?">
+                    @if($deliveryUsesWa)
+                        <p class="small text-muted mb-2">Fonnte: <code>{{ config('services.fonnte.token') ? 'token terisi' : 'FONNTE_TOKEN kosong' }}</code></p>
+                    @endif
+                    @if($deliveryUsesEmail)
+                        <p class="small text-muted mb-2">MAIL: <code>{{ config('mail.default') }}</code> dari <code>{{ config('mail.from.address') }}</code></p>
+                    @endif
+                    <form method="post" action="{{ route('admin.orders.resendDelivery', $order) }}" class="js-confirm-form" data-msg="Kirim ringkasan ke {{ $deliveryTarget }}?">
                         @csrf
                         <button type="submit" class="btn btn-sm btn-info btn-block" @if(empty($telegramBotUrl)) disabled @endif>
-                            <i class="fas fa-paper-plane mr-1"></i>Kirim / kirim ulang email
+                            <i class="fas fa-paper-plane mr-1"></i>Kirim / kirim ulang
                         </button>
                     </form>
                     <p class="small text-muted mb-0 mt-2">
-                        CLI: <code>php artisan order:send-delivery-email {{ $order->order_code }} --force</code>
+                        CLI: <code>php artisan order:send-delivery {{ $order->order_code }} --force</code>
                     </p>
                 </div>
             </div>

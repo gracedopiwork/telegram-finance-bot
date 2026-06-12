@@ -26,7 +26,7 @@
         <div class="lg:col-span-7">
             <div class="bg-white rounded-2xl border border-outline-variant shadow-soft p-7 md:p-9">
                 <h2 class="font-heading text-[20px] font-bold text-primary mb-1">Data Pembeli</h2>
-                <p class="text-[13px] text-on-surface-variant mb-6">Email dan nomor telepon aktif wajib diisi. <strong>Email harus akun Gmail yang sama</strong> dengan yang akan Anda pakai untuk membuka Google Sheet setelah bayar. Setelah lunas, <strong>kode lisensi</strong> tampil di halaman konfirmasi; ringkasan juga dikirim ke email ini bila pengiriman email aktif.</p>
+                <p class="text-[13px] text-on-surface-variant mb-6">Email Gmail dan nomor WhatsApp aktif wajib diisi. <strong>Email harus akun Gmail yang sama</strong> dengan yang akan Anda pakai untuk membuka Google Sheet setelah bayar. Setelah lunas, <strong>kode lisensi</strong> tampil di halaman konfirmasi; ringkasan (bot, lisensi, link sheet) juga dikirim ke WhatsApp Anda.</p>
 
                 <div class="space-y-4">
                     <div>
@@ -117,7 +117,7 @@
 
                 <ul class="mt-5 space-y-2 text-[12.5px] text-on-surface-variant">
                     <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">verified</span> Pembayaran via Midtrans (kartu, VA, GoPay, OVO, ShopeePay, QRIS)</li>
-                    <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">mark_email_read</span> Setelah lunas: <strong>kode lisensi</strong> di halaman sukses bayar + (opsional) email berisi tautan bot &amp; Google Sheet</li>
+                    <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">chat</span> Setelah lunas: <strong>kode lisensi</strong> di halaman sukses bayar + ringkasan via <strong>WhatsApp</strong> (tautan bot &amp; Google Sheet)</li>
                     <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">support_agent</span> Onboarding 1×24 jam oleh tim YFD</li>
                 </ul>
             </div>

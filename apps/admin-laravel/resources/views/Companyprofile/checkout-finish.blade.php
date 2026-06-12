@@ -55,7 +55,7 @@
         @if($order->status === 'paid' && $order->license)
             <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-4">
                 Pembayaran <strong>lunas</strong>. Simpan kode lisensi di bawah ini — kode ini harus sama persis saat Anda
-                <strong>/activate</strong> di bot Telegram. Email ringkasan tetap dikirim jika pengiriman email aktif.
+                <strong>/activate</strong> di bot Telegram. Ringkasan juga dikirim ke WhatsApp <strong>{{ $order->phone }}</strong>.
             </p>
 
             <div class="bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 max-w-lg mx-auto text-left mb-6">
@@ -136,10 +136,10 @@
                 @if($order->status === 'pending')
                     Status pembayaran dikonfirmasi Midtrans dalam beberapa menit. Halaman ini <strong>otomatis dimuat ulang</strong> setiap 12 detik
                     sampai status berubah. Setelah <strong>lunas</strong>, <strong>kode lisensi</strong> akan tampil di sini
-                    (tidak hanya lewat email). Anda juga bisa menyegarkan manual (F5).
+                    (tidak hanya lewat WhatsApp). Anda juga bisa menyegarkan manual (F5).
                 @else
                     Setelah <strong>lunas</strong>, kode lisensi dan tautan Google Sheet tampil di halaman ini
-                    serta dikirim ke email <strong>{{ $order->email }}</strong> bila pengiriman email aktif.
+                    serta dikirim ke WhatsApp <strong>{{ $order->phone }}</strong>.
                 @endif
             </p>
         @endif
