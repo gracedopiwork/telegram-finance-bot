@@ -41,46 +41,56 @@ class DeliverPaidOrderJob implements ShouldQueue
         }
 
         $deliveryAlreadySent = $order->purchase_delivery_sent_at !== null;
-        $sheetRequired = $provisioner->isConfigured();
-        $privacy = app(GoogleSheetPrivacyService::class);
 
-        if ($sheetRequired && $order->spreadsheet_id === null) {
-            $result = $provisioner->copyTemplateForOrder($order);
-            $order->spreadsheet_id = $result['id'];
-            $order->spreadsheet_url = $result['url'];
-            $order->save();
+        // WA/email dulu — jangan ditahan menunggu Google Sheet (sering gagal/lambat di VPS).
+        if (! $deliveryAlreadySent) {
+            $order->load('license');
+            app(OrderDeliveryNotifier::class)->send($order);
+            Order::whereKey($order->id)->update(['purchase_delivery_sent_at' => now()]);
         }
 
-        // Sheet sudah ada di DB tetapi izin sering gagal diam-diam — selalu perbaiki akses.
-        if ($sheetRequired && $order->spreadsheet_id !== null) {
-            $diag = $privacy->ensureOrderAccessible($order->fresh(), (string) $order->spreadsheet_id);
-            if (! $diag['ok']) {
-                throw new \RuntimeException(
-                    'Google Sheet ada tetapi tidak bisa diakses untuk '.$order->order_code.': '.$diag['message']
-                );
-            }
-            UserSheet::syncFromOrder($order->fresh(['license']));
-        }
+        $this->provisionSheetBestEffort($order->fresh(), $provisioner);
+    }
 
-        if ($deliveryAlreadySent) {
+    private function provisionSheetBestEffort(Order $order, GoogleDriveSheetProvisioner $provisioner): void
+    {
+        if (! $provisioner->isConfigured()) {
             return;
         }
 
-        $order->refresh();
+        $privacy = app(GoogleSheetPrivacyService::class);
 
-        if ($sheetRequired && $order->spreadsheet_id === null) {
+        try {
+            if ($order->spreadsheet_id === null) {
+                $result = $provisioner->copyTemplateForOrder($order);
+                $order->spreadsheet_id = $result['id'];
+                $order->spreadsheet_url = $result['url'];
+                $order->save();
+                $order->refresh();
+            }
+        } catch (\Throwable $e) {
             Log::error('Gagal duplikasi Google Sheet untuk order '.$order->order_code, [
-                'exception' => 'spreadsheet_id masih kosong setelah copy',
+                'exception' => $e->getMessage(),
             ]);
-            throw new \RuntimeException('Google Sheet belum terbuat untuk order '.$order->order_code);
         }
 
-        $order->load('license');
+        if ($order->spreadsheet_id === null) {
+            return;
+        }
 
-        app(OrderDeliveryNotifier::class)->send($order);
+        try {
+            $diag = $privacy->ensureOrderAccessible($order->fresh(), (string) $order->spreadsheet_id);
+            if (! $diag['ok']) {
+                Log::warning('Google Sheet ada tetapi izin belum lengkap untuk '.$order->order_code, [
+                    'message' => $diag['message'],
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Gagal terapkan izin Google Sheet untuk order '.$order->order_code, [
+                'exception' => $e->getMessage(),
+            ]);
+        }
 
         UserSheet::syncFromOrder($order->fresh(['license']));
-
-        Order::whereKey($order->id)->update(['purchase_delivery_sent_at' => now()]);
     }
 }

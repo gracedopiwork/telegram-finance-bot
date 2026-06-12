@@ -13,16 +13,13 @@
         }
     }
     $sheetOk = $sheetHref !== null;
-    $sheetFailedAfterJob = $order
+    $deliverySent = $order && $order->purchase_delivery_sent_at !== null;
+    $sheetStillPending = $order
         && $order->status === 'paid'
         && $order->license
-        && ! $sheetOk
-        && $order->purchase_delivery_sent_at !== null;
-    $sheetWaitingForJob = $order
-        && $order->status === 'paid'
-        && $order->license
-        && ! $sheetOk
-        && $order->purchase_delivery_sent_at === null;
+        && ! $sheetOk;
+    $sheetWaitingForJob = $sheetStillPending && ! $deliverySent;
+    $sheetFailedAfterJob = $sheetStillPending && $deliverySent;
     $sheetPollMax = 45;
     $sheetPollInterval = 8;
 @endphp
@@ -31,7 +28,7 @@
     @if($order && $order->status === 'pending')
         {{-- Midtrans webhook bisa beberapa detik setelah redirect; muat ulang agar kode lisensi muncul setelah lunas --}}
         <meta http-equiv="refresh" content="12">
-    @elseif($sheetWaitingForJob && $sheetPoll < $sheetPollMax)
+    @elseif($sheetStillPending && $sheetPoll < $sheetPollMax)
         {{-- Job DeliverPaidOrderJob async: polling sampai spreadsheet_id/url terisi atau batas waktu --}}
         <meta http-equiv="refresh" content="{{ $sheetPollInterval }};url={{ request()->fullUrlWithQuery(['sheet_poll' => $sheetPoll + 1]) }}">
     @endif
@@ -98,36 +95,43 @@
                     </p>
                 @elseif($sheetFailedAfterJob)
                     <p class="text-body-md text-on-surface-variant mb-2">
-                        <span class="inline-flex items-center gap-1 font-semibold text-red-800">
-                            <span class="material-symbols-outlined text-[20px]">error</span> Tidak terbuat otomatis
+                        <span class="inline-flex items-center gap-1 font-semibold text-amber-900">
+                            <span class="material-symbols-outlined text-[20px]">chat</span> WhatsApp sudah dikirim
                         </span>
-                        — proses pengiriman order sudah selesai di server, tetapi tidak ada ID/link spreadsheet di database.
+                        ke <strong>{{ $order->phone }}</strong> (bot + kode lisensi).
+                        <span class="inline-flex items-center gap-1 font-semibold text-red-800 mt-2 block">
+                            <span class="material-symbols-outlined text-[20px]">error</span> Google Sheet belum terbuat otomatis
+                        </span>
                     </p>
                     <p class="text-[12px] text-on-surface-variant leading-relaxed mb-0">
-                        Konfigurasi sudah benar di server tetapi order ini gagal saat pembayaran pertama — minta admin jalankan
+                        Anda tetap bisa <strong>/activate</strong> di bot sekarang. Untuk sheet, minta admin jalankan
                         <code class="text-[11px] bg-white/80 px-1 rounded">php artisan google:sheet-setup --provision={{ $order->order_code }}</code>
-                        atau tombol &quot;Salin ulang&quot; di panel admin. Tanpa itu halaman ini tidak berubah meskipun <code class="text-[11px] bg-white/80 px-1 rounded">google:sheet-setup</code> tanpa <code class="text-[11px] bg-white/80 px-1 rounded">--provision</code> sudah OK.
+                        atau tombol &quot;Salin ulang&quot; di panel admin, lalu refresh halaman ini.
                     </p>
                 @elseif($sheetWaitingForJob && $sheetPoll < $sheetPollMax)
                     <p class="text-body-md text-on-surface-variant mb-2">
                         <span class="inline-flex items-center gap-1 font-semibold text-amber-900">
-                            <span class="material-symbols-outlined text-[20px] animate-pulse">hourglass_top</span> Menunggu
+                            <span class="material-symbols-outlined text-[20px] animate-pulse">hourglass_top</span> Memproses order
                         </span>
-                        — sistem sedang menyalin template Google Sheet (antrian). Halaman ini memuat ulang otomatis setiap {{ $sheetPollInterval }} detik
+                        — antrian server sedang mengirim WhatsApp &amp; menyiapkan Google Sheet. Halaman ini memuat ulang setiap {{ $sheetPollInterval }} detik
                         ({{ $sheetPoll + 1 }}/{{ $sheetPollMax }}).
                     </p>
                     <p class="text-[12px] text-on-surface-variant mb-0">
-                        Jika lama tidak berubah, pastikan worker antrian jalan di VPS.
+                        Jika lama tidak berubah, worker antrian (<code class="text-[11px] bg-white/80 px-1 rounded">queue:work</code>) mungkin belum jalan di VPS.
                     </p>
                 @else
                     <p class="text-body-md text-on-surface-variant mb-2">
                         <span class="inline-flex items-center gap-1 font-semibold text-amber-900">
                             <span class="material-symbols-outlined text-[20px]">schedule</span> Batas polling
                         </span>
-                        — setelah beberapa kali refresh, spreadsheet masih belum muncul.
+                        — setelah beberapa kali refresh, proses belum selesai.
                     </p>
                     <p class="text-[12px] text-on-surface-variant mb-0">
-                        Muat ulang manual (F5) atau cek antrian worker, konfigurasi Google, dan log Laravel. Anda tetap bisa memakai kode lisensi di atas untuk <strong>/activate</strong> di bot.
+                        @if($deliverySent)
+                            Cek WhatsApp <strong>{{ $order->phone }}</strong> untuk kode lisensi. Sheet belum muncul — hubungi tim YFD.
+                        @else
+                            Antrian server kemungkinan tidak jalan. Hubungi tim YFD atau coba refresh nanti. Kode lisensi di atas tetap bisa dipakai untuk <strong>/activate</strong>.
+                        @endif
                     </p>
                 @endif
             </div>
@@ -162,6 +166,16 @@
                 </div>
                 @if($order->status === 'paid' && $order->license)
                     <div class="flex justify-between gap-2 pt-1 border-t border-outline-variant/60">
+                        <dt class="text-on-surface-variant shrink-0">WhatsApp</dt>
+                        <dd class="text-right font-semibold text-[12px]">
+                            @if($deliverySent)
+                                <span class="text-emerald-700">Terkirim</span>
+                            @else
+                                <span class="text-amber-800">Menunggu…</span>
+                            @endif
+                        </dd>
+                    </div>
+                    <div class="flex justify-between gap-2">
                         <dt class="text-on-surface-variant shrink-0">Google Sheet</dt>
                         <dd class="text-right font-semibold text-[12px]">
                             @if($sheetOk)
