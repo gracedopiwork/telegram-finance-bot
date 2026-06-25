@@ -56,6 +56,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Legacy hostnames → 301 redirect to APP_URL (mis. domain lama di Google)
+    |--------------------------------------------------------------------------
+    */
+    'legacy_redirect_hosts' => array_values(array_filter(array_map(
+        static fn (string $h): string => strtolower(trim($h)),
+        explode(',', (string) env('LEGACY_REDIRECT_HOSTS', 'vehiclemanagement.online,www.vehiclemanagement.online'))
+    ))),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

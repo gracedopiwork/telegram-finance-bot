@@ -1,0 +1,23 @@
+# Salin ke /etc/nginx/sites-available/ lalu enable + reload nginx.
+# Ganti yourfinancialdoctor.id jika perlu.
+#
+# HTTP — redirect langsung
+server {
+    listen 80;
+    listen [::]:80;
+    server_name vehiclemanagement.online www.vehiclemanagement.online;
+    return 301 https://yourfinancialdoctor.id$request_uri;
+}
+
+# HTTPS — butuh sertifikat untuk domain lama (certbot bisa jika DNS masih ke VPS ini):
+#   sudo certbot certonly --nginx -d vehiclemanagement.online -d www.vehiclemanagement.online
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name vehiclemanagement.online www.vehiclemanagement.online;
+
+    ssl_certificate     /etc/letsencrypt/live/vehiclemanagement.online/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/vehiclemanagement.online/privkey.pem;
+
+    return 301 https://yourfinancialdoctor.id$request_uri;
+}
