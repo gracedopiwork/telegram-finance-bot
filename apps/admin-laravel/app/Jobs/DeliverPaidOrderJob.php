@@ -33,8 +33,10 @@ class DeliverPaidOrderJob implements ShouldQueue
         return [30, 120, 300, 600];
     }
 
-    public function handle(GoogleDriveSheetProvisioner $provisioner): void
-    {
+    public function handle(
+        GoogleDriveSheetProvisioner $provisioner,
+        OrderDeliveryNotifier $notifier,
+    ): void {
         $order = Order::with('license')->find($this->orderId);
         if (! $order || $order->status !== 'paid' || ! $order->license) {
             return;
@@ -42,23 +44,31 @@ class DeliverPaidOrderJob implements ShouldQueue
 
         $deliveryAlreadySent = $order->purchase_delivery_sent_at !== null;
 
-        // WA/email dulu — jangan ditahan menunggu Google Sheet (sering gagal/lambat di VPS).
-        if (! $deliveryAlreadySent) {
-            $order->load('license');
-            app(OrderDeliveryNotifier::class)->send($order);
-            Order::whereKey($order->id)->update(['purchase_delivery_sent_at' => now()]);
-        }
+        // Sheet dulu — jangan ditahan menunggu WA (Fonnte sering belum aktif / gagal).
+        $this->provisionSheetBestEffort($order, $provisioner);
+        $order = $order->fresh(['license']);
 
-        $this->provisionSheetBestEffort($order->fresh(), $provisioner);
+        if (! $deliveryAlreadySent) {
+            try {
+                $notifier->send($order);
+                Order::whereKey($order->id)->update(['purchase_delivery_sent_at' => now()]);
+            } catch (\Throwable $e) {
+                Log::warning('Pengiriman WA/email gagal — Google Sheet tetap tersedia di checkout', [
+                    'order_code' => $order->order_code,
+                    'exception' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     private function provisionSheetBestEffort(Order $order, GoogleDriveSheetProvisioner $provisioner): void
     {
         if (! $provisioner->isConfigured()) {
-            Log::error('Google Sheet provisioning dilewati — konfigurasi tidak lengkap', [
+            Log::error('Google Sheet TIDAK dibuat — konfigurasi .env tidak lengkap', [
                 'order_code' => $order->order_code,
-                'template_id' => (string) config('services.google.user_sheet_template_id', ''),
-                'service_account_json' => (string) config('services.google.service_account_json', ''),
+                'GOOGLE_USER_SHEET_TEMPLATE_ID' => (string) config('services.google.user_sheet_template_id', '') ?: '(kosong)',
+                'GOOGLE_SERVICE_ACCOUNT_JSON' => (string) config('services.google.service_account_json', '') ?: '(kosong)',
+                'hint' => 'Jalankan: php artisan google:sheet-setup',
             ]);
 
             return;
