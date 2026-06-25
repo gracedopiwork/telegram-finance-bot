@@ -98,4 +98,6 @@ return [
         'timeout' => (int) env('FONNTE_TIMEOUT', 30),
     ],
 
+    'google_site_verification' => env('GOOGLE_SITE_VERIFICATION'),
+
 ];

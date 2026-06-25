@@ -56,6 +56,12 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>@yield('title', 'Your Financial Doctor — Indonesia\'s First Financial Health Center')</title>
     <meta name="description" content="@yield('description', 'YFD adalah pusat kesehatan finansial pertama di Indonesia, didirikan oleh dokter umum yang melihat bahwa dompet yang sakit juga butuh dokter. Building Financially Healthy Generations.')">
+    @if($gscVerification = config('services.google_site_verification'))
+        <meta name="google-site-verification" content="{{ $gscVerification }}">
+    @endif
+    @if($canonical = rtrim((string) config('app.url'), '/'))
+        <link rel="canonical" href="{{ $canonical }}{{ request()->getPathInfo() === '/' ? '/' : request()->getPathInfo() }}">
+    @endif
     <link rel="icon" type="image/png" href="{{ asset($yfd['logo'] ?? 'images/yfd-logo.png') }}">
 
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,line-clamp"></script>
