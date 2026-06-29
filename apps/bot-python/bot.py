@@ -1125,6 +1125,10 @@ async def process_note_input(
         await message.reply_text(HELP_TEXT)
         return
 
+    # Prioritas mood:
+    # 1) mood eksplisit dari user (`mood: ...`)
+    # 2) deteksi keyword mood pada teks
+    # 3) jika tetap tidak ketemu, baru tanya lewat tombol
     forced_mood = extract_forced_mood(text)
     detected_mood = detect_mood_in_text(text) if not forced_mood else None
     resolved_mood = forced_mood or detected_mood
