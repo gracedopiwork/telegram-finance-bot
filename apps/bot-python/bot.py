@@ -21,6 +21,13 @@ from telegram.ext import (
     filters,
 )
 
+from transaction_categories import (
+    VALID_KATEGORI,
+    VALID_SUB_KATEGORI,
+    build_system_prompt_rules,
+    normalize_category_fields,
+)
+
 load_dotenv()
 
 logging.basicConfig(
@@ -29,34 +36,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """
-Anda adalah parser keuangan pribadi.
-Ubah input user menjadi JSON VALID dengan schema berikut:
-{
-  "keterangan": string,
-  "nominal": integer,
-  "jenis": "Pemasukan" | "Pengeluaran",
-  "kategori": "Makan" | "Transport" | "Listrik" | "Air" | "Jajan" | "Social" | "Gaji",
-  "sub_kategori": "Pajak Kendaraan" | "Tabungan Rutin" | "TV Kabel / Streaming" | "Reksadana" | "Pembayaran SPP" | "Belanja Bulanan" | "Dana Darurat" | "Listrik" | "Pakaian" | "Servis Kendaraan" | "Nonton Konser" | "Pengeluaran lain-lain" | "Hadiah / Amplop sosial" | "Popok" | "Jajan / Makan diluar" | "Angkutan Umum" | "Skincare" | "Mainan Anak" | "Ulang Tahun keluarga" | "Vitamin" | "Alat Kesehatan",
-  "sifat": "Need" | "Wants" | "Saving/Investement" | "Donation",
-  "mood": "Happy" | "Neutral" | "Sad" | "Stressed" | "Angry" | "Tired",
-  "impulsif": "Yes" | "No"
-}
-
-Aturan:
-1) keterangan: rapikan typo/singkatan agar mudah dibaca, gunakan kapitalisasi wajar.
-2) nominal: ekstrak angka jadi integer bersih (contoh: 50rb => 50000, 1,2jt => 1200000).
-3) jenis: pilih hanya Pemasukan atau Pengeluaran.
-4) kategori, sub_kategori, sifat, mood: WAJIB pilih dari enum yang tersedia.
-5) impulsif: "Yes" jika pembelian spontan (iseng, kepengen, diskon, tiba-tiba) ATAU
-   perilaku belanja premium saat mood negatif (Sad/Stressed/Angry/Tired) — misalnya
-   makan restoran 250rb saat lelah, kopi Starbucks 100rb karena ngantuk.
-   Bisa tetap "Need" untuk sifat, tetapi impulsif "Yes" bila ada alternatif lebih murah.
-   Kebutuhan rutin terencana dengan nominal wajar → "No".
-6) Balas HANYA JSON murni, tanpa markdown dan tanpa teks tambahan.
-7) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
-   {"error":"invalid_input"}
-"""
+SYSTEM_PROMPT = build_system_prompt_rules()
 
 HELP_TEXT = (
     "Input belum terbaca.\n"
@@ -77,30 +57,8 @@ ACTIVATE_HELP_TEXT = (
 )
 
 VALID_JENIS = {"Pemasukan", "Pengeluaran"}
-VALID_KATEGORI = {"Makan", "Transport", "Listrik", "Air", "Jajan", "Social", "Gaji"}
-VALID_SUB_KATEGORI = {
-    "Pajak Kendaraan",
-    "Tabungan Rutin",
-    "TV Kabel / Streaming",
-    "Reksadana",
-    "Pembayaran SPP",
-    "Belanja Bulanan",
-    "Dana Darurat",
-    "Listrik",
-    "Pakaian",
-    "Servis Kendaraan",
-    "Nonton Konser",
-    "Pengeluaran lain-lain",
-    "Hadiah / Amplop sosial",
-    "Popok",
-    "Jajan / Makan diluar",
-    "Angkutan Umum",
-    "Skincare",
-    "Mainan Anak",
-    "Ulang Tahun keluarga",
-    "Vitamin",
-    "Alat Kesehatan",
-}
+VALID_KATEGORI_SET = set(VALID_KATEGORI)
+VALID_SUB_KATEGORI_SET = set(VALID_SUB_KATEGORI)
 VALID_SIFAT = {"Need", "Wants", "Saving/Investement", "Donation"}
 VALID_MOOD = {"Happy", "Neutral", "Sad", "Stressed", "Angry", "Tired"}
 VALID_IMPULSIF = {"Yes", "No"}
@@ -251,6 +209,7 @@ def infer_impulsif(parsed: Dict[str, Any], source_text: str = "") -> str:
 
 
 def finalize_parsed_transaction(parsed: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
+    normalize_category_fields(parsed, source_text)
     parsed["impulsif"] = infer_impulsif(parsed, source_text)
     return parsed
 
@@ -844,9 +803,9 @@ def normalize_ai_result(data: Dict[str, Any]) -> Dict[str, Any]:
 
     if data["jenis"] not in VALID_JENIS:
         raise ValueError("invalid_jenis")
-    if data["kategori"] not in VALID_KATEGORI:
+    if data["kategori"] not in VALID_KATEGORI_SET:
         raise ValueError("invalid_kategori")
-    if data["sub_kategori"] not in VALID_SUB_KATEGORI:
+    if data["sub_kategori"] not in VALID_SUB_KATEGORI_SET:
         raise ValueError("invalid_sub_kategori")
     if data["sifat"] not in VALID_SIFAT:
         raise ValueError("invalid_sifat")
@@ -858,6 +817,7 @@ def normalize_ai_result(data: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError("invalid_impulsif")
 
     data["keterangan"] = str(data["keterangan"]).strip()
+    normalize_category_fields(data)
     return data
 
 
@@ -999,25 +959,29 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
     if any(keyword in lower_text for keyword in ["gaji", "bonus", "income", "fee", "honor"]):
         jenis = "Pemasukan"
         kategori = "Gaji"
-        sub_kategori = "Tabungan Rutin"
+        sub_kategori = "Pengeluaran lain-lain"
         sifat = "Need"
     elif any(keyword in lower_text for keyword in ["listrik", "pln"]):
         kategori = "Listrik"
         sub_kategori = "Listrik"
         sifat = "Need"
-    elif any(keyword in lower_text for keyword in ["bensin", "transport", "angkot", "ojek", "tol", "parkir"]):
+    elif any(keyword in lower_text for keyword in ["bensin", "transport", "angkot", "ojek", "tol", "parkir", "grab", "gojek"]):
         kategori = "Transport"
         sub_kategori = "Angkutan Umum"
         sifat = "Need"
+    elif any(keyword in lower_text for keyword in ["servis", "bengkel"]):
+        kategori = "Transport"
+        sub_kategori = "Servis Kendaraan"
+        sifat = "Need"
     elif any(keyword in lower_text for keyword in ["air", "pdam"]):
         kategori = "Air"
-        sub_kategori = "Belanja Bulanan"
+        sub_kategori = "Pengeluaran lain-lain"
         sifat = "Need"
-    elif any(keyword in lower_text for keyword in ["makan", "nasi", "sarapan", "lunch", "dinner"]):
+    elif any(keyword in lower_text for keyword in ["makan", "nasi", "sarapan", "lunch", "dinner", "restaurant", "restoran"]):
         kategori = "Makan"
         sub_kategori = "Jajan / Makan diluar"
         sifat = "Need"
-    elif any(keyword in lower_text for keyword in ["hadiah", "amplop", "ultah", "ulang tahun"]):
+    elif any(keyword in lower_text for keyword in ["hadiah", "amplop", "ultah", "ulang tahun", "konser"]):
         kategori = "Social"
         sub_kategori = "Hadiah / Amplop sosial"
         sifat = "Donation"
@@ -1051,7 +1015,7 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
         text,
     )
 
-    return {
+    result = {
         "keterangan": text,
         "nominal": nominal,
         "jenis": jenis,
@@ -1061,6 +1025,9 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
         "mood": mood,
         "impulsif": impulsif,
     }
+    normalize_category_fields(result, text)
+    result["impulsif"] = infer_impulsif(result, text)
+    return result
 
 
 def build_sheet_row(parsed: Dict[str, Any]) -> List[Any]:
