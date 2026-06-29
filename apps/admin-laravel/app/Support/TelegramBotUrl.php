@@ -65,15 +65,15 @@ final class TelegramBotUrl
             return null;
         }
 
-        if (preg_match('#(?:https?://)?(?:www\.)?t\.me/([A-Za-z0-9_]{4,32})(?:[/?#]|$)#i', $raw, $matches)) {
+        if (preg_match('~(?:https?://)?(?:www\.)?t\.me/([A-Za-z0-9_]{4,32})(?:[/?#]|$)~i', $raw, $matches)) {
             return $matches[1];
         }
 
-        if (preg_match('#tg://resolve\?domain=([A-Za-z0-9_]{4,32})#i', $raw, $matches)) {
+        if (preg_match('~tg://resolve\?domain=([A-Za-z0-9_]{4,32})~i', $raw, $matches)) {
             return $matches[1];
         }
 
-        if (preg_match('#(?:https?://)?(?:www\.)?telegram\.(?:me|dog)/([A-Za-z0-9_]{4,32})(?:[/?#]|$)#i', $raw, $matches)) {
+        if (preg_match('~(?:https?://)?(?:www\.)?telegram\.(?:me|dog)/([A-Za-z0-9_]{4,32})(?:[/?#]|$)~i', $raw, $matches)) {
             return $matches[1];
         }
 
