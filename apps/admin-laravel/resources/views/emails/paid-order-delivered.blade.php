@@ -33,8 +33,9 @@
             </p>
         @endif
     @else
-        <p style="font-size: 0.875rem; color: #b45309; background: #fffbeb; padding: 12px 14px; border-radius: 8px;">
-            Tautan bot belum diatur di server. Hubungi tim YFD untuk link bot resmi.
+        <p style="font-size: 0.875rem; color: #52525b; background: #f4f4f5; padding: 12px 14px; border-radius: 8px;">
+            Buka aplikasi Telegram lalu cari bot YFD Finance Bot, kemudian ketuk <strong>Start</strong>.
+            Jika belum ketemu, balas email ini untuk dibantu tim YFD.
         </p>
     @endif
 
