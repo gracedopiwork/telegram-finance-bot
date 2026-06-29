@@ -1065,9 +1065,11 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
 
 def build_sheet_row(parsed: Dict[str, Any]) -> List[Any]:
     now = datetime.now()
+    # Awalan ' memaksa Google Sheets simpan sebagai teks (bukan angka serial 46202...)
+    tanggal = f"'{now.strftime('%d-%m-%Y %H:%M:%S')}"
 
     return [
-        now.strftime("%Y-%m-%d %H:%M:%S"),  # Tanggal
+        tanggal,  # Tanggal
         now.strftime("%B"),  # Bulan
         parsed["jenis"],  # Jenis (Pemasukan/Pengeluaran)
         parsed["kategori"],  # Kategori
