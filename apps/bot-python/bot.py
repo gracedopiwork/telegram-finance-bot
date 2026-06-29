@@ -22,6 +22,15 @@ from telegram.ext import (
 )
 
 from ai_health import log_ai_health_config, report_ai_event, report_gemini_failure
+from ai_quota import (
+    format_quota_exhausted_notice,
+    format_quota_status,
+    format_vision_quota_blocked,
+    has_ai_quota,
+    mark_quota_exhausted_notified,
+    record_ai_usage,
+    should_notify_quota_exhausted,
+)
 from transaction_categories import (
     VALID_KATEGORI,
     VALID_SUB_KATEGORI,
@@ -235,10 +244,18 @@ async def prompt_mood_selection(message, user_id: int, *, intro: str) -> None:
     await message.reply_text(intro + "\n\n" + MOOD_PROMPT_TEXT, reply_markup=build_mood_keyboard())
 
 
-async def queue_mood_from_source_text(message, user_id: int, source_text: str, *, intro: str) -> None:
+async def queue_mood_from_source_text(
+    message,
+    user_id: int,
+    source_text: str,
+    *,
+    intro: str,
+    basic_mode: bool = False,
+) -> None:
     PENDING_MOOD_WAIT[user_id] = {
         "mode": "source_text",
         "source_text": source_text.strip(),
+        "basic_mode": basic_mode,
     }
     await prompt_mood_selection(message, user_id, intro=intro)
 
@@ -251,12 +268,14 @@ async def queue_mood_from_parsed(
     *,
     intro: str,
     source_text: str = "",
+    basic_mode: bool = False,
 ) -> None:
     PENDING_MOOD_WAIT[user_id] = {
         "mode": "parsed",
         "parsed": parsed,
         "greeting_name": greeting_name,
         "source_text": source_text.strip(),
+        "basic_mode": basic_mode,
     }
     await prompt_mood_selection(message, user_id, intro=intro)
 
@@ -1033,6 +1052,44 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
     )
 
 
+def format_preview_with_mode(
+    parsed: Dict[str, Any],
+    greeting_name: str,
+    *,
+    basic_mode: bool = False,
+) -> str:
+    preview = format_transaction_preview(parsed, greeting_name)
+    if basic_mode:
+        preview += "\n\n_(mode biasa — kuota AI habis)_"
+    return preview
+
+
+async def notify_quota_exhausted_if_needed(message, user_id: int) -> None:
+    if not user_id or not should_notify_quota_exhausted(user_id):
+        return
+    await message.reply_text(format_quota_exhausted_notice(), parse_mode="Markdown")
+    mark_quota_exhausted_notified(user_id)
+
+
+def parse_user_transaction(text: str, user_id: int) -> tuple[Dict[str, Any], bool]:
+    if user_id and not has_ai_quota(user_id, "text"):
+        parsed = analyze_without_gemini(text)
+        report_ai_event("fallback", "quota_exhausted")
+        return parsed, True
+
+    try:
+        parsed = analyze_with_gemini(text)
+        if user_id:
+            record_ai_usage(user_id, "text")
+        return parsed, False
+    except Exception as exc:  # pragma: no cover - defensive guard for external services
+        logger.warning("Gagal analisis input AI, fallback parser dipakai: %s", exc)
+        report_gemini_failure(exc, "analyze_with_gemini")
+        parsed = analyze_without_gemini(text)
+        report_ai_event("fallback", str(exc)[:500])
+        return parsed, False
+
+
 async def save_transaction(
     message,
     parsed: Dict[str, Any],
@@ -1144,17 +1201,14 @@ async def process_note_input(
     resolved_mood = forced_mood or detected_mood
 
     try:
-        parsed = analyze_with_gemini(text)
-    except Exception as exc:  # pragma: no cover - defensive guard for external services
-        logger.warning("Gagal analisis input AI, fallback parser dipakai: %s", exc)
-        report_gemini_failure(exc, "analyze_with_gemini")
-        try:
-            parsed = analyze_without_gemini(text)
-            report_ai_event("fallback", str(exc)[:500])
-        except Exception as fallback_exc:
-            logger.warning("Fallback parser juga gagal: %s", fallback_exc)
-            await message.reply_text(HELP_TEXT)
-            return
+        parsed, basic_mode = parse_user_transaction(text, user_id or 0)
+    except Exception as fallback_exc:
+        logger.warning("Parser gagal: %s", fallback_exc)
+        await message.reply_text(HELP_TEXT)
+        return
+
+    if basic_mode and user_id:
+        await notify_quota_exhausted_if_needed(message, user_id)
 
     if resolved_mood:
         parsed["mood"] = resolved_mood
@@ -1168,6 +1222,7 @@ async def process_note_input(
             preferred_name,
             intro="Transaksi sudah kebaca. Mood belum terdeteksi dari struk/catatan ini.",
             source_text=text,
+            basic_mode=basic_mode,
         )
         return
 
@@ -1186,9 +1241,10 @@ async def process_note_input(
     PENDING_CONFIRMATIONS[user_id] = {
         "parsed": parsed,
         "greeting_name": greeting_name,
+        "basic_mode": basic_mode,
     }
     await message.reply_text(
-        format_transaction_preview(parsed, greeting_name),
+        format_preview_with_mode(parsed, greeting_name, basic_mode=basic_mode),
         reply_markup=build_confirmation_keyboard(),
     )
 
@@ -1220,7 +1276,8 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "/activate - aktivasi lisensi\n"
         "/hapuskilat - hapus data terakhir\n"
         "/sheet - buka Google Sheet\n"
-        "/hariini - rangkuman pengeluaran hari ini\n\n"
+        "/hariini - rangkuman pengeluaran hari ini\n"
+        "/kuota - sisa kuota AI parsing bulan ini\n\n"
         "Bisa juga kirim **teks biasa** atau **foto struk**.\n"
         "Contoh:\n"
         "`/catat mkn malm 50rb karena lagi sedih banget jadi iseng beli`",
@@ -1508,12 +1565,14 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         parsed["mood"] = mood_text
         finalize_parsed_transaction(parsed, pending.get("source_text", ""))
         greeting_name = pending["greeting_name"]
+        basic_mode = pending.get("basic_mode", False)
         PENDING_CONFIRMATIONS[user_id] = {
             "parsed": parsed,
             "greeting_name": greeting_name,
+            "basic_mode": basic_mode,
         }
         await update.message.reply_text(
-            format_transaction_preview(parsed, greeting_name),
+            format_preview_with_mode(parsed, greeting_name, basic_mode=basic_mode),
             reply_markup=build_confirmation_keyboard(),
         )
         return
@@ -1561,12 +1620,14 @@ async def mood_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     parsed["mood"] = mood_value
     finalize_parsed_transaction(parsed, pending.get("source_text", ""))
     greeting_name = pending["greeting_name"]
+    basic_mode = pending.get("basic_mode", False)
     PENDING_CONFIRMATIONS[user_id] = {
         "parsed": parsed,
         "greeting_name": greeting_name,
+        "basic_mode": basic_mode,
     }
     await query.message.reply_text(
-        format_transaction_preview(parsed, greeting_name),
+        format_preview_with_mode(parsed, greeting_name, basic_mode=basic_mode),
         reply_markup=build_confirmation_keyboard(),
     )
 
@@ -1616,6 +1677,21 @@ async def confirm_callback_handler(update: Update, context: ContextTypes.DEFAULT
         await query.message.reply_text("Silakan kirim ulang catatan transaksi yang benar.")
 
 
+async def kuota_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
+    user = update.effective_user
+    user_id = user.id if user else 0
+    if not user_id or not is_license_active_for_user(user_id):
+        await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    await update.message.reply_text(
+        format_quota_status(user_id),
+        parse_mode="Markdown",
+    )
+
+
 async def process_struk_image_message(
     message,
     context: ContextTypes.DEFAULT_TYPE,
@@ -1628,6 +1704,11 @@ async def process_struk_image_message(
     if not user_id:
         return
 
+    if not has_ai_quota(user_id, "vision"):
+        await notify_quota_exhausted_if_needed(message, user_id)
+        await message.reply_text(format_vision_quota_blocked(), parse_mode="Markdown")
+        return
+
     temp_path = ""
     try:
         telegram_file = await context.bot.get_file(file_id)
@@ -1635,6 +1716,7 @@ async def process_struk_image_message(
             temp_path = tmp.name
         await telegram_file.download_to_drive(temp_path)
         extracted_text = extract_transaction_text_from_image(temp_path)
+        record_ai_usage(user_id, "vision")
     except Exception as exc:  # pragma: no cover - external provider guard
         logger.exception("Gagal proses gambar transaksi: %s", exc)
         await message.reply_text(
@@ -1726,6 +1808,7 @@ def main() -> None:
     app.add_handler(CommandHandler("hapuskilat", hapuskilat_handler))
     app.add_handler(CommandHandler("sheet", sheet_handler))
     app.add_handler(CommandHandler("hariini", hariini_handler))
+    app.add_handler(CommandHandler("kuota", kuota_handler))
     app.add_handler(CallbackQueryHandler(mood_callback_handler, pattern=r"^mood:"))
     app.add_handler(CallbackQueryHandler(confirm_callback_handler, pattern=r"^confirm:"))
     app.add_handler(MessageHandler(filters.PHOTO, photo_handler))

@@ -79,3 +79,16 @@ CREATE TABLE IF NOT EXISTS payment_events (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(id)
 );
+
+CREATE TABLE IF NOT EXISTS user_ai_usage (
+    telegram_user_id BIGINT NOT NULL,
+    usage_month CHAR(7) NOT NULL,
+    cost_idr INT UNSIGNED NOT NULL DEFAULT 0,
+    text_parse_count INT UNSIGNED NOT NULL DEFAULT 0,
+    vision_parse_count INT UNSIGNED NOT NULL DEFAULT 0,
+    quota_exhausted_notified_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (telegram_user_id, usage_month),
+    INDEX idx_user_ai_usage_month (usage_month)
+);
