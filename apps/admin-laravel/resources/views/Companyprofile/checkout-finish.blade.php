@@ -81,18 +81,10 @@
                         @endif
                     </p>
 
-                    <div class="max-w-lg mx-auto text-left mb-6 border-2 border-amber-200 bg-amber-50/70 rounded-2xl p-5">
-                        <p class="text-[11px] font-bold uppercase tracking-wider text-amber-900 mb-2">Sedang diproses</p>
-                        <p class="text-body-md text-on-surface-variant mb-2">
-                            <span class="inline-flex items-center gap-1 font-semibold text-amber-900">
-                                <span class="material-symbols-outlined text-[20px] animate-pulse">hourglass_top</span> Menyiapkan akses Anda
-                            </span>
-                            — kode lisensi dan link Google Sheet <strong>tidak ditampilkan di halaman ini</strong>, hanya dikirim lewat email.
-                        </p>
-                        <p class="text-[12px] text-on-surface-variant mb-0">
-                            Jika lama tidak berubah, pastikan worker antrian jalan di server atau hubungi tim YFD.
-                        </p>
-                    </div>
+                    <p class="text-sm text-on-surface-variant max-w-lg mx-auto mb-6">
+                        Kode lisensi dan link Google Sheet akan dikirim ke email <strong>{{ $order->email }}</strong>.
+                        Silakan cek folder Spam/Junk. Jika belum masuk juga, hubungi admin YFD.
+                    </p>
                 @endif
             @else
                 <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-4">

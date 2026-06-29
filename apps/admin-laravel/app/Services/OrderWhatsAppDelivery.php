@@ -17,6 +17,22 @@ class OrderWhatsAppDelivery
      */
     public function send(Order $order): void
     {
+        $this->sendToOrderPhone($order, $this->messages->whatsAppText($order));
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    public function sendSheetReady(Order $order): void
+    {
+        $this->sendToOrderPhone($order, $this->messages->whatsAppSheetReadyText($order));
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    private function sendToOrderPhone(Order $order, string $message): void
+    {
         $order->loadMissing('license');
 
         if ($order->status !== 'paid') {
@@ -37,6 +53,6 @@ class OrderWhatsAppDelivery
             throw new \RuntimeException('Nomor WhatsApp tidak valid: '.$phone);
         }
 
-        $this->fonnte->sendText($target, $this->messages->whatsAppText($order));
+        $this->fonnte->sendText($target, $message);
     }
 }

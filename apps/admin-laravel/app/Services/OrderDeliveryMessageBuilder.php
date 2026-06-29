@@ -60,7 +60,44 @@ class OrderDeliveryMessageBuilder
             $lines[] = 'Login dengan Gmail: *'.$order->email.'*';
             $lines[] = 'Setelah aktivasi, ketik /sheet di bot untuk buka lagi.';
         } else {
-            $lines[] = '📊 Spreadsheet sedang disiapkan. Coba /sheet di bot nanti.';
+            $lines[] = '📊 *Google Sheet* sedang disiapkan.';
+            $lines[] = 'Link spreadsheet akan dikirim ke WhatsApp ini otomatis (±1–5 menit) setelah siap.';
+        }
+
+        $lines[] = '';
+        $lines[] = '— YFD (Your Financial Doctor)';
+
+        return implode("\n", $lines);
+    }
+
+    public function whatsAppSheetReadyText(Order $order): string
+    {
+        $order->loadMissing('license');
+
+        $sheetUrl = $this->sheetUrl($order);
+        if ($sheetUrl === null) {
+            throw new \RuntimeException('Spreadsheet belum ada untuk order '.$order->order_code);
+        }
+
+        $licenseKey = trim((string) ($order->license?->license_key ?? ''));
+        $botUrl = TelegramBotUrl::resolve() ?? '';
+
+        $lines = [
+            'Hai '.$order->full_name.',',
+            '',
+            '📊 *Google Sheet Anda sudah siap* (order '.$order->order_code.')',
+            $sheetUrl,
+            '',
+            'Buka dengan Gmail: *'.$order->email.'*',
+        ];
+
+        if ($botUrl !== '') {
+            $lines[] = '';
+            $lines[] = '🤖 Bot Telegram: '.$botUrl;
+        }
+
+        if ($licenseKey !== '') {
+            $lines[] = '🔑 Aktivasi: /activate '.$licenseKey;
         }
 
         $lines[] = '';
