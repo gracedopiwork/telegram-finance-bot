@@ -325,57 +325,38 @@ def repair_sheet_for_bot_write(spreadsheet_id: str, json_path: str) -> bool:
     return ok
 
 
-def _transaction_worksheet_title(spreadsheet_id: str, json_path: str) -> str:
-    tab = transaction_tab_title()
-    try:
-        token = _drive_access_token(json_path)
-        meta = _sheets_get_with_token(spreadsheet_id, "sheets.properties(title)", token)
-        titles = [str(s.get("properties", {}).get("title", "")) for s in meta.get("sheets", [])]
-        if tab in titles:
-            return tab
-        if titles:
-            return titles[0]
-    except Exception as exc:
-        logger.warning("sheet_privacy: tidak bisa baca daftar tab: %s", exc)
-    return tab
+def _resolve_transaction_tab(spreadsheet_id: str, json_path: str) -> str:
+    """Pastikan tab Transaksi ada — jangan fallback ke sheet1 (bisa Dashboard)."""
+    wanted = transaction_tab_title()
+    token = _service_account_access_token(json_path)
+    meta = _sheets_get_with_token(spreadsheet_id, "sheets.properties(title)", token)
+    titles = [str(s.get("properties", {}).get("title", "")) for s in meta.get("sheets", [])]
+    if wanted in titles:
+        return wanted
+    for title in titles:
+        if title.lower() == wanted.lower():
+            return title
+    raise RuntimeError(
+        f"Tab transaksi {wanted!r} tidak ditemukan di spreadsheet. Tab yang ada: {titles}"
+    )
 
 
-def _append_row_gspread_sa(spreadsheet_id: str, json_path: str, row: List[Any]) -> bool:
-    import gspread
-    from oauth2client.service_account import ServiceAccountCredentials
-
-    scope = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
-    ]
-    try:
-        creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
-        client = gspread.authorize(creds)
-        sh = client.open_by_key(spreadsheet_id)
-        tab = _transaction_worksheet_title(spreadsheet_id, json_path)
-        try:
-            ws = sh.worksheet(tab)
-        except gspread.WorksheetNotFound:
-            ws = sh.sheet1
-        ws.append_row(row, value_input_option="USER_ENTERED")
-        return True
-    except Exception as exc:
-        logger.warning("sheet_privacy: gspread append gagal: %s", exc)
-        return False
-
-
-def _append_row_oauth_api(spreadsheet_id: str, json_path: str, row: List[Any]) -> bool:
-    """Fallback: tulis sebagai pemilik file (OAuth) — mengatasi proteksi/izin SA."""
-    if not _oauth_configured():
-        return False
-    tab = _transaction_worksheet_title(spreadsheet_id, json_path)
+def _append_values_to_tab(
+    spreadsheet_id: str,
+    json_path: str,
+    tab: str,
+    row: List[Any],
+    *,
+    oauth: bool = False,
+) -> bool:
+    """Append baris baru via Sheets API (INSERT_ROWS) — tidak menimpa baris lama."""
     range_a1 = f"'{tab}'!A:J" if " " in tab else f"{tab}!A:J"
+    token = _oauth_access_token() if oauth else _service_account_access_token(json_path)
     url = (
         f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/"
         f"{quote(range_a1, safe='')}:append"
     )
     try:
-        token = _oauth_access_token()
         resp = requests.post(
             url,
             params={"valueInputOption": "USER_ENTERED", "insertDataOption": "INSERT_ROWS"},
@@ -384,12 +365,48 @@ def _append_row_oauth_api(spreadsheet_id: str, json_path: str, row: List[Any]) -
             timeout=60,
         )
         if resp.status_code in (200, 201):
-            logger.info("sheet_privacy: append via OAuth OK pada tab %s", tab)
+            updates = resp.json().get("updates", {})
+            logger.info(
+                "sheet_privacy: append OK tab=%s range=%s rows=%s",
+                tab,
+                updates.get("updatedRange"),
+                updates.get("updatedRows"),
+            )
             return True
-        logger.warning("sheet_privacy: OAuth append gagal %s: %s", resp.status_code, resp.text[:500])
+        logger.warning(
+            "sheet_privacy: append gagal tab=%s HTTP %s: %s",
+            tab,
+            resp.status_code,
+            resp.text[:500],
+        )
     except Exception as exc:
-        logger.warning("sheet_privacy: OAuth append exception: %s", exc)
+        logger.warning("sheet_privacy: append exception tab=%s: %s", tab, exc)
     return False
+
+
+def _transaction_worksheet_title(spreadsheet_id: str, json_path: str) -> str:
+    return _resolve_transaction_tab(spreadsheet_id, json_path)
+
+
+def _append_row_gspread_sa(spreadsheet_id: str, json_path: str, row: List[Any]) -> bool:
+    try:
+        tab = _resolve_transaction_tab(spreadsheet_id, json_path)
+        return _append_values_to_tab(spreadsheet_id, json_path, tab, row, oauth=False)
+    except Exception as exc:
+        logger.warning("sheet_privacy: gspread/SA append gagal: %s", exc)
+        return False
+
+
+def _append_row_oauth_api(spreadsheet_id: str, json_path: str, row: List[Any]) -> bool:
+    """Fallback: tulis sebagai pemilik file (OAuth) — mengatasi proteksi/izin SA."""
+    if not _oauth_configured():
+        return False
+    try:
+        tab = _resolve_transaction_tab(spreadsheet_id, json_path)
+        return _append_values_to_tab(spreadsheet_id, json_path, tab, row, oauth=True)
+    except Exception as exc:
+        logger.warning("sheet_privacy: OAuth append gagal: %s", exc)
+        return False
 
 
 def append_transaction_row(

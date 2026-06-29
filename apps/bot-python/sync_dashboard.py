@@ -8,7 +8,7 @@ import mysql.connector
 from dotenv import load_dotenv
 from oauth2client.service_account import ServiceAccountCredentials
 
-from sheet_privacy import apply_sheet_protections, dashboard_tab_title
+from sheet_privacy import apply_sheet_protections, dashboard_tab_title, transaction_tab_title
 
 load_dotenv()
 
@@ -82,6 +82,12 @@ def upsert_dashboard_tab(
     master_sheet_title: str,
     target_spreadsheet_id: str,
 ) -> Tuple[int, int]:
+    if master_sheet_title.strip().lower() == transaction_tab_title().strip().lower():
+        raise RuntimeError(
+            "DASHBOARD_MASTER_SHEET_TITLE tidak boleh sama dengan tab Transaksi — "
+            "sync akan menghapus data transaksi pelanggan."
+        )
+
     source_spreadsheet = client.open_by_key(master_spreadsheet_id)
     source_ws = source_spreadsheet.worksheet(master_sheet_title)
     source_rows = source_ws.row_count
