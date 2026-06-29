@@ -802,6 +802,9 @@ def normalize_ai_result(data: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(nominal, int) or nominal <= 0:
         raise ValueError("invalid_nominal")
 
+    data["keterangan"] = str(data["keterangan"]).strip()
+    normalize_category_fields(data)
+
     if data["jenis"] not in VALID_JENIS:
         raise ValueError("invalid_jenis")
     if data["kategori"] not in VALID_KATEGORI_SET:
@@ -817,8 +820,6 @@ def normalize_ai_result(data: Dict[str, Any]) -> Dict[str, Any]:
     if data["impulsif"] not in VALID_IMPULSIF:
         raise ValueError("invalid_impulsif")
 
-    data["keterangan"] = str(data["keterangan"]).strip()
-    normalize_category_fields(data)
     return data
 
 
@@ -953,7 +954,7 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
     lower_text = text.lower()
     jenis = "Pengeluaran"
     kategori = "Jajan"
-    sub_kategori = "Jajan / Makan diluar"
+    sub_kategori = "Pengeluaran lain-lain"
     sifat = "Wants"
     mood = "Neutral"
 

@@ -58,6 +58,28 @@ KATEGORI_SUB_MAP: dict[str, tuple[str, ...]] = {
     "Gaji": ("Pengeluaran lain-lain",),
 }
 
+DEFAULT_FALLBACK_KATEGORI = "Jajan"
+DEFAULT_FALLBACK_SUB = "Pengeluaran lain-lain"
+
+_KATEGORI_ALIASES: dict[str, str] = {
+    "lain-lain": DEFAULT_FALLBACK_KATEGORI,
+    "lain lain": DEFAULT_FALLBACK_KATEGORI,
+    "other": DEFAULT_FALLBACK_KATEGORI,
+    "umum": DEFAULT_FALLBACK_KATEGORI,
+    "misc": DEFAULT_FALLBACK_KATEGORI,
+    "belanja": DEFAULT_FALLBACK_KATEGORI,
+    "beli": DEFAULT_FALLBACK_KATEGORI,
+}
+
+_SUB_ALIASES: dict[str, str] = {
+    "lain-lain": DEFAULT_FALLBACK_SUB,
+    "lain lain": DEFAULT_FALLBACK_SUB,
+    "pengeluaran lain lain": DEFAULT_FALLBACK_SUB,
+    "other": DEFAULT_FALLBACK_SUB,
+    "misc": DEFAULT_FALLBACK_SUB,
+    "umum": DEFAULT_FALLBACK_SUB,
+}
+
 _WATER_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
     re.compile(pattern, re.IGNORECASE)
     for pattern in (
@@ -146,9 +168,9 @@ def _infer_kategori_from_text(text: str) -> str:
         return "Social"
     if _contains_phrase(text, ("makan", "restaurant", "restoran", "nasi", "sarapan", "lunch", "dinner")):
         return "Makan"
-    if is_electronics_expense(text) or _contains_phrase(text, ("jajan", "belanja", "beli")):
+    if is_electronics_expense(text):
         return "Jajan"
-    return "Jajan"
+    return DEFAULT_FALLBACK_KATEGORI
 
 
 def _kategori_from_strong_signals(text: str) -> str | None:
@@ -226,6 +248,7 @@ Aturan:
    Contoh: ojek/transport → kategori Transport, sub_kategori "Angkutan Umum".
    Contoh: beli hp/laptop/gadget → kategori Jajan, sub_kategori "Pengeluaran lain-lain".
    Contoh: tagihan air/pdam → kategori Air, sub_kategori "Pengeluaran lain-lain".
+   Jika tidak yakin kategori/sub → kategori Jajan, sub_kategori "Pengeluaran lain-lain".
 5) impulsif: "Yes" jika pembelian spontan (iseng, kepengen, diskon, tiba-tiba) ATAU
    perilaku belanja premium saat mood negatif (Sad/Stressed/Angry/Tired).
    Bisa tetap "Need" untuk sifat, tetapi impulsif "Yes" bila ada alternatif lebih murah.
@@ -243,44 +266,64 @@ def _detect_sub_from_text(text: str) -> str | None:
     return None
 
 
+def _normalize_alias(value: str, aliases: dict[str, str]) -> str:
+    key = value.strip().lower()
+    return aliases.get(key, value.strip())
+
+
+def _fallback_sub_for_kategori(kategori: str) -> str:
+    allowed = _allowed_subs_for_kategori(kategori)
+    if DEFAULT_FALLBACK_SUB in allowed:
+        return DEFAULT_FALLBACK_SUB
+    return allowed[0]
+
+
 def _allowed_subs_for_kategori(kategori: str) -> tuple[str, ...]:
-    return KATEGORI_SUB_MAP.get(kategori, ("Pengeluaran lain-lain",))
+    return KATEGORI_SUB_MAP.get(kategori, (DEFAULT_FALLBACK_SUB,))
 
 
 def normalize_category_fields(parsed: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
     """Selaraskan kategori/sub_kategori dengan dropdown Sheet YFD."""
-    kategori = str(parsed.get("kategori", "")).strip()
-    sub = str(parsed.get("sub_kategori", "")).strip()
+    kategori = _normalize_alias(str(parsed.get("kategori", "")), _KATEGORI_ALIASES)
+    sub = _normalize_alias(str(parsed.get("sub_kategori", "")), _SUB_ALIASES)
     combined = f"{parsed.get('keterangan', '')} {source_text}".strip().lower()
 
     strong_kategori = _kategori_from_strong_signals(combined)
     if strong_kategori is not None:
         kategori = strong_kategori
     elif kategori not in VALID_KATEGORI:
-        kategori = _infer_kategori_from_text(combined)
+        kategori = DEFAULT_FALLBACK_KATEGORI
+        sub = DEFAULT_FALLBACK_SUB
     elif kategori == "Air" and not is_water_expense(combined):
         kategori = _infer_kategori_from_text(combined)
 
     allowed = _allowed_subs_for_kategori(kategori)
 
-    if sub not in VALID_SUB_KATEGORI or sub not in allowed:
+    if sub not in VALID_SUB_KATEGORI:
         detected = _detect_sub_from_text(combined)
         if detected in allowed:
             sub = detected
-        elif sub in allowed:
-            pass
         elif sub in VALID_SUB_KATEGORI:
             kategori = _resolve_parent_for_sub(sub, combined, kategori)
             allowed = _allowed_subs_for_kategori(kategori)
         else:
-            sub = allowed[0]
+            sub = _fallback_sub_for_kategori(kategori)
+    elif sub not in allowed:
+        detected = _detect_sub_from_text(combined)
+        if detected in allowed:
+            sub = detected
+        elif sub in VALID_SUB_KATEGORI:
+            kategori = _resolve_parent_for_sub(sub, combined, kategori)
+            allowed = _allowed_subs_for_kategori(kategori)
+        else:
+            sub = _fallback_sub_for_kategori(kategori)
     elif sub == "Pengeluaran lain-lain" and kategori not in _parents_for_sub(sub):
         kategori = _resolve_parent_for_sub(sub, combined, kategori)
         allowed = _allowed_subs_for_kategori(kategori)
 
     if sub not in allowed:
         detected = _detect_sub_from_text(combined)
-        sub = detected if detected in allowed else allowed[0]
+        sub = detected if detected in allowed else _fallback_sub_for_kategori(kategori)
 
     parsed["kategori"] = kategori
     parsed["sub_kategori"] = sub
