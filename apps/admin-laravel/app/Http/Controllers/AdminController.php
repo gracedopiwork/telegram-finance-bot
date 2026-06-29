@@ -11,6 +11,7 @@ use App\Models\License;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Models\UserSheet;
+use App\Services\AiHealthService;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
@@ -37,6 +38,7 @@ class AdminController extends Controller
                 'faqs'     => CpFaq::count(),
                 'articles' => CpArticle::count(),
             ],
+            'aiHealth' => app(AiHealthService::class)->summary(),
             'recentArticles' => CpArticle::latest()->limit(5)->get(),
             'recentOrders'   => Order::latest()->limit(5)->get(),
         ]);

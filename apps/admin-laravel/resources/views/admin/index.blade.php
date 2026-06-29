@@ -14,6 +14,60 @@
     </div>
 </div>
 
+@php
+    $ai = $aiHealth ?? [];
+    $aiStatus = $ai['status'] ?? 'unknown';
+    $aiCardClass = match ($aiStatus) {
+        'ok' => 'card-success',
+        'warning' => 'card-warning',
+        'critical' => 'card-danger',
+        default => 'card-secondary',
+    };
+    $aiBadgeClass = match ($aiStatus) {
+        'ok' => 'badge-success',
+        'warning' => 'badge-warning',
+        'critical' => 'badge-danger',
+        default => 'badge-secondary',
+    };
+    $totals = $ai['totals'] ?? ['success' => 0, 'rate_limit' => 0, 'fallback' => 0, 'error' => 0, 'total' => 0];
+@endphp
+
+<div class="card card-outline {{ $aiCardClass }} mb-4">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-robot mr-2"></i>Status AI Gemini (7 hari terakhir)</h3>
+        <span class="badge {{ $aiBadgeClass }} ml-2">{{ $ai['label'] ?? '—' }}</span>
+    </div>
+    <div class="card-body">
+        <p class="mb-2">{{ $ai['message'] ?? '' }}</p>
+        <div class="row text-center mb-3">
+            <div class="col-3"><strong>{{ $totals['success'] }}</strong><br><small class="text-muted">Sukses AI</small></div>
+            <div class="col-3"><strong class="text-danger">{{ $totals['rate_limit'] }}</strong><br><small class="text-muted">429 / limit</small></div>
+            <div class="col-3"><strong class="text-warning">{{ $totals['fallback'] }}</strong><br><small class="text-muted">Parser lokal</small></div>
+            <div class="col-3"><strong>{{ $totals['total'] }}</strong><br><small class="text-muted">Total</small></div>
+        </div>
+        @if(!empty($ai['fallback_rate']))
+            <p class="small text-muted mb-1">Fallback + rate limit: <strong>{{ $ai['fallback_rate'] }}%</strong> dari total request.</p>
+        @endif
+        @if(!empty($ai['last_rate_limit_at']))
+            <p class="small text-muted mb-1">Terakhir kena limit: {{ $ai['last_rate_limit_at'] }}</p>
+        @endif
+        @if(!empty($ai['last_detail']))
+            <p class="small text-muted mb-2"><code>{{ $ai['last_detail'] }}</code></p>
+        @endif
+        @if(!empty($ai['should_upgrade']))
+            <div class="alert alert-warning mb-2 py-2">
+                <strong>Saran:</strong> aktifkan billing di
+                <a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio</a>
+                → <em>Set up billing</em> (Tier 1, minimal ~$10 kredit).
+            </div>
+        @endif
+        <p class="small text-muted mb-0">
+            Data dikirim otomatis dari bot (<code>POST /api/bot/ai-health</code>). Butuh
+            <code>BOT_INTERNAL_API_TOKEN</code> + <code>LARAVEL_APP_URL</code> di <code>apps/bot-python/.env</code>.
+        </p>
+    </div>
+</div>
+
 <div class="card card-outline card-primary mb-4">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-table mr-2"></i>Sync dashboard (Google Sheets)</h3>

@@ -21,6 +21,7 @@ from telegram.ext import (
     filters,
 )
 
+from ai_health import report_ai_event, report_gemini_failure
 from transaction_categories import (
     VALID_KATEGORI,
     VALID_SUB_KATEGORI,
@@ -843,11 +844,15 @@ def analyze_with_gemini(user_text: str) -> Dict[str, Any]:
             )
             raw_text = response.text if hasattr(response, "text") else ""
             parsed = extract_json(raw_text)
-            return normalize_ai_result(parsed)
+            result = normalize_ai_result(parsed)
+            report_ai_event("success")
+            return result
         except Exception as exc:  # pragma: no cover - external provider fallback
             last_error = exc
+            report_gemini_failure(exc, model_name)
             logger.warning("Model %s gagal dipakai (%s).", model_name, type(exc).__name__)
 
+    report_ai_event("error", str(last_error)[:500] if last_error else "all_models_failed")
     raise RuntimeError(f"Semua model Gemini gagal dipakai: {last_error}")
 
 
@@ -1184,8 +1189,10 @@ async def process_note_input(
         parsed = analyze_with_gemini(text)
     except Exception as exc:  # pragma: no cover - defensive guard for external services
         logger.warning("Gagal analisis input AI, fallback parser dipakai: %s", exc)
+        report_gemini_failure(exc, "analyze_with_gemini")
         try:
             parsed = analyze_without_gemini(text)
+            report_ai_event("fallback", str(exc)[:500])
         except Exception as fallback_exc:
             logger.warning("Fallback parser juga gagal: %s", fallback_exc)
             await message.reply_text(HELP_TEXT)
