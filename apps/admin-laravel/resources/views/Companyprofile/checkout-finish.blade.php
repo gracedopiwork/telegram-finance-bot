@@ -22,14 +22,18 @@
     $sheetFailedAfterJob = $sheetStillPending && $deliverySent;
     $sheetPollMax = 45;
     $sheetPollInterval = 8;
+    $deliveryLabel = $deliveryChannelLabel ?? 'WhatsApp';
+    $deliveryViaEmail = $deliveryViaEmail ?? false;
+    $deliveryContact = $order
+        ? ($deliveryViaEmail ? $order->email : $order->phone)
+        : '';
+    $allReady = $order && $order->status === 'paid' && $order->license && $sheetOk && $deliverySent;
 @endphp
 
 @push('head')
     @if($order && $order->status === 'pending')
-        {{-- Midtrans webhook bisa beberapa detik setelah redirect; muat ulang agar kode lisensi muncul setelah lunas --}}
         <meta http-equiv="refresh" content="12">
-    @elseif($sheetStillPending && $sheetPoll < $sheetPollMax)
-        {{-- Job DeliverPaidOrderJob async: polling sampai spreadsheet_id/url terisi atau batas waktu --}}
+    @elseif($order && $order->status === 'paid' && $order->license && ! $allReady && $sheetPoll < $sheetPollMax)
         <meta http-equiv="refresh" content="{{ $sheetPollInterval }};url={{ request()->fullUrlWithQuery(['sheet_poll' => $sheetPoll + 1]) }}">
     @endif
 @endpush
@@ -50,100 +54,104 @@
         </p>
 
         @if($order->status === 'paid' && $order->license)
-            <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-4">
-                Pembayaran <strong>lunas</strong>. Simpan kode lisensi di bawah ini — kode ini harus sama persis saat Anda
-                <strong>/activate</strong> di bot Telegram. Ringkasan juga dikirim ke WhatsApp <strong>{{ $order->phone }}</strong>.
-            </p>
+            @if($deliveryViaEmail)
+                @if($allReady)
+                    <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
+                        Pembayaran <strong>lunas</strong>. Kode aktivasi bot, tautan Telegram, dan link Google Sheet sudah dikirim ke email
+                        <strong>{{ $order->email }}</strong>. Cek inbox (dan folder Spam) lalu ikuti langkah di email tersebut.
+                    </p>
 
-            <div class="bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 max-w-lg mx-auto text-left mb-6">
-                <p class="text-[11px] font-bold uppercase tracking-wider text-primary mb-2">Kode lisensi bot</p>
-                <code id="licenseKeyDisplay" class="block text-base sm:text-lg font-mono font-bold text-primary break-all select-all bg-white px-4 py-3 rounded-xl border border-outline-variant">{{ $order->license->license_key }}</code>
-                <button type="button"
-                        class="mt-4 w-full btn btn-primary text-sm"
-                        onclick="navigator.clipboard.writeText({{ json_encode($order->license->license_key) }}); this.innerText='Tersalin!';">
-                    Salin kode lisensi
-                </button>
-                <p class="text-[12px] text-on-surface-variant mt-4 leading-relaxed">
-                    Di Telegram, buka bot lalu kirim (bisa copy-paste):<br>
-                    <code class="text-[11px] bg-white px-2 py-1 rounded border border-outline-variant inline-block mt-1 select-all">/activate {{ $order->license->license_key }}</code>
-                </p>
-            </div>
-
-            <div class="max-w-lg mx-auto text-left mb-6 border-2 rounded-2xl p-5
-                @if($sheetOk) border-emerald-200 bg-emerald-50/80
-                @elseif($sheetFailedAfterJob) border-red-200 bg-red-50/70
-                @else border-amber-200 bg-amber-50/70 @endif">
-                <p class="text-[11px] font-bold uppercase tracking-wider mb-2
-                    @if($sheetOk) text-emerald-800
-                    @elseif($sheetFailedAfterJob) text-red-800
-                    @else text-amber-900 @endif">
-                    Status Google Sheet
-                </p>
-                @if($sheetOk)
-                    <p class="text-body-md text-on-surface-variant mb-2">
-                        <span class="inline-flex items-center gap-1 font-semibold text-emerald-800">
-                            <span class="material-symbols-outlined text-[20px]">check_circle</span> Berhasil
-                        </span>
-                        — spreadsheet untuk order ini sudah dibuat.
-                    </p>
-                    <p class="text-[13px] mb-2">
-                        <a href="{{ $sheetHref }}" target="_blank" rel="noopener" class="text-primary font-semibold underline break-all">{{ $sheetHref }}</a>
-                    </p>
-                    <p class="text-[12px] text-on-surface-variant mb-0 leading-relaxed">
-                        Buka link di atas dengan akun Google <strong>{{ $order->email }}</strong> (email yang Anda isi saat checkout).
-                        Jika browser memakai Gmail lain, klik foto profil → <strong>Ganti akun</strong>.
-                    </p>
-                @elseif($sheetFailedAfterJob)
-                    <p class="text-body-md text-on-surface-variant mb-2">
-                        <span class="inline-flex items-center gap-1 font-semibold text-amber-900">
-                            <span class="material-symbols-outlined text-[20px]">chat</span> WhatsApp sudah dikirim
-                        </span>
-                        ke <strong>{{ $order->phone }}</strong> (bot + kode lisensi).
-                        <span class="inline-flex items-center gap-1 font-semibold text-red-800 mt-2 block">
-                            <span class="material-symbols-outlined text-[20px]">error</span> Google Sheet belum terbuat otomatis
-                        </span>
-                    </p>
-                    <p class="text-[12px] text-on-surface-variant leading-relaxed mb-0">
-                        Anda tetap bisa <strong>/activate</strong> di bot sekarang. Untuk sheet, minta admin jalankan
-                        <code class="text-[11px] bg-white/80 px-1 rounded">php artisan google:sheet-setup --provision={{ $order->order_code }}</code>
-                        atau tombol &quot;Salin ulang&quot; di panel admin, lalu refresh halaman ini.
-                    </p>
-                @elseif($sheetWaitingForJob && $sheetPoll < $sheetPollMax)
-                    <p class="text-body-md text-on-surface-variant mb-2">
-                        <span class="inline-flex items-center gap-1 font-semibold text-amber-900">
-                            <span class="material-symbols-outlined text-[20px] animate-pulse">hourglass_top</span> Memproses order
-                        </span>
-                        — antrian server sedang mengirim WhatsApp &amp; menyiapkan Google Sheet. Halaman ini memuat ulang setiap {{ $sheetPollInterval }} detik
-                        ({{ $sheetPoll + 1 }}/{{ $sheetPollMax }}).
-                    </p>
-                    <p class="text-[12px] text-on-surface-variant mb-0">
-                        Jika lama tidak berubah, worker antrian (<code class="text-[11px] bg-white/80 px-1 rounded">queue:work</code>) mungkin belum jalan di VPS.
-                    </p>
+                    <div class="max-w-lg mx-auto text-left mb-6 border-2 border-emerald-200 bg-emerald-50/80 rounded-2xl p-5">
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-800 mb-2">Email terkirim</p>
+                        <p class="text-body-md text-on-surface-variant mb-0">
+                            <span class="inline-flex items-center gap-1 font-semibold text-emerald-800">
+                                <span class="material-symbols-outlined text-[20px]">mark_email_read</span> Semua siap
+                            </span>
+                            — buka email di <strong>{{ $order->email }}</strong> untuk kode <strong>/activate</strong> dan Google Sheet.
+                        </p>
+                    </div>
                 @else
-                    <p class="text-body-md text-on-surface-variant mb-2">
-                        <span class="inline-flex items-center gap-1 font-semibold text-amber-900">
-                            <span class="material-symbols-outlined text-[20px]">schedule</span> Batas polling
-                        </span>
-                        — setelah beberapa kali refresh, proses belum selesai.
-                    </p>
-                    <p class="text-[12px] text-on-surface-variant mb-0">
-                        @if($deliverySent)
-                            Cek WhatsApp <strong>{{ $order->phone }}</strong> untuk kode lisensi. Sheet belum muncul — hubungi tim YFD.
+                    <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
+                        Pembayaran <strong>lunas</strong>. Kami sedang menyiapkan Google Sheet dan mengirim ringkasan lengkap ke email
+                        <strong>{{ $order->email }}</strong>. Halaman ini memuat ulang otomatis
+                        @if($sheetPoll < $sheetPollMax)
+                            ({{ $sheetPoll + 1 }}/{{ $sheetPollMax }}).
                         @else
-                            Antrian server kemungkinan tidak jalan. Hubungi tim YFD atau coba refresh nanti. Kode lisensi di atas tetap bisa dipakai untuk <strong>/activate</strong>.
+                            — jika belum masuk, cek Spam atau hubungi tim YFD.
                         @endif
                     </p>
+
+                    <div class="max-w-lg mx-auto text-left mb-6 border-2 border-amber-200 bg-amber-50/70 rounded-2xl p-5">
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-amber-900 mb-2">Sedang diproses</p>
+                        <p class="text-body-md text-on-surface-variant mb-2">
+                            <span class="inline-flex items-center gap-1 font-semibold text-amber-900">
+                                <span class="material-symbols-outlined text-[20px] animate-pulse">hourglass_top</span> Menyiapkan akses Anda
+                            </span>
+                            — kode lisensi dan link Google Sheet <strong>tidak ditampilkan di halaman ini</strong>, hanya dikirim lewat email.
+                        </p>
+                        <p class="text-[12px] text-on-surface-variant mb-0">
+                            Jika lama tidak berubah, pastikan worker antrian jalan di server atau hubungi tim YFD.
+                        </p>
+                    </div>
                 @endif
-            </div>
+            @else
+                <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-4">
+                    Pembayaran <strong>lunas</strong>. Simpan kode lisensi di bawah ini — kode ini harus sama persis saat Anda
+                    <strong>/activate</strong> di bot Telegram. Ringkasan juga dikirim ke {{ $deliveryLabel }} <strong>{{ $deliveryContact }}</strong>.
+                </p>
+
+                <div class="bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 max-w-lg mx-auto text-left mb-6">
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-primary mb-2">Kode lisensi bot</p>
+                    <code id="licenseKeyDisplay" class="block text-base sm:text-lg font-mono font-bold text-primary break-all select-all bg-white px-4 py-3 rounded-xl border border-outline-variant">{{ $order->license->license_key }}</code>
+                    <button type="button"
+                            class="mt-4 w-full btn btn-primary text-sm"
+                            onclick="navigator.clipboard.writeText({{ json_encode($order->license->license_key) }}); this.innerText='Tersalin!';">
+                        Salin kode lisensi
+                    </button>
+                    <p class="text-[12px] text-on-surface-variant mt-4 leading-relaxed">
+                        Di Telegram, buka bot lalu kirim (bisa copy-paste):<br>
+                        <code class="text-[11px] bg-white px-2 py-1 rounded border border-outline-variant inline-block mt-1 select-all">/activate {{ $order->license->license_key }}</code>
+                    </p>
+                </div>
+
+                <div class="max-w-lg mx-auto text-left mb-6 border-2 rounded-2xl p-5
+                    @if($sheetOk) border-emerald-200 bg-emerald-50/80
+                    @elseif($sheetFailedAfterJob) border-red-200 bg-red-50/70
+                    @else border-amber-200 bg-amber-50/70 @endif">
+                    <p class="text-[11px] font-bold uppercase tracking-wider mb-2
+                        @if($sheetOk) text-emerald-800
+                        @elseif($sheetFailedAfterJob) text-red-800
+                        @else text-amber-900 @endif">
+                        Status Google Sheet
+                    </p>
+                    @if($sheetOk)
+                        <p class="text-body-md text-on-surface-variant mb-2">
+                            <span class="inline-flex items-center gap-1 font-semibold text-emerald-800">
+                                <span class="material-symbols-outlined text-[20px]">check_circle</span> Berhasil
+                            </span>
+                            — spreadsheet untuk order ini sudah dibuat.
+                        </p>
+                        <p class="text-[13px] mb-2">
+                            <a href="{{ $sheetHref }}" target="_blank" rel="noopener" class="text-primary font-semibold underline break-all">{{ $sheetHref }}</a>
+                        </p>
+                    @elseif($sheetFailedAfterJob)
+                        <p class="text-body-md text-on-surface-variant mb-0">
+                            {{ $deliveryLabel }} sudah dikirim, tetapi Google Sheet belum terbuat otomatis. Hubungi tim YFD.
+                        </p>
+                    @elseif($sheetWaitingForJob && $sheetPoll < $sheetPollMax)
+                        <p class="text-body-md text-on-surface-variant mb-0">Google Sheet sedang diproses…</p>
+                    @else
+                        <p class="text-body-md text-on-surface-variant mb-0">Google Sheet belum terlihat — hubungi tim YFD.</p>
+                    @endif
+                </div>
+            @endif
         @else
             <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-8">
                 @if($order->status === 'pending')
                     Status pembayaran dikonfirmasi Midtrans dalam beberapa menit. Halaman ini <strong>otomatis dimuat ulang</strong> setiap 12 detik
-                    sampai status berubah. Setelah <strong>lunas</strong>, <strong>kode lisensi</strong> akan tampil di sini
-                    (tidak hanya lewat WhatsApp). Anda juga bisa menyegarkan manual (F5).
+                    sampai status berubah. Setelah <strong>lunas</strong>, ringkasan dikirim ke email Anda.
                 @else
-                    Setelah <strong>lunas</strong>, kode lisensi dan tautan Google Sheet tampil di halaman ini
-                    serta dikirim ke WhatsApp <strong>{{ $order->phone }}</strong>.
+                    Setelah <strong>lunas</strong>, ringkasan dikirim ke {{ $deliveryLabel }} <strong>{{ $deliveryContact }}</strong>.
                 @endif
             </p>
         @endif
@@ -166,7 +174,7 @@
                 </div>
                 @if($order->status === 'paid' && $order->license)
                     <div class="flex justify-between gap-2 pt-1 border-t border-outline-variant/60">
-                        <dt class="text-on-surface-variant shrink-0">WhatsApp</dt>
+                        <dt class="text-on-surface-variant shrink-0">{{ $deliveryViaEmail ? 'Email' : $deliveryLabel }}</dt>
                         <dd class="text-right font-semibold text-[12px]">
                             @if($deliverySent)
                                 <span class="text-emerald-700">Terkirim</span>
@@ -179,7 +187,7 @@
                         <dt class="text-on-surface-variant shrink-0">Google Sheet</dt>
                         <dd class="text-right font-semibold text-[12px]">
                             @if($sheetOk)
-                                <span class="text-emerald-700">Siap</span>
+                                <span class="text-emerald-700">{{ $deliveryViaEmail ? 'Dikirim via email' : 'Siap' }}</span>
                             @elseif($sheetFailedAfterJob)
                                 <span class="text-red-700">Gagal / tidak ada</span>
                             @elseif($sheetWaitingForJob && $sheetPoll < $sheetPollMax)

@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\CpDigitalProduct;
 use App\Models\Order;
 use App\Services\MidtransService;
+use App\Services\OrderDeliveryNotifier;
+use App\Support\PhoneNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CheckoutController extends Controller
@@ -186,16 +189,27 @@ class CheckoutController extends Controller
             ? Order::with('license')->where('order_code', $orderCode)->first()
             : null;
 
+        $notifier = app(OrderDeliveryNotifier::class);
+        $channels = $notifier->enabledChannels();
+
         return view('Companyprofile.checkout-finish', [
             'active' => 'produk',
             'order'  => $order,
+            'deliveryChannelLabel' => $notifier->primaryChannelLabel(),
+            'deliveryViaEmail' => in_array('email', $channels, true),
         ]);
     }
 
     private function normalizePhone(string $phone): string
     {
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+        $normalized = PhoneNumber::normalizeIndonesia($phone);
 
-        return $digits !== '' ? $digits : trim($phone);
+        if (! PhoneNumber::isValidIndonesiaMobile($normalized)) {
+            throw ValidationException::withMessages([
+                'phone' => 'Nomor WhatsApp tidak valid. Gunakan format 08xxxxxxxxxx atau 628xxxxxxxxxx.',
+            ]);
+        }
+
+        return $normalized;
     }
 }

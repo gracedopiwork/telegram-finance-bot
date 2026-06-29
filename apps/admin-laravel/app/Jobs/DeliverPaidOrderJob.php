@@ -44,19 +44,27 @@ class DeliverPaidOrderJob implements ShouldQueue
 
         $deliveryAlreadySent = $order->purchase_delivery_sent_at !== null;
 
-        // Sheet dulu — jangan ditahan menunggu WA (Fonnte sering belum aktif / gagal).
+        // Sheet dulu, lalu kirim ringkasan (email/WA) hanya setelah spreadsheet_id terisi.
         $this->provisionSheetBestEffort($order, $provisioner);
         $order = $order->fresh(['license']);
+
+        if ($order->spreadsheet_id === null) {
+            Log::warning('Google Sheet belum siap — job akan di-retry', [
+                'order_code' => $order->order_code,
+            ]);
+            throw new \RuntimeException('Google Sheet belum siap untuk order '.$order->order_code);
+        }
 
         if (! $deliveryAlreadySent) {
             try {
                 $notifier->send($order);
                 Order::whereKey($order->id)->update(['purchase_delivery_sent_at' => now()]);
             } catch (\Throwable $e) {
-                Log::warning('Pengiriman WA/email gagal — Google Sheet tetap tersedia di checkout', [
+                Log::warning('Pengiriman ringkasan order gagal — sheet sudah ada di checkout', [
                     'order_code' => $order->order_code,
                     'exception' => $e->getMessage(),
                 ]);
+                throw $e;
             }
         }
     }
