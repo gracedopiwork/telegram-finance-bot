@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, Iterable
 
 VALID_KATEGORI: tuple[str, ...] = (
@@ -44,6 +45,7 @@ KATEGORI_SUB_MAP: dict[str, tuple[str, ...]] = {
         "Mainan Anak",
         "Vitamin",
         "Alat Kesehatan",
+        "Pengeluaran lain-lain",
     ),
     "Transport": ("Angkutan Umum", "Servis Kendaraan"),
     "Listrik": ("Listrik",),
@@ -56,11 +58,45 @@ KATEGORI_SUB_MAP: dict[str, tuple[str, ...]] = {
     "Gaji": ("Pengeluaran lain-lain",),
 }
 
-_SUB_KEYWORDS: tuple[tuple[str, ...], str] = (
+_WATER_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"\bpdam\b",
+        r"\btagihan\s+air\b",
+        r"\bbayar\s+air\b",
+        r"\brekening\s+air\b",
+        r"\bbiaya\s+air\b",
+        r"\bair\s+pdam\b",
+    )
+)
+
+_ELECTRONICS_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"\bhp\b",
+        r"\bhandphone\b",
+        r"\bsmartphone\b",
+        r"\blaptop\b",
+        r"\btablet\b",
+        r"\bipad\b",
+        r"\biphone\b",
+        r"\bandroid\b",
+        r"\bgadget\b",
+        r"\belektronik\b",
+        r"\btv\b",
+        r"\btelevisi\b",
+        r"\bkamera\b",
+        r"\bcharger\b",
+        r"\bearphone\b",
+        r"\bheadset\b",
+    )
+)
+
+_SUB_KEYWORDS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("ojek", "grab", "gojek", "angkot", "transjakarta", "bus", "mrt", "kereta", "tol", "parkir", "bensin"), "Angkutan Umum"),
     (("servis", "bengkel", "oli", "ban"), "Servis Kendaraan"),
     (("listrik", "pln"), "Listrik"),
-    (("pdam", "air"), "Pengeluaran lain-lain"),
+    (("tagihan air", "bayar air", "rekening air", "biaya air", "pdam"), "Pengeluaran lain-lain"),
     (("restaurant", "restoran", "makan", "nasi", "sarapan", "lunch", "dinner", "warteg"), "Jajan / Makan diluar"),
     (("kopi", "coffee", "jajan", "snack", "starbucks"), "Jajan / Makan diluar"),
     (("skincare", "skincar"), "Skincare"),
@@ -72,11 +108,91 @@ _SUB_KEYWORDS: tuple[tuple[str, ...], str] = (
     (("konser", "tiket", "bioskop", "nonton"), "Nonton Konser"),
     (("hadiah", "amplop", "ultah", "ulang tahun"), "Hadiah / Amplop sosial"),
     (("gaji", "bonus", "honor", "income"), "Pengeluaran lain-lain"),
+    (("hp", "handphone", "smartphone", "laptop", "tablet", "gadget", "elektronik"), "Pengeluaran lain-lain"),
 )
 
 
 def _enum_join(values: Iterable[str]) -> str:
     return " | ".join(f'"{v}"' for v in values)
+
+
+def _matches_any_pattern(text: str, patterns: Iterable[re.Pattern[str]]) -> bool:
+    return any(pattern.search(text) for pattern in patterns)
+
+
+def is_water_expense(text: str) -> bool:
+    return _matches_any_pattern(text, _WATER_PATTERNS)
+
+
+def is_electronics_expense(text: str) -> bool:
+    return _matches_any_pattern(text, _ELECTRONICS_PATTERNS)
+
+
+def _contains_phrase(text: str, phrases: tuple[str, ...]) -> bool:
+    lower = text.lower()
+    return any(phrase in lower for phrase in phrases)
+
+
+def _infer_kategori_from_text(text: str) -> str:
+    if _contains_phrase(text, ("gaji", "bonus", "honor", "income")):
+        return "Gaji"
+    if _contains_phrase(text, ("ojek", "grab", "gojek", "transport", "bensin", "tol", "parkir", "angkot")):
+        return "Transport"
+    if _contains_phrase(text, ("listrik", "pln")):
+        return "Listrik"
+    if is_water_expense(text):
+        return "Air"
+    if _contains_phrase(text, ("hadiah", "amplop", "konser", "ultah", "ulang tahun")):
+        return "Social"
+    if _contains_phrase(text, ("makan", "restaurant", "restoran", "nasi", "sarapan", "lunch", "dinner")):
+        return "Makan"
+    if is_electronics_expense(text) or _contains_phrase(text, ("jajan", "belanja", "beli")):
+        return "Jajan"
+    return "Jajan"
+
+
+def _kategori_from_strong_signals(text: str) -> str | None:
+    """Kategori dengan sinyal kata kunci tegas; None jika tidak ada."""
+    if is_water_expense(text):
+        return "Air"
+    if _contains_phrase(text, ("gaji", "bonus", "honor", "income")):
+        return "Gaji"
+    if _contains_phrase(text, ("listrik", "pln")):
+        return "Listrik"
+    if _contains_phrase(text, ("ojek", "grab", "gojek", "transport", "bensin", "tol", "parkir", "angkot")):
+        return "Transport"
+    if _contains_phrase(text, ("hadiah", "amplop", "konser", "ultah", "ulang tahun")):
+        return "Social"
+    if _contains_phrase(text, ("makan", "restaurant", "restoran", "nasi", "sarapan", "lunch", "dinner")):
+        return "Makan"
+    if is_electronics_expense(text):
+        return "Jajan"
+    return None
+
+
+def _parents_for_sub(sub: str) -> tuple[str, ...]:
+    return tuple(parent for parent, subs in KATEGORI_SUB_MAP.items() if sub in subs)
+
+
+def _resolve_parent_for_sub(sub: str, text: str, current_kategori: str) -> str:
+    parents = _parents_for_sub(sub)
+    if not parents:
+        return current_kategori if current_kategori in VALID_KATEGORI else "Jajan"
+    if current_kategori in parents:
+        return current_kategori
+
+    lower = text.lower()
+    if sub == "Pengeluaran lain-lain":
+        if _contains_phrase(lower, ("gaji", "bonus", "honor", "income")) and "Gaji" in parents:
+            return "Gaji"
+        if is_water_expense(lower) and "Air" in parents:
+            return "Air"
+        return "Jajan" if "Jajan" in parents else parents[0]
+
+    inferred = _infer_kategori_from_text(lower)
+    if inferred in parents:
+        return inferred
+    return parents[0]
 
 
 def build_system_prompt_rules() -> str:
@@ -108,6 +224,8 @@ Aturan:
 {mapping_block}
    Contoh: makan/restoran → kategori Makan, sub_kategori "Jajan / Makan diluar".
    Contoh: ojek/transport → kategori Transport, sub_kategori "Angkutan Umum".
+   Contoh: beli hp/laptop/gadget → kategori Jajan, sub_kategori "Pengeluaran lain-lain".
+   Contoh: tagihan air/pdam → kategori Air, sub_kategori "Pengeluaran lain-lain".
 5) impulsif: "Yes" jika pembelian spontan (iseng, kepengen, diskon, tiba-tiba) ATAU
    perilaku belanja premium saat mood negatif (Sad/Stressed/Angry/Tired).
    Bisa tetap "Need" untuk sifat, tetapi impulsif "Yes" bila ada alternatif lebih murah.
@@ -133,23 +251,15 @@ def normalize_category_fields(parsed: Dict[str, Any], source_text: str = "") -> 
     """Selaraskan kategori/sub_kategori dengan dropdown Sheet YFD."""
     kategori = str(parsed.get("kategori", "")).strip()
     sub = str(parsed.get("sub_kategori", "")).strip()
-    combined = f"{parsed.get('keterangan', '')} {source_text}".lower()
+    combined = f"{parsed.get('keterangan', '')} {source_text}".strip().lower()
 
-    if kategori not in VALID_KATEGORI:
-        if any(word in combined for word in ("gaji", "bonus", "honor", "income")):
-            kategori = "Gaji"
-        elif any(word in combined for word in ("ojek", "grab", "transport", "bensin", "tol", "parkir")):
-            kategori = "Transport"
-        elif any(word in combined for word in ("listrik", "pln")):
-            kategori = "Listrik"
-        elif any(word in combined for word in ("pdam", " air")):
-            kategori = "Air"
-        elif any(word in combined for word in ("hadiah", "amplop", "konser", "ultah")):
-            kategori = "Social"
-        elif any(word in combined for word in ("makan", "restaurant", "restoran", "nasi")):
-            kategori = "Makan"
-        else:
-            kategori = "Jajan"
+    strong_kategori = _kategori_from_strong_signals(combined)
+    if strong_kategori is not None:
+        kategori = strong_kategori
+    elif kategori not in VALID_KATEGORI:
+        kategori = _infer_kategori_from_text(combined)
+    elif kategori == "Air" and not is_water_expense(combined):
+        kategori = _infer_kategori_from_text(combined)
 
     allowed = _allowed_subs_for_kategori(kategori)
 
@@ -160,14 +270,17 @@ def normalize_category_fields(parsed: Dict[str, Any], source_text: str = "") -> 
         elif sub in allowed:
             pass
         elif sub in VALID_SUB_KATEGORI:
-            # Sub valid tapi tidak cocok induk — pindah kategori jika ada yang cocok
-            for parent, subs in KATEGORI_SUB_MAP.items():
-                if sub in subs:
-                    kategori = parent
-                    allowed = subs
-                    break
+            kategori = _resolve_parent_for_sub(sub, combined, kategori)
+            allowed = _allowed_subs_for_kategori(kategori)
         else:
             sub = allowed[0]
+    elif sub == "Pengeluaran lain-lain" and kategori not in _parents_for_sub(sub):
+        kategori = _resolve_parent_for_sub(sub, combined, kategori)
+        allowed = _allowed_subs_for_kategori(kategori)
+
+    if sub not in allowed:
+        detected = _detect_sub_from_text(combined)
+        sub = detected if detected in allowed else allowed[0]
 
     parsed["kategori"] = kategori
     parsed["sub_kategori"] = sub

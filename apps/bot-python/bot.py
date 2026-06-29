@@ -25,6 +25,7 @@ from transaction_categories import (
     VALID_KATEGORI,
     VALID_SUB_KATEGORI,
     build_system_prompt_rules,
+    is_water_expense,
     normalize_category_fields,
 )
 
@@ -973,7 +974,7 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
         kategori = "Transport"
         sub_kategori = "Servis Kendaraan"
         sifat = "Need"
-    elif any(keyword in lower_text for keyword in ["air", "pdam"]):
+    elif is_water_expense(lower_text):
         kategori = "Air"
         sub_kategori = "Pengeluaran lain-lain"
         sifat = "Need"
