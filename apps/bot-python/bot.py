@@ -204,9 +204,6 @@ def infer_impulsif(parsed: Dict[str, Any], source_text: str = "") -> str:
         if is_food_out and (is_premium or nominal >= 100_000):
             return "Yes"
 
-    if is_food_out and is_premium and nominal >= 150_000:
-        return "Yes"
-
     return "No"
 
 
