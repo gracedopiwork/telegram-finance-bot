@@ -7,36 +7,81 @@ use App\Models\Setting;
 final class TelegramBotUrl
 {
     /**
-     * URL t.me untuk email & halaman web. Prioritas: site_settings `telegram.bot_url` lalu env.
+     * URL https://t.me/... untuk email & halaman web.
      */
     public static function resolve(): ?string
+    {
+        return self::webUrl();
+    }
+
+    /**
+     * Deep link agar HP langsung buka aplikasi Telegram (bukan halaman "download").
+     */
+    public static function appDeepLink(): ?string
+    {
+        $username = self::username();
+
+        return $username !== null ? 'tg://resolve?domain='.$username : null;
+    }
+
+    public static function webUrl(): ?string
+    {
+        $username = self::username();
+
+        return $username !== null ? 'https://t.me/'.$username : null;
+    }
+
+    public static function username(): ?string
     {
         try {
             $db = trim((string) (Setting::val('telegram.bot_url') ?? ''));
             if ($db !== '') {
-                if (filter_var($db, FILTER_VALIDATE_URL)) {
-                    return $db;
+                $parsed = self::parseUsername($db);
+                if ($parsed !== null) {
+                    return $parsed;
                 }
-                $u = ltrim($db, '@');
-
-                return $u !== '' ? 'https://t.me/'.rawurlencode($u) : null;
             }
         } catch (\Throwable) {
             // DB belum siap / migrasi
         }
 
-        return self::fromEnv();
+        $url = trim((string) config('services.telegram.bot_url', ''));
+        if ($url !== '') {
+            $parsed = self::parseUsername($url);
+            if ($parsed !== null) {
+                return $parsed;
+            }
+        }
+
+        $user = trim((string) config('services.telegram.bot_username', ''));
+
+        return self::parseUsername($user);
     }
 
-    public static function fromEnv(): ?string
+    private static function parseUsername(string $raw): ?string
     {
-        $url = trim((string) config('services.telegram.bot_url', ''));
-        if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL)) {
-            return $url;
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
         }
-        $user = trim((string) config('services.telegram.bot_username', ''));
-        $user = ltrim($user, '@');
 
-        return $user !== '' ? 'https://t.me/'.rawurlencode($user) : null;
+        if (preg_match('#(?:https?://)?(?:www\.)?t\.me/([A-Za-z0-9_]{4,32})(?:[/?#]|$)#i', $raw, $matches)) {
+            return $matches[1];
+        }
+
+        if (preg_match('#tg://resolve\?domain=([A-Za-z0-9_]{4,32})#i', $raw, $matches)) {
+            return $matches[1];
+        }
+
+        if (preg_match('#(?:https?://)?(?:www\.)?telegram\.(?:me|dog)/([A-Za-z0-9_]{4,32})(?:[/?#]|$)#i', $raw, $matches)) {
+            return $matches[1];
+        }
+
+        $candidate = ltrim($raw, '@');
+        if (preg_match('/^[A-Za-z0-9_]{4,32}$/', $candidate)) {
+            return $candidate;
+        }
+
+        return null;
     }
 }

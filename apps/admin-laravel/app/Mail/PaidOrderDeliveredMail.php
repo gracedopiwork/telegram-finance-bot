@@ -30,6 +30,8 @@ class PaidOrderDeliveredMail extends Mailable
             view: 'emails.paid-order-delivered',
             with: [
                 'telegramBotUrl' => TelegramBotUrl::resolve(),
+                'telegramBotAppUrl' => TelegramBotUrl::appDeepLink(),
+                'telegramBotUsername' => TelegramBotUrl::username(),
             ],
         );
     }

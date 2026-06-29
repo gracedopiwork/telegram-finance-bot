@@ -55,6 +55,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('waBookingUrl', $waBookingUrl);
                 $view->with('waDefaultMsg', $waMsg);
                 $view->with('telegramBotUrl', TelegramBotUrl::resolve());
+                $view->with('telegramBotAppUrl', TelegramBotUrl::appDeepLink());
                 $pc = PrimaryCheckupUrl::resolve();
                 $view->with('primaryCheckupUrl', $pc['url']);
                 $view->with('primaryCheckupNewTab', $pc['new_tab']);
@@ -78,6 +79,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('waBookingUrl', 'https://wa.me/6285111228911');
                 $view->with('waDefaultMsg', '');
                 $view->with('telegramBotUrl', TelegramBotUrl::resolve());
+                $view->with('telegramBotAppUrl', TelegramBotUrl::appDeepLink());
                 try {
                     $pu = route('company.paket');
                 } catch (\Throwable) {
