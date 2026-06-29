@@ -30,6 +30,7 @@
         default => 'badge-secondary',
     };
     $totals = $ai['totals'] ?? ['success' => 0, 'rate_limit' => 0, 'fallback' => 0, 'error' => 0, 'total' => 0];
+    $diag = $ai['diagnostics'] ?? ['laravel_token_set' => false, 'stats_table_ready' => false];
 @endphp
 
 <div class="card card-outline {{ $aiCardClass }} mb-4">
@@ -60,6 +61,13 @@
                 <a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio</a>
                 → <em>Set up billing</em> (Tier 1, minimal ~$10 kredit).
             </div>
+        @endif
+        @if(($totals['total'] ?? 0) === 0)
+            <ul class="small mb-2 pl-3">
+                <li>Tabel statistik: <strong>{{ ($diag['stats_table_ready'] ?? false) ? 'siap' : 'belum migrate' }}</strong></li>
+                <li>Token Laravel: <strong>{{ ($diag['laravel_token_set'] ?? false) ? 'sudah di-set' : 'belum di-set' }}</strong></li>
+                <li>Bot harus punya <code>LARAVEL_APP_URL</code> + token yang sama, lalu di-restart.</li>
+            </ul>
         @endif
         <p class="small text-muted mb-0">
             Data dikirim otomatis dari bot (<code>POST /api/bot/ai-health</code>). Butuh

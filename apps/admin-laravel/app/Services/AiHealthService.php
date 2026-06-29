@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\BotAiDailyStat;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AiHealthService
 {
@@ -95,7 +96,7 @@ class AiHealthService
         } elseif ($total === 0) {
             $status = 'unknown';
             $label = 'Belum ada data';
-            $message = 'Belum ada laporan dari bot. Pastikan bot sudah di-restart setelah deploy.';
+            $message = $this->noDataMessage();
         } else {
             $status = 'ok';
             $label = 'Free tier masih cukup';
@@ -117,6 +118,35 @@ class AiHealthService
             'fallback_rate' => $fallbackRate,
             'last_rate_limit_at' => $lastRateLimit?->last_rate_limit_at?->toDateTimeString(),
             'last_detail' => $lastDetail?->last_detail,
+            'diagnostics' => $this->diagnostics(),
         ];
+    }
+
+    /**
+     * @return array{laravel_token_set: bool, stats_table_ready: bool}
+     */
+    public function diagnostics(): array
+    {
+        return [
+            'laravel_token_set' => (string) config('services.bot.internal_api_token', '') !== '',
+            'stats_table_ready' => Schema::hasTable('bot_ai_daily_stats'),
+        ];
+    }
+
+    private function noDataMessage(): string
+    {
+        $diag = $this->diagnostics();
+        $hints = [];
+
+        if (! $diag['stats_table_ready']) {
+            $hints[] = 'Jalankan `php artisan migrate --force` di Laravel.';
+        }
+        if (! $diag['laravel_token_set']) {
+            $hints[] = 'Set `BOT_INTERNAL_API_TOKEN` di `apps/admin-laravel/.env`.';
+        }
+        $hints[] = 'Di `apps/bot-python/.env` wajib ada `LARAVEL_APP_URL` + `BOT_INTERNAL_API_TOKEN` (sama dengan Laravel).';
+        $hints[] = 'Lalu `sudo systemctl restart yfd-bot` dan catat 1 transaksi di Telegram.';
+
+        return 'Belum ada laporan dari bot. '.implode(' ', $hints);
     }
 }

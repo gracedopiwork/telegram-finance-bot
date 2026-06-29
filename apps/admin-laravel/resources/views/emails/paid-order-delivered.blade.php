@@ -44,7 +44,7 @@
         <p style="font-size: 1.1rem; font-weight: 700; letter-spacing: 0.04em;">{{ $licenseKey }}</p>
         <p>Di dalam chat bot, kirim persis baris berikut (bisa copy-paste):</p>
         <p style="background: #f4f4f5; padding: 12px 16px; border-radius: 8px; font-family: ui-monospace, monospace; font-size: 0.9rem;">/activate {{ $licenseKey }}</p>
-        <p style="font-size: 0.875rem; color: #52525b;">Setelah aktif, Anda bisa memakai fitur catat transaksi, <strong>/sheet</strong>, voice note, dan lainnya.</p>
+        <p style="font-size: 0.875rem; color: #52525b;">Setelah aktif, Anda bisa memakai fitur catat transaksi, <strong>/sheet</strong>, foto struk, dan lainnya.</p>
     @else
         <p style="font-size: 0.875rem; color: #52525b;">Kode lisensi sedang disiapkan. Cek halaman sukses pembayaran atau hubungi support.</p>
     @endif

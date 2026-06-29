@@ -21,7 +21,7 @@ from telegram.ext import (
     filters,
 )
 
-from ai_health import report_ai_event, report_gemini_failure
+from ai_health import log_ai_health_config, report_ai_event, report_gemini_failure
 from transaction_categories import (
     VALID_KATEGORI,
     VALID_SUB_KATEGORI,
@@ -893,45 +893,6 @@ def extract_transaction_text_from_image(image_path: str) -> str:
     raise RuntimeError(f"Gagal ekstrak transaksi dari gambar: {last_error}")
 
 
-def extract_transaction_text_from_audio(audio_path: str, mime_type: str = "audio/ogg") -> str:
-    api_key = get_env("GEMINI_API_KEY")
-    genai.configure(api_key=api_key)
-    candidate_models = [
-        "gemini-2.5-flash",
-        "gemini-2.5-flash-lite",
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite",
-    ]
-    prompt = (
-        "Transkripsikan voice note / audio ini ke bahasa Indonesia. "
-        "Hasilkan satu kalimat singkat berisi keterangan transaksi dan nominal jika disebutkan. "
-        "Jangan isi mood. Jika bukan tentang transaksi keuangan atau tidak terdengar jelas, balas INVALID_AUDIO."
-    )
-    last_error: Exception | None = None
-    safe_mime = mime_type if mime_type.startswith("audio/") else "audio/ogg"
-
-    for model_name in candidate_models:
-        try:
-            model = genai.GenerativeModel(model_name)
-            with open(audio_path, "rb") as audio_file:
-                audio_bytes = audio_file.read()
-            response = model.generate_content(
-                [
-                    prompt,
-                    {"mime_type": safe_mime, "data": audio_bytes},
-                ],
-                generation_config={"temperature": 0},
-            )
-            text = (response.text if hasattr(response, "text") else "").strip()
-            if text and text.upper() != "INVALID_AUDIO":
-                return text
-        except Exception as exc:  # pragma: no cover - external provider fallback
-            last_error = exc
-            logger.warning("Model audio %s gagal dipakai (%s).", model_name, type(exc).__name__)
-
-    raise RuntimeError(f"Gagal transkripsi voice note: {last_error}")
-
-
 def parse_nominal_fallback(text: str) -> int:
     cleaned = text.lower().replace(" ", "")
     multiplier = 1
@@ -1263,7 +1224,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "/hapuskilat - hapus data terakhir\n"
         "/sheet - buka Google Sheet\n"
         "/hariini - rangkuman pengeluaran hari ini\n\n"
-        "Bisa juga kirim **teks biasa**, **foto struk**, atau **voice note**.\n"
+        "Bisa juga kirim **teks biasa** atau **foto struk**.\n"
         "Contoh:\n"
         "`/catat mkn malm 50rb karena lagi sedih banget jadi iseng beli`",
         parse_mode="Markdown",
@@ -1516,7 +1477,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         PENDING_NAME_USERS.discard(user_id)
         await update.message.reply_text(
             f"Siap, aku panggil kamu {text[:80]}.\n"
-            "Sekarang kamu bisa kirim teks, foto struk, atau voice note untuk catat transaksi."
+            "Sekarang kamu bisa kirim teks atau foto struk untuk catat transaksi."
         )
         return
 
@@ -1751,45 +1712,10 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
         return
 
-    voice = update.message.voice
-    audio = update.message.audio
-    if voice:
-        file_obj = voice
-        suffix = ".ogg"
-        mime_type = "audio/ogg"
-    elif audio:
-        file_obj = audio
-        suffix = ".mp3"
-        mime_type = (audio.mime_type or "audio/mpeg").strip() or "audio/mpeg"
-    else:
-        return
-
-    temp_path = ""
-    try:
-        telegram_file = await context.bot.get_file(file_obj.file_id)
-        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-            temp_path = tmp.name
-        await telegram_file.download_to_drive(temp_path)
-        extracted_text = extract_transaction_text_from_audio(temp_path, mime_type=mime_type)
-    except Exception as exc:  # pragma: no cover - external provider guard
-        logger.exception("Gagal proses voice note: %s", exc)
-        await update.message.reply_text(
-            "Maaf, voice note belum bisa dibaca. Coba bicara lebih jelas, atau kirim teks / foto struk."
-        )
-        return
-    finally:
-        try:
-            if temp_path and os.path.exists(temp_path):
-                os.remove(temp_path)
-        except OSError:
-            logger.warning("Gagal hapus file sementara audio.")
-
-    await update.message.reply_text(f"Voice note kebaca:\n{extracted_text}")
-    await queue_mood_from_source_text(
-        update.message,
-        user_id,
-        extracted_text,
-        intro="Pilih mood kamu saat transaksi ini:",
+    await update.message.reply_text(
+        "Voice note belum didukung.\n"
+        "Kirim teks biasa (contoh: `makan malam 50rb`) atau foto struk ya.",
+        parse_mode="Markdown",
     )
 
 
@@ -1811,6 +1737,7 @@ def main() -> None:
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
 
     logger.info("Bot berjalan...")
+    log_ai_health_config()
     app.run_polling()
 
 
