@@ -24,6 +24,12 @@
             ke semua baris <code>user_sheets</code> status aktif. Tab <strong>Transaksi</strong> tidak diubah.
             Setelah sync, proteksi sheet diterapkan ulang (hanya service account yang bisa edit; pelanggan <em>viewer</em> — tidak melihat rumus).
         </p>
+        <p class="small text-muted mb-2">
+            <strong>Auto-sync (Opsi 2):</strong> pasang Google Apps Script dari
+            <code>shared/scripts/google-apps-script-dashboard-sync.js</code> di master sheet, set
+            <code>DASHBOARD_SYNC_WEBHOOK_TOKEN</code> di <code>.env</code>, lalu edit tab Dashboard (versi di sel <code>Z1</code>).
+            Webhook: <code>POST {{ url('/api/dashboard/sync-webhook') }}</code>
+        </p>
         <p class="small text-muted mb-0">
             Template wajib punya tab <code>Transaksi</code> + <code>Dashboard</code>. Folder salinan disarankan Shared drive yang hanya berisi service account agar admin tidak melihat data transaksi di Drive.
         </p>

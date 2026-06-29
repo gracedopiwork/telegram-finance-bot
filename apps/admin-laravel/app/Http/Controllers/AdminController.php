@@ -12,8 +12,6 @@ use App\Models\Order;
 use App\Models\Setting;
 use App\Models\UserSheet;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
@@ -74,35 +72,18 @@ class AdminController extends Controller
             'dry_run' => ['sometimes', 'boolean'],
         ]);
 
-        $scriptPath = base_path('../bot-python/sync_dashboard.py');
-        if (! file_exists($scriptPath)) {
-            return $this->redirectAdminIndex($request)
-                ->with('error', 'Script sync_dashboard.py tidak ditemukan di apps/bot-python.');
-        }
-
-        $python = (string) config('services.sync_dashboard.python_binary', 'python');
-        $command = array_filter([
-            $python,
-            'sync_dashboard.py',
-            '--version',
+        $result = app(\App\Services\DashboardSyncRunner::class)->run(
             $validated['version'],
-            $request->boolean('dry_run') ? '--dry-run' : null,
-        ]);
+            $request->boolean('dry_run'),
+        );
 
-        $result = Process::path(base_path('../bot-python'))
-            ->timeout((int) config('services.sync_dashboard.timeout_seconds', 3600))
-            ->run($command);
-
-        $out = trim($result->output().$result->errorOutput());
-        $out = Str::limit($out !== '' ? $out : '(tanpa output)', 4000);
-
-        if ($result->successful()) {
+        if ($result['ok']) {
             return $this->redirectAdminIndex($request)
-                ->with('success', 'Sync dashboard selesai. '.$out);
+                ->with('success', 'Sync dashboard selesai. '.$result['output']);
         }
 
         return $this->redirectAdminIndex($request)
-            ->with('error', 'Sync dashboard gagal (exit '.$result->exitCode().'). '.$out);
+            ->with('error', 'Sync dashboard gagal (exit '.$result['exit_code'].'). '.$result['output']);
     }
 
     private function redirectAdminIndex(Request $request)

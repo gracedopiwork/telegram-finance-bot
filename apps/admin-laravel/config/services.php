@@ -87,6 +87,12 @@ return [
         'timeout_seconds' => (int) env('SYNC_DASHBOARD_TIMEOUT', 3600),
     ],
 
+    /** Webhook dari Google Apps Script saat master Dashboard diubah */
+    'dashboard_sync' => [
+        'webhook_token' => env('DASHBOARD_SYNC_WEBHOOK_TOKEN', ''),
+        'webhook_debounce_seconds' => (int) env('DASHBOARD_SYNC_WEBHOOK_DEBOUNCE', 300),
+    ],
+
     'order_delivery' => [
         /** wa | email | both */
         'channel' => env('ORDER_DELIVERY_CHANNEL', 'wa'),
