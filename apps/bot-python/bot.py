@@ -39,7 +39,7 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
   "kategori": "Makan" | "Transport" | "Listrik" | "Air" | "Jajan" | "Social" | "Gaji",
   "sub_kategori": "Pajak Kendaraan" | "Tabungan Rutin" | "TV Kabel / Streaming" | "Reksadana" | "Pembayaran SPP" | "Belanja Bulanan" | "Dana Darurat" | "Listrik" | "Pakaian" | "Servis Kendaraan" | "Nonton Konser" | "Pengeluaran lain-lain" | "Hadiah / Amplop sosial" | "Popok" | "Jajan / Makan diluar" | "Angkutan Umum" | "Skincare" | "Mainan Anak" | "Ulang Tahun keluarga" | "Vitamin" | "Alat Kesehatan",
   "sifat": "Need" | "Wants" | "Saving/Investement" | "Donation",
-  "mood": "Sedih" | "Senang" | "Biasa Saja" | "Sangat Senang",
+  "mood": "Happy" | "Neutral" | "Sad" | "Stressed" | "Angry" | "Tired",
   "impulsif": "Yes" | "No"
 }
 
@@ -99,33 +99,132 @@ VALID_SUB_KATEGORI = {
     "Alat Kesehatan",
 }
 VALID_SIFAT = {"Need", "Wants", "Saving/Investement", "Donation"}
-VALID_MOOD = {"Sedih", "Senang", "Biasa Saja", "Sangat Senang"}
+VALID_MOOD = {"Happy", "Neutral", "Sad", "Stressed", "Angry", "Tired"}
 VALID_IMPULSIF = {"Yes", "No"}
 PENDING_NAME_USERS: set[int] = set()
-PENDING_IMAGE_TRANSACTIONS: Dict[int, str] = {}
+PENDING_MOOD_WAIT: Dict[int, Dict[str, Any]] = {}
 PENDING_CONFIRMATIONS: Dict[int, Dict[str, Any]] = {}
 
-MOOD_LOOKUP = {m.lower(): m for m in VALID_MOOD}
+MOOD_PROMPT_TEXT = (
+    "Pilih mood kamu saat transaksi ini:\n"
+    "😊 Happy — senang, bersyukur\n"
+    "😐 Neutral — biasa saja\n"
+    "😢 Sad — sedih, kecewa\n"
+    "😨 Stressed — cemas, overwhelmed\n"
+    "😡 Angry — marah, frustrasi\n"
+    "😴 Tired — lelah, burnout"
+)
+
+LEGACY_MOOD_MAP = {
+    "Sedih": "Sad",
+    "Senang": "Happy",
+    "Biasa Saja": "Neutral",
+    "Sangat Senang": "Happy",
+}
+
+MOOD_ALIASES = {
+    "happy": "Happy",
+    "senang": "Happy",
+    "bahagia": "Happy",
+    "excited": "Happy",
+    "bersyukur": "Happy",
+    "neutral": "Neutral",
+    "biasa saja": "Neutral",
+    "biasa": "Neutral",
+    "sad": "Sad",
+    "sedih": "Sad",
+    "kecewa": "Sad",
+    "kesepian": "Sad",
+    "stressed": "Stressed",
+    "cemas": "Stressed",
+    "overthinking": "Stressed",
+    "overwhelmed": "Stressed",
+    "angry": "Angry",
+    "marah": "Angry",
+    "frustrasi": "Angry",
+    "frustrated": "Angry",
+    "tired": "Tired",
+    "ngantuk": "Tired",
+    "lelah": "Tired",
+    "burnout": "Tired",
+    "capek": "Tired",
+}
+
+MOOD_KEYWORDS: Dict[str, tuple[str, ...]] = {
+    "Happy": ("sangat senang", "bahagia", "excited", "bersyukur", "senang banget", "happy"),
+    "Neutral": ("biasa saja", "biasa aja", "lumayan", "neutral"),
+    "Sad": ("sedih banget", "kecewa", "kesepian", "sedih", "sad"),
+    "Stressed": ("overwhelmed", "overthinking", "cemas", "stress", "stressed", "panik"),
+    "Angry": ("frustrasi", "marah", "kesal", "angry", "jengkel"),
+    "Tired": ("burnout", "ngantuk", "lelah", "capek", "tired"),
+}
 
 
 def normalize_mood(text: str) -> str | None:
     if not text:
         return None
-    return MOOD_LOOKUP.get(text.strip().lower())
+    cleaned = text.strip()
+    if cleaned in VALID_MOOD:
+        return cleaned
+    if cleaned in LEGACY_MOOD_MAP:
+        return LEGACY_MOOD_MAP[cleaned]
+    return MOOD_ALIASES.get(cleaned.lower())
+
+
+def extract_forced_mood(text: str) -> str | None:
+    mood_match = re.search(r"\bmood\s*:\s*(.+)$", text, flags=re.IGNORECASE | re.MULTILINE)
+    if not mood_match:
+        return None
+    return normalize_mood(mood_match.group(1).strip())
+
+
+def detect_mood_in_text(text: str) -> str | None:
+    base = re.sub(r"\bmood\s*:\s*.+$", "", text, flags=re.IGNORECASE | re.MULTILINE).strip().lower()
+    if not base:
+        return None
+    for mood, keywords in MOOD_KEYWORDS.items():
+        if any(keyword in base for keyword in keywords):
+            return mood
+    return None
 
 
 def build_mood_keyboard() -> InlineKeyboardMarkup:
     buttons = [
         [
-            InlineKeyboardButton("😢 Sedih", callback_data="mood:Sedih"),
-            InlineKeyboardButton("🙂 Biasa Saja", callback_data="mood:Biasa Saja"),
+            InlineKeyboardButton("😊 Happy", callback_data="mood:Happy"),
+            InlineKeyboardButton("😐 Neutral", callback_data="mood:Neutral"),
         ],
         [
-            InlineKeyboardButton("😊 Senang", callback_data="mood:Senang"),
-            InlineKeyboardButton("🤩 Sangat Senang", callback_data="mood:Sangat Senang"),
+            InlineKeyboardButton("😢 Sad", callback_data="mood:Sad"),
+            InlineKeyboardButton("😨 Stressed", callback_data="mood:Stressed"),
+        ],
+        [
+            InlineKeyboardButton("😡 Angry", callback_data="mood:Angry"),
+            InlineKeyboardButton("😴 Tired", callback_data="mood:Tired"),
         ],
     ]
     return InlineKeyboardMarkup(buttons)
+
+
+async def prompt_mood_selection(message, user_id: int, *, intro: str) -> None:
+    await message.reply_text(intro + "\n\n" + MOOD_PROMPT_TEXT, reply_markup=build_mood_keyboard())
+
+
+async def queue_mood_from_source_text(message, user_id: int, source_text: str, *, intro: str) -> None:
+    PENDING_MOOD_WAIT[user_id] = {
+        "mode": "source_text",
+        "source_text": source_text.strip(),
+    }
+    await prompt_mood_selection(message, user_id, intro=intro)
+
+
+async def queue_mood_from_parsed(message, user_id: int, parsed: Dict[str, Any], greeting_name: str, *, intro: str) -> None:
+    PENDING_MOOD_WAIT[user_id] = {
+        "mode": "parsed",
+        "parsed": parsed,
+        "greeting_name": greeting_name,
+    }
+    await prompt_mood_selection(message, user_id, intro=intro)
 
 
 def build_confirmation_keyboard() -> InlineKeyboardMarkup:
@@ -675,8 +774,10 @@ def normalize_ai_result(data: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError("invalid_sub_kategori")
     if data["sifat"] not in VALID_SIFAT:
         raise ValueError("invalid_sifat")
-    if data["mood"] not in VALID_MOOD:
+    mood = normalize_mood(str(data["mood"]))
+    if not mood:
         raise ValueError("invalid_mood")
+    data["mood"] = mood
     if data["impulsif"] not in VALID_IMPULSIF:
         raise ValueError("invalid_impulsif")
 
@@ -817,7 +918,7 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
     kategori = "Jajan"
     sub_kategori = "Jajan / Makan diluar"
     sifat = "Wants"
-    mood = "Biasa Saja"
+    mood = "Neutral"
 
     if any(keyword in lower_text for keyword in ["gaji", "bonus", "income", "fee", "honor"]):
         jenis = "Pemasukan"
@@ -845,12 +946,21 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
         sub_kategori = "Hadiah / Amplop sosial"
         sifat = "Donation"
 
-    if any(keyword in lower_text for keyword in ["sangat senang", "bahagia", "excited"]):
-        mood = "Sangat Senang"
+    detected_mood = detect_mood_in_text(text)
+    if detected_mood:
+        mood = detected_mood
+    elif any(keyword in lower_text for keyword in ["sangat senang", "bahagia", "excited", "bersyukur"]):
+        mood = "Happy"
     elif any(keyword in lower_text for keyword in ["senang", "happy"]):
-        mood = "Senang"
-    elif any(keyword in lower_text for keyword in ["sedih", "kecewa", "capek"]):
-        mood = "Sedih"
+        mood = "Happy"
+    elif any(keyword in lower_text for keyword in ["sedih", "kecewa", "kesepian"]):
+        mood = "Sad"
+    elif any(keyword in lower_text for keyword in ["cemas", "overthinking", "overwhelmed", "stressed", "panik"]):
+        mood = "Stressed"
+    elif any(keyword in lower_text for keyword in ["marah", "frustrasi", "kesal", "angry"]):
+        mood = "Angry"
+    elif any(keyword in lower_text for keyword in ["ngantuk", "lelah", "burnout", "capek", "tired"]):
+        mood = "Tired"
 
     impulsive_keywords = [
         "iseng",
@@ -995,7 +1105,13 @@ def is_authorized(update: Update) -> bool:
     return update.effective_user.id == authorized_user_id
 
 
-async def process_note_input(message, text: str, user_id: int | None = None) -> None:
+async def process_note_input(
+    message,
+    text: str,
+    user_id: int | None = None,
+    *,
+    mood_resolved: bool = False,
+) -> None:
     text = text.strip()
     if user_id is None:
         user = getattr(message, "from_user", None)
@@ -1009,12 +1125,9 @@ async def process_note_input(message, text: str, user_id: int | None = None) -> 
         await message.reply_text(HELP_TEXT)
         return
 
-    forced_mood = None
-    mood_match = re.search(r"\bmood\s*:\s*(.+)$", text, flags=re.IGNORECASE)
-    if mood_match:
-        raw_mood = mood_match.group(1).strip()
-        if raw_mood in VALID_MOOD:
-            forced_mood = raw_mood
+    forced_mood = extract_forced_mood(text)
+    detected_mood = detect_mood_in_text(text) if not forced_mood else None
+    resolved_mood = forced_mood or detected_mood
 
     try:
         parsed = analyze_with_gemini(text)
@@ -1027,8 +1140,19 @@ async def process_note_input(message, text: str, user_id: int | None = None) -> 
             await message.reply_text(HELP_TEXT)
             return
 
-    if forced_mood:
-        parsed["mood"] = forced_mood
+    if resolved_mood:
+        parsed["mood"] = resolved_mood
+    elif not mood_resolved and user_id:
+        preferred_name = get_user_display_name(user_id) or "Kamu"
+        PENDING_CONFIRMATIONS.pop(user_id, None)
+        await queue_mood_from_parsed(
+            message,
+            user_id,
+            parsed,
+            preferred_name,
+            intro="Transaksi sudah kebaca. Mood belum terdeteksi dari struk/catatan ini.",
+        )
+        return
 
     if user_id:
         PENDING_CONFIRMATIONS.pop(user_id, None)
@@ -1345,17 +1469,33 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
         return
 
-    if user_id in PENDING_IMAGE_TRANSACTIONS:
+    if user_id in PENDING_MOOD_WAIT:
         mood_text = normalize_mood(text)
         if not mood_text:
-            await update.message.reply_text(
-                "Pilih mood kamu dengan menekan salah satu tombol di bawah ini:",
-                reply_markup=build_mood_keyboard(),
+            await prompt_mood_selection(
+                update.message,
+                user_id,
+                intro="Pilih mood dengan menekan salah satu tombol di bawah ini:",
             )
             return
-        extracted = PENDING_IMAGE_TRANSACTIONS.pop(user_id)
-        combined_input = f"{extracted}\nmood: {mood_text}"
-        await process_note_input(update.message, combined_input)
+
+        pending = PENDING_MOOD_WAIT.pop(user_id)
+        if pending["mode"] == "source_text":
+            combined_input = f"{pending['source_text']}\nmood: {mood_text}"
+            await process_note_input(update.message, combined_input, mood_resolved=True)
+            return
+
+        parsed = pending["parsed"]
+        parsed["mood"] = mood_text
+        greeting_name = pending["greeting_name"]
+        PENDING_CONFIRMATIONS[user_id] = {
+            "parsed": parsed,
+            "greeting_name": greeting_name,
+        }
+        await update.message.reply_text(
+            format_transaction_preview(parsed, greeting_name),
+            reply_markup=build_confirmation_keyboard(),
+        )
         return
 
     await process_note_input(update.message, text)
@@ -1379,21 +1519,35 @@ async def mood_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     if not mood_value:
         return
 
-    if user_id not in PENDING_IMAGE_TRANSACTIONS:
+    if user_id not in PENDING_MOOD_WAIT:
         try:
-            await query.edit_message_text("Sudah tidak ada transaksi gambar yang menunggu mood.")
+            await query.edit_message_text("Sudah tidak ada transaksi yang menunggu mood.")
         except Exception:
             pass
         return
 
-    extracted = PENDING_IMAGE_TRANSACTIONS.pop(user_id)
+    pending = PENDING_MOOD_WAIT.pop(user_id)
     try:
         await query.edit_message_text(f"Mood dipilih: {mood_value}. Memproses transaksi...")
     except Exception:
         pass
 
-    combined_input = f"{extracted}\nmood: {mood_value}"
-    await process_note_input(query.message, combined_input, user_id=user_id)
+    if pending["mode"] == "source_text":
+        combined_input = f"{pending['source_text']}\nmood: {mood_value}"
+        await process_note_input(query.message, combined_input, user_id=user_id, mood_resolved=True)
+        return
+
+    parsed = pending["parsed"]
+    parsed["mood"] = mood_value
+    greeting_name = pending["greeting_name"]
+    PENDING_CONFIRMATIONS[user_id] = {
+        "parsed": parsed,
+        "greeting_name": greeting_name,
+    }
+    await query.message.reply_text(
+        format_transaction_preview(parsed, greeting_name),
+        reply_markup=build_confirmation_keyboard(),
+    )
 
 
 async def confirm_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1441,6 +1595,41 @@ async def confirm_callback_handler(update: Update, context: ContextTypes.DEFAULT
         await query.message.reply_text("Silakan kirim ulang catatan transaksi yang benar.")
 
 
+async def process_struk_image_message(
+    message,
+    context: ContextTypes.DEFAULT_TYPE,
+    file_id: str,
+    *,
+    intro: str,
+) -> None:
+    user = message.from_user
+    user_id = user.id if user else 0
+    if not user_id:
+        return
+
+    temp_path = ""
+    try:
+        telegram_file = await context.bot.get_file(file_id)
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+            temp_path = tmp.name
+        await telegram_file.download_to_drive(temp_path)
+        extracted_text = extract_transaction_text_from_image(temp_path)
+    except Exception as exc:  # pragma: no cover - external provider guard
+        logger.exception("Gagal proses gambar transaksi: %s", exc)
+        await message.reply_text(
+            "Maaf, gambar belum bisa dibaca. Coba foto lebih jelas atau kirim dalam bentuk teks."
+        )
+        return
+    finally:
+        try:
+            if temp_path and os.path.exists(temp_path):
+                os.remove(temp_path)
+        except OSError:
+            logger.warning("Gagal hapus file sementara gambar.")
+
+    await queue_mood_from_source_text(message, user_id, extracted_text, intro=intro)
+
+
 async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message or not update.message.photo:
         return
@@ -1452,30 +1641,39 @@ async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
         return
 
-    try:
-        largest_photo = update.message.photo[-1]
-        telegram_file = await context.bot.get_file(largest_photo.file_id)
-        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-            temp_path = tmp.name
-        await telegram_file.download_to_drive(temp_path)
-        extracted_text = extract_transaction_text_from_image(temp_path)
-    except Exception as exc:  # pragma: no cover - external provider guard
-        logger.exception("Gagal proses gambar transaksi: %s", exc)
-        await update.message.reply_text(
-            "Maaf, gambar belum bisa dibaca. Coba foto lebih jelas atau kirim dalam bentuk teks."
-        )
-        return
-    finally:
-        try:
-            if "temp_path" in locals() and os.path.exists(temp_path):
-                os.remove(temp_path)
-        except OSError:
-            logger.warning("Gagal hapus file sementara gambar.")
+    largest_photo = update.message.photo[-1]
+    await process_struk_image_message(
+        update.message,
+        context,
+        largest_photo.file_id,
+        intro="Struk sudah kebaca.",
+    )
 
-    PENDING_IMAGE_TRANSACTIONS[user_id] = extracted_text
-    await update.message.reply_text(
-        "Gambar sudah kebaca. Pilih mood kamu saat transaksi ini:",
-        reply_markup=build_mood_keyboard(),
+
+async def document_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.message.document:
+        return
+
+    document = update.message.document
+    mime_type = (document.mime_type or "").lower()
+    file_name = (document.file_name or "").lower()
+    is_image = mime_type.startswith("image/") or file_name.endswith((".jpg", ".jpeg", ".png", ".webp", ".heic"))
+    if not is_image:
+        return
+
+    user = update.effective_user
+    user_id = user.id if user else 0
+    if not user_id:
+        return
+    if not is_license_active_for_user(user_id):
+        await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    await process_struk_image_message(
+        update.message,
+        context,
+        document.file_id,
+        intro="File struk sudah kebaca.",
     )
 
 
@@ -1523,11 +1721,12 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         except OSError:
             logger.warning("Gagal hapus file sementara audio.")
 
-    PENDING_IMAGE_TRANSACTIONS[user_id] = extracted_text
-    await update.message.reply_text(
-        f"Voice note kebaca:\n_{extracted_text}_\n\nPilih mood kamu saat transaksi ini:",
-        parse_mode="Markdown",
-        reply_markup=build_mood_keyboard(),
+    await update.message.reply_text(f"Voice note kebaca:\n{extracted_text}")
+    await queue_mood_from_source_text(
+        update.message,
+        user_id,
+        extracted_text,
+        intro="Pilih mood kamu saat transaksi ini:",
     )
 
 
@@ -1544,6 +1743,7 @@ def main() -> None:
     app.add_handler(CallbackQueryHandler(mood_callback_handler, pattern=r"^mood:"))
     app.add_handler(CallbackQueryHandler(confirm_callback_handler, pattern=r"^confirm:"))
     app.add_handler(MessageHandler(filters.PHOTO, photo_handler))
+    app.add_handler(MessageHandler(filters.Document.ALL, document_handler))
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, voice_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
 
