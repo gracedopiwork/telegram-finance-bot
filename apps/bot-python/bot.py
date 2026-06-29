@@ -48,8 +48,11 @@ Aturan:
 2) nominal: ekstrak angka jadi integer bersih (contoh: 50rb => 50000, 1,2jt => 1200000).
 3) jenis: pilih hanya Pemasukan atau Pengeluaran.
 4) kategori, sub_kategori, sifat, mood: WAJIB pilih dari enum yang tersedia.
-5) impulsif: "Yes" jika ada indikasi pembelian spontan seperti iseng, kepengen, diskon, tiba-tiba.
-   Jika terlihat kebutuhan rutin/terencana, isi "No".
+5) impulsif: "Yes" jika pembelian spontan (iseng, kepengen, diskon, tiba-tiba) ATAU
+   perilaku belanja premium saat mood negatif (Sad/Stressed/Angry/Tired) — misalnya
+   makan restoran 250rb saat lelah, kopi Starbucks 100rb karena ngantuk.
+   Bisa tetap "Need" untuk sifat, tetapi impulsif "Yes" bila ada alternatif lebih murah.
+   Kebutuhan rutin terencana dengan nominal wajar → "No".
 6) Balas HANYA JSON murni, tanpa markdown dan tanpa teks tambahan.
 7) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
    {"error":"invalid_input"}
@@ -148,7 +151,37 @@ MOOD_ALIASES = {
     "lelah": "Tired",
     "burnout": "Tired",
     "capek": "Tired",
+    "tured": "Tired",
 }
+
+NEGATIVE_MOODS_FOR_IMPULSE = {"Sad", "Stressed", "Angry", "Tired"}
+
+EXPLICIT_IMPULSIVE_KEYWORDS = (
+    "iseng",
+    "diskon",
+    "tiba-tiba",
+    "lapar mata",
+    "lucu",
+    "gemes",
+    "pengen",
+    "kepengen",
+    "fomo",
+    "spontan",
+)
+
+PREMIUM_SPENDING_KEYWORDS = (
+    "restaurant",
+    "restoran",
+    "cafe",
+    "kafe",
+    "starbucks",
+    "coffee shop",
+    "fine dining",
+    "gofood",
+    "grab food",
+    "shopeefood",
+    "delivery",
+)
 
 MOOD_KEYWORDS: Dict[str, tuple[str, ...]] = {
     "Happy": ("sangat senang", "bahagia", "excited", "bersyukur", "senang banget", "happy"),
@@ -188,6 +221,40 @@ def detect_mood_in_text(text: str) -> str | None:
     return None
 
 
+def infer_impulsif(parsed: Dict[str, Any], source_text: str = "") -> str:
+    """Tandai impulsif: spontan eksplisit atau belanja premium saat mood negatif."""
+    combined = f"{parsed.get('keterangan', '')} {source_text}".lower()
+
+    if any(keyword in combined for keyword in EXPLICIT_IMPULSIVE_KEYWORDS):
+        return "Yes"
+
+    if parsed.get("jenis") != "Pengeluaran":
+        return "No"
+
+    mood = str(parsed.get("mood", "Neutral"))
+    nominal = int(parsed.get("nominal", 0) or 0)
+    kategori = str(parsed.get("kategori", ""))
+    sifat = str(parsed.get("sifat", ""))
+    is_food_out = kategori in {"Jajan", "Makan"}
+    is_premium = any(keyword in combined for keyword in PREMIUM_SPENDING_KEYWORDS)
+
+    if mood in NEGATIVE_MOODS_FOR_IMPULSE:
+        if sifat == "Wants":
+            return "Yes"
+        if is_food_out and (is_premium or nominal >= 100_000):
+            return "Yes"
+
+    if is_food_out and is_premium and nominal >= 150_000:
+        return "Yes"
+
+    return "No"
+
+
+def finalize_parsed_transaction(parsed: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
+    parsed["impulsif"] = infer_impulsif(parsed, source_text)
+    return parsed
+
+
 def build_mood_keyboard() -> InlineKeyboardMarkup:
     buttons = [
         [
@@ -218,11 +285,20 @@ async def queue_mood_from_source_text(message, user_id: int, source_text: str, *
     await prompt_mood_selection(message, user_id, intro=intro)
 
 
-async def queue_mood_from_parsed(message, user_id: int, parsed: Dict[str, Any], greeting_name: str, *, intro: str) -> None:
+async def queue_mood_from_parsed(
+    message,
+    user_id: int,
+    parsed: Dict[str, Any],
+    greeting_name: str,
+    *,
+    intro: str,
+    source_text: str = "",
+) -> None:
     PENDING_MOOD_WAIT[user_id] = {
         "mode": "parsed",
         "parsed": parsed,
         "greeting_name": greeting_name,
+        "source_text": source_text.strip(),
     }
     await prompt_mood_selection(message, user_id, intro=intro)
 
@@ -962,18 +1038,18 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
     elif any(keyword in lower_text for keyword in ["ngantuk", "lelah", "burnout", "capek", "tired"]):
         mood = "Tired"
 
-    impulsive_keywords = [
-        "iseng",
-        "diskon",
-        "tiba-tiba",
-        "lapar mata",
-        "lucu",
-        "gemes",
-        "pengen",
-        "kepengen",
-        "fomo",
-    ]
-    impulsif = "Yes" if any(keyword in lower_text for keyword in impulsive_keywords) else "No"
+    impulsif = infer_impulsif(
+        {
+            "keterangan": text,
+            "nominal": nominal,
+            "jenis": jenis,
+            "kategori": kategori,
+            "sub_kategori": sub_kategori,
+            "sifat": sifat,
+            "mood": mood,
+        },
+        text,
+    )
 
     return {
         "keterangan": text,
@@ -1155,8 +1231,11 @@ async def process_note_input(
             parsed,
             preferred_name,
             intro="Transaksi sudah kebaca. Mood belum terdeteksi dari struk/catatan ini.",
+            source_text=text,
         )
         return
+
+    finalize_parsed_transaction(parsed, text)
 
     if user_id:
         PENDING_CONFIRMATIONS.pop(user_id, None)
@@ -1491,6 +1570,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         parsed = pending["parsed"]
         parsed["mood"] = mood_text
+        finalize_parsed_transaction(parsed, pending.get("source_text", ""))
         greeting_name = pending["greeting_name"]
         PENDING_CONFIRMATIONS[user_id] = {
             "parsed": parsed,
@@ -1543,6 +1623,7 @@ async def mood_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
     parsed = pending["parsed"]
     parsed["mood"] = mood_value
+    finalize_parsed_transaction(parsed, pending.get("source_text", ""))
     greeting_name = pending["greeting_name"]
     PENDING_CONFIRMATIONS[user_id] = {
         "parsed": parsed,
