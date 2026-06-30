@@ -73,7 +73,6 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
 
     // Dashboard & legacy actions
     Route::get('/', [AdminController::class, 'index'])->name('index');
-    Route::post('/user-sheets', [AdminController::class, 'storeUserSheet'])->name('user-sheets.store');
     Route::post('/dashboard-sync', [AdminController::class, 'runDashboardSync'])->name('dashboard-sync');
 
     // Settings (key/value)
@@ -92,7 +91,6 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('orders',                [OrdersController::class, 'index'])->name('orders.index');
     Route::get('orders/{order}',        [OrdersController::class, 'show'])->name('orders.show');
     Route::patch('orders/{order}/status', [OrdersController::class, 'updateStatus'])->name('orders.updateStatus');
-    Route::post('orders/{order}/provision-sheet', [OrdersController::class, 'provisionSheet'])->name('orders.provisionSheet');
     Route::post('orders/{order}/resend-delivery', [OrdersController::class, 'resendDelivery'])->name('orders.resendDelivery');
     Route::post('orders/{order}/resend-delivery-email', [OrdersController::class, 'resendDelivery'])->name('orders.resendDeliveryEmail');
     Route::delete('orders/{order}',     [OrdersController::class, 'destroy'])->name('orders.destroy');

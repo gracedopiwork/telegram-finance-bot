@@ -32,7 +32,7 @@ from ai_quota import (
     should_notify_quota_exhausted,
 )
 from portal_link import fetch_portal_login_url
-from transaction_store import save_transaction_to_api, storage_mode
+from transaction_store import save_transaction_to_api
 from transaction_categories import (
     VALID_KATEGORI,
     VALID_SUB_KATEGORI,
@@ -467,9 +467,9 @@ def describe_sheet_missing_for_user(telegram_user_id: int) -> str:
                 f"tetapi **Google Sheet belum dibuat**.\n\n"
                 f"Admin jalankan di server:\n"
                 f"`php artisan google:sheet-setup --provision={code}`\n\n"
-                f"Atau tombol buat sheet di panel admin, lalu `/sheet` lagi."
+                "Atau hubungi admin untuk aktivasi dashboard web."
             )
-        return "Sheet ada di database tapi bot belum bisa membacanya. Coba `/sheet` lalu `/catat` lagi."
+        return "Data lama spreadsheet terdeteksi, tetapi bot sekarang memakai dashboard web."
     except Exception as exc:  # pragma: no cover - external db guard
         logger.warning("describe_sheet_missing gagal user=%s: %s", telegram_user_id, exc)
     return "Belum ada Google Sheet. Pastikan `/activate` dan order sudah punya sheet."
@@ -1104,14 +1104,11 @@ async def save_transaction(
     if uid is None and message.from_user:
         uid = message.from_user.id
 
-    mode = storage_mode()
     saved_db = False
-    saved_sheet = False
-
-    if mode in {"db", "both"} and uid:
+    if uid:
         ok, err = save_transaction_to_api(uid, parsed, source=source)
         saved_db = ok
-        if not ok and mode == "db":
+        if not ok:
             await message.reply_text(
                 "Gagal simpan ke dashboard web.\n\n"
                 f"`{err}`\n\n"
@@ -1121,36 +1118,7 @@ async def save_transaction(
             )
             return
 
-    if mode in {"sheet", "both"}:
-        try:
-            if uid:
-                ensure_user_sheet_from_order(uid)
-            sid = lookup_user_spreadsheet_id(uid) if uid else None
-            from sheet_privacy import append_transaction_row, prepare_sheet_for_bot_write, resolve_service_account_json_path
-
-            json_path = resolve_service_account_json_path()
-            order_code = None
-            if uid:
-                osheet = lookup_order_sheet_for_user(uid)
-                if osheet:
-                    order_code = osheet.get("order_code")
-            if sid and json_path and os.path.isfile(json_path):
-                prepare_sheet_for_bot_write(sid, json_path)
-                row = build_sheet_row(parsed)
-                append_transaction_row(sid, json_path, row, order_code=order_code)
-                saved_sheet = True
-                logger.info("Transaksi juga disimpan ke Google Sheets %s.", sid)
-            elif mode == "sheet":
-                await message.reply_text(describe_sheet_missing_for_user(uid or 0), parse_mode="Markdown")
-                return
-        except Exception as exc:  # pragma: no cover
-            logger.exception("Gagal tulis ke Google Sheets: %s", exc)
-            if mode == "sheet":
-                err_short = str(exc).replace("\n", " ")[:200]
-                await message.reply_text(f"Gagal simpan ke Google Sheet.\n\n`{err_short}`", parse_mode="Markdown")
-                return
-
-    if not saved_db and not saved_sheet:
+    if not saved_db:
         await message.reply_text("Gagal menyimpan transaksi. Hubungi admin YFD.")
         return
 
@@ -1287,7 +1255,6 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "/catat - catat transaksi baru\n"
         "/activate - aktivasi lisensi\n"
         "/hapuskilat - hapus data terakhir\n"
-        "/sheet - buka Google Sheet\n"
         "/hariini - rangkuman pengeluaran hari ini\n"
         "/kuota - sisa kuota AI parsing bulan ini\n"
         "/web - link masuk dashboard (otomatis)\n\n"
@@ -1350,31 +1317,11 @@ async def activate_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await update.message.reply_text("Aktivasi gagal karena masalah server.")
         return
 
-    sheet_note = ""
-    if user and user.id:
-        order_sheet = lookup_order_sheet_for_license(license_id)
-        if order_sheet:
-            ensure_user_sheet_for_license(user.id, license_id)
-            json_path = get_env("GOOGLE_SERVICE_ACCOUNT_JSON", required=False)
-            sid = order_sheet["spreadsheet_id"]
-            if json_path and os.path.isfile(json_path):
-                from sheet_privacy import prepare_sheet_for_bot_write, share_sheet_with_customer_email
-
-                prepare_sheet_for_bot_write(sid, json_path)
-                order_email = lookup_order_email_for_user(user.id)
-                if order_email:
-                    share_sheet_with_customer_email(sid, json_path, order_email)
-            sheet_note = (
-                f"\n\nGoogle Sheet siap (order `{order_sheet.get('order_code', '')}`).\n"
-                "Kamu bisa `/catat` atau `/sheet`."
-            )
-        else:
-            sheet_note = "\n\n" + describe_sheet_missing_for_user(user.id)
-
     if user:
         PENDING_NAME_USERS.add(user.id)
     await update.message.reply_text(
-        f"Lisensi aktif. Kode: `{activated_key}`\nSekarang kamu mau dipanggil siapa?{sheet_note}",
+        f"Lisensi aktif. Kode: `{activated_key}`\nSekarang kamu mau dipanggil siapa?\n\n"
+        "Setelah ini kamu bisa langsung `/catat` dan lihat hasilnya di dashboard web.",
         parse_mode="Markdown",
     )
 
@@ -1387,98 +1334,21 @@ async def hapuskilat_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not user_id or not is_license_active_for_user(user_id):
         await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
         return
-    try:
-        if user_id:
-            ensure_user_sheet_from_order(user_id)
-        worksheet = build_sheet_client(user_id)
-        used_rows = len(worksheet.col_values(1))
-        if used_rows <= 1:
-            await update.message.reply_text("Belum ada data transaksi untuk dihapus.")
-            return
-        deleted_row = worksheet.row_values(used_rows)
-        worksheet.delete_rows(used_rows)
-    except Exception as exc:  # pragma: no cover - defensive guard for external services
-        logger.exception("Gagal menghapus baris terakhir: %s", exc)
-        await update.message.reply_text("Gagal menghapus data terakhir. Coba lagi sebentar.")
-        return
-
-    keterangan = deleted_row[9] if len(deleted_row) > 9 else "-"
-    nominal = deleted_row[5] if len(deleted_row) > 5 else "-"
     await update.message.reply_text(
-        "Data terakhir dihapus.\n"
-        f"Keterangan: {keterangan}\n"
-        f"Nominal: Rp{nominal}"
+        "Perintah `/hapuskilat` dimatikan karena integrasi spreadsheet sudah dihapus.\n"
+        "Jika perlu koreksi data, hapus dari portal web.",
+        parse_mode="Markdown",
     )
 
 
 async def sheet_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message:
         return
-    user = update.effective_user
-    user_id = user.id if user else 0
-    if not user_id or not is_license_active_for_user(user_id):
-        await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
-        return
-    share_ok = True
-    order_email = None
-    order_code = None
-    order_sheet = lookup_order_sheet_for_user(user_id) if user_id else None
-    if user_id:
-        from sheet_privacy import share_sheet_with_customer_email
-
-        ensure_user_sheet_from_order(user_id)
-        if not order_sheet:
-            order_sheet = lookup_order_sheet_for_user(user_id)
-        order_email = lookup_order_email_for_user(user_id)
-        if order_sheet:
-            order_code = order_sheet.get("order_code") or None
-        spreadsheet_id = order_sheet["spreadsheet_id"] if order_sheet else None
-        json_path = get_env("GOOGLE_SERVICE_ACCOUNT_JSON", required=False)
-        if spreadsheet_id and order_email and json_path and os.path.isfile(json_path):
-            try:
-                share_ok = share_sheet_with_customer_email(
-                    spreadsheet_id, json_path, order_email
-                )
-            except Exception as exc:
-                share_ok = False
-                logger.warning("sheet_handler share gagal user=%s: %s", user_id, exc)
-        elif user_id:
-            order_email = ensure_sheet_drive_access(user_id)
-    sheet_url = _sheet_url_from_id(order_sheet["spreadsheet_id"]) if order_sheet else None
-    if not sheet_url:
-        await update.message.reply_text(
-            "Belum ada link Google Sheet untuk akun ini.\n\n"
-            "• Buka lagi halaman sukses pembayaran (ada link sheet setelah lunas) atau cek email.\n"
-            "• Pastikan sudah /activate dengan kode yang benar.\n"
-            "• Di server Laravel admin: GOOGLE_SERVICE_ACCOUNT_JSON + GOOGLE_USER_SHEET_TEMPLATE_ID "
-            "harus benar, dan queue/worker jalan agar sheet per order terbuat.\n"
-            "Tunggu 1–2 menit setelah lunas lalu coba /sheet lagi."
-        )
-        return
-
-    lines = [f"Buka Google Sheet kamu di sini:\n{sheet_url}"]
-    if order_code:
-        lines.append(f"\nOrder: `{order_code}` (sama dengan halaman checkout).")
-    if order_email:
-        lines.append(
-            f"\nBuka dengan Gmail yang *sama dengan yang Anda input saat checkout*:\n`{order_email}`\n\n"
-            "Di browser Google, klik foto profil → *Ganti akun* jika perlu."
-        )
-        if not share_ok:
-            lines.append(
-                "\n⚠️ Share ke email checkout gagal. Pastikan `GOOGLE_OAUTH_*` di .env bot = Laravel. "
-                "Admin: `php artisan google:sheet-setup --reshare=KODE_ORDER`."
-            )
-        elif get_env("GOOGLE_SHEET_FALLBACK_LINK_READER", "true").lower() in ("1", "true", "yes"):
-            lines.append(
-                "\nJika tetap diminta akses, muat ulang link — mode fallback link aktif; "
-                f"login sebagai `{order_email}` atau akun Google mana pun yang punya link."
-            )
-    else:
-        lines.append(
-            "\nBuka dengan Gmail yang sama dengan email yang Anda input saat checkout."
-        )
-    await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+    await update.message.reply_text(
+        "Perintah `/sheet` sudah dinonaktifkan.\n"
+        "Sekarang semua data dan laporan hanya lewat dashboard web YFD (`/web`).",
+        parse_mode="Markdown",
+    )
 
 
 async def hariini_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1491,40 +1361,47 @@ async def hariini_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return
 
     try:
-        if user_id:
-            ensure_user_sheet_from_order(user_id)
-        worksheet = build_sheet_client(user_id)
-        rows = worksheet.get_all_values()
-    except Exception as exc:  # pragma: no cover - defensive guard for external services
-        logger.exception("Gagal ambil data untuk rangkuman harian: %s", exc)
-        await update.message.reply_text("Gagal mengambil rangkuman hari ini. Coba lagi sebentar.")
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT
+                COUNT(*) AS total_tx,
+                COALESCE(SUM(CASE WHEN type = 'Pemasukan' THEN amount ELSE 0 END), 0) AS total_income,
+                COALESCE(SUM(CASE WHEN type = 'Pengeluaran' THEN amount ELSE 0 END), 0) AS total_expense
+            FROM bot_transactions
+            WHERE telegram_user_id = %s
+              AND DATE(recorded_at) = CURDATE()
+            """,
+            (user_id,),
+        )
+        row = cursor.fetchone() or {}
+        cursor.close()
+        conn.close()
+    except Exception as exc:  # pragma: no cover - external db guard
+        logger.exception("Gagal ambil rangkuman /hariini dari DB: %s", exc)
+        await update.message.reply_text(
+            "Gagal mengambil rangkuman hari ini dari dashboard web. Coba lagi sebentar."
+        )
         return
 
-    today_prefix = datetime.now().strftime("%Y-%m-%d")
-    today_rows: List[List[str]] = []
-    for row in rows[1:]:
-        if len(row) < 6:
-            continue
-        if row[0].startswith(today_prefix):
-            today_rows.append(row)
+    total_tx = int(row.get("total_tx") or 0)
+    total_income = int(row.get("total_income") or 0)
+    total_expense = int(row.get("total_expense") or 0)
+    cashflow = total_income - total_expense
 
-    if not today_rows:
-        await update.message.reply_text("Belum ada transaksi tercatat hari ini.")
+    if total_tx == 0:
+        await update.message.reply_text(
+            "Belum ada transaksi tercatat hari ini di dashboard web."
+        )
         return
-
-    total_pengeluaran = 0
-    for row in today_rows:
-        jenis_transaksi = row[2].strip()
-        nominal_text = re.sub(r"[^\d]", "", row[5])
-        if jenis_transaksi != "Pengeluaran":
-            continue
-        if nominal_text.isdigit():
-            total_pengeluaran += int(nominal_text)
 
     await update.message.reply_text(
-        "Rangkuman hari ini:\n"
-        f"Jumlah transaksi: {len(today_rows)}\n"
-        f"Total pengeluaran: Rp{total_pengeluaran:,}"
+        "Rangkuman hari ini (dashboard web):\n"
+        f"Jumlah transaksi: {total_tx}\n"
+        f"Total pemasukan: Rp{total_income:,}\n"
+        f"Total pengeluaran: Rp{total_expense:,}\n"
+        f"Cashflow: Rp{cashflow:,}"
     )
 
 
@@ -1849,7 +1726,6 @@ def main() -> None:
     app.add_handler(CommandHandler("catat", catat_handler))
     app.add_handler(CommandHandler("activate", activate_handler))
     app.add_handler(CommandHandler("hapuskilat", hapuskilat_handler))
-    app.add_handler(CommandHandler("sheet", sheet_handler))
     app.add_handler(CommandHandler("hariini", hariini_handler))
     app.add_handler(CommandHandler("kuota", kuota_handler))
     app.add_handler(CommandHandler("web", web_handler))

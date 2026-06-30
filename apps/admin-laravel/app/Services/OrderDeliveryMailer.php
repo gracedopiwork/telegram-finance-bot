@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Mail;
 class OrderDeliveryMailer
 {
     /**
-     * Email berisi: tautan bot Telegram, kode lisensi + /activate, link Google Sheet.
+     * Email berisi: tautan bot Telegram, kode lisensi + /activate, dan portal web.
      *
      * @throws \RuntimeException
      */

@@ -13,17 +13,6 @@
 
 @php
     [$lbl, $color] = $order->statusBadge();
-    $hideUserSheetFromAdmin = (bool) config('services.google.hide_user_sheet_from_admin', true);
-    $adminSheetHref = null;
-    if (! $hideUserSheetFromAdmin) {
-        if (! empty($order->spreadsheet_url)) {
-            $adminSheetHref = $order->spreadsheet_url;
-        } elseif (! empty($order->spreadsheet_id)) {
-            $adminSheetHref = 'https://docs.google.com/spreadsheets/d/' . $order->spreadsheet_id . '/edit';
-        }
-    }
-    $adminSheetJobDone = $order->purchase_delivery_sent_at !== null;
-    $adminSheetProvisioned = ! empty($order->spreadsheet_id);
 @endphp
 
 <div class="row">
@@ -216,67 +205,7 @@
             </div>
         </div>
 
-        {{-- Google Sheet (hasil DeliverPaidOrderJob) --}}
-        <div class="card card-outline @if($adminSheetHref) card-success @elseif($order->status === 'paid' && $adminSheetJobDone && ! $adminSheetHref) card-danger @else card-secondary @endif">
-            <div class="card-header">
-                <h3 class="card-title mb-0"><i class="fas fa-table mr-2"></i>Google Sheet</h3>
-            </div>
-            <div class="card-body">
-                @if($adminSheetProvisioned && $hideUserSheetFromAdmin)
-                    <span class="badge badge-success mb-2">Spreadsheet terkirim ke pelanggan</span>
-                    <p class="small text-muted mb-0">
-                        Mode privasi aktif: link &amp; tab <strong>Transaksi</strong> tidak ditampilkan di admin.
-                        Pelanggan mengakses lewat email/checkout; dashboard di-update lewat Sync di beranda admin.
-                    </p>
-                @elseif($adminSheetHref)
-                    <p class="mb-2 small text-muted">Spreadsheet untuk order ini (sama dengan email / halaman sukses checkout):</p>
-                    <p class="mb-2">
-                        <a href="{{ $adminSheetHref }}" target="_blank" rel="noopener" class="font-weight-bold break-all">
-                            <i class="fas fa-external-link-alt mr-1"></i>{{ \Illuminate\Support\Str::limit($adminSheetHref, 64) }}
-                        </a>
-                    </p>
-                    <p class="mb-2">
-                        <a href="{{ $adminSheetHref }}" target="_blank" rel="noopener" class="btn btn-sm btn-success">
-                            <i class="fab fa-google-drive mr-1"></i>Buka di Google Sheets
-                        </a>
-                    </p>
-                    @if($order->spreadsheet_id)
-                        <table class="table table-sm table-bordered mb-0">
-                            <tr>
-                                <th class="bg-light" width="110">Spreadsheet ID</th>
-                                <td><code class="small user-select-all">{{ $order->spreadsheet_id }}</code></td>
-                            </tr>
-                        </table>
-                    @endif
-                @elseif($order->status === 'paid' && $adminSheetJobDone && ! $adminSheetHref)
-                    <span class="badge badge-danger mb-2">Tidak ada link / ID di database</span>
-                    <p class="small text-muted mb-2">
-                        Job pengiriman sudah selesai (<code>purchase_delivery_sent_at</code> terisi) tetapi penyalinan template Google gagal atau belum dijalankan ulang setelah perbaikan env.
-                        Cek log, lalu salin ulang (konfigurasi sudah OK di <code>google:sheet-setup</code> tidak memperbaiki order lama otomatis).
-                    </p>
-                    <form method="post" action="{{ route('admin.orders.provisionSheet', $order) }}" class="mb-2">
-                        @csrf
-                        <button type="submit" class="btn btn-sm btn-warning">
-                            <i class="fas fa-redo mr-1"></i>Salin ulang / terapkan privasi sheet
-                        </button>
-                    </form>
-                    <p class="small text-muted mb-0">
-                        Atau di server: <code>php artisan google:sheet-setup --provision={{ $order->order_code }}</code>
-                    </p>
-                @elseif($order->status === 'paid' && ! $adminSheetHref)
-                    <span class="badge badge-warning mb-2">Belum ada spreadsheet</span>
-                    <p class="small text-muted mb-0">
-                        Tunggu antrian <code>DeliverPaidOrderJob</code> (pastikan <code>php artisan queue:work</code> berjalan). Setelah sukses, link akan muncul di sini.
-                    </p>
-                @else
-                    <p class="small text-muted mb-0">
-                        Link Google Sheet akan tersedia setelah order <strong>Lunas</strong> dan proses pengiriman digital selesai.
-                    </p>
-                @endif
-            </div>
-        </div>
-
-        {{-- Pengiriman ringkasan (bot + lisensi + sheet) --}}
+        {{-- Pengiriman ringkasan (bot + lisensi) --}}
         @if($order->status === 'paid' && $order->license)
             @php
                 $deliveryChannel = config('services.order_delivery.channel', 'wa');
@@ -297,7 +226,7 @@
                 <div class="card-body">
                     <p class="small text-muted mb-2">
                         Channel: <strong>{{ $deliveryChannelLabel ?? $deliveryChannel }}</strong> —
-                        tautan bot Telegram, kode lisensi + <code>/activate</code>, link Google Sheet.
+                        tautan bot Telegram, kode lisensi + <code>/activate</code>, dan link dashboard web.
                     </p>
                     @if($order->purchase_delivery_sent_at)
                         <p class="small mb-2">

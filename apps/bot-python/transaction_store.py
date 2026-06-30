@@ -32,10 +32,6 @@ def _resolve_laravel_target() -> tuple[str, dict[str, str]]:
     return "", {}
 
 
-def storage_mode() -> str:
-    return (_get_env("BOT_TRANSACTION_STORAGE") or "db").lower()
-
-
 def save_transaction_to_api(
     telegram_user_id: int,
     parsed: dict,
@@ -44,9 +40,6 @@ def save_transaction_to_api(
 ) -> tuple[bool, str]:
     """Return (success, error_message)."""
     global _warned_missing_config
-
-    if storage_mode() == "sheet":
-        return False, "storage_mode_sheet"
 
     token = _get_env("BOT_INTERNAL_API_TOKEN")
     app_url, extra_headers = _resolve_laravel_target()
