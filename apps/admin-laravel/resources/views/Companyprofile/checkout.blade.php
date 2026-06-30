@@ -26,7 +26,7 @@
         <div class="lg:col-span-7">
             <div class="bg-white rounded-2xl border border-outline-variant shadow-soft p-7 md:p-9">
                 <h2 class="font-heading text-[20px] font-bold text-primary mb-1">Data Pembeli</h2>
-                <p class="text-[13px] text-on-surface-variant mb-6">Email Gmail wajib diisi — setelah pembayaran lunas, kami kirim ke email tersebut: <strong>tautan bot Telegram</strong>, <strong>kode /activate</strong>, dan <strong>link Google Sheet</strong>. Kode aktivasi <strong>tidak ditampilkan di website</strong>, hanya lewat email. Nomor WhatsApp untuk kontak darurat.</p>
+                <p class="text-[13px] text-on-surface-variant mb-6">Email wajib diisi — setelah pembayaran lunas, kami kirim ke email tersebut: <strong>tautan bot Telegram</strong>, <strong>kode /activate</strong>, dan <strong>akses dashboard web</strong>. Kode aktivasi <strong>tidak ditampilkan di website</strong>, hanya lewat email. Nomor WhatsApp untuk kontak darurat.</p>
 
                 <div class="space-y-4">
                     <div>
@@ -40,13 +40,13 @@
 
                     <div class="grid sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[12.5px] font-semibold text-on-surface mb-1.5">Email Gmail (akses Google Sheet) <span class="text-red-500">*</span></label>
+                            <label class="block text-[12.5px] font-semibold text-on-surface mb-1.5">Email aktif <span class="text-red-500">*</span></label>
                             <input type="email" name="email" required maxlength="190"
                                    value="{{ old('email') }}"
                                    class="w-full rounded-xl border-outline-variant focus:border-primary focus:ring-primary text-[14px] @error('email') border-red-400 @enderror"
                                    placeholder="nama@gmail.com"
                                    autocomplete="email">
-                            <p class="text-[11px] text-on-surface-variant mt-1">Isi Gmail yang akan dipakai membuka spreadsheet — bukan email lain.</p>
+                            <p class="text-[11px] text-on-surface-variant mt-1">Gunakan email yang akan dipakai login dashboard web YFD.</p>
                             @error('email') <p class="text-[12px] text-red-600 mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div>
@@ -117,7 +117,7 @@
 
                 <ul class="mt-5 space-y-2 text-[12.5px] text-on-surface-variant">
                     <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">verified</span> Pembayaran via Midtrans (kartu, VA, GoPay, OVO, ShopeePay, QRIS)</li>
-                    <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">mail</span> Setelah lunas: <strong>email otomatis</strong> berisi link bot Telegram, kode lisensi, &amp; Google Sheet</li>
+                    <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">mail</span> Setelah lunas: <strong>email otomatis</strong> berisi link bot Telegram, kode lisensi, &amp; akses dashboard web</li>
                     <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">support_agent</span> Onboarding 1×24 jam oleh tim YFD</li>
                 </ul>
             </div>

@@ -3,38 +3,17 @@
 @section('title', 'Pembayaran Diproses — YFD')
 
 @php
-    $sheetPoll = (int) request()->query('sheet_poll', 0);
-    $sheetHref = null;
-    if ($order) {
-        if (! empty($order->spreadsheet_url)) {
-            $sheetHref = $order->spreadsheet_url;
-        } elseif (! empty($order->spreadsheet_id)) {
-            $sheetHref = 'https://docs.google.com/spreadsheets/d/' . $order->spreadsheet_id . '/edit';
-        }
-    }
-    $sheetOk = $sheetHref !== null;
     $deliverySent = $order && $order->purchase_delivery_sent_at !== null;
-    $sheetStillPending = $order
-        && $order->status === 'paid'
-        && $order->license
-        && ! $sheetOk;
-    $sheetWaitingForJob = $sheetStillPending && ! $deliverySent;
-    $sheetFailedAfterJob = $sheetStillPending && $deliverySent;
-    $sheetPollMax = 45;
-    $sheetPollInterval = 8;
     $deliveryLabel = $deliveryChannelLabel ?? 'WhatsApp';
     $deliveryViaEmail = $deliveryViaEmail ?? false;
     $deliveryContact = $order
         ? ($deliveryViaEmail ? $order->email : $order->phone)
         : '';
-    $allReady = $order && $order->status === 'paid' && $order->license && $sheetOk && $deliverySent;
 @endphp
 
 @push('head')
     @if($order && $order->status === 'pending')
         <meta http-equiv="refresh" content="12">
-    @elseif($order && $order->status === 'paid' && $order->license && ! $allReady && $sheetPoll < $sheetPollMax)
-        <meta http-equiv="refresh" content="{{ $sheetPollInterval }};url={{ request()->fullUrlWithQuery(['sheet_poll' => $sheetPoll + 1]) }}">
     @endif
 @endpush
 
@@ -55,37 +34,10 @@
 
         @if($order->status === 'paid' && $order->license)
             @if($deliveryViaEmail)
-                @if($allReady)
-                    <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
-                        Pembayaran <strong>lunas</strong>. Kode aktivasi bot, tautan Telegram, dan link Google Sheet sudah dikirim ke email
-                        <strong>{{ $order->email }}</strong>. Cek inbox (dan folder Spam) lalu ikuti langkah di email tersebut.
-                    </p>
-
-                    <div class="max-w-lg mx-auto text-left mb-6 border-2 border-emerald-200 bg-emerald-50/80 rounded-2xl p-5">
-                        <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-800 mb-2">Email terkirim</p>
-                        <p class="text-body-md text-on-surface-variant mb-0">
-                            <span class="inline-flex items-center gap-1 font-semibold text-emerald-800">
-                                <span class="material-symbols-outlined text-[20px]">mark_email_read</span> Semua siap
-                            </span>
-                            — buka email di <strong>{{ $order->email }}</strong> untuk kode <strong>/activate</strong> dan Google Sheet.
-                        </p>
-                    </div>
-                @else
-                    <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
-                        Pembayaran <strong>lunas</strong>. Kami sedang menyiapkan Google Sheet dan mengirim ringkasan lengkap ke email
-                        <strong>{{ $order->email }}</strong>. Halaman ini memuat ulang otomatis
-                        @if($sheetPoll < $sheetPollMax)
-                            ({{ $sheetPoll + 1 }}/{{ $sheetPollMax }}).
-                        @else
-                            — jika belum masuk, cek Spam atau hubungi tim YFD.
-                        @endif
-                    </p>
-
-                    <p class="text-sm text-on-surface-variant max-w-lg mx-auto mb-6">
-                        Kode lisensi dan link Google Sheet akan dikirim ke email <strong>{{ $order->email }}</strong>.
-                        Silakan cek folder Spam/Junk. Jika belum masuk juga, hubungi admin YFD.
-                    </p>
-                @endif
+                <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
+                    Pembayaran <strong>lunas</strong>. Kode aktivasi bot dan akses dashboard web sudah dikirim ke email
+                    <strong>{{ $order->email }}</strong>. Cek inbox (dan folder Spam) lalu lanjutkan aktivasi.
+                </p>
             @else
                 <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-4">
                     Pembayaran <strong>lunas</strong>. Simpan kode lisensi di bawah ini — kode ini harus sama persis saat Anda
@@ -104,37 +56,6 @@
                         Di Telegram, buka bot lalu kirim (bisa copy-paste):<br>
                         <code class="text-[11px] bg-white px-2 py-1 rounded border border-outline-variant inline-block mt-1 select-all">/activate {{ $order->license->license_key }}</code>
                     </p>
-                </div>
-
-                <div class="max-w-lg mx-auto text-left mb-6 border-2 rounded-2xl p-5
-                    @if($sheetOk) border-emerald-200 bg-emerald-50/80
-                    @elseif($sheetFailedAfterJob) border-red-200 bg-red-50/70
-                    @else border-amber-200 bg-amber-50/70 @endif">
-                    <p class="text-[11px] font-bold uppercase tracking-wider mb-2
-                        @if($sheetOk) text-emerald-800
-                        @elseif($sheetFailedAfterJob) text-red-800
-                        @else text-amber-900 @endif">
-                        Status Google Sheet
-                    </p>
-                    @if($sheetOk)
-                        <p class="text-body-md text-on-surface-variant mb-2">
-                            <span class="inline-flex items-center gap-1 font-semibold text-emerald-800">
-                                <span class="material-symbols-outlined text-[20px]">check_circle</span> Berhasil
-                            </span>
-                            — spreadsheet untuk order ini sudah dibuat.
-                        </p>
-                        <p class="text-[13px] mb-2">
-                            <a href="{{ $sheetHref }}" target="_blank" rel="noopener" class="text-primary font-semibold underline break-all">{{ $sheetHref }}</a>
-                        </p>
-                    @elseif($sheetFailedAfterJob)
-                        <p class="text-body-md text-on-surface-variant mb-0">
-                            {{ $deliveryLabel }} sudah dikirim, tetapi Google Sheet belum terbuat otomatis. Hubungi tim YFD.
-                        </p>
-                    @elseif($sheetWaitingForJob && $sheetPoll < $sheetPollMax)
-                        <p class="text-body-md text-on-surface-variant mb-0">Google Sheet sedang diproses…</p>
-                    @else
-                        <p class="text-body-md text-on-surface-variant mb-0">Google Sheet belum terlihat — hubungi tim YFD.</p>
-                    @endif
                 </div>
             @endif
         @else
@@ -172,20 +93,6 @@
                                 <span class="text-emerald-700">Terkirim</span>
                             @else
                                 <span class="text-amber-800">Menunggu…</span>
-                            @endif
-                        </dd>
-                    </div>
-                    <div class="flex justify-between gap-2">
-                        <dt class="text-on-surface-variant shrink-0">Google Sheet</dt>
-                        <dd class="text-right font-semibold text-[12px]">
-                            @if($sheetOk)
-                                <span class="text-emerald-700">{{ $deliveryViaEmail ? 'Dikirim via email' : 'Siap' }}</span>
-                            @elseif($sheetFailedAfterJob)
-                                <span class="text-red-700">Gagal / tidak ada</span>
-                            @elseif($sheetWaitingForJob && $sheetPoll < $sheetPollMax)
-                                <span class="text-amber-800">Memproses…</span>
-                            @else
-                                <span class="text-amber-800">Belum terlihat</span>
                             @endif
                         </dd>
                     </div>

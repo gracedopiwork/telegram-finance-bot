@@ -39,7 +39,7 @@
                         <label>Tagline (1 kalimat singkat)</label>
                         <input type="text" name="tagline" class="form-control"
                                value="{{ old('tagline', $product->tagline) }}"
-                               placeholder="Catat keuangan harian via chat — AI auto-parse ke Google Sheets.">
+                               placeholder="Catat keuangan harian via chat — AI auto-parse ke dashboard web.">
                     </div>
                     <div class="form-group">
                         <label>Deskripsi</label>
@@ -102,7 +102,7 @@
                 <div class="card-body">
                     <label>Daftar Fitur (1 fitur per baris)</label>
                     <textarea name="features_text" class="form-control" rows="7"
-                              placeholder="AI parser bahasa alami&#10;Sync Google Sheets&#10;Sistem lisensi pribadi">{{ old('features_text', is_array($product->features) ? implode("\n", $product->features) : '') }}</textarea>
+                              placeholder="AI parser bahasa alami&#10;Dashboard web real-time&#10;Sistem lisensi pribadi">{{ old('features_text', is_array($product->features) ? implode("\n", $product->features) : '') }}</textarea>
                     <small class="form-text text-muted">Akan ditampilkan sebagai bullet list di halaman produk.</small>
                 </div>
             </div>

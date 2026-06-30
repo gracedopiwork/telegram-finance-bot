@@ -64,9 +64,9 @@
                 @endif
                 @php
                     $descriptionText = (string) ($featured->description ?? '');
-                    $descriptionText = str_replace(
-                        ['auto-parse ke Google Sheets pribadi', 'Google Sheets pribadi', 'Google Sheets'],
-                        ['auto-parse ke Dashboard Web pribadi', 'Dashboard Web pribadi', 'Dashboard Web YFD'],
+                    $descriptionText = str_ireplace(
+                        ['google sheets pribadi', 'google sheets', 'google sheet', 'spreadsheet'],
+                        ['dashboard web pribadi', 'dashboard web yfd', 'dashboard web yfd', 'dashboard web'],
                         $descriptionText
                     );
                 @endphp
@@ -102,9 +102,9 @@
                     <ul class="space-y-3 mb-7">
                         @foreach($featured->features as $f)
                             @php
-                                $featureText = str_replace(
-                                    ['Google Sheets pribadi', 'Google Sheets'],
-                                    ['Dashboard Web pribadi', 'Dashboard Web YFD'],
+                                $featureText = str_ireplace(
+                                    ['google sheets pribadi', 'google sheets', 'google sheet', 'spreadsheet'],
+                                    ['dashboard web pribadi', 'dashboard web yfd', 'dashboard web yfd', 'dashboard web'],
                                     (string) $f
                                 );
                             @endphp
