@@ -7,15 +7,11 @@ import threading
 
 import requests
 
+from laravel_api import auth_headers, missing_laravel_config_message, resolve_laravel_target
+
 logger = logging.getLogger(__name__)
 
 _warned_missing_config = False
-
-
-def _get_env(name: str) -> str:
-    import os
-
-    return (os.getenv(name) or "").strip()
 
 
 def _classify_gemini_error(exc: Exception) -> str:
@@ -25,37 +21,16 @@ def _classify_gemini_error(exc: Exception) -> str:
     return "error"
 
 
-def _resolve_laravel_target() -> tuple[str, dict[str, str]]:
-    """URL dasar + header tambahan (mis. Host untuk loopback)."""
-    for key in ("LARAVEL_APP_URL", "APP_URL"):
-        url = _get_env(key).rstrip("/")
-        if url:
-            return url, {}
-
-    app_path = _get_env("LARAVEL_APP_PATH")
-    host = _get_env("LARAVEL_APP_HOST")
-    if app_path and host:
-        return "http://127.0.0.1", {"Host": host}
-
-    return "", {}
-
-
 def log_ai_health_config() -> None:
     """Dipanggil saat bot start — agar masalah env terlihat di journalctl."""
-    token = _get_env("BOT_INTERNAL_API_TOKEN")
-    app_url, _ = _resolve_laravel_target()
-    if token and app_url:
+    headers = auth_headers()
+    app_url, _ = resolve_laravel_target()
+    if headers and app_url:
         logger.info("ai_health: siap lapor ke %s/api/bot/ai-health", app_url)
         return
-
-    missing = []
-    if not token:
-        missing.append("BOT_INTERNAL_API_TOKEN")
-    if not app_url:
-        missing.append("LARAVEL_APP_URL (atau LARAVEL_APP_PATH + LARAVEL_APP_HOST)")
     logger.warning(
-        "ai_health: %s kosong — statistik AI tidak akan masuk admin dashboard",
-        ", ".join(missing),
+        "ai_health: %s — statistik AI tidak akan masuk admin dashboard",
+        missing_laravel_config_message() or "konfigurasi Laravel kosong",
     )
 
 
@@ -63,9 +38,9 @@ def report_ai_event(event: str, detail: str = "") -> None:
     """Kirim event ke Laravel tanpa memblokir bot."""
     global _warned_missing_config
 
-    token = _get_env("BOT_INTERNAL_API_TOKEN")
-    app_url, extra_headers = _resolve_laravel_target()
-    if not token or not app_url:
+    headers = auth_headers()
+    app_url, _ = resolve_laravel_target()
+    if headers is None or not app_url:
         if not _warned_missing_config:
             log_ai_health_config()
             _warned_missing_config = True
@@ -74,12 +49,6 @@ def report_ai_event(event: str, detail: str = "") -> None:
     payload = {"event": event}
     if detail:
         payload["detail"] = detail[:500]
-
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/json",
-        **extra_headers,
-    }
 
     def _send() -> None:
         url = f"{app_url}/api/bot/ai-health"

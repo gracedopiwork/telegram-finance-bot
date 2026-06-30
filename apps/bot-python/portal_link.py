@@ -6,41 +6,20 @@ import logging
 
 import requests
 
+from laravel_api import auth_headers, missing_laravel_config_message, resolve_laravel_target
+
 logger = logging.getLogger(__name__)
-
-
-def _get_env(name: str) -> str:
-    import os
-
-    return (os.getenv(name) or "").strip()
-
-
-def _resolve_laravel_target() -> tuple[str, dict[str, str]]:
-    for key in ("LARAVEL_APP_URL", "APP_URL"):
-        url = _get_env(key).rstrip("/")
-        if url:
-            return url, {}
-
-    app_path = _get_env("LARAVEL_APP_PATH")
-    host = _get_env("LARAVEL_APP_HOST")
-    if app_path and host:
-        return "http://127.0.0.1", {"Host": host}
-
-    return "", {}
 
 
 def fetch_portal_login_url(telegram_user_id: int) -> tuple[bool, str]:
     """Return (success, url_or_error_message)."""
-    token = _get_env("BOT_INTERNAL_API_TOKEN")
-    app_url, extra_headers = _resolve_laravel_target()
-    if not token or not app_url:
-        return False, "Konfigurasi server belum lengkap (LARAVEL_APP_URL + BOT_INTERNAL_API_TOKEN)."
+    headers = auth_headers()
+    app_url, _ = resolve_laravel_target()
+    if headers is None or not app_url:
+        return False, missing_laravel_config_message() or (
+            "Konfigurasi server belum lengkap (LARAVEL_APP_URL + BOT_INTERNAL_API_TOKEN)."
+        )
 
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/json",
-        **extra_headers,
-    }
     url = f"{app_url}/api/bot/portal-link"
 
     try:

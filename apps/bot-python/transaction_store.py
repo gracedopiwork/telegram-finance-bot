@@ -3,33 +3,14 @@
 from __future__ import annotations
 
 import logging
-import threading
 
 import requests
+
+from laravel_api import auth_headers, missing_laravel_config_message, resolve_laravel_target
 
 logger = logging.getLogger(__name__)
 
 _warned_missing_config = False
-
-
-def _get_env(name: str) -> str:
-    import os
-
-    return (os.getenv(name) or "").strip()
-
-
-def _resolve_laravel_target() -> tuple[str, dict[str, str]]:
-    for key in ("LARAVEL_APP_URL", "APP_URL"):
-        url = _get_env(key).rstrip("/")
-        if url:
-            return url, {}
-
-    app_path = _get_env("LARAVEL_APP_PATH")
-    host = _get_env("LARAVEL_APP_HOST")
-    if app_path and host:
-        return "http://127.0.0.1", {"Host": host}
-
-    return "", {}
 
 
 def save_transaction_to_api(
@@ -41,15 +22,13 @@ def save_transaction_to_api(
     """Return (success, error_message)."""
     global _warned_missing_config
 
-    token = _get_env("BOT_INTERNAL_API_TOKEN")
-    app_url, extra_headers = _resolve_laravel_target()
-    if not token or not app_url:
+    headers = auth_headers()
+    app_url, _ = resolve_laravel_target()
+    if headers is None or not app_url:
         if not _warned_missing_config:
-            logger.warning(
-                "transaction_store: BOT_INTERNAL_API_TOKEN atau LARAVEL_APP_URL kosong"
-            )
+            logger.error("transaction_store: %s", missing_laravel_config_message())
             _warned_missing_config = True
-        return False, "missing_laravel_config"
+        return False, missing_laravel_config_message() or "missing_laravel_config"
 
     payload = {
         "telegram_user_id": telegram_user_id,
@@ -64,12 +43,6 @@ def save_transaction_to_api(
         "source": source,
     }
 
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/json",
-        **extra_headers,
-    }
-
     url = f"{app_url}/api/bot/transactions"
     try:
         resp = requests.post(url, json=payload, headers=headers, timeout=15)
@@ -80,7 +53,12 @@ def save_transaction_to_api(
             resp.status_code,
             resp.text[:300],
         )
-        return False, resp.text[:200]
+        try:
+            data = resp.json()
+            err = data.get("error") or data.get("message") or resp.text[:200]
+        except Exception:
+            err = resp.text[:200]
+        return False, str(err)
     except Exception as exc:
         logger.warning("transaction_store: gagal POST %s — %s", url, exc)
         return False, str(exc)[:200]

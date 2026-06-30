@@ -20,6 +20,7 @@ from telegram.ext import (
 )
 
 from ai_health import log_ai_health_config, report_ai_event, report_gemini_failure
+from laravel_api import log_laravel_api_config
 from ai_quota import (
     format_quota_exhausted_notice,
     format_quota_status,
@@ -732,13 +733,20 @@ async def save_transaction(
         ok, err = save_transaction_to_api(uid, parsed, source=source)
         saved_db = ok
         if not ok:
-            await message.reply_text(
-                "Gagal simpan ke dashboard web.\n\n"
-                f"`{err}`\n\n"
-                "Pastikan `php artisan migrate` sudah jalan dan "
-                "`BOT_INTERNAL_API_TOKEN` + `LARAVEL_APP_URL` benar di server.",
-                parse_mode="Markdown",
+            hint = (
+                "Perbaiki di server — edit apps/bot-python/.env:\n"
+                "• BOT_INTERNAL_API_TOKEN (sama dengan Laravel)\n"
+                "• LARAVEL_APP_URL=https://domain-anda.com\n"
+                "Lalu: sudo systemctl restart yfd-bot"
             )
+            if "belum lengkap" in err.lower() or "kosong" in err.lower():
+                body = f"Gagal simpan ke dashboard web.\n\n{err}\n\n{hint}"
+            else:
+                body = (
+                    f"Gagal simpan ke dashboard web.\n\n{err}\n\n"
+                    "Cek token sama di Laravel + bot, migrate, lalu restart bot."
+                )
+            await message.reply_text(body)
             return
 
     if not saved_db:
@@ -1350,6 +1358,7 @@ def main() -> None:
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
 
     logger.info("Bot berjalan...")
+    log_laravel_api_config()
     log_ai_health_config()
     app.run_polling()
 
