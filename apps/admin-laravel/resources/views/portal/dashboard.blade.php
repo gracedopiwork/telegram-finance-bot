@@ -1,0 +1,224 @@
+@extends('portal.layouts.app')
+
+@section('title', 'Dashboard Keuangan — YFD')
+@section('heading', 'General Financial Dashboard')
+
+@section('content')
+@php
+    $fmt = fn (int $n) => 'Rp ' . number_format($n, 0, ',', '.');
+    $hasData = $summary['transaction_count'] > 0;
+@endphp
+
+@if($summary['baseline_review_due'] ?? false)
+    <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-3">
+        <span>Sudah 6 bulan sejak baseline terakhir. Evaluasi ulang untuk memperbarui tahap & prescription bucket.</span>
+        <a href="{{ route('portal.baseline.create') }}" class="font-semibold whitespace-nowrap">Health Check-Up →</a>
+    </div>
+@endif
+
+@if(!$hasData)
+    @include('portal.partials.empty-state', [
+        'title' => 'Dashboard masih kosong',
+        'message' => 'Mulai catat pemasukan & pengeluaran lewat bot Telegram. Semua metrik di bawah akan terisi otomatis.',
+    ])
+@endif
+
+{{-- KPI cards --}}
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+    <x-portal.stat-card label="Total Pendapatan" :value="$fmt($summary['income'])" :hint="$summary['income_share'].'% dari total cash in'" icon="trending_up" tone="emerald" />
+    <x-portal.stat-card label="Total Pengeluaran" :value="$fmt($summary['expense'])" :hint="$summary['expense_share'].'% dari pendapatan'" icon="shopping_cart" tone="rose" />
+    <x-portal.stat-card label="Cashflow (Surplus)" :value="$fmt($summary['cashflow'])" :hint="$summary['cashflow_share'].'% dari pendapatan'" icon="account_balance" :tone="$summary['cashflow'] >= 0 ? 'emerald' : 'rose'" />
+    <x-portal.stat-card label="Saving Rate" :value="$summary['saving_rate'].'%'" hint="Ideal ≥ 20%" icon="savings" tone="gold" />
+    <x-portal.stat-card label="Transaksi" :value="(string) $summary['transaction_count']" hint="bulan {{ $summary['month_label'] }}" icon="receipt_long" tone="navy" />
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    {{-- 4 Bucket --}}
+    <div class="xl:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-5">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-navy-800">medication</span>
+                <h3 class="font-bold text-navy-800 text-lg">Budget Prescription (4 Bucket)</h3>
+            </div>
+            @php $stageKey = $summary['bucket_ideals_source'] ?? 'growing'; @endphp
+            <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                Ideal: {{ ucfirst($stageKey) }}
+            </span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-slate-500 border-b">
+                        <th class="pb-3 font-semibold">Bucket</th>
+                        <th class="pb-3 font-semibold text-right">Aktual</th>
+                        <th class="pb-3 font-semibold text-right">Ideal</th>
+                        <th class="pb-3 font-semibold w-40">Progress</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach($summary['buckets'] as $bucket)
+                    <tr class="border-b border-slate-50">
+                        <td class="py-3 font-medium text-navy-800">{{ $bucket['bucket'] }}</td>
+                        <td class="py-3 text-right">{{ $bucket['share'] }}% <span class="text-slate-400 text-xs">({{ $fmt($bucket['amount']) }})</span></td>
+                        <td class="py-3 text-right text-slate-600">{{ $bucket['ideal'] }}%</td>
+                        <td class="py-3">
+                            <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full {{ $bucket['progress'] > 100 ? 'bg-rose-500' : 'bg-navy-500' }}"
+                                     style="width: {{ min(100, $bucket['progress']) }}%"></div>
+                            </div>
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {{-- Financial Pulse + Impulsivity teaser --}}
+    <div class="space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 text-center">
+            <h3 class="font-bold text-navy-800 mb-4 flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">ecg_heart</span> Financial Pulse
+            </h3>
+            <div class="relative w-36 h-36 mx-auto rounded-full pulse-ring flex items-center justify-center"
+                 style="--score: {{ $summary['pulse']['score'] }}">
+                <div class="w-28 h-28 rounded-full bg-white flex flex-col items-center justify-center shadow-inner">
+                    <span class="text-3xl font-extrabold text-navy-800">{{ $summary['pulse']['score'] }}</span>
+                    <span class="text-xs text-slate-400">/100</span>
+                </div>
+            </div>
+            <div class="mt-3 inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold
+                {{ $summary['pulse']['score'] >= 65 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">
+                {{ $summary['pulse']['label'] }}
+            </div>
+            <p class="text-sm text-slate-600 mt-4 text-left border-t pt-4 leading-relaxed">
+                <span class="font-semibold text-navy-800">Doctor's Note:</span>
+                {{ $summary['doctors_note'] }}
+            </p>
+        </div>
+
+        <a href="{{ route('portal.emotional', ['month' => $summary['month']]) }}"
+           class="block bg-gradient-to-br from-navy-800 to-navy-600 rounded-2xl p-5 text-white shadow-sm hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-xs uppercase tracking-wider text-gold-400 font-bold">Impulsivitas</div>
+                    <div class="text-2xl font-extrabold mt-1">{{ $impulsivity['score'] }}/100</div>
+                    <div class="text-sm text-white/80 mt-1">{{ $impulsivity['grade'] }}</div>
+                </div>
+                <span class="material-symbols-outlined text-4xl text-white/30">psychology</span>
+            </div>
+            <div class="mt-3 text-xs text-white/70 flex items-center gap-1">
+                Lihat Emotional Scan
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </div>
+        </a>
+    </div>
+</div>
+
+{{-- Charts row --}}
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+        <h3 class="font-bold text-navy-800 mb-4">Cashflow Trend <span class="text-slate-400 font-normal text-sm">(6 bulan)</span></h3>
+        <div class="h-64"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+        <h3 class="font-bold text-navy-800 mb-4">Spending by Category</h3>
+        <div class="h-64 flex items-center justify-center">
+            @if(empty($summary['by_category']))
+                <p class="text-sm text-slate-500">Belum ada pengeluaran.</p>
+            @else
+                <canvas id="categoryChart"></canvas>
+            @endif
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+        <h3 class="font-bold text-navy-800 mb-4">Cashflow Summary</h3>
+        <div class="h-56"><canvas id="cashflowBar"></canvas></div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+        <h3 class="font-bold text-navy-800 mb-4">Top 10 Pengeluaran</h3>
+        @if(empty($summary['top_expenses']))
+            <p class="text-sm text-slate-500 py-8 text-center">Belum ada data.</p>
+        @else
+            <div class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                @foreach($summary['top_expenses'] as $i => $row)
+                    <div class="flex items-center gap-3 text-sm">
+                        <span class="w-6 h-6 rounded-full bg-navy-800 text-white text-xs font-bold flex items-center justify-center shrink-0">{{ $i + 1 }}</span>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium text-navy-800 truncate">{{ $row['category'] }}</div>
+                            <div class="h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
+                                <div class="h-full bg-gold-400 rounded-full" style="width: {{ $row['share'] }}%"></div>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <div class="font-semibold">{{ $fmt($row['amount']) }}</div>
+                            <div class="text-xs text-slate-500">{{ $row['share'] }}%</div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
+</div>
+@endsection
+
+@push('scripts')
+<script>
+Chart.defaults.font.family = 'Manrope';
+const trend = @json($summary['trend']);
+const categories = @json($summary['by_category']);
+const cashflow = {
+    income: {{ $summary['income'] }},
+    expense: {{ $summary['expense'] }},
+    net: {{ $summary['cashflow'] }},
+};
+
+new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+        labels: trend.map(t => t.label),
+        datasets: [
+            { label: 'Pendapatan', data: trend.map(t => t.income), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,.08)', fill: true, tension: 0.35 },
+            { label: 'Pengeluaran', data: trend.map(t => t.expense), borderColor: '#e11d48', backgroundColor: 'rgba(225,29,72,.06)', fill: true, tension: 0.35 },
+            { label: 'Cashflow', data: trend.map(t => t.cashflow), borderColor: '#26528b', borderDash: [4,4], tension: 0.35 },
+        ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+});
+
+if (categories.length && document.getElementById('categoryChart')) {
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'doughnut',
+        data: {
+            labels: categories.map(c => c.category),
+            datasets: [{
+                data: categories.map(c => c.amount),
+                backgroundColor: ['#0c2240','#26528b','#4d7ec0','#dca115','#e11d48','#059669','#7c3aed','#f97316','#64748b'],
+                borderWidth: 2, borderColor: '#fff',
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
+    });
+}
+
+new Chart(document.getElementById('cashflowBar'), {
+    type: 'bar',
+    data: {
+        labels: ['Pendapatan', 'Pengeluaran', 'Cashflow'],
+        datasets: [{
+            data: [cashflow.income, cashflow.expense, cashflow.net],
+            backgroundColor: ['#059669', '#e11d48', '#26528b'],
+            borderRadius: 8,
+        }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+    }
+});
+</script>
+@endpush

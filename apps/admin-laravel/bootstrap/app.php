@@ -15,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\RedirectLegacyHosts::class,
         ]);
+        $middleware->alias([
+            'portal.auth' => \App\Http\Middleware\EnsurePortalAuth::class,
+            'portal.baseline' => \App\Http\Middleware\EnsureBaselineExists::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Halaman ramah di resources/views/errors/* tampil otomatis saat APP_DEBUG=false.

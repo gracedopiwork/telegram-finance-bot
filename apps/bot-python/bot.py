@@ -31,6 +31,8 @@ from ai_quota import (
     record_ai_usage,
     should_notify_quota_exhausted,
 )
+from portal_link import fetch_portal_login_url
+from transaction_store import save_transaction_to_api, storage_mode
 from transaction_categories import (
     VALID_KATEGORI,
     VALID_SUB_KATEGORI,
@@ -1096,62 +1098,71 @@ async def save_transaction(
     greeting_name: str,
     *,
     telegram_user_id: int | None = None,
+    source: str = "manual",
 ) -> None:
-    # Callback "Ya" memakai pesan bot (preview); from_user = bot, bukan pelanggan.
     uid = telegram_user_id
     if uid is None and message.from_user:
         uid = message.from_user.id
-    try:
-        if uid:
-            ensure_user_sheet_from_order(uid)
-        sid = lookup_user_spreadsheet_id(uid) if uid else None
-        from sheet_privacy import append_transaction_row, prepare_sheet_for_bot_write, resolve_service_account_json_path
 
-        json_path = resolve_service_account_json_path()
-        order_code = None
-        if uid:
-            osheet = lookup_order_sheet_for_user(uid)
-            if osheet:
-                order_code = osheet.get("order_code")
-        if not sid:
-            await message.reply_text(describe_sheet_missing_for_user(uid or 0), parse_mode="Markdown")
-            return
-        if not json_path or not os.path.isfile(json_path):
-            await message.reply_text("Konfigurasi `GOOGLE_SERVICE_ACCOUNT_JSON` belum benar di server.")
+    mode = storage_mode()
+    saved_db = False
+    saved_sheet = False
+
+    if mode in {"db", "both"} and uid:
+        ok, err = save_transaction_to_api(uid, parsed, source=source)
+        saved_db = ok
+        if not ok and mode == "db":
+            await message.reply_text(
+                "Gagal simpan ke dashboard web.\n\n"
+                f"`{err}`\n\n"
+                "Pastikan `php artisan migrate` sudah jalan dan "
+                "`BOT_INTERNAL_API_TOKEN` + `LARAVEL_APP_URL` benar di server.",
+                parse_mode="Markdown",
+            )
             return
 
-        prepare_sheet_for_bot_write(sid, json_path)
-        row = build_sheet_row(parsed)
-        append_transaction_row(sid, json_path, row, order_code=order_code)
-        logger.info("Transaksi berhasil disimpan ke Google Sheets %s.", sid)
-    except Exception as exc:  # pragma: no cover - defensive guard for external services
-        logger.exception("Gagal tulis ke Google Sheets: %s", exc)
-        err_short = str(exc).replace("\n", " ")[:200]
-        order_hint = ""
-        if uid:
-            osheet = lookup_order_sheet_for_user(uid)
-            if osheet and osheet.get("order_code"):
-                order_hint = f"\n\nAdmin: `php artisan google:sheet-setup --reshare={osheet['order_code']}`"
-        oauth_ok = bool(
-            get_env("GOOGLE_OAUTH_REFRESH_TOKEN", required=False)
-            and get_env("GOOGLE_OAUTH_CLIENT_ID", required=False)
-            and get_env("GOOGLE_OAUTH_CLIENT_SECRET", required=False)
-        )
-        oauth_line = (
-            "OAuth bot sudah terisi."
-            if oauth_ok
-            else "Salin `GOOGLE_OAUTH_*` dari Laravel ke `apps/bot-python/.env`."
-        )
-        await message.reply_text(
-            f"Gagal simpan ke Google Sheet.\n\n`{err_short}`\n\n"
-            f"{oauth_line}\n"
-            "Di VPS: `git pull`, set `BOT_INTERNAL_API_TOKEN` (sama di Laravel & bot), "
-            "`LARAVEL_APP_PATH` atau `LARAVEL_APP_URL`, lalu reshare:"
-            f"{order_hint}\n"
-            "Restart bot, coba `/catat` lagi.",
-            parse_mode="Markdown",
-        )
+    if mode in {"sheet", "both"}:
+        try:
+            if uid:
+                ensure_user_sheet_from_order(uid)
+            sid = lookup_user_spreadsheet_id(uid) if uid else None
+            from sheet_privacy import append_transaction_row, prepare_sheet_for_bot_write, resolve_service_account_json_path
+
+            json_path = resolve_service_account_json_path()
+            order_code = None
+            if uid:
+                osheet = lookup_order_sheet_for_user(uid)
+                if osheet:
+                    order_code = osheet.get("order_code")
+            if sid and json_path and os.path.isfile(json_path):
+                prepare_sheet_for_bot_write(sid, json_path)
+                row = build_sheet_row(parsed)
+                append_transaction_row(sid, json_path, row, order_code=order_code)
+                saved_sheet = True
+                logger.info("Transaksi juga disimpan ke Google Sheets %s.", sid)
+            elif mode == "sheet":
+                await message.reply_text(describe_sheet_missing_for_user(uid or 0), parse_mode="Markdown")
+                return
+        except Exception as exc:  # pragma: no cover
+            logger.exception("Gagal tulis ke Google Sheets: %s", exc)
+            if mode == "sheet":
+                err_short = str(exc).replace("\n", " ")[:200]
+                await message.reply_text(f"Gagal simpan ke Google Sheet.\n\n`{err_short}`", parse_mode="Markdown")
+                return
+
+    if not saved_db and not saved_sheet:
+        await message.reply_text("Gagal menyimpan transaksi. Hubungi admin YFD.")
         return
+
+    portal_hint = ""
+    if saved_db and uid:
+        ok, link = fetch_portal_login_url(uid)
+        if ok:
+            portal_hint = f"\n\nBuka dashboard (login otomatis, 30 menit):\n{link}"
+        else:
+            portal_base = (os.getenv("LARAVEL_APP_URL") or os.getenv("APP_URL") or "").strip().rstrip("/")
+            if portal_base:
+                portal_hint = f"\n\nKetik /web untuk link dashboard."
 
     await message.reply_text(
         f"Tercatat untuk {greeting_name}:\n"
@@ -1162,6 +1173,7 @@ async def save_transaction(
         f"Sifat: {parsed['sifat']}\n"
         f"Mood: {parsed['mood']}\n"
         f"Impulsif: {parsed['impulsif']}"
+        f"{portal_hint}"
     )
 
 
@@ -1277,7 +1289,11 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "/hapuskilat - hapus data terakhir\n"
         "/sheet - buka Google Sheet\n"
         "/hariini - rangkuman pengeluaran hari ini\n"
-        "/kuota - sisa kuota AI parsing bulan ini\n\n"
+        "/kuota - sisa kuota AI parsing bulan ini\n"
+        "/web - link masuk dashboard (otomatis)\n\n"
+        "Login dashboard:\n"
+        "• **/web** di bot → klik link (tanpa isi form)\n"
+        "• Atau buka halaman portal + email & kode lisensi\n\n"
         "Bisa juga kirim **teks biasa** atau **foto struk**.\n"
         "Contoh:\n"
         "`/catat mkn malm 50rb karena lagi sedih banget jadi iseng beli`",
@@ -1660,7 +1676,7 @@ async def confirm_callback_handler(update: Update, context: ContextTypes.DEFAULT
         greeting_name = pending["greeting_name"]
         PENDING_CONFIRMATIONS.pop(user_id, None)
         try:
-            await query.edit_message_text("Transaksi dikonfirmasi. Menyimpan ke Google Sheet...")
+            await query.edit_message_text("Transaksi dikonfirmasi. Menyimpan...")
         except Exception:
             pass
         await save_transaction(
@@ -1675,6 +1691,33 @@ async def confirm_callback_handler(update: Update, context: ContextTypes.DEFAULT
         except Exception:
             pass
         await query.message.reply_text("Silakan kirim ulang catatan transaksi yang benar.")
+
+
+async def web_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
+    user = update.effective_user
+    user_id = user.id if user else 0
+    if not user_id or not is_license_active_for_user(user_id):
+        await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    ok, link_or_err = fetch_portal_login_url(user_id)
+    if not ok:
+        await update.message.reply_text(
+            f"Tidak bisa buat link dashboard.\n\n`{link_or_err}`\n\n"
+            "Pastikan sudah /activate dan server Laravel + bot sudah dikonfigurasi.",
+            parse_mode="Markdown",
+        )
+        return
+
+    await update.message.reply_text(
+        "Klik link ini untuk langsung masuk dashboard (tanpa ketik email/lisensi):\n"
+        f"{link_or_err}\n\n"
+        "_Link berlaku 30 menit. Buka di browser yang sama perangkat Anda._",
+        parse_mode="Markdown",
+        disable_web_page_preview=False,
+    )
 
 
 async def kuota_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1809,6 +1852,7 @@ def main() -> None:
     app.add_handler(CommandHandler("sheet", sheet_handler))
     app.add_handler(CommandHandler("hariini", hariini_handler))
     app.add_handler(CommandHandler("kuota", kuota_handler))
+    app.add_handler(CommandHandler("web", web_handler))
     app.add_handler(CallbackQueryHandler(mood_callback_handler, pattern=r"^mood:"))
     app.add_handler(CallbackQueryHandler(confirm_callback_handler, pattern=r"^confirm:"))
     app.add_handler(MessageHandler(filters.PHOTO, photo_handler))

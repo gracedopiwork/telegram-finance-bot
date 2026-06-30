@@ -1,0 +1,317 @@
+<?php
+
+return [
+    'review_months' => 6,
+
+    'likert_labels' => [
+        1 => 'Sangat Tidak Sesuai',
+        2 => 'Tidak Sesuai',
+        3 => 'Netral',
+        4 => 'Sesuai',
+        5 => 'Sangat Sesuai',
+    ],
+
+    'stage_thresholds' => [
+        'surviving' => ['min' => 0, 'max' => 12],
+        'growing' => ['min' => 13, 'max' => 22],
+        'steady' => ['min' => 23, 'max' => 33],
+        'comfortable' => ['min' => 34, 'max' => 39],
+    ],
+
+    'stage_labels' => [
+        'surviving' => [
+            'label' => 'Surviving',
+            'emoji' => '🟥',
+            'diagnosis' => 'Financial Emergency Stage',
+            'phase' => 'Fase 1',
+        ],
+        'growing' => [
+            'label' => 'Growing',
+            'emoji' => '🟨',
+            'diagnosis' => 'Financial Recovery & Structuring Stage',
+            'phase' => 'Fase 2',
+        ],
+        'steady' => [
+            'label' => 'Steady',
+            'emoji' => '🟩',
+            'diagnosis' => 'Financial Stable and Accumulation Stage',
+            'phase' => 'Fase 3',
+        ],
+        'comfortable' => [
+            'label' => 'Comfortable',
+            'emoji' => '🟦',
+            'diagnosis' => 'Financial Freedom and Stewardship Stage',
+            'phase' => 'Fase 4',
+        ],
+    ],
+
+    'dysregulation_levels' => [
+        ['min' => 8, 'max' => 16, 'key' => 'stable', 'label' => 'Regulasi Stabil'],
+        ['min' => 17, 'max' => 24, 'key' => 'mild', 'label' => 'Mild Dysregulation'],
+        ['min' => 25, 'max' => 32, 'key' => 'moderate', 'label' => 'Moderate Dysregulation'],
+        ['min' => 33, 'max' => 40, 'key' => 'severe', 'label' => 'Severe Dysregulation'],
+    ],
+
+    'ftsa_domains' => [
+        'chd' => [
+            'code' => 'CHD',
+            'label' => 'Control & Hypervigilance Dysregulation',
+            'archetype' => 'controller',
+            'archetype_label' => 'The Controller',
+            'questions' => [1, 2, 3, 4, 5, 6, 7, 8],
+        ],
+        'rvd' => [
+            'code' => 'RVD',
+            'label' => 'Risk & Volatility Avoidance Dysregulation',
+            'archetype' => 'avoider',
+            'archetype_label' => 'The Avoider',
+            'questions' => [9, 10, 11, 12, 13, 14, 15, 16],
+        ],
+        'ssd' => [
+            'code' => 'SSD',
+            'label' => 'Scarcity-Driven Safety Dysregulation',
+            'archetype' => 'overworker',
+            'archetype_label' => 'The Overworker',
+            'questions' => [17, 18, 19, 20, 21, 22, 23, 24],
+        ],
+        'esd' => [
+            'code' => 'ESD',
+            'label' => 'Emotional Spending Dysregulation',
+            'archetype' => 'impulsive',
+            'archetype_label' => 'The Impulsive',
+            'questions' => [25, 26, 27, 28, 29, 30, 31, 32],
+        ],
+    ],
+
+    'ftsa_questions' => [
+        1 => 'Saya merasa cemas jika tidak mengetahui detail kondisi keuangan saya secara lengkap.',
+        2 => 'Saya sulit mempercayakan urusan keuangan kepada orang lain.',
+        3 => 'Saya merasa tidak aman jika tidak memiliki kontrol penuh atas pengeluaran.',
+        4 => 'Saya sering memikirkan kemungkinan skenario keuangan terburuk.',
+        5 => 'Ketika ada pengeluaran tak terduga, saya merasa kehilangan kendali.',
+        6 => 'Saya memantau saldo atau investasi secara berlebihan.',
+        7 => 'Saya sulit menikmati uang karena takut kehabisan.',
+        8 => 'Keamanan finansial bagi saya berarti kontrol total.',
+        9 => 'Saya menunda mengambil keputusan keuangan penting.',
+        10 => 'Saya menghindari melihat laporan atau kondisi keuangan saya.',
+        11 => 'Saya merasa takut berinvestasi karena risiko.',
+        12 => 'Saya cenderung menyimpan uang tanpa strategi jangka panjang.',
+        13 => 'Ketidakpastian ekonomi membuat saya merasa lumpuh.',
+        14 => 'Saya lebih memilih tidak tahu daripada menghadapi potensi kerugian.',
+        15 => 'Saya menunda diskusi finansial karena tidak nyaman.',
+        16 => 'Saya merasa stres hanya dengan membicarakan uang.',
+        17 => 'Saya merasa harus terus bekerja agar merasa aman.',
+        18 => 'Saya sulit berhenti meski sudah cukup secara finansial.',
+        19 => 'Saya mengaitkan nilai diri saya dengan produktivitas atau penghasilan.',
+        20 => 'Saya merasa bersalah jika tidak menghasilkan uang.',
+        21 => 'Istirahat membuat saya merasa tidak aman.',
+        22 => 'Saya takut kehilangan status atau standar hidup.',
+        23 => 'Saya cemas jika tidak memiliki pemasukan aktif.',
+        24 => 'Saya percaya keamanan hanya datang dari kerja keras tanpa henti.',
+        25 => 'Saya menggunakan belanja untuk memperbaiki suasana hati.',
+        26 => 'Saya menyesal setelah melakukan pembelian emosional.',
+        27 => 'Saya sulit menahan dorongan membeli sesuatu yang saya inginkan.',
+        28 => 'Uang sering menjadi cara saya memberi penghargaan pada diri sendiri.',
+        29 => 'Saya cenderung mengambil keputusan finansial saat emosi kuat.',
+        30 => 'Saya merasa euforia saat belanja lalu diikuti rasa bersalah.',
+        31 => 'Saya sulit membedakan kebutuhan dan keinginan saat stres.',
+        32 => 'Pengeluaran saya meningkat saat saya merasa tidak stabil secara emosional.',
+    ],
+
+    'financial_stage' => [
+        'profile' => [
+            [
+                'key' => 'q1',
+                'section' => 'Profil Dasar',
+                'text' => 'Status aktivitas utama kamu saat ini',
+                'options' => [
+                    'pekerja' => 'Pekerja',
+                    'pemilik_usaha' => 'Pemilik usaha',
+                    'tanggungan' => 'Masih sepenuhnya tanggungan orang tua',
+                    'kombinasi' => 'Kombinasi pekerja & usaha',
+                ],
+            ],
+            [
+                'key' => 'q2',
+                'section' => 'Profil Dasar',
+                'text' => 'Usia kamu saat ini',
+                'options' => [
+                    'lt_25' => '< 25 tahun',
+                    '25_34' => '25–34 tahun',
+                    '35_44' => '35–44 tahun',
+                    'gte_45' => '≥ 45 tahun',
+                ],
+            ],
+            [
+                'key' => 'q3',
+                'section' => 'Profil Dasar',
+                'text' => 'Jenis kelamin',
+                'options' => [
+                    'laki' => 'Laki-laki',
+                    'perempuan' => 'Perempuan',
+                ],
+            ],
+        ],
+        'scored' => [
+            [
+                'key' => 'q4',
+                'section' => 'Profil Dasar',
+                'text' => 'Apakah kamu memiliki tanggungan selain diri sendiri?',
+                'options' => [
+                    'none' => ['label' => 'Tidak ada tanggungan', 'score' => 2],
+                    'one' => ['label' => 'Ada 1 tanggungan', 'score' => 1],
+                    'many' => ['label' => 'Ada lebih dari 1 tanggungan', 'score' => 0],
+                ],
+            ],
+            [
+                'key' => 'q5',
+                'section' => 'Profil Dasar',
+                'text' => 'Rata-rata pendapatan dalam 1 bulan',
+                'options' => [
+                    'lt_2_5' => ['label' => '< Rp 2,5 jt', 'score' => 0],
+                    'lt_6_5' => ['label' => '< Rp 6,5 jt', 'score' => 1],
+                    '6_5_12_9' => ['label' => 'Rp 6,5–12,9 jt', 'score' => 2],
+                    '13_24_9' => ['label' => 'Rp 13–24,9 jt', 'score' => 3],
+                    'gt_25' => ['label' => '> Rp 25 jt', 'score' => 4],
+                ],
+            ],
+            [
+                'key' => 'q6',
+                'section' => 'Cash Flow',
+                'text' => 'Rata-rata pengeluaran dibanding pemasukan bulanan',
+                'options' => [
+                    'greater' => ['label' => 'Lebih besar dari pemasukan', 'score' => 0],
+                    'equal' => ['label' => 'Kurang lebih sama', 'score' => 1],
+                    'less' => ['label' => 'Lebih kecil dari pemasukan', 'score' => 2],
+                ],
+            ],
+            [
+                'key' => 'q7',
+                'section' => 'Cash Flow',
+                'text' => 'Seberapa sering cash flow kamu negatif?',
+                'options' => [
+                    'almost_every' => ['label' => 'Hampir setiap bulan', 'score' => 0],
+                    'often' => ['label' => 'Sering (≥6 bulan/tahun)', 'score' => 1],
+                    'sometimes' => ['label' => 'Kadang-kadang (3–5 bulan/tahun)', 'score' => 2],
+                    'rare' => ['label' => 'Hampir tidak pernah (1–2 bulan/tahun)', 'score' => 3],
+                    'never' => ['label' => 'Tidak pernah', 'score' => 4],
+                ],
+            ],
+            [
+                'key' => 'q8',
+                'section' => 'Fondasi Keamanan Finansial',
+                'text' => 'Apakah kamu memiliki dana darurat?',
+                'options' => [
+                    'none' => ['label' => 'Tidak ada', 'score' => 0],
+                    'lt_3x' => ['label' => 'Ada, <3× pengeluaran', 'score' => 1],
+                    '3_5x' => ['label' => 'Ada, ≥3×–5× pengeluaran', 'score' => 2],
+                    'gt_6x' => ['label' => 'Ada, >6× pengeluaran', 'score' => 3],
+                ],
+            ],
+            [
+                'key' => 'q9',
+                'section' => 'Fondasi Keamanan Finansial',
+                'text' => 'Apakah kamu memiliki hutang konsumtif?',
+                'options' => [
+                    'gt_50' => ['label' => 'Ada, >50% dari pemasukan per bulan', 'score' => 0],
+                    '25_50' => ['label' => 'Ada, 25%–50% pemasukan per bulan', 'score' => 1],
+                    'lt_25' => ['label' => 'Ada, <25% pemasukan per bulan', 'score' => 2],
+                    'none' => ['label' => 'Tidak ada sama sekali', 'score' => 3],
+                ],
+            ],
+            [
+                'key' => 'q10',
+                'section' => 'Fondasi Keamanan Finansial',
+                'text' => 'Proteksi kesehatan yang kamu miliki',
+                'options' => [
+                    'none' => ['label' => 'Tidak punya', 'score' => 0],
+                    'bpjs' => ['label' => 'BPJS saja', 'score' => 1],
+                    'private' => ['label' => 'Asuransi swasta saja', 'score' => 2],
+                    'both' => ['label' => 'BPJS + asuransi swasta', 'score' => 3],
+                ],
+            ],
+            [
+                'key' => 'q11',
+                'section' => 'Fondasi Keamanan Finansial',
+                'text' => 'Apakah kamu memiliki asuransi jiwa?',
+                'options' => [
+                    'none' => ['label' => 'Tidak', 'score' => 0],
+                    'lt_5x' => ['label' => 'Ada, UP <5× pengeluaran tahunan', 'score' => 1],
+                    'gte_5x' => ['label' => 'Ada, UP ≥5× pengeluaran tahunan', 'score' => 2],
+                ],
+            ],
+            [
+                'key' => 'q12',
+                'section' => 'Fondasi Keamanan Finansial',
+                'text' => 'Apakah kamu memiliki asuransi income protection/kondisi kritis?',
+                'options' => [
+                    'none' => ['label' => 'Tidak', 'score' => 0],
+                    'yes' => ['label' => 'Ada', 'score' => 2],
+                ],
+            ],
+            [
+                'key' => 'q13',
+                'section' => 'Tabungan, Aset & Investasi',
+                'text' => 'Tabungan atau aset kelola (di luar dana darurat)',
+                'options' => [
+                    'none' => ['label' => 'Tidak ada', 'score' => 0],
+                    'savings' => ['label' => 'Tabungan saja', 'score' => 1],
+                    'productive' => ['label' => 'Aset produktif', 'score' => 2],
+                    'both' => ['label' => 'Tabungan + aset', 'score' => 3],
+                ],
+            ],
+            [
+                'key' => 'q14',
+                'section' => 'Tabungan, Aset & Investasi',
+                'text' => 'Investasi / tabungan untuk hari tua',
+                'options' => [
+                    'none' => ['label' => 'Belum sama sekali', 'score' => 0],
+                    'started' => ['label' => 'Baru mulai', 'score' => 1],
+                    'regular' => ['label' => 'Sudah rutin', 'score' => 2],
+                    'planned' => ['label' => 'Sudah terencana jelas', 'score' => 3],
+                ],
+            ],
+            [
+                'key' => 'q15',
+                'section' => 'Tabungan, Aset & Investasi',
+                'text' => 'Investasi high risk (saham/crypto/reksadana saham)',
+                'options' => [
+                    'none' => ['label' => 'Tidak', 'score' => 0],
+                    'unplanned' => ['label' => 'Ya, tanpa perencanaan', 'score' => 1],
+                    'planned' => ['label' => 'Ya, dengan perencanaan', 'score' => 2],
+                ],
+            ],
+            [
+                'key' => 'q16',
+                'section' => 'Tabungan, Aset & Investasi',
+                'text' => 'Passive income',
+                'options' => [
+                    'none' => ['label' => 'Tidak ada', 'score' => 0],
+                    'lt_10' => ['label' => 'Ada, <10% pengeluaran bulanan', 'score' => 1],
+                    '10_75' => ['label' => 'Ada, 10%–75% pengeluaran bulanan', 'score' => 2],
+                    'gt_75' => ['label' => 'Ada, >75% pengeluaran bulanan', 'score' => 3],
+                ],
+            ],
+            [
+                'key' => 'q17',
+                'section' => 'Tabungan, Aset & Investasi',
+                'text' => 'Cicilan produktif',
+                'options' => [
+                    'none' => ['label' => 'Tidak ada', 'score' => 0],
+                    'lt_30' => ['label' => 'Ada, <30% pendapatan & usaha menghasilkan', 'score' => 1],
+                    'gt_30' => ['label' => 'Ada, >30% pendapatan tapi sehat & menghasilkan', 'score' => 2],
+                ],
+            ],
+            [
+                'key' => 'q18',
+                'section' => 'Tabungan, Aset & Investasi',
+                'text' => 'Warisan finansial',
+                'options' => [
+                    'none' => ['label' => 'Tidak ada', 'score' => 0],
+                    'debt' => ['label' => 'Warisan hutang', 'score' => -1],
+                    'asset' => ['label' => 'Warisan aset', 'score' => 1],
+                ],
+            ],
+        ],
+    ],
+];

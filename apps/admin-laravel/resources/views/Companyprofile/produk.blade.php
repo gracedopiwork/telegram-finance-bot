@@ -128,6 +128,10 @@
                         <span class="material-symbols-outlined text-[20px]">play_arrow</span>
                         Lihat Cara Pakai
                     </a>
+                    <a href="{{ route('portal.login') }}" class="btn btn-outline-primary btn-lg">
+                        <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                        Buka Dashboard
+                    </a>
                 </div>
             </div>
 

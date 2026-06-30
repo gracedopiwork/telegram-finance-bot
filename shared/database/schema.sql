@@ -92,3 +92,46 @@ CREATE TABLE IF NOT EXISTS user_ai_usage (
     PRIMARY KEY (telegram_user_id, usage_month),
     INDEX idx_user_ai_usage_month (usage_month)
 );
+
+CREATE TABLE IF NOT EXISTS bot_transactions (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    telegram_user_id BIGINT NOT NULL,
+    recorded_at DATETIME NOT NULL,
+    type ENUM('Pemasukan', 'Pengeluaran') NOT NULL,
+    category VARCHAR(64) NOT NULL,
+    sub_category VARCHAR(128) NOT NULL,
+    amount BIGINT UNSIGNED NOT NULL,
+    nature VARCHAR(32) NOT NULL,
+    mood VARCHAR(32) NOT NULL,
+    is_impulsive TINYINT(1) NOT NULL DEFAULT 0,
+    notes TEXT NOT NULL,
+    source ENUM('manual', 'receipt_photo') NOT NULL DEFAULT 'manual',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_bot_tx_user_date (telegram_user_id, recorded_at),
+    INDEX idx_bot_tx_user_type (telegram_user_id, type)
+);
+
+CREATE TABLE IF NOT EXISTS financial_baselines (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    telegram_user_id BIGINT NOT NULL,
+    assessed_at DATETIME NOT NULL,
+    next_review_at DATETIME NOT NULL,
+    financial_stage_score TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    financial_stage VARCHAR(32) NOT NULL,
+    stage_label VARCHAR(64) NOT NULL,
+    ftsa_chd TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    ftsa_rvd TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    ftsa_ssd TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    ftsa_esd TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    dominant_archetype VARCHAR(16) NOT NULL,
+    dominant_archetype_label VARCHAR(64) NOT NULL,
+    chd_level VARCHAR(32) NULL,
+    rvd_level VARCHAR(32) NULL,
+    ssd_level VARCHAR(32) NULL,
+    esd_level VARCHAR(32) NULL,
+    answers_json JSON NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_financial_baselines_user (telegram_user_id, assessed_at)
+);

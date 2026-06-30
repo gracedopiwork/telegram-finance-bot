@@ -12,6 +12,9 @@ use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\Portal\AuthController as PortalAuthController;
+use App\Http\Controllers\Portal\BaselineController as PortalBaselineController;
+use App\Http\Controllers\Portal\DashboardController as PortalDashboardController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -93,4 +96,30 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('orders/{order}/resend-delivery', [OrdersController::class, 'resendDelivery'])->name('orders.resendDelivery');
     Route::post('orders/{order}/resend-delivery-email', [OrdersController::class, 'resendDelivery'])->name('orders.resendDeliveryEmail');
     Route::delete('orders/{order}',     [OrdersController::class, 'destroy'])->name('orders.destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Portal pengguna (dashboard keuangan — login terpisah dari admin)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('portal')->name('portal.')->group(function () {
+    Route::get('/login', [PortalAuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [PortalAuthController::class, 'login'])->name('login.attempt');
+    Route::get('/masuk', [PortalAuthController::class, 'autoLogin'])
+        ->name('auto-login')
+        ->middleware('signed');
+
+    Route::middleware('portal.auth')->group(function () {
+        Route::post('/logout', [PortalAuthController::class, 'logout'])->name('logout');
+        Route::get('/baseline', [PortalBaselineController::class, 'index'])->name('baseline');
+        Route::get('/baseline/baru', [PortalBaselineController::class, 'create'])->name('baseline.create');
+        Route::post('/baseline', [PortalBaselineController::class, 'store'])->name('baseline.store');
+
+        Route::middleware('portal.baseline')->group(function () {
+            Route::get('/', [PortalDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/transaksi', [PortalDashboardController::class, 'transactions'])->name('transactions');
+            Route::get('/emotional', [PortalDashboardController::class, 'emotional'])->name('emotional');
+        });
+    });
 });
