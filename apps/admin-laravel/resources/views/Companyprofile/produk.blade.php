@@ -62,8 +62,16 @@
                         {{ $featured->tagline }}
                     </p>
                 @endif
-                @if($featured->description)
-                    <p class="text-body-md text-on-surface-variant mb-6 max-w-xl">{{ $featured->description }}</p>
+                @php
+                    $descriptionText = (string) ($featured->description ?? '');
+                    $descriptionText = str_replace(
+                        ['auto-parse ke Google Sheets pribadi', 'Google Sheets pribadi', 'Google Sheets'],
+                        ['auto-parse ke Dashboard Web pribadi', 'Dashboard Web pribadi', 'Dashboard Web YFD'],
+                        $descriptionText
+                    );
+                @endphp
+                @if($descriptionText !== '')
+                    <p class="text-body-md text-on-surface-variant mb-6 max-w-xl">{{ $descriptionText }}</p>
                 @endif
 
                 {{-- Price block --}}
@@ -93,9 +101,16 @@
                 @if(is_array($featured->features) && count($featured->features))
                     <ul class="space-y-3 mb-7">
                         @foreach($featured->features as $f)
+                            @php
+                                $featureText = str_replace(
+                                    ['Google Sheets pribadi', 'Google Sheets'],
+                                    ['Dashboard Web pribadi', 'Dashboard Web YFD'],
+                                    (string) $f
+                                );
+                            @endphp
                             <li class="flex items-start gap-3">
                                 <span class="material-symbols-outlined text-emerald-600 mt-0.5" style="font-variation-settings:'FILL' 1;">check_circle</span>
-                                <span class="text-body-md text-on-surface">{{ $f }}</span>
+                                <span class="text-body-md text-on-surface">{{ $featureText }}</span>
                             </li>
                         @endforeach
                     </ul>
