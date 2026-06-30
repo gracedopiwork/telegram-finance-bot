@@ -20,6 +20,56 @@
     <div class="text-sm bg-white/10 rounded-xl px-4 py-2 font-mono shrink-0">/catat makan siang 35rb</div>
 </div>
 
+{{-- Import CSV --}}
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b bg-slate-50 flex flex-wrap items-center justify-between gap-3">
+        <h3 class="font-bold text-navy-800 flex items-center gap-2">
+            <span class="material-symbols-outlined">upload_file</span>
+            Import Transaksi (CSV)
+        </h3>
+        <a href="{{ route('portal.transactions.template') }}"
+           class="inline-flex items-center gap-1 text-sm font-semibold text-navy-800 hover:underline">
+            <span class="material-symbols-outlined text-base">download</span>
+            Unduh template CSV
+        </a>
+    </div>
+    <div class="p-5 sm:p-6">
+        <p class="text-sm text-slate-600 mb-4">
+            Isi data di Excel/Google Sheets lalu simpan sebagai <strong>CSV UTF-8</strong>.
+            Kolom: tanggal, jenis, kategori, sub_kategori, nominal, sifat, mood, impulsif, keterangan.
+            Maks. 500 baris per file.
+        </p>
+        @if(session('import_errors'))
+            <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-900 max-h-40 overflow-y-auto">
+                <div class="font-semibold mb-1">Detail error:</div>
+                <ul class="list-disc pl-5 space-y-0.5">
+                    @foreach(session('import_errors') as $err)
+                        <li>{{ $err }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+        <form method="post" action="{{ route('portal.transactions.import', request()->only(['month', 'period'])) }}"
+              enctype="multipart/form-data" class="flex flex-col sm:flex-row sm:items-end gap-3">
+            @csrf
+            <div class="flex-1 min-w-0">
+                <label class="block text-sm font-medium text-slate-700 mb-1">File CSV</label>
+                <input type="file" name="file" accept=".csv,text/csv"
+                       class="block w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-navy-800 file:text-white file:font-semibold hover:file:bg-navy-700"
+                       required>
+                @error('file')
+                    <p class="text-rose-600 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+            <button type="submit"
+                    class="inline-flex items-center justify-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-5 py-2.5 rounded-xl shrink-0">
+                <span class="material-symbols-outlined">upload</span>
+                Import
+            </button>
+        </form>
+    </div>
+</div>
+
 @if($baseline)
 <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
     <div class="bg-slate-50 px-5 py-4 border-b flex flex-wrap items-center justify-between gap-2">

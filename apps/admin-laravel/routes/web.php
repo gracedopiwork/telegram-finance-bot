@@ -15,6 +15,7 @@ use App\Http\Controllers\LandingController;
 use App\Http\Controllers\Portal\AuthController as PortalAuthController;
 use App\Http\Controllers\Portal\BaselineController as PortalBaselineController;
 use App\Http\Controllers\Portal\DashboardController as PortalDashboardController;
+use App\Http\Controllers\Portal\TransactionsController as PortalTransactionsController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -116,6 +117,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::middleware('portal.baseline')->group(function () {
             Route::get('/', [PortalDashboardController::class, 'index'])->name('dashboard');
             Route::get('/transaksi', [PortalDashboardController::class, 'transactions'])->name('transactions');
+            Route::get('/transaksi/template', [PortalTransactionsController::class, 'importTemplate'])->name('transactions.template');
+            Route::post('/transaksi/import', [PortalTransactionsController::class, 'import'])->name('transactions.import');
             Route::get('/emotional', [PortalDashboardController::class, 'emotional'])->name('emotional');
             Route::get('/premium', [PortalDashboardController::class, 'premium'])->name('premium');
         });
