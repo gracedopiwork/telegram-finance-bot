@@ -1,25 +1,9 @@
 @extends('admin.layouts.page')
 
 @section('page_heading', 'Order & Pembayaran')
-@section('page_subheading', 'Daftar pembelian produk (Midtrans) — bukan isi catatan keuangan user di Google Sheet.')
+@section('page_subheading', 'Daftar pembelian produk (Midtrans).')
 
 @section('main')
-
-@php $hideUserSheet = (bool) config('services.google.hide_user_sheet_from_admin', true); @endphp
-@if(! $hideUserSheet)
-    <div class="alert alert-warning">
-        <strong>Mode privasi sheet nonaktif.</strong>
-        Link Google Sheet pelanggan (termasuk tab <strong>Transaksi</strong>) bisa dibuka dari admin.
-        Set <code>GOOGLE_HIDE_USER_SHEET_FROM_ADMIN=true</code> di <code>.env</code> lalu <code>php artisan config:clear</code>.
-    </div>
-@else
-    <div class="alert alert-info small mb-3">
-        <i class="fas fa-lock mr-1"></i>
-        Catatan keuangan user (<code>/catat</code>) hanya di sheet milik pelanggan — tidak ditampilkan di panel ini.
-        Jika Anda masih melihatnya di <strong>Google Drive</strong>, file mungkin tersimpan di Drive akun OAuth Anda;
-        gunakan folder <strong>Shared drive</strong> khusus service account (<code>GOOGLE_DRIVE_COPY_PARENT_ID</code>).
-    </div>
-@endif
 
 {{-- ===== Stat cards ===== --}}
 <div class="row">
@@ -110,7 +94,6 @@
                         <th class="text-right">Total</th>
                         <th class="text-center">Status</th>
                         <th class="text-center">Lisensi</th>
-                        <th class="text-center">Sheet</th>
                         <th>Tanggal</th>
                         <th class="text-right">Aksi</th>
                     </tr>
@@ -163,32 +146,6 @@
                                 <span class="text-muted small">—</span>
                             @endif
                         </td>
-                        <td class="text-center">
-                            @php
-                                $hideUserSheet = (bool) config('services.google.hide_user_sheet_from_admin', true);
-                                $listSheetHref = null;
-                                if (! $hideUserSheet) {
-                                    $listSheetHref = ! empty($o->spreadsheet_url)
-                                        ? $o->spreadsheet_url
-                                        : (! empty($o->spreadsheet_id)
-                                            ? 'https://docs.google.com/spreadsheets/d/' . $o->spreadsheet_id . '/edit'
-                                            : null);
-                                }
-                            @endphp
-                            @if($listSheetHref)
-                                <a href="{{ $listSheetHref }}" target="_blank" rel="noopener" class="btn btn-xs btn-outline-success" title="Buka Google Sheet">
-                                    <i class="fas fa-table"></i>
-                                </a>
-                            @elseif(! empty($o->spreadsheet_id) && $hideUserSheet)
-                                <span class="text-success" title="Sheet terkirim (privasi admin)"><i class="fas fa-check-circle"></i></span>
-                            @elseif($o->status === 'paid' && $o->purchase_delivery_sent_at && ! $listSheetHref)
-                                <span class="text-danger" title="Pengiriman selesai tanpa spreadsheet — cek log & konfigurasi Google"><i class="fas fa-exclamation-triangle"></i></span>
-                            @elseif($o->status === 'paid' && ! $listSheetHref)
-                                <span class="text-warning" title="Menunggu job / spreadsheet belum ada"><i class="fas fa-hourglass-half"></i></span>
-                            @else
-                                <span class="text-muted">—</span>
-                            @endif
-                        </td>
                         <td>
                             <small>{{ $o->created_at->format('d M Y H:i') }}</small>
                             @if($o->paid_at)
@@ -207,7 +164,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="9" class="text-center text-muted py-5">
+                    <tr><td colspan="8" class="text-center text-muted py-5">
                         @if(request()->hasAny(['search', 'status', 'product_id']))
                             Tidak ada order yang cocok dengan filter.
                         @else
