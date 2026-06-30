@@ -7,6 +7,8 @@
 @php
     $fmt = fn (int $n) => 'Rp ' . number_format($n, 0, ',', '.');
     $hasData = $summary['transaction_count'] > 0;
+    $note = $summary['doctors_note'];
+    $noteSummary = is_array($note) ? ($note['summary'] ?? '') : (string) $note;
 @endphp
 
 @if($summary['baseline_review_due'] ?? false)
@@ -23,13 +25,34 @@
     ])
 @endif
 
+{{-- Clinical Summary --}}
+@if($hasData)
+<div class="rounded-2xl border p-5 sm:p-6
+    @if($summary['clinical_summary']['status'] === 'healthy') bg-emerald-50 border-emerald-200
+    @elseif($summary['clinical_summary']['status'] === 'critical') bg-rose-50 border-rose-200
+    @else bg-sky-50 border-sky-200 @endif">
+    <div class="flex items-start gap-3">
+        <span class="material-symbols-outlined text-2xl text-navy-800">clinical_notes</span>
+        <div class="flex-1 min-w-0">
+            <div class="text-xs uppercase tracking-wider font-bold text-slate-500">Clinical Summary · {{ $summary['period_label'] }}</div>
+            <h3 class="font-extrabold text-navy-800 text-lg mt-1">{{ $summary['clinical_summary']['headline'] }}</h3>
+            <ul class="mt-2 space-y-1 text-sm text-slate-700">
+                @foreach($summary['clinical_summary']['findings'] as $finding)
+                    <li class="flex gap-2"><span class="text-navy-600">•</span>{{ $finding }}</li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+</div>
+@endif
+
 {{-- KPI cards --}}
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
     <x-portal.stat-card label="Total Pendapatan" :value="$fmt($summary['income'])" :hint="$summary['income_share'].'% dari total cash in'" icon="trending_up" tone="emerald" />
     <x-portal.stat-card label="Total Pengeluaran" :value="$fmt($summary['expense'])" :hint="$summary['expense_share'].'% dari pendapatan'" icon="shopping_cart" tone="rose" />
     <x-portal.stat-card label="Cashflow (Surplus)" :value="$fmt($summary['cashflow'])" :hint="$summary['cashflow_share'].'% dari pendapatan'" icon="account_balance" :tone="$summary['cashflow'] >= 0 ? 'emerald' : 'rose'" />
     <x-portal.stat-card label="Saving Rate" :value="$summary['saving_rate'].'%'" hint="Ideal ≥ 20%" icon="savings" tone="gold" />
-    <x-portal.stat-card label="Transaksi" :value="(string) $summary['transaction_count']" hint="bulan {{ $summary['month_label'] }}" icon="receipt_long" tone="navy" />
+    <x-portal.stat-card label="Transaksi" :value="(string) $summary['transaction_count']" :hint="$summary['period_label']" icon="receipt_long" tone="navy" />
 </div>
 
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -52,7 +75,8 @@
                         <th class="pb-3 font-semibold">Bucket</th>
                         <th class="pb-3 font-semibold text-right">Aktual</th>
                         <th class="pb-3 font-semibold text-right">Ideal</th>
-                        <th class="pb-3 font-semibold w-40">Progress</th>
+                        <th class="pb-3 font-semibold">Status</th>
+                        <th class="pb-3 font-semibold w-32">Progress</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -61,6 +85,14 @@
                         <td class="py-3 font-medium text-navy-800">{{ $bucket['bucket'] }}</td>
                         <td class="py-3 text-right">{{ $bucket['share'] }}% <span class="text-slate-400 text-xs">({{ $fmt($bucket['amount']) }})</span></td>
                         <td class="py-3 text-right text-slate-600">{{ $bucket['ideal'] }}%</td>
+                        <td class="py-3">
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded
+                                @if(in_array($bucket['status'], ['met','on_target','within'])) bg-emerald-50 text-emerald-700
+                                @elseif(in_array($bucket['status'], ['under_min','over_max','over','critical'])) bg-rose-50 text-rose-700
+                                @else bg-amber-50 text-amber-700 @endif">
+                                {{ $bucket['status_label'] }}
+                            </span>
+                        </td>
                         <td class="py-3">
                             <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                                 <div class="h-full rounded-full {{ $bucket['progress'] > 100 ? 'bg-rose-500' : 'bg-navy-500' }}"
@@ -91,13 +123,20 @@
                 {{ $summary['pulse']['score'] >= 65 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">
                 {{ $summary['pulse']['label'] }}
             </div>
-            <p class="text-sm text-slate-600 mt-4 text-left border-t pt-4 leading-relaxed">
-                <span class="font-semibold text-navy-800">Doctor's Note:</span>
-                {{ $summary['doctors_note'] }}
-            </p>
+            <div class="text-sm text-slate-600 mt-4 text-left border-t pt-4 leading-relaxed space-y-2">
+                <p><span class="font-semibold text-navy-800">Doctor's Note:</span> {{ $noteSummary }}</p>
+                @if(is_array($note))
+                    @if(!empty($note['interpretation']))
+                        <p class="text-xs"><span class="font-semibold">Interpretasi:</span> {{ $note['interpretation'] }}</p>
+                    @endif
+                    @if(!empty($note['priority']))
+                        <p class="text-xs text-navy-800"><span class="font-semibold">Prioritas:</span> {{ $note['priority'] }}</p>
+                    @endif
+                @endif
+            </div>
         </div>
 
-        <a href="{{ route('portal.emotional', ['month' => $summary['month']]) }}"
+        <a href="{{ route('portal.emotional', ['month' => $summary['month'], 'period' => $summary['period_months']]) }}"
            class="block bg-gradient-to-br from-navy-800 to-navy-600 rounded-2xl p-5 text-white shadow-sm hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between">
                 <div>
@@ -118,9 +157,23 @@
 {{-- Charts row --}}
 <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-        <h3 class="font-bold text-navy-800 mb-4">Cashflow Trend <span class="text-slate-400 font-normal text-sm">(6 bulan)</span></h3>
+        <h3 class="font-bold text-navy-800 mb-4">Cashflow Trend <span class="text-slate-400 font-normal text-sm">({{ count($summary['trend']) }} bulan)</span></h3>
         <div class="h-64"><canvas id="trendChart"></canvas></div>
     </div>
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+        <h3 class="font-bold text-navy-800 mb-4">Income Analysis</h3>
+        <p class="text-xs text-slate-500 mb-3">{{ $summary['income_analysis']['stability'] }}</p>
+        <div class="h-56 flex items-center justify-center">
+            @if(empty($summary['income_analysis']['by_source']))
+                <p class="text-sm text-slate-500">Belum ada pemasukan.</p>
+            @else
+                <canvas id="incomeChart"></canvas>
+            @endif
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
         <h3 class="font-bold text-navy-800 mb-4">Spending by Category</h3>
         <div class="h-64 flex items-center justify-center">
@@ -131,19 +184,12 @@
             @endif
         </div>
     </div>
-</div>
-
-<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-        <h3 class="font-bold text-navy-800 mb-4">Cashflow Summary</h3>
-        <div class="h-56"><canvas id="cashflowBar"></canvas></div>
-    </div>
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
         <h3 class="font-bold text-navy-800 mb-4">Top 10 Pengeluaran</h3>
         @if(empty($summary['top_expenses']))
             <p class="text-sm text-slate-500 py-8 text-center">Belum ada data.</p>
         @else
-            <div class="space-y-2 max-h-56 overflow-y-auto pr-1">
+            <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
                 @foreach($summary['top_expenses'] as $i => $row)
                     <div class="flex items-center gap-3 text-sm">
                         <span class="w-6 h-6 rounded-full bg-navy-800 text-white text-xs font-bold flex items-center justify-center shrink-0">{{ $i + 1 }}</span>
@@ -170,11 +216,7 @@
 Chart.defaults.font.family = 'Manrope';
 const trend = @json($summary['trend']);
 const categories = @json($summary['by_category']);
-const cashflow = {
-    income: {{ $summary['income'] }},
-    expense: {{ $summary['expense'] }},
-    net: {{ $summary['cashflow'] }},
-};
+const incomeSources = @json($summary['income_analysis']['by_source']);
 
 new Chart(document.getElementById('trendChart'), {
     type: 'line',
@@ -188,6 +230,21 @@ new Chart(document.getElementById('trendChart'), {
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
 });
+
+if (incomeSources.length && document.getElementById('incomeChart')) {
+    new Chart(document.getElementById('incomeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: incomeSources.map(c => c.label),
+            datasets: [{
+                data: incomeSources.map(c => c.amount),
+                backgroundColor: ['#059669','#0c2240','#dca115','#26528b','#7c3aed'],
+                borderWidth: 2, borderColor: '#fff',
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
+    });
+}
 
 if (categories.length && document.getElementById('categoryChart')) {
     new Chart(document.getElementById('categoryChart'), {
@@ -203,22 +260,5 @@ if (categories.length && document.getElementById('categoryChart')) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
     });
 }
-
-new Chart(document.getElementById('cashflowBar'), {
-    type: 'bar',
-    data: {
-        labels: ['Pendapatan', 'Pengeluaran', 'Cashflow'],
-        datasets: [{
-            data: [cashflow.income, cashflow.expense, cashflow.net],
-            backgroundColor: ['#059669', '#e11d48', '#26528b'],
-            borderRadius: 8,
-        }]
-    },
-    options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true } }
-    }
-});
 </script>
 @endpush

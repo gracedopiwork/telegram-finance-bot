@@ -7,6 +7,8 @@
 @php
     $fmt = fn (int $n) => 'Rp ' . number_format($n, 0, ',', '.');
     $hasData = $assessment['expense_count'] > 0;
+    $note = $assessment['doctors_note'];
+    $noteSummary = is_array($note) ? ($note['summary'] ?? '') : (string) $note;
 @endphp
 
 @if(!$hasData)
@@ -16,11 +18,33 @@
     ])
 @endif
 
+@if($assessment['ftsa_profile'])
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h3 class="font-bold text-navy-800 text-lg flex items-center gap-2">
+            <span class="material-symbols-outlined">person_search</span> Profil FTSA-32
+        </h3>
+        <span class="text-sm font-bold bg-navy-800 text-white px-3 py-1 rounded-full">
+            {{ $assessment['ftsa_profile']['archetype'] }}
+        </span>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        @foreach($assessment['ftsa_profile']['domains'] as $domain)
+            <div class="rounded-xl bg-slate-50 p-3 text-center">
+                <div class="text-xs font-bold text-slate-500">{{ $domain['label'] }}</div>
+                <div class="text-xl font-extrabold text-navy-800">{{ $domain['score'] }}</div>
+                <div class="text-[10px] text-slate-600 mt-1">{{ $domain['level'] }}</div>
+            </div>
+        @endforeach
+    </div>
+</div>
+@endif
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
     <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
         <div class="flex items-center gap-2 mb-4">
             <span class="material-symbols-outlined text-rose-600">bolt</span>
-            <h3 class="font-bold text-navy-800 text-lg">Penilaian Impulsifitas</h3>
+            <h3 class="font-bold text-navy-800 text-lg">Penilaian Impulsifitas · {{ $assessment['period_label'] }}</h3>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="rounded-xl bg-slate-50 p-4 text-center">
@@ -43,9 +67,12 @@
             <div class="h-full rounded-full {{ $assessment['impulsive_rate'] >= 30 ? 'bg-rose-500' : 'bg-emerald-500' }}"
                  style="width: {{ min(100, $assessment['impulsive_rate']) }}%"></div>
         </div>
-        <p class="text-sm text-slate-600 mt-4 border-t pt-4 leading-relaxed">
-            <span class="font-semibold text-navy-800">Doctor's Note:</span> {{ $assessment['doctors_note'] }}
-        </p>
+        <div class="text-sm text-slate-600 mt-4 border-t pt-4 leading-relaxed space-y-2">
+            <p><span class="font-semibold text-navy-800">Doctor's Note:</span> {{ $noteSummary }}</p>
+            @if(is_array($note) && !empty($note['priority']))
+                <p class="text-xs text-navy-800"><span class="font-semibold">Prioritas:</span> {{ $note['priority'] }}</p>
+            @endif
+        </div>
     </div>
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 text-center">
         <h3 class="font-bold text-navy-800 mb-4">Emotional Balance</h3>
@@ -57,19 +84,47 @@
             </div>
         </div>
         <div class="mt-3 text-sm font-semibold text-navy-800">{{ $assessment['emotional_balance']['label'] }}</div>
+        <div class="grid grid-cols-3 gap-2 mt-4 text-xs">
+            <div class="rounded-lg bg-emerald-50 p-2">
+                <div class="font-bold text-emerald-700">Positif</div>
+                <div>{{ $assessment['mood_groups']['positive']['share'] }}%</div>
+            </div>
+            <div class="rounded-lg bg-slate-50 p-2">
+                <div class="font-bold text-slate-600">Netral</div>
+                <div>{{ $assessment['mood_groups']['neutral']['share'] }}%</div>
+            </div>
+            <div class="rounded-lg bg-rose-50 p-2">
+                <div class="font-bold text-rose-700">Negatif</div>
+                <div>{{ $assessment['mood_groups']['negative']['share'] }}%</div>
+            </div>
+        </div>
     </div>
 </div>
 
+@if(!empty($assessment['insights']))
+<div class="bg-gradient-to-r from-navy-800 to-navy-600 rounded-2xl p-5 text-white">
+    <h3 class="font-bold mb-3 flex items-center gap-2">
+        <span class="material-symbols-outlined text-gold-400">lightbulb</span> Auto Insights
+    </h3>
+    <ul class="space-y-2 text-sm text-white/90">
+        @foreach($assessment['insights'] as $insight)
+            <li class="flex gap-2"><span class="text-gold-400">→</span>{{ $insight }}</li>
+        @endforeach
+    </ul>
+</div>
+@endif
+
 <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+        <h3 class="font-bold text-navy-800 mb-4">Mood Timeline</h3>
+        <div class="h-64"><canvas id="moodTimelineChart"></canvas></div>
+    </div>
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
         <h3 class="font-bold text-navy-800 mb-4">Mood Calendar</h3>
         <div class="grid grid-cols-7 gap-1 text-center text-xs mb-2 text-slate-400 font-semibold">
             @foreach(['Min','Sen','Sel','Rab','Kam','Jum','Sab'] as $d)<div>{{ $d }}</div>@endforeach
         </div>
-        @php
-            $firstDow = \Carbon\Carbon::createFromFormat('Y-m', $assessment['month'])->dayOfWeek;
-            $pad = $firstDow; // Sunday=0
-        @endphp
+        @php $pad = \Carbon\Carbon::createFromFormat('Y-m', $assessment['month'])->dayOfWeek; @endphp
         <div class="grid grid-cols-7 gap-1 text-center text-xs">
             @for($i = 0; $i < $pad; $i++)<div></div>@endfor
             @foreach($assessment['mood_calendar'] as $day)
@@ -80,16 +135,12 @@
             @endforeach
         </div>
     </div>
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-        <h3 class="font-bold text-navy-800 mb-4">Mood Distribution</h3>
-        <div class="h-64"><canvas id="moodChart"></canvas></div>
-    </div>
 </div>
 
 <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-        <h3 class="font-bold text-navy-800 mb-4">Mood vs Spending</h3>
-        <div class="h-64"><canvas id="moodSpendChart"></canvas></div>
+        <h3 class="font-bold text-navy-800 mb-4">Mood Spending Matrix</h3>
+        <div class="h-64"><canvas id="moodSpendMatrixChart"></canvas></div>
     </div>
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
         <h3 class="font-bold text-navy-800 mb-4">Mood vs Impulsive (%)</h3>
@@ -115,6 +166,25 @@
                 </div>
             @endforeach
         </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+        <h3 class="font-bold text-navy-800 mb-3">Rekomendasi Personal</h3>
+        <ul class="space-y-2 text-sm text-slate-700">
+            @foreach($assessment['recommendations']['personalized'] as $rec)
+                <li class="flex gap-2"><span class="text-navy-600 font-bold">1.</span>{{ $rec }}</li>
+            @endforeach
+        </ul>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+        <h3 class="font-bold text-navy-800 mb-3">Rekomendasi Umum</h3>
+        <ul class="space-y-2 text-sm text-slate-600">
+            @foreach($assessment['recommendations']['general'] as $rec)
+                <li class="flex gap-2"><span class="text-slate-400">•</span>{{ $rec }}</li>
+            @endforeach
+        </ul>
     </div>
 </div>
 
@@ -150,20 +220,40 @@
 
 @push('scripts')
 <script>
-const byMood = @json($assessment['by_mood']);
+const moodTimeline = @json($assessment['mood_timeline']);
+const moodMatrix = @json($assessment['mood_spending_matrix']);
 const moodImpulsive = @json($assessment['mood_vs_impulsive']);
 const needWant = @json($assessment['need_vs_want']);
 
-if (byMood.length) {
-    new Chart(document.getElementById('moodChart'), {
-        type: 'doughnut',
-        data: { labels: byMood.map(m => m.mood), datasets: [{ data: byMood.map(m => m.count), backgroundColor: ['#059669','#94a3b8','#3b82f6','#e11d48','#f97316','#64748b'] }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+if (moodTimeline.length) {
+    const labels = moodTimeline.map(p => p.label);
+    new Chart(document.getElementById('moodTimelineChart'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Mood Score', data: moodTimeline.map(p => p.mood_score), borderColor: '#26528b', tension: 0.3, spanGaps: true },
+                { label: 'Pengeluaran', data: moodTimeline.map(p => p.expense), borderColor: '#e11d48', borderDash: [3,3], yAxisID: 'y1', tension: 0.3 },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: { y: { min: 0, max: 5 }, y1: { position: 'right', grid: { drawOnChartArea: false } } },
+            plugins: { legend: { position: 'bottom' } }
+        }
     });
-    new Chart(document.getElementById('moodSpendChart'), {
+}
+if (moodMatrix.length) {
+    new Chart(document.getElementById('moodSpendMatrixChart'), {
         type: 'bar',
-        data: { labels: byMood.map(m => m.mood), datasets: [{ label: 'Nominal', data: byMood.map(m => m.amount), backgroundColor: '#26528b', borderRadius: 6 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        data: {
+            labels: moodMatrix.map(m => m.mood),
+            datasets: [
+                { label: 'Total', data: moodMatrix.map(m => m.amount), backgroundColor: '#26528b', borderRadius: 6 },
+                { label: 'Impulsif', data: moodMatrix.map(m => m.impulsive_amount), backgroundColor: '#e11d48', borderRadius: 6 },
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
     });
 }
 if (moodImpulsive.length) {

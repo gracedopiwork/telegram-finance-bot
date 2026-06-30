@@ -159,6 +159,18 @@ class BaselineAssessmentService
             $rules["ftsa.{$i}"] = 'required|integer|min:1|max:5';
         }
 
+        $rules['snapshot.current_goal'] = 'nullable|string|max:512';
+        $rules['snapshot.avg_monthly_income'] = 'nullable|integer|min:0';
+        $rules['snapshot.emergency_fund'] = 'nullable|integer|min:0';
+        $rules['snapshot.cash_savings'] = 'nullable|integer|min:0';
+        $rules['snapshot.total_investment'] = 'nullable|integer|min:0';
+        $rules['snapshot.total_asset'] = 'nullable|integer|min:0';
+        $rules['snapshot.total_debt'] = 'nullable|integer|min:0';
+        $rules['snapshot.has_bpjs'] = 'sometimes|boolean';
+        $rules['snapshot.has_health_insurance'] = 'sometimes|boolean';
+        $rules['snapshot.has_income_protection'] = 'sometimes|boolean';
+        $rules['snapshot.has_life_insurance'] = 'sometimes|boolean';
+
         return $rules;
     }
 }

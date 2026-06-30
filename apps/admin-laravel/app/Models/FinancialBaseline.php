@@ -14,6 +14,17 @@ class FinancialBaseline extends Model
         'financial_stage_score',
         'financial_stage',
         'stage_label',
+        'current_goal',
+        'avg_monthly_income',
+        'emergency_fund',
+        'cash_savings',
+        'total_investment',
+        'total_asset',
+        'total_debt',
+        'has_bpjs',
+        'has_health_insurance',
+        'has_income_protection',
+        'has_life_insurance',
         'ftsa_chd',
         'ftsa_rvd',
         'ftsa_ssd',
@@ -33,6 +44,10 @@ class FinancialBaseline extends Model
             'assessed_at' => 'datetime',
             'next_review_at' => 'datetime',
             'answers_json' => 'array',
+            'has_bpjs' => 'boolean',
+            'has_health_insurance' => 'boolean',
+            'has_income_protection' => 'boolean',
+            'has_life_insurance' => 'boolean',
         ];
     }
 

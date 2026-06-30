@@ -2,6 +2,7 @@
     $active = $active ?? 'dashboard';
     $displayName = session(\App\Support\PortalSession::DISPLAY_NAME, 'Pengguna');
     $currentMonth = $summary['month'] ?? ($assessment['month'] ?? now()->format('Y-m'));
+    $currentPeriod = $currentPeriod ?? ($summary['period_months'] ?? ($assessment['period_months'] ?? 1));
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -62,7 +63,7 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <form method="get" class="flex items-center gap-2">
+                    <form method="get" class="flex items-center gap-2 flex-wrap">
                         <span class="material-symbols-outlined text-slate-400 text-xl hidden sm:inline">calendar_month</span>
                         <select name="month" onchange="this.form.submit()"
                                 class="rounded-lg border-slate-300 text-sm py-2 pl-2 pr-8 bg-white">
@@ -70,6 +71,14 @@
                                 <option value="{{ $m['value'] }}" @selected($m['value'] === $currentMonth)>{{ $m['label'] }}</option>
                             @endforeach
                         </select>
+                        @if(!empty($periods))
+                            <select name="period" onchange="this.form.submit()"
+                                    class="rounded-lg border-slate-300 text-sm py-2 pl-2 pr-8 bg-white">
+                                @foreach($periods as $p)
+                                    <option value="{{ $p['value'] }}" @selected((int) $p['value'] === (int) $currentPeriod)>{{ $p['label'] }}</option>
+                                @endforeach
+                            </select>
+                        @endif
                     </form>
                     <form method="post" action="{{ route('portal.logout') }}">
                         @csrf

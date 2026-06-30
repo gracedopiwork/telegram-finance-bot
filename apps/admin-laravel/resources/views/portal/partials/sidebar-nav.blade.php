@@ -1,6 +1,8 @@
 @php
     $active = $active ?? 'dashboard';
     $currentMonth = $summary['month'] ?? ($assessment['month'] ?? now()->format('Y-m'));
+    $currentPeriod = $currentPeriod ?? ($summary['period_months'] ?? ($assessment['period_months'] ?? 1));
+    $query = ['month' => $currentMonth, 'period' => $currentPeriod];
 @endphp
 <div class="p-5 border-b border-white/10">
     <div class="flex items-center gap-3">
@@ -12,7 +14,7 @@
     </div>
 </div>
 <nav class="p-3 space-y-0.5 flex-1 text-sm overflow-y-auto">
-    <a href="{{ route('portal.transactions', ['month' => $currentMonth]) }}"
+    <a href="{{ route('portal.transactions', $query) }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'transactions' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">edit_note</span>
         INPUT DATA
@@ -22,21 +24,22 @@
         <span class="material-symbols-outlined text-lg opacity-80">fact_check</span>
         HEALTH CHECK-UP
     </a>
-    <a href="{{ route('portal.dashboard', ['month' => $currentMonth]) }}"
+    <a href="{{ route('portal.dashboard', $query) }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'dashboard' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">dashboard</span>
         DASHBOARD
     </a>
-    <a href="{{ route('portal.emotional', ['month' => $currentMonth]) }}"
+    <a href="{{ route('portal.emotional', $query) }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'emotional' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">psychology</span>
         EMOTIONAL SCAN
     </a>
-    <div class="flex items-center gap-2 rounded-lg px-3 py-3 text-white/35 cursor-not-allowed">
-        <span class="material-symbols-outlined text-lg">monitor_heart</span>
+    <a href="{{ route('portal.premium') }}"
+       class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'premium' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
+        <span class="material-symbols-outlined text-lg opacity-80">monitor_heart</span>
         <span class="flex-1">FINANCIAL HEALTH</span>
-        <span class="text-[9px] bg-white/10 text-gold-400 px-1.5 py-0.5 rounded font-bold">PREMIUM</span>
-    </div>
+        <span class="text-[9px] bg-gold-400/20 text-gold-400 px-1.5 py-0.5 rounded font-bold">PREMIUM</span>
+    </a>
     <div class="flex items-center gap-2 rounded-lg px-3 py-3 text-white/35 cursor-not-allowed">
         <span class="material-symbols-outlined text-lg">flag</span>
         <span class="flex-1">GOAL PLANNING</span>

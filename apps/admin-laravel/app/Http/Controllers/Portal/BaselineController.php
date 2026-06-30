@@ -56,6 +56,7 @@ class BaselineController extends Controller
 
         $telegramUserId = (int) PortalSession::telegramUserId($request);
         $result = $service->assess($validated);
+        $snapshot = $validated['snapshot'] ?? [];
 
         FinancialBaseline::query()->create([
             'telegram_user_id' => $telegramUserId,
@@ -64,6 +65,17 @@ class BaselineController extends Controller
             'financial_stage_score' => $result['financial_stage_score'],
             'financial_stage' => $result['financial_stage'],
             'stage_label' => $result['stage_label'],
+            'current_goal' => $snapshot['current_goal'] ?? null,
+            'avg_monthly_income' => isset($snapshot['avg_monthly_income']) ? (int) $snapshot['avg_monthly_income'] : null,
+            'emergency_fund' => isset($snapshot['emergency_fund']) ? (int) $snapshot['emergency_fund'] : null,
+            'cash_savings' => isset($snapshot['cash_savings']) ? (int) $snapshot['cash_savings'] : null,
+            'total_investment' => isset($snapshot['total_investment']) ? (int) $snapshot['total_investment'] : null,
+            'total_asset' => isset($snapshot['total_asset']) ? (int) $snapshot['total_asset'] : null,
+            'total_debt' => isset($snapshot['total_debt']) ? (int) $snapshot['total_debt'] : null,
+            'has_bpjs' => (bool) ($snapshot['has_bpjs'] ?? false),
+            'has_health_insurance' => (bool) ($snapshot['has_health_insurance'] ?? false),
+            'has_income_protection' => (bool) ($snapshot['has_income_protection'] ?? false),
+            'has_life_insurance' => (bool) ($snapshot['has_life_insurance'] ?? false),
             'ftsa_chd' => $result['ftsa_chd'],
             'ftsa_rvd' => $result['ftsa_rvd'],
             'ftsa_ssd' => $result['ftsa_ssd'],
