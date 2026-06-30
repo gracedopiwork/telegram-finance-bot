@@ -19,7 +19,7 @@
             'title' => 'Produk Digital',
             'icon'  => 'auto_awesome',
             'items' => [
-                ['key' => 'produk',      'label' => 'YFD Bot Telegram', 'desc' => 'Catat keuangan via chat — AI auto-parse ke Google Sheets', 'route' => 'company.produk',      'icon' => 'send',         'badge' => 'Tersedia'],
+                ['key' => 'produk',      'label' => 'YFD Bot Telegram', 'desc' => 'Catat keuangan via chat — AI auto-parse ke dashboard web', 'route' => 'company.produk',      'icon' => 'send',         'badge' => 'Tersedia'],
                 ['key' => null,          'label' => 'YFD Mobile App',    'desc' => 'Aplikasi Android & iOS — dashboard visual',                'icon' => 'phone_iphone', 'badge' => 'Coming Soon', 'url' => null],
                 ['key' => null,          'label' => 'Calculator Tools',  'desc' => 'Dana darurat, KPR, pensiun, compound interest',            'icon' => 'calculate',    'badge' => 'Coming Soon', 'url' => null],
             ],
@@ -364,6 +364,11 @@
 
         {{-- CTA --}}
         <div class="flex items-center gap-2 md:gap-3 shrink-0">
+            <a href="{{ route('portal.login') }}"
+               class="hidden md:inline-flex btn btn-outline-primary">
+                <span class="material-symbols-outlined text-[18px]">dashboard</span>
+                Login Dashboard
+            </a>
             <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener"
                class="hidden md:inline-flex btn btn-gold">
                 <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1;">chat</span>
@@ -461,6 +466,10 @@
                 @endif
             @endforeach
             <div class="grid grid-cols-2 gap-2 mt-3">
+                <a href="{{ route('portal.login') }}" class="btn btn-outline-primary justify-center col-span-2">
+                    <span class="material-symbols-outlined text-[18px]">dashboard</span>
+                    Login Dashboard
+                </a>
                 <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="btn btn-gold justify-center">
                     <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1;">chat</span>
                     WA
