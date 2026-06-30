@@ -331,7 +331,7 @@ def build_sheet_client(telegram_user_id: int | None = None) -> gspread.Worksheet
         return open_transaction_worksheet(client.open(sheet_name))
 
     raise RuntimeError(
-        "Spreadsheet belum tersedia. Pastikan pembayaran selesai, cek halaman sukses pembayaran atau email untuk sheet & lisensi, lalu `/activate`."
+        "Data dashboard belum tersedia. Pastikan pembayaran selesai, cek halaman sukses pembayaran atau email untuk lisensi, lalu `/activate`."
     )
 
 
@@ -433,7 +433,7 @@ def _lookup_user_sheets_row(telegram_user_id: int) -> dict | None:
 
 
 def describe_sheet_missing_for_user(telegram_user_id: int) -> str:
-    """Penjelasan kenapa sheet tidak ditemukan (untuk pesan Telegram)."""
+    """Penjelasan kenapa data order/lisensi tidak ditemukan (untuk Telegram)."""
     if not telegram_user_id:
         return "Akun Telegram tidak dikenali."
     try:
@@ -464,15 +464,13 @@ def describe_sheet_missing_for_user(telegram_user_id: int) -> str:
         if not (row.get("spreadsheet_id") or "").strip():
             return (
                 f"Lisensi `{lic}` aktif, order `{code}` sudah lunas, "
-                f"tetapi **Google Sheet belum dibuat**.\n\n"
-                f"Admin jalankan di server:\n"
-                f"`php artisan google:sheet-setup --provision={code}`\n\n"
-                "Atau hubungi admin untuk aktivasi dashboard web."
+                "tetapi data dashboard web belum siap.\n\n"
+                "Silakan hubungi admin agar provisioning order diselesaikan di server."
             )
-        return "Data lama spreadsheet terdeteksi, tetapi bot sekarang memakai dashboard web."
+        return "Data order terdeteksi. Bot memakai dashboard web YFD."
     except Exception as exc:  # pragma: no cover - external db guard
         logger.warning("describe_sheet_missing gagal user=%s: %s", telegram_user_id, exc)
-    return "Belum ada Google Sheet. Pastikan `/activate` dan order sudah punya sheet."
+    return "Data dashboard belum siap. Pastikan `/activate` berhasil lalu hubungi admin jika masih gagal."
 
 
 def lookup_user_spreadsheet_id(telegram_user_id: int) -> str | None:
@@ -1335,7 +1333,7 @@ async def hapuskilat_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
         return
     await update.message.reply_text(
-        "Perintah `/hapuskilat` dimatikan karena integrasi spreadsheet sudah dihapus.\n"
+        "Perintah `/hapuskilat` dimatikan karena fitur hapus cepat sudah tidak dipakai.\n"
         "Jika perlu koreksi data, hapus dari portal web.",
         parse_mode="Markdown",
     )
