@@ -62,14 +62,7 @@
                         {{ $featured->tagline }}
                     </p>
                 @endif
-                @php
-                    $descriptionText = (string) ($featured->description ?? '');
-                    $descriptionText = str_ireplace(
-                        ['google sheets pribadi', 'google sheets', 'google sheet', 'spreadsheet'],
-                        ['dashboard web pribadi', 'dashboard web yfd', 'dashboard web yfd', 'dashboard web'],
-                        $descriptionText
-                    );
-                @endphp
+                @php($descriptionText = (string) ($featured->description ?? ''))
                 @if($descriptionText !== '')
                     <p class="text-body-md text-on-surface-variant mb-6 max-w-xl">{{ $descriptionText }}</p>
                 @endif
@@ -101,13 +94,7 @@
                 @if(is_array($featured->features) && count($featured->features))
                     <ul class="space-y-3 mb-7">
                         @foreach($featured->features as $f)
-                            @php
-                                $featureText = str_ireplace(
-                                    ['google sheets pribadi', 'google sheets', 'google sheet', 'spreadsheet'],
-                                    ['dashboard web pribadi', 'dashboard web yfd', 'dashboard web yfd', 'dashboard web'],
-                                    (string) $f
-                                );
-                            @endphp
+                            @php($featureText = (string) $f)
                             <li class="flex items-start gap-3">
                                 <span class="material-symbols-outlined text-emerald-600 mt-0.5" style="font-variation-settings:'FILL' 1;">check_circle</span>
                                 <span class="text-body-md text-on-surface">{{ $featureText }}</span>

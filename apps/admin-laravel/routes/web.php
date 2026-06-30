@@ -71,9 +71,8 @@ Route::post('/logout', [AuthController::class, 'logout'])
 */
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
 
-    // Dashboard & legacy actions
+    // Dashboard
     Route::get('/', [AdminController::class, 'index'])->name('index');
-    Route::post('/dashboard-sync', [AdminController::class, 'runDashboardSync'])->name('dashboard-sync');
 
     // Settings (key/value)
     Route::get('/settings',  [SettingsController::class, 'index'])->name('settings.index');

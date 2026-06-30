@@ -76,7 +76,7 @@
     </div>
 </div>
 
-{{-- Kartu sync sheet lama dihapus: platform sekarang full web dashboard. --}}
+{{-- Kartu sinkronisasi lama sudah dihapus: platform sekarang full web dashboard. --}}
 
 <div class="row">
     @php

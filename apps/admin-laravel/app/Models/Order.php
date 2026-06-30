@@ -28,16 +28,12 @@ class Order extends Model
         'payment_token',
         'paid_at',
         'license_id',
-        'spreadsheet_id',
-        'spreadsheet_url',
         'purchase_delivery_sent_at',
-        'purchase_sheet_wa_sent_at',
     ];
 
     protected $casts = [
         'paid_at'                   => 'datetime',
         'purchase_delivery_sent_at' => 'datetime',
-        'purchase_sheet_wa_sent_at' => 'datetime',
         'amount'                    => 'integer',
         'original_price'            => 'integer',
         'discount_amount'           => 'integer',

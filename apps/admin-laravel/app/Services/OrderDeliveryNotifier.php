@@ -13,7 +13,7 @@ class OrderDeliveryNotifier
     ) {}
 
     /**
-     * Kirim ringkasan order (bot, lisensi, sheet) lewat channel yang dikonfigurasi.
+     * Kirim ringkasan order (bot, lisensi, dashboard) lewat channel yang dikonfigurasi.
      *
      * @return list<string> channel yang berhasil: wa, email
      *

@@ -7,7 +7,7 @@ Satu repository untuk:
 
 ## Struktur Folder
 
-- `apps/bot-python` -> service bot Telegram + sinkron dashboard
+- `apps/bot-python` -> service bot Telegram
 - `apps/admin-laravel` -> landing page, checkout, webhook Midtrans, admin dashboard
 - `shared/database/schema.sql` -> schema SQL terpadu
 - `shared/docs/PROPOSAL.md` -> proposal paket
@@ -53,4 +53,3 @@ Endpoint utama:
 
 - Bot dan Laravel harus memakai database MySQL yang sama.
 - Midtrans webhook akan update `orders` dan membuat `licenses` otomatis saat payment settle.
-- Sinkron dashboard massal dijalankan lewat `apps/bot-python/sync_dashboard.py`.

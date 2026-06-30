@@ -13,7 +13,7 @@ class SendOrderDeliveryCommand extends Command
                             {order_code : Kode order, contoh YFD-IVYZWN1WOQ}
                             {--force : Kirim ulang meskipun sudah pernah dikirim}';
 
-    protected $description = 'Kirim ringkasan pembeli (WA/email): link bot Telegram, lisensi, dan Google Sheet';
+    protected $description = 'Kirim ringkasan pembeli (WA/email): link bot Telegram, lisensi, dan dashboard web';
 
     public function handle(OrderDeliveryNotifier $notifier): int
     {
@@ -36,7 +36,6 @@ class SendOrderDeliveryCommand extends Command
             ['WhatsApp', $order->phone ?: '(kosong)'],
             ['Status', $order->status],
             ['Lisensi', $order->license?->license_key ?? '(belum ada)'],
-            ['Google Sheet', $order->spreadsheet_url ?: ($order->spreadsheet_id ? 'ID: '.$order->spreadsheet_id : '(belum ada)')],
             ['Tautan bot', $botUrl ?: '(belum di-set)'],
             ['FONNTE_TOKEN', config('services.fonnte.token') ? '(terisi)' : '(kosong)'],
             ['MAIL_MAILER', (string) config('mail.default')],

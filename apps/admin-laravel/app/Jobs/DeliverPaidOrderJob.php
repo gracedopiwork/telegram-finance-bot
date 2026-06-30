@@ -3,9 +3,6 @@
 namespace App\Jobs;
 
 use App\Models\Order;
-use App\Models\UserSheet;
-use App\Services\GoogleDriveSheetProvisioner;
-use App\Services\GoogleSheetPrivacyService;
 use App\Services\OrderDeliveryNotifier;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -33,10 +30,8 @@ class DeliverPaidOrderJob implements ShouldQueue
         return [30, 120, 300, 600];
     }
 
-    public function handle(
-        GoogleDriveSheetProvisioner $provisioner,
-        OrderDeliveryNotifier $notifier,
-    ): void {
+    public function handle(OrderDeliveryNotifier $notifier): void
+    {
         $order = Order::with('license')->find($this->orderId);
         if (! $order || $order->status !== 'paid' || ! $order->license) {
             return;
@@ -44,77 +39,17 @@ class DeliverPaidOrderJob implements ShouldQueue
 
         $deliveryAlreadySent = $order->purchase_delivery_sent_at !== null;
 
-        // Sheet dulu, lalu kirim ringkasan (email/WA) hanya setelah spreadsheet_id terisi.
-        $this->provisionSheetBestEffort($order, $provisioner);
-        $order = $order->fresh(['license']);
-
-        if ($order->spreadsheet_id === null) {
-            Log::warning('Google Sheet belum siap — job akan di-retry', [
-                'order_code' => $order->order_code,
-            ]);
-            throw new \RuntimeException('Google Sheet belum siap untuk order '.$order->order_code);
-        }
-
         if (! $deliveryAlreadySent) {
             try {
                 $notifier->send($order);
                 Order::whereKey($order->id)->update(['purchase_delivery_sent_at' => now()]);
             } catch (\Throwable $e) {
-                Log::warning('Pengiriman ringkasan order gagal — sheet sudah ada di checkout', [
+                Log::warning('Pengiriman ringkasan order gagal', [
                     'order_code' => $order->order_code,
                     'exception' => $e->getMessage(),
                 ]);
                 throw $e;
             }
         }
-    }
-
-    private function provisionSheetBestEffort(Order $order, GoogleDriveSheetProvisioner $provisioner): void
-    {
-        if (! $provisioner->isConfigured()) {
-            Log::error('Google Sheet TIDAK dibuat — konfigurasi .env tidak lengkap', [
-                'order_code' => $order->order_code,
-                'GOOGLE_USER_SHEET_TEMPLATE_ID' => (string) config('services.google.user_sheet_template_id', '') ?: '(kosong)',
-                'GOOGLE_SERVICE_ACCOUNT_JSON' => (string) config('services.google.service_account_json', '') ?: '(kosong)',
-                'hint' => 'Jalankan: php artisan google:sheet-setup',
-            ]);
-
-            return;
-        }
-
-        $privacy = app(GoogleSheetPrivacyService::class);
-
-        try {
-            if ($order->spreadsheet_id === null) {
-                $result = $provisioner->copyTemplateForOrder($order);
-                $order->spreadsheet_id = $result['id'];
-                $order->spreadsheet_url = $result['url'];
-                $order->save();
-                $order->refresh();
-            }
-        } catch (\Throwable $e) {
-            Log::error('Gagal duplikasi Google Sheet untuk order '.$order->order_code, [
-                'exception' => $e->getMessage(),
-            ]);
-        }
-
-        if ($order->spreadsheet_id === null) {
-            return;
-        }
-
-        try {
-            $diag = $privacy->ensureOrderAccessible($order->fresh(), (string) $order->spreadsheet_id);
-            if (! $diag['ok']) {
-                Log::warning('Google Sheet ada tetapi izin belum lengkap untuk '.$order->order_code, [
-                    'message' => $diag['message'],
-                ]);
-            }
-        } catch (\Throwable $e) {
-            Log::error('Gagal terapkan izin Google Sheet untuk order '.$order->order_code, [
-                'exception' => $e->getMessage(),
-            ]);
-        }
-
-        UserSheet::syncFromOrder($order->fresh(['license']));
     }
 }
