@@ -20,7 +20,7 @@ class PaidOrderDeliveredMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Akses bot, lisensi & Google Sheet — '.$this->order->order_code,
+            subject: 'Akses bot, lisensi & dashboard web — '.$this->order->order_code,
         );
     }
 

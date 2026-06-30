@@ -16,8 +16,8 @@ class DigitalProductSeeder extends Seeder
             [
                 'code'           => 'yfd-bot-telegram',
                 'name'           => 'YFD Bot Telegram',
-                'tagline'        => 'Catat keuangan harian via chat — AI auto-parse ke Google Sheets pribadi.',
-                'description'    => "YFD Bot Telegram adalah asisten keuangan pribadi berbasis chat. Tinggal kirim pesan biasa seperti \"makan malam 50rb\" atau \"beli kopi 18000 karena ngantuk\", AI YFD otomatis mengekstrak nominal, kategori, jenis transaksi, sifat (Need/Wants/Saving/Donation), mood, dan bahkan menandai pembelian impulsif. Semua tersimpan di Google Sheets pribadi yang siap dianalisis dokter finansial Anda.",
+                'tagline'        => 'Catat keuangan harian via chat — AI auto-parse ke dashboard web YFD.',
+                'description'    => "YFD Bot Telegram adalah asisten keuangan pribadi berbasis chat. Tinggal kirim pesan biasa seperti \"makan malam 50rb\" atau \"beli kopi 18000 karena ngantuk\", AI YFD otomatis mengekstrak nominal, kategori, jenis transaksi, sifat (Need/Wants/Saving/Donation), mood, dan bahkan menandai pembelian impulsif. Semua tersimpan di dashboard web pribadi yang siap dianalisis dokter finansial Anda.",
                 'icon'           => 'send',
                 'badge'          => 'Tersedia',
                 'is_active'      => true,
@@ -30,8 +30,8 @@ class DigitalProductSeeder extends Seeder
                 'features'       => [
                     'AI parser bahasa alami (Gemini)',
                     'Klasifikasi otomatis 7 dimensi finansial',
-                    'Sync real-time ke Google Sheets pribadi',
-                    'Sistem lisensi & sheet terisolasi (privat)',
+                    'Dashboard web real-time (portal YFD)',
+                    'Sistem lisensi & akun terisolasi (privat)',
                     'Update gratis selama masa langganan',
                     'Onboarding 1×24 jam oleh tim YFD',
                     'Akses grup komunitas pengguna',
@@ -39,7 +39,7 @@ class DigitalProductSeeder extends Seeder
                 'billing_mode'   => 'midtrans',
                 'cta_label'      => 'Beli Sekarang',
                 'meta_title'     => 'YFD Bot Telegram — Catat Keuangan via Chat',
-                'meta_description' => 'Catat keuangan harian via chat di Telegram. AI YFD otomatis klasifikasikan & simpan ke Google Sheets pribadi Anda.',
+                'meta_description' => 'Catat keuangan harian via chat di Telegram. AI YFD otomatis klasifikasikan & simpan ke dashboard web YFD Anda.',
             ],
             [
                 'code'           => 'yfd-mobile-app',
