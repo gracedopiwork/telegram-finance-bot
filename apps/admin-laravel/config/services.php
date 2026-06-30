@@ -49,7 +49,7 @@ return [
     ],
 
     'bot' => [
-        /** Token untuk POST /api/bot/orders/{code}/ensure-sheet (sama dengan BOT_INTERNAL_API_TOKEN di bot-python/.env) */
+        /** Token untuk POST /api/bot/* (sama dengan BOT_INTERNAL_API_TOKEN di bot-python/.env) */
         'internal_api_token' => env('BOT_INTERNAL_API_TOKEN', ''),
     ],
 
