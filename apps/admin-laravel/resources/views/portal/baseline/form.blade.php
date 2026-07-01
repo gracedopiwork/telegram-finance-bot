@@ -13,6 +13,15 @@
 @endphp
 
 <div class="max-w-3xl">
+    @if($hasBaseline ?? false)
+        <div class="bg-sky-50 border border-sky-200 rounded-2xl px-5 py-4 mb-6 text-sm text-sky-900">
+            Anda mengisi ulang diagnostik. Data sebelumnya akan digantikan setelah disimpan.
+        </div>
+    @else
+        @include('portal.partials.onboarding-checklist', ['compact' => true])
+        <div class="h-6"></div>
+    @endif
+
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 mb-6">
         <p class="text-slate-600 text-sm leading-relaxed">
             Jawablah sesuai kondisi Anda <strong>saat ini</strong>. Baseline ini menentukan tahap keuangan dan archetype trauma finansial,

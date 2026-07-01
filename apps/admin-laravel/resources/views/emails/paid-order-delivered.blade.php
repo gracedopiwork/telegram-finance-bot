@@ -53,7 +53,19 @@
     <p style="font-size: 0.875rem; color: #52525b; word-break: break-all;">{{ $portalHref }}</p>
     <p style="font-size: 0.875rem; color: #52525b;">
         Login dengan email checkout <strong>{{ $order->email }}</strong> dan kode lisensi Anda.
+        Atau ketik <strong>/web</strong> di bot untuk link masuk otomatis.
     </p>
+
+    <h2 style="font-size: 1rem; margin-top: 1.75rem;">4) Isi Diagnostik (Baseline Data) — wajib</h2>
+    @php $baselineHref = rtrim((string) config('app.url'), '/') . '/portal/baseline/baru'; @endphp
+    <p style="font-size: 0.875rem; color: #52525b;">
+        Setelah masuk dashboard, langkah pertama adalah mengisi <strong>Baseline Data (Diagnostik Keuangan)</strong>.
+        Ini menentukan tahap keuangan Anda dan mengaktifkan prescription bucket di dashboard.
+    </p>
+    <p>
+        <a href="{{ $baselineHref }}" style="display: inline-block; background: #dca115; color: #0c2240; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 700;">Isi Diagnostik Sekarang</a>
+    </p>
+    <p style="font-size: 0.8125rem; color: #71717a;">Menu di portal: <strong>BASELINE DATA (WAJIB DI ISI)</strong> → jawab semua pertanyaan → Simpan.</p>
 
     <p style="margin-top: 2rem; font-size: 0.8125rem; color: #71717a;">Email otomatis dari YFD. Mohon tidak membalas ke alamat pengirim.</p>
 </body>

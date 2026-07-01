@@ -58,6 +58,21 @@
                     </p>
                 </div>
             @endif
+
+            @if($order->status === 'paid' && $order->license)
+                <div class="bg-primary-container/5 border border-primary-container/20 rounded-2xl p-6 max-w-lg mx-auto text-left mb-6">
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-primary mb-3">Langkah selanjutnya</p>
+                    <ol class="text-[13px] text-on-surface-variant space-y-3 list-decimal list-inside">
+                        <li>Buka bot Telegram → <code class="bg-white px-1 rounded">/activate {{ $order->license->license_key }}</code></li>
+                        <li>Masuk dashboard: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> atau ketik <code class="bg-white px-1 rounded">/web</code> di bot</li>
+                        <li><strong class="text-primary">Isi Baseline Data (Diagnostik)</strong> — wajib, menu <em>BASELINE DATA</em></li>
+                        <li>Catat transaksi harian di bot, pantau dashboard</li>
+                    </ol>
+                    <a href="{{ route('portal.baseline.create') }}" class="btn btn-primary mt-4 w-full text-sm">
+                        Isi Diagnostik Sekarang
+                    </a>
+                </div>
+            @endif
         @else
             <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-8">
                 @if($order->status === 'pending')

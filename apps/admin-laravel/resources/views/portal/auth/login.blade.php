@@ -17,9 +17,9 @@
                 Catat lewat Telegram, pantau cashflow, bucket budget, dan skor impulsifitas — semua di satu tempat.
             </p>
             <ul class="mt-8 space-y-3 text-sm text-white/75">
-                <li class="flex items-center gap-2"><span class="material-symbols-outlined text-gold-400">check_circle</span> Sinkron data dari bot Telegram</li>
-                <li class="flex items-center gap-2"><span class="material-symbols-outlined text-gold-400">check_circle</span> Dashboard & Emotional Scan</li>
-                <li class="flex items-center gap-2"><span class="material-symbols-outlined text-gold-400">check_circle</span> Penilaian impulsifitas otomatis</li>
+                <li class="flex items-center gap-2"><span class="material-symbols-outlined text-gold-400">check_circle</span> Aktivasi bot → masuk dashboard</li>
+                <li class="flex items-center gap-2"><span class="material-symbols-outlined text-gold-400">check_circle</span> Isi Baseline Data (diagnostik wajib)</li>
+                <li class="flex items-center gap-2"><span class="material-symbols-outlined text-gold-400">check_circle</span> Catat transaksi & pantau dashboard</li>
             </ul>
         </div>
         <p class="text-sm text-white/50 italic">"Kesehatan finansial dimulai dari kesadaran hari ini."</p>

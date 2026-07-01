@@ -48,6 +48,11 @@ class OrderDeliveryMessageBuilder
         $lines[] = '📊 *Dashboard Web YFD*';
         $lines[] = $portalUrl;
         $lines[] = 'Login pakai email checkout: *'.$order->email.'* + kode lisensi di atas.';
+        $lines[] = 'Atau ketik */web* di bot untuk link masuk otomatis.';
+        $lines[] = '';
+        $lines[] = '🩺 *Langkah wajib setelah masuk:*';
+        $lines[] = 'Isi *Baseline Data (Diagnostik)* di menu portal:';
+        $lines[] = rtrim((string) config('app.url'), '/').'/portal/baseline/baru';
 
         $lines[] = '';
         $lines[] = '— YFD (Your Financial Doctor)';

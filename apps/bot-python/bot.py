@@ -953,7 +953,10 @@ async def activate_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         PENDING_NAME_USERS.add(user.id)
     await update.message.reply_text(
         f"Lisensi aktif. Kode: `{activated_key}`\nSekarang kamu mau dipanggil siapa?\n\n"
-        "Setelah ini kamu bisa langsung `/catat` dan lihat hasilnya di dashboard web.",
+        "Setelah ini:\n"
+        "1) Ketik `/web` untuk masuk dashboard\n"
+        "2) **Wajib** isi *Baseline Data (Diagnostik)* di menu portal\n"
+        "3) Baru `/catat` transaksi harian",
         parse_mode="Markdown",
     )
 
@@ -1213,6 +1216,7 @@ async def web_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     await update.message.reply_text(
         "Klik link ini untuk langsung masuk dashboard (tanpa ketik email/lisensi):\n"
         f"{link_or_err}\n\n"
+        "**Langkah wajib setelah masuk:** menu *BASELINE DATA (WAJIB DI ISI)* → isi diagnostik keuangan.\n\n"
         "_Link berlaku 30 menit. Buka di browser yang sama perangkat Anda._",
         parse_mode="Markdown",
         disable_web_page_preview=False,

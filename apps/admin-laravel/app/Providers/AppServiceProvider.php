@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\FinancialBaseline;
 use App\Models\Setting;
+use App\Support\PortalSession;
 use App\Support\PrimaryCheckupUrl;
 use App\Support\TelegramBotUrl;
 use Carbon\Carbon;
@@ -90,6 +92,20 @@ class AppServiceProvider extends ServiceProvider
                 }
                 $view->with('primaryCheckupUrl', $pu);
                 $view->with('primaryCheckupNewTab', false);
+            }
+        });
+
+        View::composer('portal.*', function ($view): void {
+            try {
+                $request = request();
+                if ($request === null || ! PortalSession::isAuthenticated($request)) {
+                    return;
+                }
+                $telegramUserId = (int) PortalSession::telegramUserId($request);
+                $view->with('needsBaseline', FinancialBaseline::userNeedsBaseline($telegramUserId));
+                $view->with('baselineUrl', route('portal.baseline.create'));
+            } catch (\Throwable) {
+                // Portal routes may not be registered during early boot.
             }
         });
     }
