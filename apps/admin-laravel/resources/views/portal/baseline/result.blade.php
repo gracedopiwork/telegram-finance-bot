@@ -65,7 +65,7 @@
                 <div class="{{ $isDominant ? 'ring-2 ring-gold-400 rounded-lg p-2 -mx-2' : '' }}">
                     <div class="flex justify-between text-sm mb-1">
                         <span class="font-medium text-navy-800">{{ $d['meta']['code'] ?? strtoupper($key) }}</span>
-                        <span class="text-slate-500">{{ $d['score'] }}/40@if($d['level']) · {{ $d['level'] }}@endif</span>
+                        <span class="text-slate-500">{{ $d['score'] }}/40{{ $d['level'] ? ' · '.$d['level'] : '' }}</span>
                     </div>
                     <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
                         <div class="h-full bg-navy-500 rounded-full" style="width: {{ $pct }}%"></div>
