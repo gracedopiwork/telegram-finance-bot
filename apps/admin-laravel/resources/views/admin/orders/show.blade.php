@@ -299,10 +299,19 @@
         <div class="card card-outline card-danger">
             <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-trash mr-2"></i>Danger Zone</h3></div>
             <div class="card-body">
-                <p class="small text-muted">
-                    Menghapus order ini juga menghapus <strong>lisensi yang terikat</strong> pada order (jika tidak dipakai order lain).
-                    Baris <code>license_activations</code> ikut terhapus. Gunakan hanya untuk data uji / koreksi.
+                <p class="small text-muted mb-3">
+                    Menghapus order ini juga menghapus <strong>lisensi yang terikat</strong> (jika tidak dipakai order lain).
+                    Jika tidak ada order lain dengan email <strong>{{ $order->email }}</strong>, baseline & transaksi bot untuk email ini ikut dihapus.
                 </p>
+                @if($order->status === 'paid' && $order->license_id)
+                    <form action="{{ route('admin.orders.purgeCustomerData', $order) }}" method="POST" class="js-confirm-form mb-2"
+                          data-msg="Hapus baseline & transaksi untuk {{ $order->email }}? Order dan lisensi TIDAK dihapus.">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-warning btn-block">
+                            <i class="fas fa-eraser mr-1"></i>Hapus Data User (Baseline + Transaksi)
+                        </button>
+                    </form>
+                @endif
                 <form action="{{ route('admin.orders.destroy', $order) }}" method="POST" class="js-confirm-form" data-msg="Hapus order {{ $order->order_code }} dan lisensi terkait? Tindakan ini tidak bisa dibatalkan.">
                     @csrf @method('DELETE')
                     <button type="submit" class="btn btn-sm btn-outline-danger btn-block"><i class="fas fa-trash mr-1"></i>Hapus Order</button>

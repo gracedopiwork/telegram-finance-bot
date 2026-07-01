@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CustomerDataPurgeService;
 use Illuminate\Database\Eloquent\Model;
 
 class License extends Model
@@ -34,31 +35,23 @@ class License extends Model
                 return;
             }
 
-            self::purgeUserFinanceDataIfOrphaned($previousUserId, $license->id);
-        });
+            $hasOtherLicense = self::query()
+                ->where('assigned_user_id', $previousUserId)
+                ->where('id', '!=', $license->id)
+                ->exists();
 
-        static::deleting(function (self $license): void {
-            $userId = (int) ($license->assigned_user_id ?? 0);
-            if ($userId <= 0) {
+            if ($hasOtherLicense) {
                 return;
             }
 
-            self::purgeUserFinanceDataIfOrphaned($userId, $license->id);
+            app(CustomerDataPurgeService::class)->purgeFinanceDataForTelegramUserIds([$previousUserId]);
         });
-    }
 
-    private static function purgeUserFinanceDataIfOrphaned(int $telegramUserId, int $currentLicenseId): void
-    {
-        $hasOtherLicense = self::query()
-            ->where('assigned_user_id', $telegramUserId)
-            ->where('id', '!=', $currentLicenseId)
-            ->exists();
+        static::deleting(function (self $license): void {
+            $userIds = app(CustomerDataPurgeService::class)
+                ->collectTelegramUserIdsForLicenseIds([$license->id]);
 
-        if ($hasOtherLicense) {
-            return;
-        }
-
-        BotTransaction::query()->where('telegram_user_id', $telegramUserId)->delete();
-        FinancialBaseline::query()->where('telegram_user_id', $telegramUserId)->delete();
+            app(CustomerDataPurgeService::class)->purgeFinanceDataForTelegramUserIds($userIds);
+        });
     }
 }

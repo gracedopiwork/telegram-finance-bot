@@ -94,6 +94,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('orders/{order}/sync-payment', [OrdersController::class, 'syncPayment'])->name('orders.syncPayment');
     Route::post('orders/{order}/resend-delivery', [OrdersController::class, 'resendDelivery'])->name('orders.resendDelivery');
     Route::post('orders/{order}/resend-delivery-email', [OrdersController::class, 'resendDeliveryEmail'])->name('orders.resendDeliveryEmail');
+    Route::post('orders/{order}/purge-customer-data', [OrdersController::class, 'purgeCustomerData'])->name('orders.purgeCustomerData');
     Route::delete('orders/{order}',     [OrdersController::class, 'destroy'])->name('orders.destroy');
 });
 

@@ -7,6 +7,7 @@ use App\Jobs\DeliverPaidOrderJob;
 use App\Models\CpDigitalProduct;
 use App\Models\License;
 use App\Models\Order;
+use App\Services\CustomerDataPurgeService;
 use App\Services\MidtransPaymentSyncService;
 use App\Services\MidtransService;
 use App\Services\OrderDeliveryNotifier;
@@ -183,10 +184,12 @@ class OrdersController extends Controller
             ->with('success', 'Email terkirim ke '.$order->email.'.');
     }
 
-    public function destroy(Order $order)
+    public function destroy(Order $order, CustomerDataPurgeService $purge)
     {
         $licenseId = $order->license_id;
         $code = $order->order_code;
+        $email = $order->email;
+        $telegramUserIds = $purge->collectTelegramUserIdsForEmail($email);
 
         DB::transaction(function () use ($order, $licenseId): void {
             $order->delete();
@@ -196,8 +199,33 @@ class OrdersController extends Controller
             }
         });
 
-        return redirect()->route('admin.orders.index')
-            ->with('success', "Order {$code} dihapus. Lisensi terkait ikut dihapus jika tidak dipakai order lain, beserta data transaksi/baseline user jika sudah orphan.");
+        $purgedRows = 0;
+        if (! Order::query()->whereRaw('LOWER(email) = ?', [strtolower(trim($email))])->exists()) {
+            $purgedRows = $purge->purgeFinanceDataForTelegramUserIds($telegramUserIds);
+        }
+
+        $message = "Order {$code} dihapus.";
+        if ($purgedRows > 0) {
+            $message .= " Data baseline & transaksi untuk email ini ikut dihapus ({$purgedRows} baris).";
+        } else {
+            $message .= ' Lisensi terkait ikut dihapus jika tidak dipakai order lain.';
+        }
+
+        return redirect()->route('admin.orders.index')->with('success', $message);
+    }
+
+    public function purgeCustomerData(Order $order, CustomerDataPurgeService $purge)
+    {
+        $telegramUserIds = $purge->collectTelegramUserIdsForEmail($order->email);
+        $deleted = $purge->purgeFinanceDataForTelegramUserIds($telegramUserIds);
+
+        if ($deleted === 0 && $telegramUserIds === []) {
+            return redirect()->route('admin.orders.show', $order)
+                ->with('warning', 'Tidak ada data baseline/transaksi yang terhubung ke email '.$order->email.' (belum ada aktivasi bot).');
+        }
+
+        return redirect()->route('admin.orders.show', $order)
+            ->with('success', "Data baseline & transaksi untuk {$order->email} dihapus ({$deleted} baris). Order & lisensi tetap ada.");
     }
 
     private function generateLicenseKey(): string
