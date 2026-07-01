@@ -65,21 +65,25 @@ final class TelegramBotUrl
             return null;
         }
 
-        if (preg_match('~(?:https?://)?(?:www\.)?t\.me/([A-Za-z0-9_]{4,32})(?:[/?#]|$)~i', $raw, $matches)) {
-            return $matches[1];
-        }
+        try {
+            if (preg_match('~(?:https?://)?(?:www\.)?t\.me/([A-Za-z0-9_]{4,32})(?:[/?#]|$)~i', $raw, $matches)) {
+                return $matches[1];
+            }
 
-        if (preg_match('~tg://resolve\?domain=([A-Za-z0-9_]{4,32})~i', $raw, $matches)) {
-            return $matches[1];
-        }
+            if (preg_match('~tg://resolve\?domain=([A-Za-z0-9_]{4,32})~i', $raw, $matches)) {
+                return $matches[1];
+            }
 
-        if (preg_match('~(?:https?://)?(?:www\.)?telegram\.(?:me|dog)/([A-Za-z0-9_]{4,32})(?:[/?#]|$)~i', $raw, $matches)) {
-            return $matches[1];
-        }
+            if (preg_match('~(?:https?://)?(?:www\.)?telegram\.(?:me|dog)/([A-Za-z0-9_]{4,32})(?:[/?#]|$)~i', $raw, $matches)) {
+                return $matches[1];
+            }
 
-        $candidate = ltrim($raw, '@');
-        if (preg_match('/^[A-Za-z0-9_]{4,32}$/', $candidate)) {
-            return $candidate;
+            $candidate = ltrim($raw, '@');
+            if (preg_match('~^[A-Za-z0-9_]{4,32}$~', $candidate)) {
+                return $candidate;
+            }
+        } catch (\Throwable) {
+            return null;
         }
 
         return null;
