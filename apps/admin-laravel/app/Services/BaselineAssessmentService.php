@@ -127,6 +127,15 @@ class BaselineAssessmentService
     public function resolveDominantArchetype(array $domainScores): array
     {
         $domains = config('baseline_assessment.ftsa_domains', []);
+        if ($domainScores === []) {
+            return [
+                'domain' => '',
+                'archetype' => 'unknown',
+                'label' => 'Belum dinilai',
+                'score' => 0,
+            ];
+        }
+
         $maxScore = max($domainScores);
         $candidates = array_keys(array_filter($domainScores, fn (int $s) => $s === $maxScore));
         $domain = $candidates[0];

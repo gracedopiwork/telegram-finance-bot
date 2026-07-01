@@ -67,7 +67,7 @@
                         <span class="material-symbols-outlined text-slate-400 text-xl hidden sm:inline">calendar_month</span>
                         <select name="month" onchange="this.form.submit()"
                                 class="rounded-lg border-slate-300 text-sm py-2 pl-2 pr-8 bg-white">
-                            @foreach($months as $m)
+                            @foreach(($months ?? []) as $m)
                                 <option value="{{ $m['value'] }}" @selected($m['value'] === $currentMonth)>{{ $m['label'] }}</option>
                             @endforeach
                         </select>

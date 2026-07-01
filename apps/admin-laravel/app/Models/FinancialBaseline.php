@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\FinancialBaselineSchema;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
@@ -53,6 +54,10 @@ class FinancialBaseline extends Model
 
     public static function latestForUser(int $telegramUserId): ?self
     {
+        if (! FinancialBaselineSchema::isReady()) {
+            return null;
+        }
+
         return self::query()
             ->where('telegram_user_id', $telegramUserId)
             ->orderByDesc('assessed_at')

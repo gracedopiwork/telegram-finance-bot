@@ -7,6 +7,7 @@ use App\Models\FinancialBaseline;
 use App\Models\License;
 use App\Models\Order;
 use App\Services\PortalAutoLoginService;
+use App\Support\FinancialBaselineSchema;
 use App\Support\PortalSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -119,7 +120,7 @@ class AuthController extends Controller
         $telegramUserId = (int) PortalSession::telegramUserId($request);
         $redirect = redirect()->route('portal.dashboard');
 
-        if (FinancialBaseline::userNeedsBaseline($telegramUserId)) {
+        if (FinancialBaselineSchema::isReady() && FinancialBaseline::userNeedsBaseline($telegramUserId)) {
             return $redirect->with(
                 'info',
                 'Selamat datang! Langkah pertama: isi Baseline Data (diagnostik keuangan) dari menu kiri atau tombol di bawah.'

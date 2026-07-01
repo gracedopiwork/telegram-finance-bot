@@ -7,11 +7,11 @@ use App\Models\FinancialBaseline;
 use App\Services\BaselineAssessmentService;
 use App\Services\BucketPrescriptionService;
 use App\Services\PortalFeatureService;
+use App\Support\FinancialBaselineSchema;
 use App\Support\PortalSession;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class BaselineController extends Controller
@@ -19,6 +19,12 @@ class BaselineController extends Controller
     public function index(Request $request): View|RedirectResponse
     {
         $telegramUserId = (int) PortalSession::telegramUserId($request);
+
+        if (! FinancialBaselineSchema::isReady()) {
+            return redirect()->route('portal.dashboard')
+                ->with('error', 'Database baseline belum siap. Admin: php artisan migrate --force');
+        }
+
         $baseline = FinancialBaseline::latestForUser($telegramUserId);
 
         if ($baseline === null) {
@@ -48,16 +54,22 @@ class BaselineController extends Controller
                 ->with('warning', 'Sesi portal habis. Buka bot Telegram lalu ketik /web untuk login ulang.');
         }
 
-        if (! Schema::hasColumn('financial_baselines', 'current_goal')) {
+        if (! FinancialBaselineSchema::isReady()) {
             return redirect()->route('portal.dashboard')
-                ->with('error', 'Database belum lengkap. Admin perlu menjalankan: php artisan migrate --force');
+                ->with('error', 'Database baseline belum siap. Admin: php artisan migrate --force && php artisan config:clear');
         }
 
         $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
 
+        $baselineConfig = config('baseline_assessment');
+        if (! is_array($baselineConfig) || ! isset($baselineConfig['financial_stage'])) {
+            return redirect()->route('portal.dashboard')
+                ->with('error', 'Konfigurasi baseline tidak terbaca. Admin: php artisan config:clear');
+        }
+
         return view('portal.baseline.form', [
             'active' => 'baseline',
-            'config' => config('baseline_assessment'),
+            'config' => $baselineConfig,
             'hasBaseline' => ! FinancialBaseline::userNeedsBaseline($telegramUserId),
             'ftsaUnlocked' => $ftsaUnlocked,
             'months' => $this->monthOptions(),
@@ -72,35 +84,51 @@ class BaselineController extends Controller
                 ->with('warning', 'Sesi portal habis. Buka bot Telegram lalu ketik /web untuk login ulang.');
         }
 
-        if (! Schema::hasColumn('financial_baselines', 'current_goal')) {
+        if (! FinancialBaselineSchema::isReady()) {
             return back()->withInput()->with(
                 'error',
-                'Database belum lengkap. Admin perlu menjalankan: php artisan migrate --force'
+                'Database baseline belum siap. Admin: php artisan migrate --force && php artisan config:clear'
             );
+        }
+
+        $baselineConfig = config('baseline_assessment');
+        if (! is_array($baselineConfig) || ! isset($baselineConfig['financial_stage'])) {
+            return back()->withInput()->with('error', 'Konfigurasi baseline tidak terbaca. Admin: php artisan config:clear');
         }
 
         $this->normalizeSnapshotInput($request);
 
-        $service = app(BaselineAssessmentService::class);
-        $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
-        $rules = $service->validationRules();
-        if (! $ftsaUnlocked) {
-            foreach (range(1, 32) as $i) {
-                unset($rules["ftsa.{$i}"]);
-            }
-        }
-        $validated = $request->validate($rules);
-        $result = $service->assess($validated, $ftsaUnlocked);
-        $snapshot = $validated['snapshot'] ?? [];
-
         try {
+            $service = app(BaselineAssessmentService::class);
+            $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
+            $rules = $service->validationRules();
+            if (! $ftsaUnlocked) {
+                foreach (range(1, 32) as $i) {
+                    unset($rules["ftsa.{$i}"]);
+                }
+            }
+            $validated = $request->validate($rules);
+            $result = $service->assess($validated, $ftsaUnlocked);
+            $snapshot = $validated['snapshot'] ?? [];
+
             FinancialBaseline::query()->create($this->buildBaselinePayload($telegramUserId, $result, $snapshot, $ftsaUnlocked));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (QueryException $e) {
             report($e);
 
             return back()->withInput()->with(
                 'error',
-                'Gagal menyimpan baseline (database). Pastikan admin sudah menjalankan php artisan migrate --force.'
+                'Gagal menyimpan baseline (database). Admin: php artisan migrate --force'
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput()->with(
+                'error',
+                config('app.debug')
+                    ? 'Error: '.$e->getMessage()
+                    : 'Gagal menyimpan baseline. Coba login ulang dari bot (/web) lalu isi lagi.'
             );
         }
 

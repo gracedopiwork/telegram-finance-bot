@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\FinancialBaseline;
 use App\Models\Setting;
+use App\Support\FinancialBaselineSchema;
 use App\Support\PortalSession;
 use App\Support\PrimaryCheckupUrl;
 use App\Support\TelegramBotUrl;
@@ -99,6 +100,11 @@ class AppServiceProvider extends ServiceProvider
             try {
                 $request = request();
                 if ($request === null || ! PortalSession::isAuthenticated($request)) {
+                    return;
+                }
+                if (! FinancialBaselineSchema::isReady()) {
+                    $view->with('needsBaseline', false);
+
                     return;
                 }
                 $telegramUserId = (int) PortalSession::telegramUserId($request);
