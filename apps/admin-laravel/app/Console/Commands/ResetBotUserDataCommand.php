@@ -14,6 +14,16 @@ class ResetBotUserDataCommand extends Command
 
     protected $description = 'Hapus semua data bot Telegram (transaksi, baseline, aktivasi) tanpa menyentuh konten website';
 
+    /** @var list<string> */
+    private array $botDataTables = [
+        'bot_transactions',
+        'financial_baselines',
+        'user_ai_usage',
+        'bot_ai_daily_stats',
+        'user_sheets',
+        'transactions',
+    ];
+
     public function handle(): int
     {
         if (! $this->option('force') && ! $this->confirm('Hapus SEMUA data transaksi, diagnostik, dan aktivasi bot? Website tidak terpengaruh.')) {
@@ -24,31 +34,37 @@ class ResetBotUserDataCommand extends Command
 
         $withOrders = (bool) $this->option('with-orders');
 
-        DB::transaction(function () use ($withOrders): void {
-            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        // TRUNCATE di MySQL melakukan implicit COMMIT — jangan bungkus DB::transaction().
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
 
+        try {
             if ($withOrders) {
                 $this->truncateIfExists('payment_events');
                 $this->truncateIfExists('orders');
                 $this->truncateIfExists('licenses');
             } else {
                 $this->truncateIfExists('license_activations');
-                DB::table('licenses')->update([
+                $updated = DB::table('licenses')->update([
                     'assigned_user_id' => null,
                     'assigned_username' => null,
                     'activated_at' => null,
                 ]);
+                $this->line("  · licenses: {$updated} baris aktivasi di-reset (kode lisensi tetap)");
             }
 
-            $this->truncateIfExists('bot_transactions');
-            $this->truncateIfExists('financial_baselines');
-            $this->truncateIfExists('user_ai_usage');
-            $this->truncateIfExists('bot_ai_daily_stats');
-            $this->truncateIfExists('user_sheets');
-            $this->truncateIfExists('transactions');
-
+            foreach ($this->botDataTables as $table) {
+                $this->truncateIfExists($table);
+            }
+        } finally {
             DB::statement('SET FOREIGN_KEY_CHECKS=1');
-        });
+        }
+
+        $remaining = $this->countRemainingBotRows();
+        if ($remaining > 0) {
+            $this->error("Masih ada {$remaining} baris data bot. Cek koneksi DB (.env) sama dengan bot Python.");
+
+            return self::FAILURE;
+        }
 
         $this->info('Data bot berhasil direset.');
         $this->line('Yang dihapus: transaksi bot, baseline/diagnostik, kuota AI, aktivasi lisensi.');
@@ -73,9 +89,22 @@ class ResetBotUserDataCommand extends Command
             return;
         }
 
-        $count = DB::table($table)->count();
-        DB::table($table)->truncate();
+        $count = (int) DB::table($table)->count();
+        DB::statement('TRUNCATE TABLE `'.$table.'`');
 
         $this->line("  · {$table}: {$count} baris dihapus (ID reset ke 1)");
+    }
+
+    private function countRemainingBotRows(): int
+    {
+        $total = 0;
+
+        foreach (array_merge($this->botDataTables, ['license_activations']) as $table) {
+            if (Schema::hasTable($table)) {
+                $total += (int) DB::table($table)->count();
+            }
+        }
+
+        return $total;
     }
 }
