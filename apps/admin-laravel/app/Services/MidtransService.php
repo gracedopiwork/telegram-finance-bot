@@ -83,6 +83,86 @@ class MidtransService
         ];
     }
 
+    /**
+     * Cek status transaksi langsung ke Midtrans (fallback jika webhook tidak sampai).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function fetchTransactionStatus(string $orderId): ?array
+    {
+        $serverKey = $this->normalizeServerKey((string) config('services.midtrans.server_key'));
+        if ($serverKey === '') {
+            return null;
+        }
+
+        $isProduction = (bool) config('services.midtrans.is_production', false);
+        $base = $isProduction ? 'https://api.midtrans.com' : 'https://api.sandbox.midtrans.com';
+        $url = $base.'/v2/'.rawurlencode($orderId).'/status';
+
+        $response = Http::withBasicAuth($serverKey, '')
+            ->acceptJson()
+            ->timeout(30)
+            ->get($url);
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        if (! $response->successful()) {
+            Log::warning('Midtrans status API gagal', [
+                'order_id' => $orderId,
+                'http_status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return null;
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * Verifikasi signature HTTP notification Midtrans.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function verifyNotificationSignature(array $payload): bool
+    {
+        $serverKey = $this->normalizeServerKey((string) config('services.midtrans.server_key'));
+        if ($serverKey === '') {
+            return false;
+        }
+
+        $received = (string) ($payload['signature_key'] ?? '');
+        if ($received === '') {
+            return false;
+        }
+
+        $orderId = (string) ($payload['order_id'] ?? '');
+        $statusCode = (string) ($payload['status_code'] ?? '');
+        $grossAmount = (string) ($payload['gross_amount'] ?? '');
+
+        $candidates = array_unique([
+            $grossAmount,
+            (string) (int) round((float) $grossAmount),
+            number_format((float) $grossAmount, 2, '.', ''),
+        ]);
+
+        foreach ($candidates as $amount) {
+            $expected = hash('sha512', $orderId.$statusCode.$amount.$serverKey);
+            if (hash_equals($expected, $received)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function notificationUrl(): string
+    {
+        return rtrim((string) config('app.url'), '/').'/webhooks/midtrans';
+    }
+
     private function normalizeServerKey(string $key): string
     {
         $key = trim($key);

@@ -7,6 +7,8 @@ use App\Jobs\DeliverPaidOrderJob;
 use App\Models\CpDigitalProduct;
 use App\Models\License;
 use App\Models\Order;
+use App\Services\MidtransPaymentSyncService;
+use App\Services\MidtransService;
 use App\Services\OrderDeliveryNotifier;
 use App\Support\TelegramBotUrl;
 use Illuminate\Http\Request;
@@ -68,7 +70,26 @@ class OrdersController extends Controller
             'order' => $order,
             'telegramBotUrl' => TelegramBotUrl::resolve(),
             'deliveryChannelLabel' => app(OrderDeliveryNotifier::class)->primaryChannelLabel(),
+            'midtransNotificationUrl' => app(MidtransService::class)->notificationUrl(),
         ]);
+    }
+
+    public function syncPayment(Order $order, MidtransPaymentSyncService $sync)
+    {
+        if ($order->status === 'paid') {
+            return redirect()->route('admin.orders.show', $order)
+                ->with('success', 'Order sudah lunas.');
+        }
+
+        $result = $sync->syncOrderFromApi($order);
+
+        if (! $result['synced']) {
+            return redirect()->route('admin.orders.show', $order)
+                ->with('error', $result['message']);
+        }
+
+        return redirect()->route('admin.orders.show', $order)
+            ->with('success', $result['message']);
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CpDigitalProduct;
 use App\Models\Order;
+use App\Services\MidtransPaymentSyncService;
 use App\Services\MidtransService;
 use App\Services\OrderDeliveryNotifier;
 use App\Support\PhoneNumber;
@@ -182,12 +183,17 @@ class CheckoutController extends Controller
     /**
      * Halaman setelah pembayaran (redirect dari Midtrans).
      */
-    public function finish(Request $request): View
+    public function finish(Request $request, MidtransPaymentSyncService $paymentSync): View
     {
         $orderCode = $request->query('order_id');
         $order = $orderCode
             ? Order::with('license')->where('order_code', $orderCode)->first()
             : null;
+
+        if ($order !== null && $order->status === 'pending') {
+            $paymentSync->syncOrderFromApi($order);
+            $order->refresh()->load('license');
+        }
 
         $notifier = app(OrderDeliveryNotifier::class);
         $channels = $notifier->enabledChannels();

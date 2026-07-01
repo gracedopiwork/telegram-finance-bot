@@ -35,6 +35,12 @@
                         <a href="{{ $order->payment_url }}" target="_blank" class="btn btn-sm btn-info">
                             <i class="fas fa-external-link-alt mr-1"></i>Buka Link Bayar
                         </a>
+                        <form action="{{ route('admin.orders.syncPayment', $order) }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-warning">
+                                <i class="fas fa-sync mr-1"></i>Sync Midtrans
+                            </button>
+                        </form>
                     @endif
 
                     {{-- Quick actions: ubah status manual --}}
@@ -131,8 +137,9 @@
             <div class="card-body p-0">
                 @if($order->paymentEvents->isEmpty())
                     <div class="text-muted text-center py-4 small">
-                        Belum ada event webhook. Midtrans akan kirim notifikasi otomatis ke
-                        <code>/webhooks/midtrans</code> setelah pembayaran.
+                        Belum ada event webhook. Midtrans harus dikonfigurasi mengirim notifikasi ke:<br>
+                        <code>{{ $midtransNotificationUrl ?? url('/webhooks/midtrans') }}</code><br>
+                        <span class="text-warning">Jika sudah bayar tapi status masih Menunggu, klik <strong>Sync Midtrans</strong> di panel kanan.</span>
                     </div>
                 @else
                     <div class="timeline timeline-inverse p-3">

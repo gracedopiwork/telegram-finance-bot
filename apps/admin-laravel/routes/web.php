@@ -91,6 +91,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('orders',                [OrdersController::class, 'index'])->name('orders.index');
     Route::get('orders/{order}',        [OrdersController::class, 'show'])->name('orders.show');
     Route::patch('orders/{order}/status', [OrdersController::class, 'updateStatus'])->name('orders.updateStatus');
+    Route::post('orders/{order}/sync-payment', [OrdersController::class, 'syncPayment'])->name('orders.syncPayment');
     Route::post('orders/{order}/resend-delivery', [OrdersController::class, 'resendDelivery'])->name('orders.resendDelivery');
     Route::post('orders/{order}/resend-delivery-email', [OrdersController::class, 'resendDeliveryEmail'])->name('orders.resendDeliveryEmail');
     Route::delete('orders/{order}',     [OrdersController::class, 'destroy'])->name('orders.destroy');
