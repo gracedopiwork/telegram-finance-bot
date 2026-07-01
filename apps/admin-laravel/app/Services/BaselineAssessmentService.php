@@ -10,18 +10,30 @@ class BaselineAssessmentService
      * @param  array<string, mixed>  $answers
      * @return array<string, mixed>
      */
-    public function assess(array $answers): array
+    public function assess(array $answers, bool $includeFtsa = true): array
     {
         $financialScore = $this->scoreFinancialStage($answers);
         $stage = $this->resolveStage($financialScore);
         $stageMeta = config("baseline_assessment.stage_labels.{$stage}", []);
 
-        $domainScores = $this->scoreFtsaDomains($answers);
-        $dominant = $this->resolveDominantArchetype($domainScores);
+        if ($includeFtsa) {
+            $domainScores = $this->scoreFtsaDomains($answers);
+            $dominant = $this->resolveDominantArchetype($domainScores);
+        } else {
+            $domainScores = ['chd' => 0, 'rvd' => 0, 'ssd' => 0, 'esd' => 0];
+            $dominant = [
+                'domain' => '',
+                'archetype' => 'locked',
+                'label' => 'FTSA Premium Locked',
+                'score' => 0,
+            ];
+        }
 
         $domainLevels = [];
         foreach ($domainScores as $key => $score) {
-            $domainLevels[$key] = $this->dysregulationLevel($score);
+            $domainLevels[$key] = $includeFtsa
+                ? $this->dysregulationLevel($score)
+                : ['key' => 'locked', 'label' => null];
         }
 
         $reviewMonths = (int) config('baseline_assessment.review_months', 6);
@@ -96,7 +108,11 @@ class BaselineAssessmentService
 
         foreach (config('baseline_assessment.ftsa_domains', []) as $domainKey => $domain) {
             foreach ($domain['questions'] as $qNum) {
-                $value = (int) ($answers['ftsa'][(string) $qNum] ?? $answers['ftsa'][$qNum] ?? 0);
+                $raw = $answers['ftsa'][(string) $qNum] ?? $answers['ftsa'][$qNum] ?? null;
+                if ($raw === null || $raw === '') {
+                    continue;
+                }
+                $value = (int) $raw;
                 $scores[$domainKey] += max(1, min(5, $value));
             }
         }

@@ -91,6 +91,11 @@
             </div>
         </header>
 
+        @if(session('error'))
+            <div class="mx-4 sm:mx-6 mt-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 px-4 py-3 text-sm">
+                {{ session('error') }}
+            </div>
+        @endif
         @if(session('warning'))
             <div class="mx-4 sm:mx-6 mt-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 text-sm">
                 {{ session('warning') }}

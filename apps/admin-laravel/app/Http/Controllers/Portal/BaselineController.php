@@ -8,8 +8,10 @@ use App\Services\BaselineAssessmentService;
 use App\Services\BucketPrescriptionService;
 use App\Services\PortalFeatureService;
 use App\Support\PortalSession;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class BaselineController extends Controller
@@ -38,9 +40,19 @@ class BaselineController extends Controller
         ]);
     }
 
-    public function create(Request $request): View
+    public function create(Request $request): View|RedirectResponse
     {
         $telegramUserId = (int) PortalSession::telegramUserId($request);
+        if ($telegramUserId <= 0) {
+            return redirect()->route('portal.login')
+                ->with('warning', 'Sesi portal habis. Buka bot Telegram lalu ketik /web untuk login ulang.');
+        }
+
+        if (! Schema::hasColumn('financial_baselines', 'current_goal')) {
+            return redirect()->route('portal.dashboard')
+                ->with('error', 'Database belum lengkap. Admin perlu menjalankan: php artisan migrate --force');
+        }
+
         $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
 
         return view('portal.baseline.form', [
@@ -54,8 +66,22 @@ class BaselineController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $service = app(BaselineAssessmentService::class);
         $telegramUserId = (int) PortalSession::telegramUserId($request);
+        if ($telegramUserId <= 0) {
+            return redirect()->route('portal.login')
+                ->with('warning', 'Sesi portal habis. Buka bot Telegram lalu ketik /web untuk login ulang.');
+        }
+
+        if (! Schema::hasColumn('financial_baselines', 'current_goal')) {
+            return back()->withInput()->with(
+                'error',
+                'Database belum lengkap. Admin perlu menjalankan: php artisan migrate --force'
+            );
+        }
+
+        $this->normalizeSnapshotInput($request);
+
+        $service = app(BaselineAssessmentService::class);
         $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
         $rules = $service->validationRules();
         if (! $ftsaUnlocked) {
@@ -64,23 +90,33 @@ class BaselineController extends Controller
             }
         }
         $validated = $request->validate($rules);
-        $result = $service->assess($validated);
+        $result = $service->assess($validated, $ftsaUnlocked);
         $snapshot = $validated['snapshot'] ?? [];
 
-        if (! $ftsaUnlocked) {
-            $result['ftsa_chd'] = 0;
-            $result['ftsa_rvd'] = 0;
-            $result['ftsa_ssd'] = 0;
-            $result['ftsa_esd'] = 0;
-            $result['dominant_archetype'] = 'locked';
-            $result['dominant_archetype_label'] = 'FTSA Premium Locked';
-            $result['chd_level'] = null;
-            $result['rvd_level'] = null;
-            $result['ssd_level'] = null;
-            $result['esd_level'] = null;
+        try {
+            FinancialBaseline::query()->create($this->buildBaselinePayload($telegramUserId, $result, $snapshot, $ftsaUnlocked));
+        } catch (QueryException $e) {
+            report($e);
+
+            return back()->withInput()->with(
+                'error',
+                'Gagal menyimpan baseline (database). Pastikan admin sudah menjalankan php artisan migrate --force.'
+            );
         }
 
-        FinancialBaseline::query()->create([
+        return redirect()
+            ->route('portal.baseline')
+            ->with('success', 'Baseline berhasil disimpan. Prescription bucket dashboard disesuaikan dengan tahap keuangan Anda.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $result
+     * @param  array<string, mixed>  $snapshot
+     * @return array<string, mixed>
+     */
+    private function buildBaselinePayload(int $telegramUserId, array $result, array $snapshot, bool $ftsaUnlocked): array
+    {
+        $payload = [
             'telegram_user_id' => $telegramUserId,
             'assessed_at' => $result['assessed_at'],
             'next_review_at' => $result['next_review_at'],
@@ -88,12 +124,12 @@ class BaselineController extends Controller
             'financial_stage' => $result['financial_stage'],
             'stage_label' => $result['stage_label'],
             'current_goal' => $snapshot['current_goal'] ?? null,
-            'avg_monthly_income' => isset($snapshot['avg_monthly_income']) ? (int) $snapshot['avg_monthly_income'] : null,
-            'emergency_fund' => isset($snapshot['emergency_fund']) ? (int) $snapshot['emergency_fund'] : null,
-            'cash_savings' => isset($snapshot['cash_savings']) ? (int) $snapshot['cash_savings'] : null,
-            'total_investment' => isset($snapshot['total_investment']) ? (int) $snapshot['total_investment'] : null,
-            'total_asset' => isset($snapshot['total_asset']) ? (int) $snapshot['total_asset'] : null,
-            'total_debt' => isset($snapshot['total_debt']) ? (int) $snapshot['total_debt'] : null,
+            'avg_monthly_income' => $this->nullableInt($snapshot['avg_monthly_income'] ?? null),
+            'emergency_fund' => $this->nullableInt($snapshot['emergency_fund'] ?? null),
+            'cash_savings' => $this->nullableInt($snapshot['cash_savings'] ?? null),
+            'total_investment' => $this->nullableInt($snapshot['total_investment'] ?? null),
+            'total_asset' => $this->nullableInt($snapshot['total_asset'] ?? null),
+            'total_debt' => $this->nullableInt($snapshot['total_debt'] ?? null),
             'has_bpjs' => (bool) ($snapshot['has_bpjs'] ?? false),
             'has_health_insurance' => (bool) ($snapshot['has_health_insurance'] ?? false),
             'has_income_protection' => (bool) ($snapshot['has_income_protection'] ?? false),
@@ -109,11 +145,54 @@ class BaselineController extends Controller
             'ssd_level' => $result['ssd_level'],
             'esd_level' => $result['esd_level'],
             'answers_json' => $result['answers'],
-        ]);
+        ];
 
-        return redirect()
-            ->route('portal.baseline')
-            ->with('success', 'Baseline berhasil disimpan. Prescription bucket dashboard disesuaikan dengan tahap keuangan Anda.');
+        if (! $ftsaUnlocked) {
+            $payload['ftsa_chd'] = 0;
+            $payload['ftsa_rvd'] = 0;
+            $payload['ftsa_ssd'] = 0;
+            $payload['ftsa_esd'] = 0;
+            $payload['dominant_archetype'] = 'locked';
+            $payload['dominant_archetype_label'] = 'FTSA Premium Locked';
+            $payload['chd_level'] = null;
+            $payload['rvd_level'] = null;
+            $payload['ssd_level'] = null;
+            $payload['esd_level'] = null;
+        }
+
+        return $payload;
+    }
+
+    private function normalizeSnapshotInput(Request $request): void
+    {
+        $snapshot = $request->input('snapshot', []);
+        if (! is_array($snapshot)) {
+            return;
+        }
+
+        foreach ([
+            'avg_monthly_income',
+            'emergency_fund',
+            'cash_savings',
+            'total_investment',
+            'total_asset',
+            'total_debt',
+        ] as $field) {
+            if (array_key_exists($field, $snapshot) && $snapshot[$field] === '') {
+                $snapshot[$field] = null;
+            }
+        }
+
+        $request->merge(['snapshot' => $snapshot]);
+    }
+
+    private function nullableInt(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (int) $value;
     }
 
     /**
@@ -124,9 +203,15 @@ class BaselineController extends Controller
         $options = [];
         $cursor = now()->startOfMonth();
         for ($i = 0; $i < 12; $i++) {
+            try {
+                $label = $cursor->copy()->locale(app()->getLocale())->translatedFormat('F Y');
+            } catch (\Throwable) {
+                $label = $cursor->format('M Y');
+            }
+
             $options[] = [
                 'value' => $cursor->format('Y-m'),
-                'label' => $cursor->translatedFormat('F Y'),
+                'label' => $label,
             ];
             $cursor = $cursor->copy()->subMonth();
         }
