@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -26,10 +27,16 @@ class ResetBotUserDataCommand extends Command
 
     public function handle(): int
     {
-        if (! $this->option('force') && ! $this->confirm('Hapus SEMUA data transaksi, diagnostik, dan aktivasi bot? Website tidak terpengaruh.')) {
-            $this->warn('Dibatalkan.');
+        if (! $this->option('force')) {
+            $withOrders = (bool) $this->option('with-orders');
+            $prompt = $withOrders
+                ? 'Hapus SEMUA data bot + orders/lisensi di admin Order & Pembayaran? (Website tetap aman)'
+                : 'Hapus data bot (catatan, baseline, aktivasi)? Order & Pembayaran di admin TETAP ADA (tambahkan --with-orders untuk hapus juga).';
+            if (! $this->confirm($prompt)) {
+                $this->warn('Dibatalkan.');
 
-            return self::SUCCESS;
+                return self::SUCCESS;
+            }
         }
 
         $withOrders = (bool) $this->option('with-orders');
@@ -74,7 +81,13 @@ class ResetBotUserDataCommand extends Command
         if ($withOrders) {
             $this->line('Orders & lisensi juga dihapus (--with-orders).');
         } else {
+            $orderCount = Order::query()->count();
             $this->line('Orders & kode lisensi tetap ada — user perlu /activate ulang di bot.');
+            if ($orderCount > 0) {
+                $this->newLine();
+                $this->warn("Masih ada {$orderCount} order di admin Order & Pembayaran.");
+                $this->warn('Untuk hapus juga: php artisan bot:reset-data --with-orders --force');
+            }
         }
 
         $this->newLine();
