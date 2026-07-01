@@ -75,20 +75,33 @@ class FinancialBaseline extends Model
 
     public function formatDate(?string $format = null): string
     {
-        if ($this->assessed_at === null) {
-            return '-';
-        }
-
-        return $this->assessed_at->format($format ?? 'd M Y H:i');
+        return $this->formatTimestamp($this->assessed_at, $format ?? 'd M Y H:i');
     }
 
     public function formatNextReview(?string $format = null): string
     {
-        if ($this->next_review_at === null) {
+        return $this->formatTimestamp($this->next_review_at, $format ?? 'd M Y');
+    }
+
+    private function formatTimestamp(mixed $value, string $format): string
+    {
+        if ($value === null || $value === '') {
             return '-';
         }
 
-        return $this->next_review_at->format($format ?? 'd M Y');
+        if (! $value instanceof Carbon) {
+            try {
+                $value = Carbon::parse($value);
+            } catch (\Throwable) {
+                return '-';
+            }
+        }
+
+        try {
+            return $value->format($format);
+        } catch (\Throwable) {
+            return '-';
+        }
     }
 
     public static function userNeedsBaseline(int $telegramUserId): bool

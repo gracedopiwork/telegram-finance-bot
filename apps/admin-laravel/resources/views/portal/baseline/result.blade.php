@@ -5,13 +5,13 @@
 
 @section('content')
 @php
-    $stageLabels = config('baseline_assessment.stage_labels.'.$baseline->financial_stage, []);
     $domainScores = [
-        'chd' => ['score' => $baseline->ftsa_chd, 'level' => $baseline->chd_level, 'meta' => $domains['chd'] ?? []],
-        'rvd' => ['score' => $baseline->ftsa_rvd, 'level' => $baseline->rvd_level, 'meta' => $domains['rvd'] ?? []],
-        'ssd' => ['score' => $baseline->ftsa_ssd, 'level' => $baseline->ssd_level, 'meta' => $domains['ssd'] ?? []],
-        'esd' => ['score' => $baseline->ftsa_esd, 'level' => $baseline->esd_level, 'meta' => $domains['esd'] ?? []],
+        'chd' => ['score' => (int) ($baseline->ftsa_chd ?? 0), 'level' => $baseline->chd_level, 'meta' => is_array($domains['chd'] ?? null) ? $domains['chd'] : []],
+        'rvd' => ['score' => (int) ($baseline->ftsa_rvd ?? 0), 'level' => $baseline->rvd_level, 'meta' => is_array($domains['rvd'] ?? null) ? $domains['rvd'] : []],
+        'ssd' => ['score' => (int) ($baseline->ftsa_ssd ?? 0), 'level' => $baseline->ssd_level, 'meta' => is_array($domains['ssd'] ?? null) ? $domains['ssd'] : []],
+        'esd' => ['score' => (int) ($baseline->ftsa_esd ?? 0), 'level' => $baseline->esd_level, 'meta' => is_array($domains['esd'] ?? null) ? $domains['esd'] : []],
     ];
+    $prescriptionRows = is_array($prescription ?? null) ? $prescription : [];
 @endphp
 
 @if($reviewDue)
@@ -34,7 +34,7 @@
         <div class="mt-5 pt-4 border-t">
             <div class="text-xs font-bold uppercase text-slate-500 mb-2">Prescription Bucket</div>
             <table class="w-full text-sm">
-                @foreach($prescription as $bucket => $pct)
+                @foreach($prescriptionRows as $bucket => $pct)
                     <tr class="border-b border-slate-50">
                         <td class="py-2 text-navy-800">{{ $bucket }}</td>
                         <td class="py-2 text-right font-semibold">{{ $pct }}%</td>

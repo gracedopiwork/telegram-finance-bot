@@ -50,13 +50,16 @@ class BucketPrescriptionService
     /**
      * @return array<string, float>
      */
-    public function idealsForStage(string $stage): array
+    public function idealsForStage(?string $stage): array
     {
+        $stage = is_string($stage) && $stage !== '' ? $stage : self::DEFAULT_STAGE;
+
         return self::STAGE_IDEALS[$stage] ?? self::STAGE_IDEALS[self::DEFAULT_STAGE];
     }
 
-    public function stageMeta(string $stage): array
+    public function stageMeta(?string $stage): array
     {
+        $stage = is_string($stage) && $stage !== '' ? $stage : self::DEFAULT_STAGE;
         $labels = config('baseline_assessment.stage_labels', []);
         if (! is_array($labels)) {
             $labels = [];
