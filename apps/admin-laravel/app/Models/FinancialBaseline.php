@@ -66,7 +66,29 @@ class FinancialBaseline extends Model
 
     public function isReviewDue(): bool
     {
+        if ($this->next_review_at === null) {
+            return false;
+        }
+
         return $this->next_review_at->isPast();
+    }
+
+    public function formatDate(?string $format = null): string
+    {
+        if ($this->assessed_at === null) {
+            return '-';
+        }
+
+        return $this->assessed_at->format($format ?? 'd M Y H:i');
+    }
+
+    public function formatNextReview(?string $format = null): string
+    {
+        if ($this->next_review_at === null) {
+            return '-';
+        }
+
+        return $this->next_review_at->format($format ?? 'd M Y');
     }
 
     public static function userNeedsBaseline(int $telegramUserId): bool

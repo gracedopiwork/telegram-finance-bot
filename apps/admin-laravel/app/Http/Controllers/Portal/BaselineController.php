@@ -31,19 +31,34 @@ class BaselineController extends Controller
             return redirect()->route('portal.baseline.create');
         }
 
-        $prescription = app(BucketPrescriptionService::class)->idealsForStage($baseline->financial_stage);
-        $stageMeta = app(BucketPrescriptionService::class)->stageMeta($baseline->financial_stage);
-        $domains = config('baseline_assessment.ftsa_domains', []);
+        try {
+            $prescription = app(BucketPrescriptionService::class)->idealsForStage($baseline->financial_stage);
+            $stageMeta = app(BucketPrescriptionService::class)->stageMeta($baseline->financial_stage);
+            $domains = config('baseline_assessment.ftsa_domains', []);
+            if (! is_array($domains)) {
+                $domains = [];
+            }
 
-        return view('portal.baseline.result', [
-            'active' => 'baseline',
-            'baseline' => $baseline,
-            'stageMeta' => $stageMeta,
-            'prescription' => $prescription,
-            'domains' => $domains,
-            'reviewDue' => $baseline->isReviewDue(),
-            'months' => $this->monthOptions(),
-        ]);
+            return view('portal.baseline.result', [
+                'active' => 'baseline',
+                'baseline' => $baseline,
+                'stageMeta' => $stageMeta,
+                'prescription' => $prescription,
+                'domains' => $domains,
+                'reviewDue' => $baseline->isReviewDue(),
+                'months' => $this->monthOptions(),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('portal.dashboard')
+                ->with(
+                    'error',
+                    config('app.debug')
+                        ? 'Gagal memuat baseline: '.$e->getMessage()
+                        : 'Gagal memuat hasil baseline. Coba refresh atau hubungi admin.'
+                );
+        }
     }
 
     public function create(Request $request): View|RedirectResponse

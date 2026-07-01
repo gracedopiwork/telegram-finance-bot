@@ -58,12 +58,18 @@ class BucketPrescriptionService
     public function stageMeta(string $stage): array
     {
         $labels = config('baseline_assessment.stage_labels', []);
+        if (! is_array($labels)) {
+            $labels = [];
+        }
+
+        $meta = is_array($labels[$stage] ?? null) ? $labels[$stage] : [];
 
         return [
             'key' => $stage,
-            'label' => $labels[$stage]['label'] ?? ucfirst($stage),
-            'emoji' => $labels[$stage]['emoji'] ?? '',
-            'diagnosis' => $labels[$stage]['diagnosis'] ?? '',
+            'label' => $meta['label'] ?? ucfirst($stage),
+            'emoji' => $meta['emoji'] ?? '',
+            'diagnosis' => $meta['diagnosis'] ?? '',
+            'phase' => $meta['phase'] ?? '',
         ];
     }
 }

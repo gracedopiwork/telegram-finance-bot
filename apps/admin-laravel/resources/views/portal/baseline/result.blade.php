@@ -16,7 +16,7 @@
 
 @if($reviewDue)
     <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-3">
-        <span>Baseline terakhir: {{ $baseline->assessed_at->translatedFormat('d F Y') }}. Sudah waktunya evaluasi ulang (6 bulan).</span>
+        <span>Baseline terakhir: {{ $baseline->formatDate('d M Y') }}. Sudah waktunya evaluasi ulang (6 bulan).</span>
         <a href="{{ route('portal.baseline.create') }}" class="font-semibold text-amber-800 hover:underline">Isi ulang sekarang →</a>
     </div>
 @endif
@@ -49,13 +49,18 @@
         <h3 class="font-bold text-navy-800 text-lg mb-4 flex items-center gap-2">
             <span class="material-symbols-outlined">psychology</span> Dominant Archetype
         </h3>
-        <div class="text-2xl font-extrabold text-navy-800">{{ $baseline->dominant_archetype_label }}</div>
-        <p class="text-sm text-slate-500 mt-1">Domain dengan skor tertinggi pada FTSA-32</p>
+        <div class="text-2xl font-extrabold text-navy-800">{{ $baseline->dominant_archetype_label ?? 'Belum dinilai' }}</div>
+        @if(($baseline->dominant_archetype ?? '') === 'locked')
+            <p class="text-sm text-amber-700 mt-1">FTSA-32 terkunci — upgrade paket premium untuk melihat archetype lengkap.</p>
+        @else
+            <p class="text-sm text-slate-500 mt-1">Domain dengan skor tertinggi pada FTSA-32</p>
+        @endif
         <div class="mt-5 space-y-3">
             @foreach($domainScores as $key => $d)
                 @php
-                    $isDominant = $baseline->dominant_archetype === ($d['meta']['archetype'] ?? '');
-                    $pct = round(($d['score'] / 40) * 100);
+                    $isDominant = ($baseline->dominant_archetype ?? '') !== 'locked'
+                        && $baseline->dominant_archetype === ($d['meta']['archetype'] ?? '');
+                    $pct = round(((int) $d['score'] / 40) * 100);
                 @endphp
                 <div class="{{ $isDominant ? 'ring-2 ring-gold-400 rounded-lg p-2 -mx-2' : '' }}">
                     <div class="flex justify-between text-sm mb-1">
@@ -85,7 +90,7 @@
 </div>
 
 <p class="text-xs text-slate-400 mt-4">
-    Diisi: {{ $baseline->assessed_at->translatedFormat('d F Y H:i') }} ·
-    Evaluasi berikutnya: {{ $baseline->next_review_at->translatedFormat('d F Y') }}
+    Diisi: {{ $baseline->formatDate() }} ·
+    Evaluasi berikutnya: {{ $baseline->formatNextReview() }}
 </p>
 @endsection
