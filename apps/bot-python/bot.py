@@ -869,7 +869,8 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
     if not is_license_active_for_user(user_id):
         await update.message.reply_text(
-            "Selamat datang. Sebelum pakai bot, masukkan kode lisensi Anda (sama persis dengan di halaman pembayaran lunas atau email).\n"
+            "Selamat datang di *YFD First Aid Bot*.\n"
+            "Sebelum pakai bot, masukkan kode lisensi Anda (sama persis dengan di halaman pembayaran lunas atau email).\n"
             "Format: `/activate KODE-LISENSI-ANDA`",
             parse_mode="Markdown",
         )

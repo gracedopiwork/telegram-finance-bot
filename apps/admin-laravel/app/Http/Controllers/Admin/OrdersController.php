@@ -161,7 +161,7 @@ class OrdersController extends Controller
         });
 
         return redirect()->route('admin.orders.index')
-            ->with('success', "Order {$code} dihapus. Lisensi terkait ikut dihapus jika tidak dipakai order lain.");
+            ->with('success', "Order {$code} dihapus. Lisensi terkait ikut dihapus jika tidak dipakai order lain, beserta data transaksi/baseline user jika sudah orphan.");
     }
 
     private function generateLicenseKey(): string

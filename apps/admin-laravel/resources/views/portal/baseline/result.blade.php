@@ -1,7 +1,7 @@
 @extends('portal.layouts.app')
 
 @section('title', 'Hasil Baseline — YFD')
-@section('heading', 'Hasil Health Check-Up')
+@section('heading', 'Hasil Baseline Data')
 
 @section('content')
 @php

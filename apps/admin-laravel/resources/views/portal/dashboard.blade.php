@@ -1,7 +1,7 @@
 @extends('portal.layouts.app')
 
 @section('title', 'Dashboard Keuangan — YFD')
-@section('heading', 'General Financial Dashboard')
+@section('heading', 'Financial Health Dashboard')
 
 @section('content')
 @php
@@ -15,6 +15,13 @@
     <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-3">
         <span>Sudah 6 bulan sejak baseline terakhir. Evaluasi ulang untuk memperbarui tahap & prescription bucket.</span>
         <a href="{{ route('portal.baseline.create') }}" class="font-semibold whitespace-nowrap">Health Check-Up →</a>
+    </div>
+@endif
+
+@if(empty($summary['baseline']))
+    <div class="rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 text-sm text-sky-900 flex flex-wrap items-center justify-between gap-3">
+        <span>Selamat datang! Anda bisa pakai dashboard dulu. Lengkapi Baseline Data kapan saja dari menu kiri untuk diagnosis yang lebih personal.</span>
+        <a href="{{ route('portal.baseline.create') }}" class="font-semibold whitespace-nowrap">Isi Baseline Data →</a>
     </div>
 @endif
 

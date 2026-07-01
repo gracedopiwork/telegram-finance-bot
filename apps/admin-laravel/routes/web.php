@@ -114,13 +114,12 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::get('/baseline/baru', [PortalBaselineController::class, 'create'])->name('baseline.create');
         Route::post('/baseline', [PortalBaselineController::class, 'store'])->name('baseline.store');
 
-        Route::middleware('portal.baseline')->group(function () {
-            Route::get('/', [PortalDashboardController::class, 'index'])->name('dashboard');
-            Route::get('/transaksi', [PortalDashboardController::class, 'transactions'])->name('transactions');
-            Route::get('/transaksi/template', [PortalTransactionsController::class, 'importTemplate'])->name('transactions.template');
-            Route::post('/transaksi/import', [PortalTransactionsController::class, 'import'])->name('transactions.import');
-            Route::get('/emotional', [PortalDashboardController::class, 'emotional'])->name('emotional');
-            Route::get('/premium', [PortalDashboardController::class, 'premium'])->name('premium');
-        });
+        Route::get('/transaksi', [PortalDashboardController::class, 'transactions'])->name('transactions');
+        Route::get('/transaksi/template', [PortalTransactionsController::class, 'importTemplate'])->name('transactions.template');
+        Route::post('/transaksi/import', [PortalTransactionsController::class, 'import'])->name('transactions.import');
+
+        Route::get('/', [PortalDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/emotional', [PortalDashboardController::class, 'emotional'])->name('emotional');
+        Route::get('/premium', [PortalDashboardController::class, 'premium'])->name('premium');
     });
 });

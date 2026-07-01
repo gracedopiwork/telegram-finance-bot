@@ -10,7 +10,7 @@
                 <div class="w-12 h-12 rounded-2xl bg-gold-400 text-navy-800 font-extrabold flex items-center justify-center">YFD</div>
                 <div>
                     <div class="text-xs uppercase tracking-widest text-gold-400 font-bold">Young Financial Doctor</div>
-                    <div class="text-xl font-extrabold">Dashboard Keuangan</div>
+                    <div class="text-xl font-extrabold">YFD First Aid Dashboard</div>
                 </div>
             </div>
             <p class="mt-10 text-lg text-white/85 leading-relaxed max-w-md">
@@ -42,7 +42,7 @@
                         <div>
                             <div class="text-sm font-bold text-navy-800">Opsi 1 — Dari Telegram (disarankan)</div>
                             <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-                                Ketik <strong>/web</strong> di bot YFD → klik link → langsung masuk dashboard.
+                                Ketik <strong>/web</strong> di bot YFD First Aid Bot → klik link → langsung masuk dashboard.
                                 Tanpa isi email atau kode lisensi.
                             </p>
                         </div>

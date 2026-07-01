@@ -22,27 +22,27 @@
     <a href="{{ route('portal.baseline') }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'baseline' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">fact_check</span>
-        HEALTH CHECK-UP
+        BASELINE DATA (WAJIB DI ISI)
     </a>
     <a href="{{ route('portal.dashboard', $query) }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'dashboard' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">dashboard</span>
-        DASHBOARD
+        FINANCIAL HEALTH DASHBOARD
     </a>
     <a href="{{ route('portal.emotional', $query) }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'emotional' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">psychology</span>
-        EMOTIONAL SCAN
+        BEHAVIORAL FINANCIAL DASHBOARD
     </a>
     <a href="{{ route('portal.premium') }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'premium' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">monitor_heart</span>
-        <span class="flex-1">FINANCIAL HEALTH</span>
+        <span class="flex-1">YOUR FINANCIAL HEALTH INDEX</span>
         <span class="text-[9px] bg-gold-400/20 text-gold-400 px-1.5 py-0.5 rounded font-bold">PREMIUM</span>
     </a>
     <div class="flex items-center gap-2 rounded-lg px-3 py-3 text-white/35 cursor-not-allowed">
         <span class="material-symbols-outlined text-lg">flag</span>
-        <span class="flex-1">GOAL PLANNING</span>
+        <span class="flex-1">YOUR FINANCIAL GOAL PLANNING</span>
         <span class="text-[9px] bg-white/10 text-gold-400 px-1.5 py-0.5 rounded font-bold">PREMIUM</span>
     </div>
 </nav>

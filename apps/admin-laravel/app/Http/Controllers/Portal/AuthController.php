@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
-use App\Models\FinancialBaseline;
 use App\Models\License;
 use App\Models\Order;
 use App\Services\PortalAutoLoginService;
@@ -116,14 +115,6 @@ class AuthController extends Controller
 
     private function redirectAfterLogin(Request $request): RedirectResponse
     {
-        $telegramUserId = (int) PortalSession::telegramUserId($request);
-
-        if (FinancialBaseline::userNeedsBaseline($telegramUserId)) {
-            return redirect()
-                ->route('portal.baseline.create')
-                ->with('info', 'Selamat datang! Lengkapi Health Check-Up sebagai langkah pertama.');
-        }
-
         return redirect()->route('portal.dashboard');
     }
 

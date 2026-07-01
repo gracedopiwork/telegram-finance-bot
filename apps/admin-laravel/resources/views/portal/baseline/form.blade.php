@@ -1,15 +1,15 @@
 @extends('portal.layouts.app')
 
-@section('title', 'Financial Health Check-Up — YFD')
-@section('heading', 'Financial Health Check-Up & FTSA-32')
+@section('title', 'Baseline Data — YFD')
+@section('heading', 'Baseline Data (Wajib Diisi)')
 
 @section('content')
 @php
     $fs = $config['financial_stage'] ?? [];
     $likert = $config['likert_labels'] ?? [];
-    $ftsaDomains = $config['ftsa_domains'] ?? [];
     $ftsaQuestions = $config['ftsa_questions'] ?? [];
     $currentSection = '';
+    $ftsaUnlocked = $ftsaUnlocked ?? true;
 @endphp
 
 <div class="max-w-3xl">
@@ -28,9 +28,9 @@
             <div class="bg-navy-800 text-white px-5 py-4">
                 <h2 class="font-bold text-lg flex items-center gap-2">
                     <span class="material-symbols-outlined">account_balance</span>
-                    Define Your Financial Stage
+                    Baseline Data Keuangan
                 </h2>
-                <p class="text-white/70 text-sm mt-1">Profil + skor maksimal 39 poin</p>
+                <p class="text-white/70 text-sm mt-1">Isi sesuai kondisi saat ini (ada catatan di tiap pilihan agar tidak salah pilih)</p>
             </div>
             <div class="p-5 sm:p-6 space-y-8">
                 @foreach($fs['profile'] ?? [] as $q)
@@ -85,41 +85,49 @@
             <div class="bg-navy-800 text-white px-5 py-4">
                 <h2 class="font-bold text-lg flex items-center gap-2">
                     <span class="material-symbols-outlined">psychology</span>
-                    FTSA-32 — Financial Trauma Self-Assessment
+                    Kuesioner 1–32
                 </h2>
                 <p class="text-white/70 text-sm mt-1">Skala 1–5 untuk kondisi 12 bulan terakhir</p>
             </div>
-            <div class="p-5 sm:p-6 space-y-10">
-                @foreach($ftsaDomains as $domainKey => $domain)
-                    <div>
-                        <h3 class="font-bold text-navy-800 mb-1">{{ $domain['code'] }} — {{ $domain['label'] }}</h3>
-                        <p class="text-xs text-slate-500 mb-4">Archetype: {{ $domain['archetype_label'] }}</p>
-                        <div class="space-y-6">
-                            @foreach($domain['questions'] as $qNum)
-                                <fieldset>
-                                    <legend class="text-sm text-slate-800 mb-2">
-                                        <span class="font-semibold text-navy-600">{{ $qNum }}.</span>
-                                        {{ $ftsaQuestions[$qNum] ?? '' }}
-                                    </legend>
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach($likert as $score => $label)
-                                            <label class="flex-1 min-w-[4.5rem] text-center rounded-lg border border-slate-200 px-2 py-2 cursor-pointer hover:border-navy-500 has-[:checked]:border-navy-600 has-[:checked]:bg-navy-50">
-                                                <input type="radio" name="ftsa[{{ $qNum }}]" value="{{ $score }}"
-                                                       class="sr-only" @checked((int) old("ftsa.{$qNum}") === $score) required>
-                                                <div class="text-lg font-bold text-navy-800">{{ $score }}</div>
-                                                <div class="text-[10px] text-slate-500 leading-tight hidden sm:block">{{ $label }}</div>
-                                            </label>
-                                        @endforeach
-                                    </div>
-                                    @error("ftsa.{$qNum}")
-                                        <p class="text-rose-600 text-xs mt-1">{{ $message }}</p>
-                                    @enderror
-                                </fieldset>
+            @if(!$ftsaUnlocked)
+                <div class="p-5 sm:p-6">
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 text-amber-900 px-4 py-3 text-sm">
+                        FTSA 1–32 saat ini terkunci dan akan aktif setelah upgrade paket premium.
+                        Anda tetap bisa simpan baseline data dulu, lalu isi FTSA setelah unlock.
+                    </div>
+                    <div class="mt-4">
+                        <a href="{{ route('checkout.show', ['code' => 'yfd-ftsa-premium']) }}"
+                           class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm">
+                            <span class="material-symbols-outlined text-lg">lock_open</span>
+                            Unlock FTSA Sekarang
+                        </a>
+                    </div>
+                </div>
+            @else
+            <div class="p-5 sm:p-6 space-y-6">
+                @foreach(range(1, 32) as $qNum)
+                    <fieldset>
+                        <legend class="text-sm text-slate-800 mb-2">
+                            <span class="font-semibold text-navy-600">{{ $qNum }}.</span>
+                            {{ $ftsaQuestions[$qNum] ?? '' }}
+                        </legend>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach($likert as $score => $label)
+                                <label class="flex-1 min-w-[4.5rem] text-center rounded-lg border border-slate-200 px-2 py-2 cursor-pointer hover:border-navy-500 has-[:checked]:border-gold-500 has-[:checked]:bg-gold-50 has-[:checked]:ring-2 has-[:checked]:ring-gold-300">
+                                    <input type="radio" name="ftsa[{{ $qNum }}]" value="{{ $score }}"
+                                           class="sr-only" @checked((int) old("ftsa.{$qNum}") === $score) required>
+                                    <div class="text-lg font-bold text-navy-800">{{ $score }}</div>
+                                    <div class="text-[10px] text-slate-500 leading-tight hidden sm:block">{{ $label }}</div>
+                                </label>
                             @endforeach
                         </div>
-                    </div>
+                        @error("ftsa.{$qNum}")
+                            <p class="text-rose-600 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </fieldset>
                 @endforeach
             </div>
+            @endif
         </div>
 
         {{-- Snapshot keuangan (Sheet 1A) --}}

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FinancialBaseline;
 use App\Services\BaselineAssessmentService;
 use App\Services\BucketPrescriptionService;
+use App\Services\PortalFeatureService;
 use App\Support\PortalSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,11 +41,13 @@ class BaselineController extends Controller
     public function create(Request $request): View
     {
         $telegramUserId = (int) PortalSession::telegramUserId($request);
+        $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
 
         return view('portal.baseline.form', [
             'active' => 'baseline',
             'config' => config('baseline_assessment'),
             'hasBaseline' => ! FinancialBaseline::userNeedsBaseline($telegramUserId),
+            'ftsaUnlocked' => $ftsaUnlocked,
             'months' => $this->monthOptions(),
         ]);
     }
@@ -52,11 +55,30 @@ class BaselineController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $service = app(BaselineAssessmentService::class);
-        $validated = $request->validate($service->validationRules());
-
         $telegramUserId = (int) PortalSession::telegramUserId($request);
+        $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
+        $rules = $service->validationRules();
+        if (! $ftsaUnlocked) {
+            foreach (range(1, 32) as $i) {
+                unset($rules["ftsa.{$i}"]);
+            }
+        }
+        $validated = $request->validate($rules);
         $result = $service->assess($validated);
         $snapshot = $validated['snapshot'] ?? [];
+
+        if (! $ftsaUnlocked) {
+            $result['ftsa_chd'] = 0;
+            $result['ftsa_rvd'] = 0;
+            $result['ftsa_ssd'] = 0;
+            $result['ftsa_esd'] = 0;
+            $result['dominant_archetype'] = 'locked';
+            $result['dominant_archetype_label'] = 'FTSA Premium Locked';
+            $result['chd_level'] = null;
+            $result['rvd_level'] = null;
+            $result['ssd_level'] = null;
+            $result['esd_level'] = null;
+        }
 
         FinancialBaseline::query()->create([
             'telegram_user_id' => $telegramUserId,

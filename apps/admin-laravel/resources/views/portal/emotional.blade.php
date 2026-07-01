@@ -1,7 +1,7 @@
 @extends('portal.layouts.app')
 
 @section('title', 'Emotional Scan — YFD')
-@section('heading', 'Emotional Spending Dashboard')
+@section('heading', 'Behavioral Financial Dashboard')
 
 @section('content')
 @php
