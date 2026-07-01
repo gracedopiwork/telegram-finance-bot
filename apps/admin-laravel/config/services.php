@@ -55,7 +55,7 @@ return [
 
     'order_delivery' => [
         /** wa | email | both */
-        'channel' => env('ORDER_DELIVERY_CHANNEL', 'wa'),
+        'channel' => env('ORDER_DELIVERY_CHANNEL', 'email'),
     ],
 
     'fonnte' => [

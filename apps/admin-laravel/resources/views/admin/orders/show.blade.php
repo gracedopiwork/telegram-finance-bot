@@ -249,12 +249,20 @@
                     @if($deliveryUsesEmail)
                         <p class="small text-muted mb-2">MAIL: <code>{{ config('mail.default') }}</code> dari <code>{{ config('mail.from.address') }}</code></p>
                     @endif
-                    <form method="post" action="{{ route('admin.orders.resendDelivery', $order) }}" class="js-confirm-form" data-msg="Kirim ringkasan ke {{ $deliveryTarget }}?">
+                    <form method="post" action="{{ route('admin.orders.resendDelivery', $order) }}" class="js-confirm-form mb-2" data-msg="Kirim ringkasan ke {{ $deliveryTarget }}?">
                         @csrf
-                        <button type="submit" class="btn btn-sm btn-info btn-block" @if(empty($telegramBotUrl)) disabled @endif>
+                        <button type="submit" class="btn btn-sm btn-info btn-block" @if($deliveryUsesWa && empty($telegramBotUrl)) disabled @endif>
                             <i class="fas fa-paper-plane mr-1"></i>Kirim / kirim ulang
                         </button>
                     </form>
+                    @if($deliveryUsesEmail)
+                        <form method="post" action="{{ route('admin.orders.resendDeliveryEmail', $order) }}" class="js-confirm-form" data-msg="Kirim email saja ke {{ $order->email }}?">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-info btn-block">
+                                <i class="fas fa-envelope mr-1"></i>Kirim ulang email saja
+                            </button>
+                        </form>
+                    @endif
                     <p class="small text-muted mb-0 mt-2">
                         CLI: <code>php artisan order:send-delivery {{ $order->order_code }} --force</code>
                     </p>

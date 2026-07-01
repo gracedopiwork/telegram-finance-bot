@@ -55,12 +55,29 @@ class OrderDeliveryNotifier
             }
         }
 
-        $allRequired = count($succeeded) === count($channels);
-        if (! $allRequired) {
+        if ($succeeded === []) {
             throw new \RuntimeException(implode('; ', $errors) ?: 'Pengiriman gagal.');
         }
 
+        if ($errors !== []) {
+            Log::warning('Pengiriman order sebagian gagal', [
+                'order_code' => $order->order_code,
+                'succeeded' => $succeeded,
+                'errors' => $errors,
+            ]);
+        }
+
         return $succeeded;
+    }
+
+    /**
+     * Kirim hanya email (untuk resend manual dari admin).
+     *
+     * @throws \RuntimeException
+     */
+    public function sendEmailOnly(Order $order): void
+    {
+        $this->mailer->send($order);
     }
 
     /**

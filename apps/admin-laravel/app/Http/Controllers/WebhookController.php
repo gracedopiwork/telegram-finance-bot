@@ -25,8 +25,8 @@ class WebhookController extends Controller
             return response()->json(['message' => 'Invalid signature'], 401);
         }
 
-        $order = Order::where('order_code', $payload['order_id'] ?? '')->first();
-        if (!$order) {
+        $order = Order::with('digitalProduct')->where('order_code', $payload['order_id'] ?? '')->first();
+        if (! $order) {
             return response()->json(['message' => 'Order not found'], 404);
         }
 
@@ -49,14 +49,8 @@ class WebhookController extends Controller
 
             if ($isPaid) {
                 $license = $order->license_id ? License::find($order->license_id) : null;
-                if (!$license) {
-                    $license = License::create([
-                        'license_key' => $this->generateLicenseKey(),
-                        'plan' => $order->plan,
-                        'status' => 'active',
-                        'expires_at' => now()->addDays(30),
-                        'max_accounts' => 1,
-                    ]);
+                if (! $license) {
+                    $license = $this->resolveLicenseForPaidOrder($order);
                 }
 
                 $order->license_id = $license->id;
@@ -72,12 +66,54 @@ class WebhookController extends Controller
         });
 
         if ($isPaid && ! $alreadyPaid) {
-            DB::afterCommit(function () use ($order): void {
-                DeliverPaidOrderJob::dispatch($order->id);
-            });
+            DeliverPaidOrderJob::dispatchSync($order->id);
         }
 
         return response()->json(['ok' => true]);
+    }
+
+    private function resolveLicenseForPaidOrder(Order $order): License
+    {
+        if ($this->isFtsaUnlockOrder($order)) {
+            $existing = $this->findExistingLicenseForEmail($order->email);
+            if ($existing !== null) {
+                return $existing;
+            }
+        }
+
+        return License::create([
+            'license_key' => $this->generateLicenseKey(),
+            'plan' => $order->plan,
+            'status' => 'active',
+            'expires_at' => now()->addYear(),
+            'max_accounts' => 1,
+        ]);
+    }
+
+    private function isFtsaUnlockOrder(Order $order): bool
+    {
+        $code = $order->digitalProduct?->code ?? $order->plan;
+
+        return in_array($code, (array) config('portal.ftsa.unlock_product_codes', []), true);
+    }
+
+    private function findExistingLicenseForEmail(string $email): ?License
+    {
+        $priorOrder = Order::query()
+            ->where('status', 'paid')
+            ->whereRaw('LOWER(email) = ?', [strtolower(trim($email))])
+            ->whereNotNull('license_id')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($priorOrder === null) {
+            return null;
+        }
+
+        return License::query()
+            ->whereKey($priorOrder->license_id)
+            ->where('status', 'active')
+            ->first();
     }
 
     private function generateLicenseKey(): string

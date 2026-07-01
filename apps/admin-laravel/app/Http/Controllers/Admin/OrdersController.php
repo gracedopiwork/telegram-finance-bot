@@ -107,9 +107,7 @@ class OrdersController extends Controller
         $order->save();
 
         if ($data['status'] === 'paid' && ! $wasPaid) {
-            DB::afterCommit(function () use ($order): void {
-                DeliverPaidOrderJob::dispatch($order->id);
-            });
+            DeliverPaidOrderJob::dispatchSync($order->id);
         }
 
         return redirect()->route('admin.orders.show', $order)
@@ -123,7 +121,8 @@ class OrdersController extends Controller
                 ->with('error', 'Hanya order lunas dengan lisensi yang bisa dikirim ringkasan.');
         }
 
-        if (! TelegramBotUrl::resolve()) {
+        $channels = $notifier->enabledChannels();
+        if (in_array('wa', $channels, true) && ! TelegramBotUrl::resolve()) {
             return redirect()->route('admin.orders.show', $order)
                 ->with('error', 'Tautan bot belum di-set. Isi TELEGRAM_BOT_USERNAME di .env atau Site Settings → Integrasi Bot.');
         }
@@ -135,16 +134,32 @@ class OrdersController extends Controller
                 ->with('error', 'Gagal kirim: '.$e->getMessage());
         }
 
-        if (! $order->purchase_delivery_sent_at) {
-            $order->update(['purchase_delivery_sent_at' => now()]);
-        }
+        $order->update(['purchase_delivery_sent_at' => now()]);
 
-        $destination = in_array('wa', $notifier->enabledChannels(), true)
-            ? 'WhatsApp '.$order->phone
-            : $order->email;
+        $destination = in_array('email', $channels, true) && in_array('wa', $channels, true)
+            ? 'WhatsApp & Email'
+            : (in_array('wa', $channels, true) ? 'WhatsApp '.$order->phone : $order->email);
 
         return redirect()->route('admin.orders.show', $order)
-            ->with('success', 'Ringkasan terkirim ke '.$destination.' (bot, lisensi, dashboard web).');
+            ->with('success', 'Ringkasan terkirim ke '.$destination.'.');
+    }
+
+    public function resendDeliveryEmail(Order $order, OrderDeliveryNotifier $notifier)
+    {
+        if ($order->status !== 'paid' || ! $order->license) {
+            return redirect()->route('admin.orders.show', $order)
+                ->with('error', 'Hanya order lunas dengan lisensi yang bisa dikirim email.');
+        }
+
+        try {
+            $notifier->sendEmailOnly($order);
+        } catch (\Throwable $e) {
+            return redirect()->route('admin.orders.show', $order)
+                ->with('error', 'Gagal kirim email: '.$e->getMessage());
+        }
+
+        return redirect()->route('admin.orders.show', $order)
+            ->with('success', 'Email terkirim ke '.$order->email.'.');
     }
 
     public function destroy(Order $order)

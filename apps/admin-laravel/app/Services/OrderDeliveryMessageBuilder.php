@@ -9,7 +9,11 @@ class OrderDeliveryMessageBuilder
 {
     public function whatsAppText(Order $order): string
     {
-        $order->loadMissing('license');
+        $order->loadMissing(['license', 'digitalProduct']);
+        $code = $order->digitalProduct?->code ?? $order->plan;
+        if (in_array($code, (array) config('portal.ftsa.unlock_product_codes', []), true)) {
+            return $this->whatsAppFtsaUnlockText($order);
+        }
 
         $licenseKey = trim((string) ($order->license?->license_key ?? ''));
         $botUrl = TelegramBotUrl::resolve() ?? '';
@@ -49,6 +53,24 @@ class OrderDeliveryMessageBuilder
         $lines[] = '— YFD (Your Financial Doctor)';
 
         return implode("\n", $lines);
+    }
+
+    public function whatsAppFtsaUnlockText(Order $order): string
+    {
+        $portalUrl = rtrim((string) config('app.url'), '/').'/portal/baseline/baru';
+
+        return implode("\n", [
+            'Hai '.$order->full_name.',',
+            '',
+            'Pembayaran *'.$order->order_code.'* (FTSA Premium) sudah kami terima.',
+            '',
+            'FTSA 1–32 di portal YFD sudah aktif untuk akun Anda.',
+            '',
+            '📊 Buka: '.$portalUrl,
+            'Login dengan email checkout: *'.$order->email.'*',
+            '',
+            '— YFD (Your Financial Doctor)',
+        ]);
     }
 
     public function whatsAppSheetReadyText(Order $order): string
