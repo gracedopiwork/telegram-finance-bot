@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\FinancialBaseline;
+use App\Services\BaselineClaimService;
 use App\Services\PortalAccessService;
 use App\Services\PortalOnboardingService;
 use App\Support\PortalSession;
@@ -19,11 +19,13 @@ class EnsureBaselineExists
         $access = app(PortalAccessService::class);
         $onboarding = app(PortalOnboardingService::class);
 
+        app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+
         if ($access->isFtsaOnlyPortalUser($email)) {
             return $next($request);
         }
 
-        if (! FinancialBaseline::userNeedsBaseline($telegramUserId)) {
+        if (! $onboarding->userNeedsBotOnboardingBaseline($email, $telegramUserId)) {
             return $next($request);
         }
 

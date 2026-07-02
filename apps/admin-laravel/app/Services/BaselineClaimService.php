@@ -3,12 +3,18 @@
 namespace App\Services;
 
 use App\Models\FinancialBaseline;
+use App\Models\Order;
 use App\Support\FinancialBaselineSchema;
 
 class BaselineClaimService
 {
+    public function __construct(
+        private readonly PortalAccessService $portalAccess,
+        private readonly FtsaAnswerSummaryService $ftsaSummary,
+    ) {}
+
     /**
-     * Hubungkan baseline guest (dari landing check-up) ke akun Telegram portal.
+     * Hubungkan baseline guest / FTSA sintetis ke akun Telegram portal saat ini.
      */
     public function claimForUser(string $email, int $telegramUserId): ?FinancialBaseline
     {
@@ -22,22 +28,132 @@ class BaselineClaimService
         }
 
         $existing = FinancialBaseline::latestForUser($telegramUserId);
-        if ($existing !== null) {
+        if ($existing !== null && $this->baselineIsCompleteForBot($existing)) {
             return $existing;
         }
 
-        $guest = FinancialBaseline::query()
-            ->whereRaw('LOWER(email) = ?', [$email])
-            ->whereNull('telegram_user_id')
-            ->orderByDesc('assessed_at')
-            ->first();
+        $this->reassignClaimableBaselines($email, $telegramUserId);
 
-        if ($guest === null) {
+        return $this->mergeSiblingBaselines($email, $telegramUserId);
+    }
+
+    private function reassignClaimableBaselines(string $email, int $telegramUserId): void
+    {
+        $candidates = FinancialBaseline::query()
+            ->where(function ($query) use ($email, $telegramUserId): void {
+                $query->whereRaw('LOWER(email) = ?', [$email])
+                    ->orWhere('telegram_user_id', $telegramUserId);
+            })
+            ->get();
+
+        foreach ($candidates as $baseline) {
+            $oldUserId = (int) ($baseline->telegram_user_id ?? 0);
+            if ($oldUserId === $telegramUserId) {
+                continue;
+            }
+            if ($oldUserId > 0 && ! $this->portalAccess->isSyntheticPortalUserId($oldUserId)) {
+                continue;
+            }
+
+            $baseline->update([
+                'telegram_user_id' => $telegramUserId,
+                'email' => $email,
+            ]);
+        }
+
+        $licenseIds = Order::query()
+            ->where('status', 'paid')
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->whereNotNull('license_id')
+            ->pluck('license_id');
+
+        foreach ($licenseIds as $licenseId) {
+            $syntheticId = $this->portalAccess->syntheticPortalUserId((int) $licenseId);
+            FinancialBaseline::query()
+                ->where('telegram_user_id', $syntheticId)
+                ->update([
+                    'telegram_user_id' => $telegramUserId,
+                    'email' => $email,
+                ]);
+        }
+    }
+
+    private function mergeSiblingBaselines(string $email, int $telegramUserId): ?FinancialBaseline
+    {
+        $rows = FinancialBaseline::query()
+            ->where('telegram_user_id', $telegramUserId)
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->orderByDesc('assessed_at')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            $rows = FinancialBaseline::query()
+                ->where('telegram_user_id', $telegramUserId)
+                ->orderByDesc('assessed_at')
+                ->get();
+        }
+
+        if ($rows->isEmpty()) {
             return null;
         }
 
-        $guest->update(['telegram_user_id' => $telegramUserId]);
+        /** @var FinancialBaseline $primary */
+        $primary = $rows->first();
+        $mergedAnswers = is_array($primary->answers_json) ? $primary->answers_json : [];
 
-        return $guest->fresh();
+        foreach ($rows->skip(1) as $other) {
+            $otherAnswers = is_array($other->answers_json) ? $other->answers_json : [];
+            if (empty($mergedAnswers['fs']) && ! empty($otherAnswers['fs'])) {
+                $mergedAnswers['fs'] = $otherAnswers['fs'];
+            }
+            if (empty($mergedAnswers['ftsa']) && ! empty($otherAnswers['ftsa'])) {
+                $mergedAnswers['ftsa'] = $otherAnswers['ftsa'];
+            }
+            $this->copyMissingScores($primary, $other);
+        }
+
+        $primary->update([
+            'telegram_user_id' => $telegramUserId,
+            'email' => $email,
+            'answers_json' => $mergedAnswers,
+        ]);
+
+        $duplicateIds = $rows->skip(1)->pluck('id')->all();
+        if ($duplicateIds !== []) {
+            FinancialBaseline::query()->whereIn('id', $duplicateIds)->delete();
+        }
+
+        return $primary->fresh();
+    }
+
+    private function copyMissingScores(FinancialBaseline $primary, FinancialBaseline $other): void
+    {
+        $fields = [
+            'financial_stage_score', 'financial_stage', 'stage_label',
+            'ftsa_chd', 'ftsa_rvd', 'ftsa_ssd', 'ftsa_esd',
+            'dominant_archetype', 'dominant_archetype_label',
+            'chd_level', 'rvd_level', 'ssd_level', 'esd_level',
+        ];
+
+        $updates = [];
+        foreach ($fields as $field) {
+            $current = $primary->{$field};
+            $incoming = $other->{$field};
+            if (($current === null || $current === '' || $current === 0) && $incoming !== null && $incoming !== '' && $incoming !== 0) {
+                $updates[$field] = $incoming;
+            }
+        }
+
+        if ($updates !== []) {
+            $primary->fill($updates)->save();
+        }
+    }
+
+    private function baselineIsCompleteForBot(FinancialBaseline $baseline): bool
+    {
+        $hasFs = is_array($baseline->answers_json['fs'] ?? null)
+            && $baseline->answers_json['fs'] !== [];
+
+        return $hasFs || $this->ftsaSummary->hasFtsaAnswers($baseline);
     }
 }

@@ -111,7 +111,7 @@ class AppServiceProvider extends ServiceProvider
                 $email = (string) (PortalSession::email($request) ?? '');
                 $onboarding = app(PortalOnboardingService::class);
                 $access = app(PortalAccessService::class);
-                $needsBaseline = FinancialBaseline::userNeedsBaseline($telegramUserId);
+                $needsBaseline = $onboarding->userNeedsBotOnboardingBaseline($email, $telegramUserId);
                 $needsFtsa = $onboarding->userNeedsFtsa($email, $telegramUserId);
                 $needsFinancialDiagnostic = $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId);
 

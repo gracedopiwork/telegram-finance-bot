@@ -98,6 +98,20 @@ class PortalOnboardingService
         return $this->hasPaidBotOrder($email);
     }
 
+    public function isBotAfterFtsaBuyer(string $email): bool
+    {
+        $email = strtolower(trim($email));
+        if ($email === '' || ! $this->hasPaidBotOrder($email)) {
+            return false;
+        }
+
+        return Order::query()
+            ->where('status', 'paid')
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->whereHas('digitalProduct', fn ($q) => $q->whereIn('code', $this->ftsaUnlockProductCodes()))
+            ->exists();
+    }
+
     /**
      * Upgrade bot setelah pembeli FTSA-only pada lisensi yang sama.
      */
@@ -133,13 +147,36 @@ class PortalOnboardingService
         ];
     }
 
-    public function userNeedsBaseline(int $telegramUserId): bool
+    public function userNeedsBaseline(string $email, int $telegramUserId): bool
     {
         if (! \App\Support\FinancialBaselineSchema::isReady()) {
             return false;
         }
 
+        app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+
         return FinancialBaseline::userNeedsBaseline($telegramUserId);
+    }
+
+    public function userNeedsBotOnboardingBaseline(string $email, int $telegramUserId): bool
+    {
+        if (! \App\Support\FinancialBaselineSchema::isReady()) {
+            return false;
+        }
+
+        app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+
+        $baseline = FinancialBaseline::latestForUser($telegramUserId);
+        if ($baseline === null) {
+            return true;
+        }
+
+        if ($this->isBotAfterFtsaBuyer($email)) {
+            return ! $this->hasFinancialDiagnostic($baseline)
+                && ! app(FtsaAnswerSummaryService::class)->hasFtsaAnswers($baseline);
+        }
+
+        return false;
     }
 
     public function hasFinancialDiagnostic(?FinancialBaseline $baseline): bool
@@ -185,6 +222,17 @@ class PortalOnboardingService
      */
     public function firstBaselineUrl(string $email, int $telegramUserId): string
     {
+        if ($this->isBotAfterFtsaBuyer($email)) {
+            if ($this->userNeedsFtsa($email, $telegramUserId)) {
+                return route('portal.baseline.create');
+            }
+            if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
+                return route('checkup.show');
+            }
+
+            return route('portal.dashboard');
+        }
+
         if ($this->isBotOnlyBuyer($email, $telegramUserId)) {
             return route('portal.baseline.create');
         }

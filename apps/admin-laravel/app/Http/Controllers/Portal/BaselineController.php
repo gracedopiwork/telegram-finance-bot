@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Portal;
 use App\Http\Controllers\Controller;
 use App\Models\FinancialBaseline;
 use App\Services\BaselineAssessmentService;
+use App\Services\BaselineClaimService;
 use App\Services\BucketPrescriptionService;
 use App\Services\FtsaEvaluationService;
 use App\Services\PortalAccessService;
@@ -82,12 +83,22 @@ class BaselineController extends Controller
         $access = app(PortalAccessService::class);
         $isFtsaOnly = $access->isFtsaOnlyPortalUser($email);
 
-        if (FinancialBaseline::userNeedsBaseline($telegramUserId)
+        app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+
+        if (! $isFtsaOnly
+            && ! $onboarding->isBotAfterFtsaBuyer($email)
             && ! $onboarding->isBotOnlyBuyer($email, $telegramUserId)
-            && ! $isFtsaOnly) {
+            && $onboarding->userNeedsBaseline($email, $telegramUserId)) {
             return redirect()->route('checkup.show')
                 ->with('warning', 'Silakan lengkapi Financial Health Check-Up di halaman landing terlebih dahulu.')
                 ->withInput(['email' => $email]);
+        }
+
+        if (! $isFtsaOnly
+            && ! $onboarding->userNeedsBotOnboardingBaseline($email, $telegramUserId)
+            && ! $onboarding->userNeedsBaseline($email, $telegramUserId)) {
+            return redirect()->route('portal.dashboard')
+                ->with('info', 'Baseline Anda sudah terhubung ke akun bot.');
         }
 
         $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
@@ -113,7 +124,7 @@ class BaselineController extends Controller
         return view('portal.baseline.form', [
             'active' => 'baseline',
             'config' => $baselineConfig,
-            'hasBaseline' => ! FinancialBaseline::userNeedsBaseline($telegramUserId),
+            'hasBaseline' => ! $onboarding->userNeedsBaseline($email, $telegramUserId),
             'ftsaUnlocked' => $ftsaUnlocked,
             'ftsaEndsAt' => $ftsaStatus['ends_at'],
             'ftsaRetakeLocked' => $ftsaRetakeLocked,
