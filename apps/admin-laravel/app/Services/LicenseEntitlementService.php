@@ -119,6 +119,82 @@ class LicenseEntitlementService
         )));
     }
 
+    public function hasPaidBotOrderOnLicense(License $license): bool
+    {
+        $codes = $this->botProductCodes();
+        if ($codes === []) {
+            return false;
+        }
+
+        return Order::query()
+            ->where('status', 'paid')
+            ->where('license_id', $license->id)
+            ->whereHas('digitalProduct', fn ($q) => $q->whereIn('code', $codes))
+            ->exists();
+    }
+
+    public function hasPaidFtsaOrderOnLicense(License $license): bool
+    {
+        $codes = $this->ftsaProductCodes();
+        if ($codes === []) {
+            return false;
+        }
+
+        return Order::query()
+            ->where('status', 'paid')
+            ->where('license_id', $license->id)
+            ->whereHas('digitalProduct', fn ($q) => $q->whereIn('code', $codes))
+            ->exists();
+    }
+
+    /**
+     * Label hak akses dari order lunas (bukan kolom plan yang bisa tertinggal dari order pertama).
+     */
+    public function licenseEntitlementLabel(License $license): string
+    {
+        $hasBot = $this->hasPaidBotOrderOnLicense($license);
+        $hasFtsa = $this->hasPaidFtsaOrderOnLicense($license);
+
+        if ($hasBot && $hasFtsa) {
+            return 'FTSA Premium + Bot Telegram';
+        }
+
+        if ($hasBot) {
+            return 'Bot Telegram (selamanya)';
+        }
+
+        if ($hasFtsa) {
+            return 'FTSA Premium';
+        }
+
+        return (string) ($license->plan ?: '—');
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function licenseEntitlementCodes(License $license): array
+    {
+        $codes = [];
+
+        if ($this->hasPaidBotOrderOnLicense($license)) {
+            $codes = array_merge($codes, $this->botProductCodes());
+        }
+
+        if ($this->hasPaidFtsaOrderOnLicense($license)) {
+            $codes = array_merge($codes, $this->ftsaProductCodes());
+        }
+
+        return array_values(array_unique($codes));
+    }
+
+    public function resolvePlanSlugForLicense(License $license): string
+    {
+        $codes = $this->licenseEntitlementCodes($license);
+
+        return $codes !== [] ? implode('+', $codes) : (string) ($license->plan ?: 'manual');
+    }
+
     private function productCode(Order $order): string
     {
         return (string) ($order->digitalProduct?->code ?? $order->plan ?? '');

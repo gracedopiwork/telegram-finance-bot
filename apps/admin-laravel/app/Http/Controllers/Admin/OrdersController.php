@@ -69,8 +69,19 @@ class OrdersController extends Controller
     {
         $order->load(['digitalProduct', 'license', 'paymentEvents']);
 
+        $entitlements = app(LicenseEntitlementService::class);
+        if ($order->license && $order->status === 'paid') {
+            app(LicenseProvisioningService::class)->refreshLicensePlanFromOrders($order->license);
+            $order->license->refresh();
+        }
+
+        $licenseEntitlementLabel = $order->license
+            ? $entitlements->licenseEntitlementLabel($order->license)
+            : null;
+
         return view('admin.orders.show', [
             'order' => $order,
+            'licenseEntitlementLabel' => $licenseEntitlementLabel,
             'telegramBotUrl' => TelegramBotUrl::resolve(),
             'deliveryChannelLabel' => app(OrderDeliveryNotifier::class)->primaryChannelLabel(),
             'midtransNotificationUrl' => app(MidtransService::class)->notificationUrl(),

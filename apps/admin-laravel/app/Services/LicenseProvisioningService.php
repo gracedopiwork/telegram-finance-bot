@@ -61,32 +61,32 @@ class LicenseProvisioningService
 
     public function hasPaidBotOrderOnLicense(License $license): bool
     {
-        $codes = $this->entitlements->botProductCodes();
-        if ($codes === []) {
-            return false;
-        }
-
-        return Order::query()
-            ->where('status', 'paid')
-            ->where('license_id', $license->id)
-            ->whereHas('digitalProduct', fn ($q) => $q->whereIn('code', $codes))
-            ->exists();
+        return $this->entitlements->hasPaidBotOrderOnLicense($license);
     }
 
     public function syncEntitlementsOntoLicense(Order $order, License $license): void
     {
         $code = (string) ($order->digitalProduct?->code ?? $order->plan ?? '');
 
-        if ($this->entitlements->isBotProductCode($code)) {
-            $license->forceFill(['expires_at' => null])->save();
+        $updates = [];
 
-            return;
+        if ($this->entitlements->isBotProductCode($code)) {
+            $updates['expires_at'] = null;
+        } elseif ($this->entitlements->isFtsaProductCode($code) && ! $this->hasPaidBotOrderOnLicense($license)) {
+            $updates['expires_at'] = $this->entitlements->expiresAtForNewLicense($order);
         }
 
-        if ($this->entitlements->isFtsaProductCode($code) && ! $this->hasPaidBotOrderOnLicense($license)) {
-            $license->forceFill([
-                'expires_at' => $this->entitlements->expiresAtForNewLicense($order),
-            ])->save();
+        $license->forceFill($updates)->save();
+
+        $this->refreshLicensePlanFromOrders($license);
+    }
+
+    public function refreshLicensePlanFromOrders(License $license): void
+    {
+        $slug = $this->entitlements->resolvePlanSlugForLicense($license);
+
+        if ($slug !== '' && $slug !== (string) $license->plan) {
+            $license->forceFill(['plan' => $slug])->save();
         }
     }
 

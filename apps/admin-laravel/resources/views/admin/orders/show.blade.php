@@ -191,7 +191,18 @@
                         </button>
                     </div>
                     <table class="table table-sm mb-0">
-                        <tr><th>Plan</th><td>{{ $order->license->plan }}</td></tr>
+                        <tr>
+                            <th>Hak akses</th>
+                            <td>
+                                <strong>{{ $licenseEntitlementLabel ?? $order->license->plan }}</strong>
+                                @if($order->digitalProduct)
+                                    <br><span class="text-muted small">Produk order ini: {{ $order->digitalProduct->name }}</span>
+                                @endif
+                                @if($licenseEntitlementLabel && $order->license->plan && $licenseEntitlementLabel !== $order->license->plan && ! str_contains((string) $order->license->plan, '+'))
+                                    <br><span class="text-muted small">Kode plan DB: {{ $order->license->plan }} (upgrade pakai lisensi yang sama)</span>
+                                @endif
+                            </td>
+                        </tr>
                         <tr><th>Status</th><td><span class="badge badge-{{ $order->license->status === 'active' ? 'success' : 'secondary' }}">{{ $order->license->status }}</span></td></tr>
                         <tr><th>Expires</th><td>
                             @if($order->license->expires_at)
