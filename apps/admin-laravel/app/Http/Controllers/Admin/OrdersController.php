@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Services\CustomerDataPurgeService;
 use App\Services\MidtransPaymentSyncService;
 use App\Services\MidtransService;
+use App\Services\LicenseEntitlementService;
 use App\Services\OrderDeliveryNotifier;
 use App\Support\TelegramBotUrl;
 use Illuminate\Http\Request;
@@ -115,7 +116,7 @@ class OrdersController extends Controller
                     'license_key'  => $this->generateLicenseKey(),
                     'plan'         => $order->plan ?? ($order->digitalProduct?->code ?? 'manual'),
                     'status'       => 'active',
-                    'expires_at'   => now()->addYear(),
+                    'expires_at'   => app(LicenseEntitlementService::class)->expiresAtForNewLicense($order),
                     'max_accounts' => 1,
                 ]);
                 $order->license_id = $license->id;

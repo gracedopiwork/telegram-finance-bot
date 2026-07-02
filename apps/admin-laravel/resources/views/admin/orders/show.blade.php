@@ -193,9 +193,13 @@
                     <table class="table table-sm mb-0">
                         <tr><th>Plan</th><td>{{ $order->license->plan }}</td></tr>
                         <tr><th>Status</th><td><span class="badge badge-{{ $order->license->status === 'active' ? 'success' : 'secondary' }}">{{ $order->license->status }}</span></td></tr>
-                        @if($order->license->expires_at)
-                            <tr><th>Expires</th><td>{{ $order->license->expires_at->format('d M Y') }}</td></tr>
-                        @endif
+                        <tr><th>Expires</th><td>
+                            @if($order->license->expires_at)
+                                {{ $order->license->expires_at->format('d M Y') }}
+                            @else
+                                <span class="text-muted">Selamanya</span>
+                            @endif
+                        </td></tr>
                         @if($order->license->assigned_username)
                             <tr><th>Aktivasi oleh</th><td><i class="fab fa-telegram text-info"></i> {{ $order->license->assigned_username }}</td></tr>
                         @endif

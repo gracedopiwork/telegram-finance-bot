@@ -117,7 +117,8 @@
             @if(!$ftsaUnlocked)
                 <div class="p-5 sm:p-6">
                     <div class="rounded-xl border border-amber-200 bg-amber-50 text-amber-900 px-4 py-3 text-sm">
-                        FTSA 1–32 saat ini terkunci dan akan aktif setelah upgrade paket premium.
+                        FTSA 1–32 saat ini terkunci dan akan aktif setelah upgrade paket premium
+                        (<strong>12 bulan evaluasi</strong>).
                         Anda tetap bisa simpan baseline data dulu, lalu isi FTSA setelah unlock.
                     </div>
                     <div class="mt-4">
@@ -130,6 +131,11 @@
                 </div>
             @else
             <div class="p-5 sm:p-6 space-y-6">
+                @if(!empty($ftsaEndsAt))
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 px-4 py-3 text-sm">
+                        Masa evaluasi FTSA berlaku hingga <strong>{{ $ftsaEndsAt->format('d M Y') }}</strong>.
+                    </div>
+                @endif
                 @foreach(range(1, 32) as $qNum)
                     <fieldset>
                         <legend class="text-sm text-slate-800 mb-2">

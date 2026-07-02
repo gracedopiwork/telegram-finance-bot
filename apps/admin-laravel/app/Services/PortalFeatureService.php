@@ -7,31 +7,42 @@ use App\Models\Order;
 
 class PortalFeatureService
 {
+    public function __construct(
+        private readonly LicenseEntitlementService $entitlements,
+    ) {}
+
     public function canAccessFtsa(int $telegramUserId): bool
     {
-        $requiresUpgrade = (bool) config('portal.ftsa.requires_upgrade', true);
-        if (! $requiresUpgrade) {
-            return true;
-        }
+        return $this->entitlements->hasActiveFtsaEntitlement($telegramUserId);
+    }
 
-        $codes = (array) config('portal.ftsa.unlock_product_codes', []);
-        if (empty($codes)) {
-            return false;
-        }
-
+    /**
+     * @return array{active: bool, ends_at: ?\Carbon\Carbon, order: ?Order}
+     */
+    public function ftsaEntitlementStatus(int $telegramUserId): array
+    {
         $licenseIds = License::query()
             ->where('assigned_user_id', $telegramUserId)
             ->where('status', 'active')
             ->pluck('id');
 
-        if ($licenseIds->isEmpty()) {
-            return false;
+        $order = null;
+        if ($licenseIds->isNotEmpty()) {
+            $order = Order::query()
+                ->whereIn('license_id', $licenseIds->all())
+                ->where('status', 'paid')
+                ->whereHas('digitalProduct', fn ($q) => $q->whereIn('code', $this->entitlements->ftsaProductCodes()))
+                ->orderByDesc('paid_at')
+                ->orderByDesc('id')
+                ->first();
         }
 
-        return Order::query()
-            ->whereIn('license_id', $licenseIds->all())
-            ->where('status', 'paid')
-            ->whereHas('digitalProduct', fn ($q) => $q->whereIn('code', $codes))
-            ->exists();
+        $endsAt = $order ? $this->entitlements->ftsaEntitlementEndsAt($order) : null;
+
+        return [
+            'active' => $this->canAccessFtsa($telegramUserId),
+            'ends_at' => $endsAt,
+            'order' => $order,
+        ];
     }
 }

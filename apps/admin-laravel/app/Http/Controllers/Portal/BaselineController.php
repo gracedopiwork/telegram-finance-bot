@@ -84,6 +84,7 @@ class BaselineController extends Controller
         }
 
         $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
+        $ftsaStatus = app(PortalFeatureService::class)->ftsaEntitlementStatus($telegramUserId);
 
         $baselineConfig = app(\App\Services\DiagnosticConfigService::class)->fullBaselineConfig();
         if (! isset($baselineConfig['financial_stage'])) {
@@ -96,6 +97,7 @@ class BaselineController extends Controller
             'config' => $baselineConfig,
             'hasBaseline' => ! FinancialBaseline::userNeedsBaseline($telegramUserId),
             'ftsaUnlocked' => $ftsaUnlocked,
+            'ftsaEndsAt' => $ftsaStatus['ends_at'],
             'months' => $this->monthOptions(),
         ]);
     }

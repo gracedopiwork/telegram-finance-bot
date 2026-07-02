@@ -10,6 +10,7 @@ return [
     */
     'ftsa' => [
         'requires_upgrade' => (bool) env('PORTAL_FTSA_REQUIRES_UPGRADE', true),
+        'evaluation_months' => (int) env('PORTAL_FTSA_EVALUATION_MONTHS', 12),
         'unlock_product_codes' => array_values(array_filter(array_map(
             fn (string $v) => trim($v),
             explode(',', (string) env('PORTAL_FTSA_UNLOCK_PRODUCT_CODES', 'yfd-ftsa-premium'))

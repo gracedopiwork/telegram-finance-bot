@@ -133,7 +133,7 @@ class MidtransPaymentSyncService
             'license_key' => $this->generateLicenseKey(),
             'plan' => $order->plan,
             'status' => 'active',
-            'expires_at' => now()->addYear(),
+            'expires_at' => app(LicenseEntitlementService::class)->expiresAtForNewLicense($order),
             'max_accounts' => 1,
         ]);
     }

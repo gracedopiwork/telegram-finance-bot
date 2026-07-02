@@ -70,10 +70,12 @@ class DashboardController extends Controller
   {
     $telegramUserId = (int) PortalSession::telegramUserId(request());
     $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
+    $ftsaStatus = app(PortalFeatureService::class)->ftsaEntitlementStatus($telegramUserId);
 
     return view('portal.premium', [
       'active' => 'premium',
       'ftsaUnlocked' => $ftsaUnlocked,
+      'ftsaEndsAt' => $ftsaStatus['ends_at'],
       'months' => $this->monthOptions(),
       'periods' => $this->periodOptions(),
       'currentPeriod' => 1,

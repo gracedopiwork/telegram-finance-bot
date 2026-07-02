@@ -26,7 +26,7 @@ class DigitalProductSeeder extends Seeder
                 'price'          => 299000,
                 'discount_price' => 199000,
                 'currency'       => 'IDR',
-                'period'         => 'per tahun',
+                'period'         => 'selamanya',
                 'features'       => [
                     'AI parser bahasa alami (Gemini)',
                     'Klasifikasi otomatis 7 dimensi finansial',
@@ -54,7 +54,7 @@ class DigitalProductSeeder extends Seeder
                 'price'          => 50000,
                 'discount_price' => null,
                 'currency'       => 'IDR',
-                'period'         => 'sekali bayar',
+                'period'         => '12 bulan evaluasi',
                 'features'       => [
                     'Akses penuh kuesioner FTSA 1–32 di portal',
                     'Skoring otomatis CHD, RVD, SSD, ESD',
