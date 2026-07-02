@@ -28,7 +28,7 @@
                 <h2 class="font-heading text-[20px] font-bold text-primary mb-1">Data Pembeli</h2>
                 <p class="text-[13px] text-on-surface-variant mb-6">
                     @if($product->code === 'yfd-ftsa-premium')
-                        Email wajib diisi — gunakan <strong>email yang sama</strong> dengan akun bot YFD Anda agar FTSA terhubung ke lisensi yang sudah aktif. Setelah lunas, FTSA 1–32 aktif selama <strong>12 bulan evaluasi</strong>.
+                        Email wajib diisi — gunakan <strong>email yang sama</strong> dengan akun bot YFD jika ini upgrade. Paket FTSA membuka <strong>dashboard FTSA saja</strong> (12 bulan evaluasi), bukan bot transaksi.
                     @else
                         Email wajib diisi — setelah pembayaran lunas, kami kirim ke email tersebut: <strong>tautan bot Telegram</strong>, <strong>kode /activate</strong>, dan <strong>akses dashboard web</strong>. Lisensi bot berlaku <strong>selamanya</strong> (sekali bayar). Kode aktivasi <strong>tidak ditampilkan di website</strong>, hanya lewat email. Nomor WhatsApp untuk kontak darurat.
                     @endif
@@ -124,8 +124,9 @@
                 <ul class="mt-5 space-y-2 text-[12.5px] text-on-surface-variant">
                     <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">verified</span> Pembayaran via Midtrans (kartu, VA, GoPay, OVO, ShopeePay, QRIS)</li>
                     @if($product->code === 'yfd-ftsa-premium')
-                        <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">psychology</span> FTSA 1–32 aktif <strong>12 bulan evaluasi</strong> sejak pembayaran lunas</li>
-                        <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">link</span> Sudah punya bot? Upgrade memakai <strong>lisensi & email yang sama</strong></li>
+                        <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">psychology</span> Dashboard FTSA &amp; behavioral aktif <strong>12 bulan evaluasi</strong></li>
+                        <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">info</span> <strong>Tidak termasuk</strong> bot Telegram &amp; dashboard transaksi</li>
+                        <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">link</span> Upgrade dari bot? Pakai <strong>email &amp; lisensi yang sama</strong></li>
                     @else
                         <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">mail</span> Setelah lunas: <strong>email otomatis</strong> berisi link bot Telegram, kode lisensi, &amp; akses dashboard web</li>
                         <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">all_inclusive</span> Lisensi bot &amp; dashboard berlaku <strong>selamanya</strong> (sekali bayar)</li>

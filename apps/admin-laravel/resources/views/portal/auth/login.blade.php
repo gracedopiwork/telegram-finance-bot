@@ -77,6 +77,7 @@
                         <input type="text" name="license_key" value="{{ old('license_key') }}" required
                                class="w-full rounded-xl border-slate-300 text-sm py-2.5 uppercase focus:ring-navy-500 focus:border-navy-500"
                                placeholder="YFD-XXXX-XXXX">
+                        <p class="text-[11px] text-slate-500 mt-1">Pembeli <strong>FTSA saja</strong> bisa login langsung di sini (tanpa /activate bot). Pembeli bot: aktifkan dulu di Telegram.</p>
                     </div>
                     <button type="submit" class="w-full rounded-xl bg-navy-800 text-white font-bold py-3 hover:bg-navy-700 transition-colors">
                         Masuk dengan Email & Lisensi

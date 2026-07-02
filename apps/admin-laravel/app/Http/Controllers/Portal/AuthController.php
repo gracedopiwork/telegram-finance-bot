@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\License;
 use App\Models\Order;
 use App\Services\BaselineClaimService;
+use App\Services\PortalAccessService;
 use App\Services\PortalAutoLoginService;
 use App\Services\PortalOnboardingService;
 use App\Support\FinancialBaselineSchema;
@@ -51,12 +52,6 @@ class AuthController extends Controller
             return back()->withInput()->withErrors(['license_key' => 'Lisensi sudah expired.']);
         }
 
-        if (! $license->assigned_user_id) {
-            return back()->withInput()->withErrors([
-                'license_key' => 'Lisensi belum diaktifkan di Telegram. Jalankan /activate di bot dulu.',
-            ]);
-        }
-
         $order = Order::query()
             ->where('license_id', $license->id)
             ->where('status', 'paid')
@@ -70,11 +65,27 @@ class AuthController extends Controller
             ]);
         }
 
+        $access = app(PortalAccessService::class);
+        $isFtsaOnlyOrder = $access->isFtsaOnlyOrder($order);
+
+        if (! $license->assigned_user_id) {
+            if ($isFtsaOnlyOrder) {
+                $portalUserId = $access->ensureLicensePortalActivation($license->fresh());
+            } else {
+                return back()->withInput()->withErrors([
+                    'license_key' => 'Lisensi belum diaktifkan di Telegram. Jalankan /activate di bot dulu.',
+                ]);
+            }
+        } else {
+            $portalUserId = (int) $license->assigned_user_id;
+        }
+
         return $this->establishSession(
             $request,
-            (int) $license->assigned_user_id,
+            $portalUserId,
             $license->assigned_username ?: $order->full_name,
             $email,
+            $isFtsaOnlyOrder ? 'ftsa_only' : 'licensed',
         );
     }
 
@@ -101,6 +112,7 @@ class AuthController extends Controller
             $profile['telegram_user_id'],
             $profile['display_name'],
             $profile['email'],
+            app(PortalAccessService::class)->isFtsaOnlyPortalUser($profile['email']) ? 'ftsa_only' : 'licensed',
         );
     }
 
@@ -109,8 +121,9 @@ class AuthController extends Controller
         int $telegramUserId,
         string $displayName,
         string $email,
+        string $userType = 'licensed',
     ): RedirectResponse {
-        PortalSession::login($request, $telegramUserId, $displayName, $email);
+        PortalSession::login($request, $telegramUserId, $displayName, $email, $userType);
         $request->session()->regenerate();
 
         if (FinancialBaselineSchema::isReady()) {
@@ -126,6 +139,8 @@ class AuthController extends Controller
         $email = (string) (PortalSession::email($request) ?? '');
         $onboarding = app(PortalOnboardingService::class);
 
+        $access = app(PortalAccessService::class);
+
         if ($onboarding->userNeedsBaseline($telegramUserId)) {
             if ($onboarding->isBotOnlyBuyer($email, $telegramUserId)) {
                 return redirect()->route('portal.baseline.create')
@@ -136,7 +151,7 @@ class AuthController extends Controller
             }
 
             $checkupMsg = $onboarding->isFtsaOnlyBuyer($email)
-                ? 'Silakan lengkapi Financial Health Check-Up. Hasil diagnostik akan tersimpan dan terhubung ke akun FTSA Anda.'
+                ? 'Silakan lengkapi Financial Health Check-Up. Hasil diagnostik akan tersimpan dan terhubung ke dashboard FTSA Anda.'
                 : 'Silakan lengkapi Financial Health Check-Up terlebih dahulu. Gunakan email yang sama dengan pembelian Anda.';
 
             return redirect()->route('checkup.show')
@@ -144,7 +159,7 @@ class AuthController extends Controller
                 ->withInput(['email' => $email]);
         }
 
-        return redirect()->route('portal.dashboard');
+        return redirect()->route($access->defaultPortalHomeRoute($email));
     }
 
     public function logout(Request $request): RedirectResponse

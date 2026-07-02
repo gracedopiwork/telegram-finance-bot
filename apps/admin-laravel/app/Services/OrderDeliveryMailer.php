@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Mail\FtsaOnlyDeliveredMail;
 use App\Mail\FtsaUnlockDeliveredMail;
 use App\Mail\PaidOrderDeliveredMail;
 use App\Services\PortalOnboardingService;
@@ -32,9 +33,15 @@ class OrderDeliveryMailer
             throw new \RuntimeException('Email checkout kosong.');
         }
 
-        $mailable = $this->isFtsaUnlockOrder($order) && app(PortalOnboardingService::class)->isFtsaUpgradeOrder($order)
-            ? new FtsaUnlockDeliveredMail($order)
-            : new PaidOrderDeliveredMail($order, includeFtsaUnlock: $this->isFtsaUnlockOrder($order));
+        $onboarding = app(PortalOnboardingService::class);
+
+        if ($this->isFtsaUnlockOrder($order) && $onboarding->isFtsaUpgradeOrder($order)) {
+            $mailable = new FtsaUnlockDeliveredMail($order);
+        } elseif ($this->isFtsaUnlockOrder($order)) {
+            $mailable = new FtsaOnlyDeliveredMail($order);
+        } else {
+            $mailable = new PaidOrderDeliveredMail($order);
+        }
 
         Mail::to($order->email)->send($mailable);
     }

@@ -17,7 +17,7 @@ class OrderDeliveryMessageBuilder
                 return $this->whatsAppFtsaUpgradeText($order);
             }
 
-            return $this->whatsAppFullLicenseText($order, ftsaUnlocked: true);
+            return $this->whatsAppFtsaOnlyText($order);
         }
 
         return $this->whatsAppFullLicenseText($order, ftsaUnlocked: false);
@@ -85,7 +85,8 @@ class OrderDeliveryMessageBuilder
             '',
             'Pembayaran *'.$order->order_code.'* (FTSA Premium) sudah kami terima.',
             '',
-            'FTSA 1–32 di portal YFD sudah aktif untuk akun Anda.',
+            'FTSA 1–32 di portal YFD sudah aktif selama *12 bulan evaluasi*.',
+            'Dashboard bot & transaksi tetap seperti biasa.',
             '',
             '📊 Login portal: '.$portalUrl,
             'Gunakan email checkout: *'.$order->email.'*',
@@ -96,6 +97,40 @@ class OrderDeliveryMessageBuilder
             $lines[] = 'Tidak perlu /activate ulang jika bot sudah aktif.';
         }
 
+        $lines[] = '';
+        $lines[] = '— YFD (Your Financial Doctor)';
+
+        return implode("\n", $lines);
+    }
+
+    private function whatsAppFtsaOnlyText(Order $order): string
+    {
+        $licenseKey = trim((string) ($order->license?->license_key ?? ''));
+        $portalUrl = rtrim((string) config('app.url'), '/').'/portal/login';
+        $checkupUrl = rtrim((string) config('app.url'), '/').'/check-up';
+
+        $lines = [
+            'Hai '.$order->full_name.',',
+            '',
+            'Pembayaran *'.$order->order_code.'* (FTSA Premium) sudah kami terima.',
+            '',
+            'Akses *dashboard FTSA* aktif selama *12 bulan evaluasi*.',
+            '(Dashboard transaksi bot tidak termasuk paket ini.)',
+            '',
+        ];
+
+        if ($licenseKey !== '') {
+            $lines[] = '🔑 Kode lisensi portal: *'.$licenseKey.'*';
+            $lines[] = '';
+        }
+
+        $lines[] = '📊 Login portal FTSA: '.$portalUrl;
+        $lines[] = 'Email checkout: *'.$order->email.'* + kode lisensi di atas.';
+        $lines[] = 'Tidak perlu aktivasi di bot Telegram.';
+        $lines[] = '';
+        $lines[] = '🩺 Langkah pertama: *Financial Health Check-Up*';
+        $lines[] = $checkupUrl;
+        $lines[] = 'Lalu isi FTSA 1–32 di menu Baseline Data portal.';
         $lines[] = '';
         $lines[] = '— YFD (Your Financial Doctor)';
 

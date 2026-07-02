@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->alias([
             'portal.auth' => \App\Http\Middleware\EnsurePortalAuth::class,
+            'portal.bot' => \App\Http\Middleware\EnsureBotPortalAccess::class,
             'portal.baseline' => \App\Http\Middleware\EnsureBaselineExists::class,
         ]);
     })

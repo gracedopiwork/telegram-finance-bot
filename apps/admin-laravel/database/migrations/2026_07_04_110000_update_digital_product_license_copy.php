@@ -31,13 +31,13 @@ return new class extends Migration
 
         DB::table('cp_digital_products')->where('code', 'yfd-ftsa-premium')->update([
             'tagline' => 'Unlock FTSA 1–32 untuk analisis behavioral — masa aktif 12 bulan evaluasi.',
-            'description' => 'Add-on untuk membuka kuesioner FTSA 1–32 di portal YFD. Setelah pembayaran sukses, fitur FTSA aktif selama 12 bulan evaluasi pada akun lisensi Anda. Jika sudah punya bot YFD, upgrade memakai lisensi yang sama.',
+            'description' => 'Add-on untuk membuka dashboard FTSA di portal YFD: kuesioner FTSA 1–32, behavioral insight, dan indeks kesehatan finansial selama 12 bulan evaluasi. Tidak termasuk bot Telegram atau dashboard transaksi harian. Jika sudah punya bot YFD, upgrade memakai lisensi yang sama.',
             'period' => '12 bulan evaluasi',
             'features' => json_encode([
-                'Akses penuh kuesioner FTSA 1–32 di portal',
+                'Dashboard FTSA & behavioral di portal web',
+                'Kuesioner FTSA 1–32 lengkap',
                 'Skoring otomatis CHD, RVD, SSD, ESD',
                 'Archetype trauma finansial personal',
-                'Insight behavioral lanjutan di dashboard',
                 'Masa aktif 12 bulan evaluasi sejak pembayaran',
             ], JSON_UNESCAPED_UNICODE),
             'meta_description' => 'Unlock FTSA 1–32 selama 12 bulan evaluasi. Diagnosis behavioral finansial yang lebih personal di portal YFD.',

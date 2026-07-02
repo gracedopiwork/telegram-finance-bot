@@ -55,7 +55,7 @@ class PortalOnboardingService
     }
 
     /**
-     * Beli FTSA saja (belum pernah beli bot) — tetap dapat lisensi & check-up landing.
+     * Beli FTSA saja (belum pernah beli bot) — portal terbatas ke dashboard FTSA.
      */
     public function isFtsaOnlyBuyer(string $email): bool
     {

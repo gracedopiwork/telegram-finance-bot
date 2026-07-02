@@ -11,7 +11,17 @@
     $noteSummary = is_array($note) ? ($note['summary'] ?? '') : (string) $note;
 @endphp
 
-@if(!($ftsaUnlocked ?? false))
+@if($isFtsaOnlyPortalUser ?? false)
+    <div class="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-900">
+        <div class="font-bold">Paket FTSA Premium</div>
+        <div class="mt-0.5">Anda memiliki akses dashboard FTSA & behavioral (12 bulan evaluasi). Untuk pencatatan transaksi harian & Financial Health Dashboard, beli <strong>YFD Bot Telegram</strong>.</div>
+        <a href="{{ route('checkout.show', ['code' => 'yfd-bot-telegram']) }}"
+           class="inline-flex items-center gap-2 mt-3 bg-navy-800 hover:bg-navy-700 text-white font-bold px-4 py-2 rounded-xl text-sm">
+            <span class="material-symbols-outlined text-lg">send</span>
+            Beli YFD Bot
+        </a>
+    </div>
+@elseif(!($ftsaUnlocked ?? false))
     <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
         <div class="text-sm text-amber-900">
             <div class="font-bold">FTSA Premium belum aktif</div>
@@ -27,8 +37,10 @@
 
 @if(!$hasData)
     @include('portal.partials.empty-state', [
-        'title' => 'Belum ada data emosi',
-        'message' => 'Emotional scan terisi setelah ada transaksi pengeluaran dengan mood & flag impulsif dari bot Telegram.',
+        'title' => ($isFtsaOnlyPortalUser ?? false) ? 'Behavioral insight dari FTSA' : 'Belum ada data emosi',
+        'message' => ($isFtsaOnlyPortalUser ?? false)
+            ? 'Lengkapi FTSA 1–32 di Baseline Data untuk melihat profil behavioral dan rekomendasi personal. Data transaksi bot tidak termasuk paket FTSA-only.'
+            : 'Emotional scan terisi setelah ada transaksi pengeluaran dengan mood & flag impulsif dari bot Telegram.',
     ])
 @endif
 

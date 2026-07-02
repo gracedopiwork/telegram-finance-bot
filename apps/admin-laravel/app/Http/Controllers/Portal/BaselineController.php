@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FinancialBaseline;
 use App\Services\BaselineAssessmentService;
 use App\Services\BucketPrescriptionService;
+use App\Services\PortalAccessService;
 use App\Services\PortalFeatureService;
 use App\Services\PortalOnboardingService;
 use App\Support\FinancialBaselineSchema;
@@ -22,7 +23,7 @@ class BaselineController extends Controller
         $telegramUserId = (int) PortalSession::telegramUserId($request);
 
         if (! FinancialBaselineSchema::isReady()) {
-            return redirect()->route('portal.dashboard')
+            return redirect()->route($this->portalHomeRoute($request))
                 ->with('error', 'Database baseline belum siap. Admin: php artisan migrate --force');
         }
 
@@ -52,7 +53,7 @@ class BaselineController extends Controller
         } catch (\Throwable $e) {
             report($e);
 
-            return redirect()->route('portal.dashboard')
+            return redirect()->route($this->portalHomeRoute($request))
                 ->with(
                     'error',
                     config('app.debug')
@@ -71,7 +72,7 @@ class BaselineController extends Controller
         }
 
         if (! FinancialBaselineSchema::isReady()) {
-            return redirect()->route('portal.dashboard')
+            return redirect()->route($this->portalHomeRoute($request))
                 ->with('error', 'Database baseline belum siap. Admin: php artisan migrate --force && php artisan config:clear');
         }
 
@@ -88,7 +89,7 @@ class BaselineController extends Controller
 
         $baselineConfig = app(\App\Services\DiagnosticConfigService::class)->fullBaselineConfig();
         if (! isset($baselineConfig['financial_stage'])) {
-            return redirect()->route('portal.dashboard')
+            return redirect()->route($this->portalHomeRoute($request))
                 ->with('error', 'Konfigurasi baseline tidak terbaca. Admin: php artisan config:clear');
         }
 
@@ -272,6 +273,13 @@ class BaselineController extends Controller
         }
 
         return $options;
+    }
+
+    private function portalHomeRoute(Request $request): string
+    {
+        $email = (string) (PortalSession::email($request) ?? '');
+
+        return app(PortalAccessService::class)->defaultPortalHomeRoute($email);
     }
 
     private function sessionEmail(Request $request): ?string

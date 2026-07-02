@@ -14,11 +14,13 @@
     </div>
 </div>
 <nav class="p-3 space-y-0.5 flex-1 text-sm overflow-y-auto">
+    @if($hasBotPortalAccess ?? true)
     <a href="{{ route('portal.transactions', $query) }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'transactions' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">edit_note</span>
         INPUT DATA
     </a>
+    @endif
     <a href="{{ route('portal.baseline') }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'baseline' ? 'nav-active font-semibold' : 'hover:bg-white/10' }} {{ ($needsBaseline ?? false) ? 'ring-2 ring-gold-400/80 bg-gold-400/10' : '' }}">
         <span class="material-symbols-outlined text-lg opacity-80">fact_check</span>
@@ -27,11 +29,13 @@
             <span class="text-[9px] bg-gold-400 text-navy-900 px-1.5 py-0.5 rounded font-bold animate-pulse">ISI</span>
         @endif
     </a>
+    @if($hasBotPortalAccess ?? true)
     <a href="{{ route('portal.dashboard', $query) }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'dashboard' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">dashboard</span>
         FINANCIAL HEALTH DASHBOARD
     </a>
+    @endif
     <a href="{{ route('portal.emotional', $query) }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'emotional' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">psychology</span>

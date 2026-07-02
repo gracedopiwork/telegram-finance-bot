@@ -41,6 +41,20 @@
                     selama <strong>12 bulan evaluasi</strong>.
                     Login portal dengan email <strong>{{ $order->email }}</strong> dan kode lisensi bot yang sudah pernah di-/activate.
                 </p>
+            @elseif($isFtsaOnly)
+                <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
+                    Pembayaran <strong>lunas</strong>. Akses <strong>dashboard FTSA</strong> aktif selama <strong>12 bulan evaluasi</strong>.
+                    Login portal dengan email <strong>{{ $order->email }}</strong> dan kode lisensi di bawah — <strong>tanpa aktivasi bot</strong>.
+                </p>
+                <div class="bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 max-w-lg mx-auto text-left mb-6">
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-primary mb-2">Kode lisensi portal FTSA</p>
+                    <code id="licenseKeyDisplay" class="block text-base sm:text-lg font-mono font-bold text-primary break-all select-all bg-white px-4 py-3 rounded-xl border border-outline-variant">{{ $order->license->license_key }}</code>
+                    <button type="button"
+                            class="mt-4 w-full btn btn-primary text-sm"
+                            onclick="navigator.clipboard.writeText({{ json_encode($order->license->license_key) }}); this.innerText='Tersalin!';">
+                        Salin kode lisensi
+                    </button>
+                </div>
             @elseif($deliveryViaEmail)
                 <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
                     Pembayaran <strong>lunas</strong>. Kode aktivasi{{ $isFtsaOnly ? '' : ' bot' }} dan akses dashboard web sudah dikirim ke email
@@ -74,18 +88,22 @@
                         @if($isFtsaUpgrade)
                             <li>Login portal: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> dengan email & lisensi bot yang sama</li>
                             <li>Buka menu <strong>BASELINE DATA</strong> untuk mengisi FTSA 1–32</li>
+                        @elseif($isFtsaOnly)
+                            <li>Login portal: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> dengan email & kode lisensi di atas</li>
+                            <li><strong class="text-primary">Isi Financial Health Check-Up</strong> di landing</li>
+                            <li>Lengkapi <strong>FTSA 1–32</strong> di menu Baseline Data (aktif <strong>12 bulan evaluasi</strong>)</li>
                         @else
                             <li>Buka bot Telegram → <code class="bg-white px-1 rounded">/activate {{ $order->license->license_key }}</code></li>
                             <li>Masuk dashboard: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> atau ketik <code class="bg-white px-1 rounded">/web</code> di bot</li>
                             <li><strong class="text-primary">Isi Financial Health Check-Up</strong> — hasil diagnostik tersimpan & terhubung ke akun Anda</li>
-                            @if($isFtsaOnly)
-                                <li>Setelah check-up, isi <strong>FTSA 1–32</strong> di menu Baseline Data (aktif <strong>12 bulan evaluasi</strong>)</li>
-                            @else
-                                <li>Catat transaksi harian di bot, pantau dashboard — lisensi bot berlaku <strong>selamanya</strong></li>
-                            @endif
+                            <li>Catat transaksi harian di bot, pantau dashboard — lisensi bot berlaku <strong>selamanya</strong></li>
                         @endif
                     </ol>
-                    @if(!$isFtsaUpgrade)
+                    @if($isFtsaUpgrade)
+                        <a href="{{ route('portal.login') }}" class="btn btn-primary mt-4 w-full text-sm">Buka Portal</a>
+                    @elseif($isFtsaOnly)
+                        <a href="{{ route('checkup.show') }}" class="btn btn-primary mt-4 w-full text-sm">Mulai Check-Up</a>
+                    @else
                         <a href="{{ route('checkup.show') }}" class="btn btn-primary mt-4 w-full text-sm">
                             Isi Diagnostik Sekarang
                         </a>
@@ -140,7 +158,7 @@
     @endif
 
     <div class="flex flex-wrap gap-3 justify-center">
-        @if(!empty($telegramBotUrl))
+        @if(!$isFtsaOnly && !empty($telegramBotUrl))
             @if(!empty($telegramBotAppUrl))
                 <a href="{{ $telegramBotAppUrl }}" class="btn btn-primary">
                     <span class="material-symbols-outlined text-[18px]">smart_toy</span> Buka bot di Telegram

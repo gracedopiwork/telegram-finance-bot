@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\FinancialBaseline;
 use App\Models\Setting;
+use App\Services\PortalAccessService;
 use App\Services\PortalOnboardingService;
 use App\Support\FinancialBaselineSchema;
 use App\Support\PortalSession;
@@ -109,7 +110,10 @@ class AppServiceProvider extends ServiceProvider
                 $telegramUserId = (int) PortalSession::telegramUserId($request);
                 $email = (string) (PortalSession::email($request) ?? '');
                 $onboarding = app(PortalOnboardingService::class);
+                $access = app(PortalAccessService::class);
                 $view->with('needsBaseline', FinancialBaseline::userNeedsBaseline($telegramUserId));
+                $view->with('hasBotPortalAccess', $access->hasBotPortalAccess($email));
+                $view->with('isFtsaOnlyPortalUser', $access->isFtsaOnlyPortalUser($email));
                 $view->with(
                     'baselineUrl',
                     FinancialBaseline::userNeedsBaseline($telegramUserId)
