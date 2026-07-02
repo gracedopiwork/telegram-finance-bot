@@ -6,7 +6,24 @@ use App\Models\BotTransaction;
 
 class CategoryBucketService
 {
-    public function resolve(BotTransaction $row): string
+    public function __construct(
+        private readonly CategoryBucketMappingService $mappingService,
+    ) {}
+
+    /**
+     * Resolve ke salah satu bucket prescription (4 bucket) atau null jika dikecualikan.
+     */
+    public function resolve(BotTransaction $row): ?string
+    {
+        $fromDb = $this->mappingService->resolveBucket($row);
+        if ($fromDb !== null) {
+            return $this->normalizeBucket($fromDb);
+        }
+
+        return $this->resolveLegacy($row);
+    }
+
+    private function resolveLegacy(BotTransaction $row): ?string
     {
         $nature = (string) $row->nature;
         $category = mb_strtolower((string) $row->category);
@@ -38,6 +55,15 @@ class CategoryBucketService
         }
 
         return 'Essential Living';
+    }
+
+    private function normalizeBucket(string $bucket): ?string
+    {
+        if ($bucket === 'Transfer (Excluded)' || $bucket === 'Income') {
+            return null;
+        }
+
+        return $bucket;
     }
 
     /**

@@ -175,8 +175,8 @@ class TransactionDashboardService
 
     foreach ($expenses as $row) {
       $bucket = $this->categoryBuckets->resolve($row);
-      if (! array_key_exists($bucket, $bucketTotals)) {
-        $bucketTotals[$bucket] = 0;
+      if ($bucket === null || ! array_key_exists($bucket, $bucketTotals)) {
+        continue;
       }
       $bucketTotals[$bucket] += (int) $row->amount;
     }
@@ -519,7 +519,7 @@ class TransactionDashboardService
       'is_impulsive' => $t->is_impulsive,
       'notes' => $t->notes,
       'source' => $t->source,
-      'bucket' => $this->categoryBuckets->resolve($t),
+      'bucket' => $this->categoryBuckets->resolve($t) ?? '—',
     ];
   }
 }

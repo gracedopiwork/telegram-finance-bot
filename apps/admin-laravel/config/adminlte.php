@@ -346,6 +346,11 @@ return [
             'icon' => 'fas fa-fw fa-book-open',
         ],
         [
+            'text' => 'Pemetaan Bucket',
+            'route' => 'admin.category-bucket-mappings.index',
+            'icon' => 'fas fa-fw fa-layer-group',
+        ],
+        [
             'text' => 'Soal Diagnostik',
             'route' => 'admin.diagnostic-questions.index',
             'icon' => 'fas fa-fw fa-clipboard-list',

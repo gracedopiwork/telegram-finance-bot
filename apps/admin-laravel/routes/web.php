@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Admin\AdvisorsController;
 use App\Http\Controllers\Admin\ArticlesController;
+use App\Http\Controllers\Admin\CategoryBucketMappingsController;
 use App\Http\Controllers\Admin\DiagnosticQuestionsController;
 use App\Http\Controllers\Admin\DiagnosticResultsController;
 use App\Http\Controllers\Admin\DiagnosticStagesController;
@@ -116,6 +117,9 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::resource('faqs',             FaqsController::class)->except(['show']);
     Route::resource('articles',         ArticlesController::class)->except(['show']);
     Route::resource('digital-products', DigitalProductsController::class)->except(['show']);
+    Route::resource('category-bucket-mappings', CategoryBucketMappingsController::class)->except(['show']);
+    Route::post('category-bucket-mappings/sync-defaults', [CategoryBucketMappingsController::class, 'syncDefaults'])
+        ->name('category-bucket-mappings.sync');
     Route::resource('diagnostic-questions', DiagnosticQuestionsController::class)->except(['show']);
     Route::get('diagnostic-results', [DiagnosticResultsController::class, 'index'])->name('diagnostic-results.index');
     Route::get('diagnostic-results/{financial_baseline}', [DiagnosticResultsController::class, 'show'])->name('diagnostic-results.show');
