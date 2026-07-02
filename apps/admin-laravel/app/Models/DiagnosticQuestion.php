@@ -9,6 +9,7 @@ class DiagnosticQuestion extends Model
 {
     protected $fillable = [
         'question_key',
+        'wizard_step',
         'section',
         'text',
         'note',
@@ -49,6 +50,7 @@ class DiagnosticQuestion extends Model
 
         return [
             'key' => $this->question_key,
+            'wizard_step' => (int) $this->wizard_step,
             'section' => $this->section,
             'text' => $this->text,
             'note' => $this->note,

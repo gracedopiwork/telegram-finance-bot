@@ -22,8 +22,8 @@ class PublicCheckupController extends Controller
         }
 
         $diagnostic = app(DiagnosticConfigService::class);
-        $financialStage = $diagnostic->financialStageQuestions();
-        if ($financialStage['profile'] === [] && $financialStage['scored'] === []) {
+        $wizardSteps = $diagnostic->wizardSteps();
+        if ($wizardSteps === []) {
             return redirect()->route('company.home')
                 ->with('error', 'Konfigurasi check-up belum siap.');
         }
@@ -34,7 +34,8 @@ class PublicCheckupController extends Controller
         }
 
         return view('checkup.form', [
-            'financialStage' => $financialStage,
+            'wizardSteps' => $wizardSteps,
+            'totalSteps' => count($wizardSteps),
             'prefillEmail' => $prefillEmail,
         ]);
     }

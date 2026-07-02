@@ -20,6 +20,7 @@ class DiagnosticConfigService
         $questions = DiagnosticQuestion::query()
             ->with('options')
             ->where('is_active', true)
+            ->orderBy('wizard_step')
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();
@@ -40,6 +41,85 @@ class DiagnosticConfigService
         }
 
         return ['profile' => $profile, 'scored' => $scored];
+    }
+
+    /**
+     * @return list<array{step: int, intro: array<string, string>|null, questions: list<array<string, mixed>>}>
+     */
+    public function wizardSteps(): array
+    {
+        if (! $this->usesDatabase()) {
+            return $this->wizardStepsFromConfig();
+        }
+
+        $questions = DiagnosticQuestion::query()
+            ->with('options')
+            ->where('is_active', true)
+            ->orderBy('wizard_step')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        if ($questions->isEmpty()) {
+            return $this->wizardStepsFromConfig();
+        }
+
+        $intro = (array) config('diagnostic_questions_canonical.intro', []);
+        $steps = [];
+
+        foreach ($questions->groupBy('wizard_step') as $stepNum => $group) {
+            $step = (int) $stepNum;
+            $steps[] = [
+                'step' => $step,
+                'intro' => $step === 1 ? $intro : null,
+                'questions' => $group->map(fn (DiagnosticQuestion $q) => $q->toAssessmentArray())->values()->all(),
+            ];
+        }
+
+        usort($steps, fn ($a, $b) => $a['step'] <=> $b['step']);
+
+        return $steps;
+    }
+
+    /**
+     * @return list<array{step: int, intro: array<string, string>|null, questions: list<array<string, mixed>>}>
+     */
+    private function wizardStepsFromConfig(): array
+    {
+        $canonical = (array) config('diagnostic_questions_canonical.questions', []);
+        $intro = (array) config('diagnostic_questions_canonical.intro', []);
+        $grouped = collect($canonical)->groupBy('wizard_step')->sortKeys();
+        $steps = [];
+
+        foreach ($grouped as $stepNum => $items) {
+            $step = (int) $stepNum;
+            $questions = [];
+            foreach ($items as $q) {
+                $options = [];
+                foreach ($q['options'] ?? [] as $key => $val) {
+                    if (($q['is_scored'] ?? false) && is_array($val)) {
+                        $options[$key] = $val;
+                    } else {
+                        $options[$key] = is_string($val) ? $val : $key;
+                    }
+                }
+                $questions[] = [
+                    'key' => $q['question_key'],
+                    'wizard_step' => $step,
+                    'section' => $q['section'],
+                    'text' => $q['text'],
+                    'note' => $q['note'] ?? null,
+                    'options' => $options,
+                ];
+            }
+            $steps[] = [
+                'step' => $step,
+                'intro' => $step === 1 ? $intro : null,
+                'questions' => $questions,
+            ];
+        }
+
+        return $steps;
     }
 
     /**

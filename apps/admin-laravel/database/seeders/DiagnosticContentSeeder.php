@@ -6,13 +6,68 @@ use App\Models\DiagnosticQuestion;
 use App\Models\DiagnosticQuestionOption;
 use App\Models\DiagnosticStage;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class DiagnosticContentSeeder extends Seeder
 {
     public function run(): void
     {
         $this->seedStages();
-        $this->seedQuestions();
+        $this->syncCanonicalQuestions();
+    }
+
+    public function syncCanonicalQuestions(): void
+    {
+        if (! Schema::hasTable('diagnostic_questions')) {
+            return;
+        }
+
+        $canonical = (array) config('diagnostic_questions_canonical.questions', []);
+        if ($canonical === []) {
+            return;
+        }
+
+        $keys = collect($canonical)->pluck('question_key')->all();
+        DiagnosticQuestion::query()->whereNotIn('question_key', $keys)->delete();
+
+        foreach ($canonical as $q) {
+            $question = DiagnosticQuestion::query()->updateOrCreate(
+                ['question_key' => $q['question_key']],
+                [
+                    'wizard_step' => (int) ($q['wizard_step'] ?? 1),
+                    'section' => $q['section'],
+                    'text' => $q['text'],
+                    'note' => $q['note'] ?? null,
+                    'is_scored' => (bool) ($q['is_scored'] ?? true),
+                    'sort_order' => (int) ($q['sort_order'] ?? 0),
+                    'is_active' => true,
+                ]
+            );
+
+            $question->options()->delete();
+
+            $optSort = 0;
+            foreach ($q['options'] ?? [] as $optionKey => $optionValue) {
+                $isScored = (bool) ($q['is_scored'] ?? true);
+                if ($isScored && is_array($optionValue)) {
+                    DiagnosticQuestionOption::query()->create([
+                        'diagnostic_question_id' => $question->id,
+                        'option_key' => $optionKey,
+                        'label' => $optionValue['label'],
+                        'score' => $optionValue['score'] ?? 0,
+                        'sort_order' => $optSort++,
+                    ]);
+                } else {
+                    DiagnosticQuestionOption::query()->create([
+                        'diagnostic_question_id' => $question->id,
+                        'option_key' => $optionKey,
+                        'label' => is_string($optionValue) ? $optionValue : (string) $optionKey,
+                        'score' => null,
+                        'sort_order' => $optSort++,
+                    ]);
+                }
+            }
+        }
     }
 
     private function seedStages(): void
@@ -73,61 +128,6 @@ class DiagnosticContentSeeder extends Seeder
                 ['stage_key' => $key],
                 array_merge($data, ['stage_key' => $key])
             );
-        }
-    }
-
-    private function seedQuestions(): void
-    {
-        if (DiagnosticQuestion::query()->exists()) {
-            return;
-        }
-
-        $config = (array) config('baseline_assessment.financial_stage', []);
-        $sort = 0;
-
-        foreach ($config['profile'] ?? [] as $q) {
-            $this->importQuestion($q, false, $sort++);
-        }
-
-        foreach ($config['scored'] ?? [] as $q) {
-            $this->importQuestion($q, true, $sort++);
-        }
-    }
-
-    /**
-     * @param  array<string, mixed>  $q
-     */
-    private function importQuestion(array $q, bool $isScored, int $sort): void
-    {
-        $question = DiagnosticQuestion::query()->create([
-            'question_key' => $q['key'],
-            'section' => $q['section'],
-            'text' => $q['text'],
-            'note' => $q['note'] ?? null,
-            'is_scored' => $isScored,
-            'sort_order' => $sort,
-            'is_active' => true,
-        ]);
-
-        $optSort = 0;
-        foreach ($q['options'] ?? [] as $optionKey => $optionValue) {
-            if ($isScored && is_array($optionValue)) {
-                DiagnosticQuestionOption::query()->create([
-                    'diagnostic_question_id' => $question->id,
-                    'option_key' => $optionKey,
-                    'label' => $optionValue['label'],
-                    'score' => $optionValue['score'] ?? 0,
-                    'sort_order' => $optSort++,
-                ]);
-            } else {
-                DiagnosticQuestionOption::query()->create([
-                    'diagnostic_question_id' => $question->id,
-                    'option_key' => $optionKey,
-                    'label' => is_string($optionValue) ? $optionValue : (string) $optionKey,
-                    'score' => null,
-                    'sort_order' => $optSort++,
-                ]);
-            }
         }
     }
 }

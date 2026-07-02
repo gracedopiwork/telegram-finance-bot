@@ -89,6 +89,12 @@
             <div class="card card-outline card-secondary mb-3">
                 <div class="card-body">
                     <div class="form-group">
+                        <label>Langkah wizard (1–16) <span class="text-danger">*</span></label>
+                        <input type="number" name="wizard_step" class="form-control" min="1" max="16"
+                               value="{{ old('wizard_step', $question->wizard_step ?? 1) }}" required>
+                        <small class="text-muted">Nomor layar di check-up landing. Langkah 1 = profil (bisa berisi beberapa sub-soal).</small>
+                    </div>
+                    <div class="form-group">
                         <label>Urutan tampil</label>
                         <input type="number" name="sort_order" class="form-control" value="{{ old('sort_order', $question->sort_order ?? 0) }}">
                     </div>

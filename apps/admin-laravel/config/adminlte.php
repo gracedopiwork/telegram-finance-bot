@@ -351,6 +351,11 @@ return [
             'icon' => 'fas fa-fw fa-clipboard-list',
         ],
         [
+            'text' => 'Hasil Diagnostik',
+            'route' => 'admin.diagnostic-results.index',
+            'icon' => 'fas fa-fw fa-poll',
+        ],
+        [
             'text' => 'Produk Digital',
             'route' => 'admin.digital-products.index',
             'icon' => 'fas fa-fw fa-cube',

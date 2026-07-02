@@ -14,6 +14,7 @@ class DiagnosticQuestionsController extends Controller
     {
         $questions = DiagnosticQuestion::query()
             ->withCount('options')
+            ->orderBy('wizard_step')
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();
@@ -24,7 +25,7 @@ class DiagnosticQuestionsController extends Controller
     public function create(): View
     {
         return view('admin.diagnostic_questions.form', [
-            'question' => new DiagnosticQuestion(['is_active' => true, 'is_scored' => false]),
+            'question' => new DiagnosticQuestion(['is_active' => true, 'is_scored' => false, 'wizard_step' => 1]),
             'options' => collect(),
         ]);
     }
@@ -79,6 +80,7 @@ class DiagnosticQuestionsController extends Controller
 
         $data = $request->validate([
             'question_key' => $uniqueRule,
+            'wizard_step' => 'required|integer|min:1|max:16',
             'section' => 'required|string|max:128',
             'text' => 'required|string|max:2000',
             'note' => 'nullable|string|max:5000',
@@ -94,6 +96,7 @@ class DiagnosticQuestionsController extends Controller
 
         $data['is_scored'] = $request->boolean('is_scored');
         $data['is_active'] = $request->boolean('is_active', true);
+        $data['wizard_step'] = (int) $data['wizard_step'];
         $data['sort_order'] = (int) ($data['sort_order'] ?? 0);
 
         return $data;

@@ -13,6 +13,7 @@ class FinancialBaselineSchema
         }
 
         foreach ([
+            'email',
             'current_goal',
             'avg_monthly_income',
             'answers_json',

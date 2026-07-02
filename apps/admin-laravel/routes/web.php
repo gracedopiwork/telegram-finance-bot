@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Admin\AdvisorsController;
 use App\Http\Controllers\Admin\ArticlesController;
 use App\Http\Controllers\Admin\DiagnosticQuestionsController;
+use App\Http\Controllers\Admin\DiagnosticResultsController;
 use App\Http\Controllers\Admin\DiagnosticStagesController;
 use App\Http\Controllers\Admin\DigitalProductsController;
 use App\Http\Controllers\Admin\FaqsController;
@@ -99,6 +100,8 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::resource('articles',         ArticlesController::class)->except(['show']);
     Route::resource('digital-products', DigitalProductsController::class)->except(['show']);
     Route::resource('diagnostic-questions', DiagnosticQuestionsController::class)->except(['show']);
+    Route::get('diagnostic-results', [DiagnosticResultsController::class, 'index'])->name('diagnostic-results.index');
+    Route::get('diagnostic-results/{financial_baseline}', [DiagnosticResultsController::class, 'show'])->name('diagnostic-results.show');
     Route::get('diagnostic-stages', [DiagnosticStagesController::class, 'index'])->name('diagnostic-stages.index');
     Route::get('diagnostic-stages/{diagnostic_stage}/edit', [DiagnosticStagesController::class, 'edit'])->name('diagnostic-stages.edit');
     Route::put('diagnostic-stages/{diagnostic_stage}', [DiagnosticStagesController::class, 'update'])->name('diagnostic-stages.update');

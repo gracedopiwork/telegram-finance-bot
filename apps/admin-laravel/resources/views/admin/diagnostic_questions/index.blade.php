@@ -4,6 +4,9 @@
 @section('page_subheading', 'Financial Health Check-Up — soal, jawaban, dan catatan')
 
 @section('page_actions')
+<a href="{{ route('admin.diagnostic-results.index') }}" class="btn btn-outline-primary btn-sm mr-1">
+    <i class="fas fa-poll mr-1"></i> Hasil Diagnostik
+</a>
 <a href="{{ route('admin.diagnostic-stages.index') }}" class="btn btn-outline-info btn-sm mr-1">
     <i class="fas fa-palette mr-1"></i> Tahap Hasil
 </a>
@@ -18,6 +21,7 @@
         <table id="diag-table" class="table table-hover" style="width:100%">
             <thead class="thead-light">
                 <tr>
+                    <th>Langkah</th>
                     <th>Kode</th>
                     <th>Soal</th>
                     <th>Seksi</th>
@@ -31,6 +35,7 @@
             <tbody>
                 @forelse($questions as $q)
                     <tr>
+                        <td class="text-center"><span class="badge badge-primary">{{ $q->wizard_step }}</span></td>
                         <td><code>{{ $q->question_key }}</code></td>
                         <td>
                             <strong>{{ Str::limit($q->text, 70) }}</strong>
@@ -49,7 +54,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="text-center text-muted py-4">Belum ada soal. Jalankan <code>php artisan db:seed --class=DiagnosticContentSeeder</code> atau tambah manual.</td></tr>
+                    <tr><td colspan="9" class="text-center text-muted py-4">Belum ada soal. Jalankan <code>php artisan diagnostic:sync-questions</code> atau tambah manual.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -63,7 +68,7 @@ $(function() {
     $('#diag-table').DataTable({
         language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json' },
         columnDefs: [{ orderable: false, targets: [-1] }],
-        order: [[5, 'asc']],
+        order: [[0, 'asc'], [6, 'asc']],
         pageLength: 25
     });
 });
