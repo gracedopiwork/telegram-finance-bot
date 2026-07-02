@@ -57,7 +57,7 @@
     </p>
 
     <h2 style="font-size: 1rem; margin-top: 1.75rem;">4) Isi Diagnostik (Baseline Data) — wajib</h2>
-    @php $baselineHref = rtrim((string) config('app.url'), '/') . '/portal/baseline/baru'; @endphp
+    @php $baselineHref = rtrim((string) config('app.url'), '/') . '/check-up'; @endphp
     <p style="font-size: 0.875rem; color: #52525b;">
         Setelah masuk dashboard, langkah pertama adalah mengisi <strong>Baseline Data (Diagnostik Keuangan)</strong>.
         Ini menentukan tahap keuangan Anda dan mengaktifkan prescription bucket di dashboard.

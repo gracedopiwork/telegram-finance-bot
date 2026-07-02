@@ -120,7 +120,7 @@
 </div>
 @else
     <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
-        Belum ada baseline snapshot. <a href="{{ route('portal.baseline.create') }}" class="font-semibold underline">Isi Health Check-Up</a> untuk melengkapi data fondasi.
+        Belum ada baseline snapshot. <a href="{{ $baselineUrl ?? route('checkup.show') }}" class="font-semibold underline">Isi Health Check-Up</a> untuk melengkapi data fondasi.
     </div>
 @endif
 

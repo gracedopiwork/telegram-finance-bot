@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
-use App\Models\FinancialBaseline;
 use App\Models\License;
 use App\Models\Order;
+use App\Services\BaselineClaimService;
 use App\Services\PortalAutoLoginService;
+use App\Services\PortalOnboardingService;
 use App\Support\FinancialBaselineSchema;
 use App\Support\PortalSession;
 use Illuminate\Http\RedirectResponse;
@@ -112,22 +113,37 @@ class AuthController extends Controller
         PortalSession::login($request, $telegramUserId, $displayName, $email);
         $request->session()->regenerate();
 
+        if (FinancialBaselineSchema::isReady()) {
+            app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+        }
+
         return $this->redirectAfterLogin($request);
     }
 
     private function redirectAfterLogin(Request $request): RedirectResponse
     {
         $telegramUserId = (int) PortalSession::telegramUserId($request);
-        $redirect = redirect()->route('portal.dashboard');
+        $email = (string) (PortalSession::email($request) ?? '');
+        $onboarding = app(PortalOnboardingService::class);
 
-        if (FinancialBaselineSchema::isReady() && FinancialBaseline::userNeedsBaseline($telegramUserId)) {
-            return $redirect->with(
-                'info',
-                'Lengkapi Financial Health Check-Up dari menu Baseline agar tahapan finansial dan prescription dashboard aktif.'
-            );
+        if ($onboarding->userNeedsBaseline($telegramUserId)) {
+            if ($onboarding->isBotOnlyBuyer($email, $telegramUserId)) {
+                return redirect()->route('portal.baseline.create')
+                    ->with(
+                        'info',
+                        'Lengkapi Baseline Data di portal untuk mengaktifkan prescription bucket dan dashboard bot.'
+                    );
+            }
+
+            return redirect()->route('checkup.show')
+                ->with(
+                    'warning',
+                    'Silakan lengkapi Financial Health Check-Up terlebih dahulu. Gunakan email yang sama dengan pembelian Anda.'
+                )
+                ->withInput(['email' => $email]);
         }
 
-        return $redirect;
+        return redirect()->route('portal.dashboard');
     }
 
     public function logout(Request $request): RedirectResponse

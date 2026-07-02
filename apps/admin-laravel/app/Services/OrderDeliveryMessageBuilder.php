@@ -52,7 +52,7 @@ class OrderDeliveryMessageBuilder
         $lines[] = '';
         $lines[] = '🩺 *Langkah wajib setelah masuk:*';
         $lines[] = 'Isi *Baseline Data (Diagnostik)* di menu portal:';
-        $lines[] = rtrim((string) config('app.url'), '/').'/portal/baseline/baru';
+        $lines[] = rtrim((string) config('app.url'), '/').'/check-up';
 
         $lines[] = '';
         $lines[] = '— YFD (Your Financial Doctor)';
@@ -62,7 +62,7 @@ class OrderDeliveryMessageBuilder
 
     public function whatsAppFtsaUnlockText(Order $order): string
     {
-        $portalUrl = rtrim((string) config('app.url'), '/').'/portal/baseline/baru';
+        $portalUrl = rtrim((string) config('app.url'), '/').'/check-up';
 
         return implode("\n", [
             'Hai '.$order->full_name.',',

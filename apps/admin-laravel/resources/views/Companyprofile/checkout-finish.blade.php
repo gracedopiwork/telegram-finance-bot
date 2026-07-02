@@ -68,7 +68,7 @@
                         <li><strong class="text-primary">Isi Baseline Data (Diagnostik)</strong> — wajib, menu <em>BASELINE DATA</em></li>
                         <li>Catat transaksi harian di bot, pantau dashboard</li>
                     </ol>
-                    <a href="{{ route('portal.baseline.create') }}" class="btn btn-primary mt-4 w-full text-sm">
+                    <a href="{{ route('checkup.show') }}" class="btn btn-primary mt-4 w-full text-sm">
                         Isi Diagnostik Sekarang
                     </a>
                 </div>

@@ -14,7 +14,7 @@
 @if($summary['baseline_review_due'] ?? false)
     <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-3">
         <span>Sudah 6 bulan sejak baseline terakhir. Evaluasi ulang untuk memperbarui tahap & prescription bucket.</span>
-        <a href="{{ route('portal.baseline.create') }}" class="font-semibold whitespace-nowrap">Health Check-Up →</a>
+        <a href="{{ $baselineUrl ?? route('checkup.show') }}" class="font-semibold whitespace-nowrap">Health Check-Up →</a>
     </div>
 @endif
 

@@ -10,6 +10,7 @@ class FinancialBaseline extends Model
 {
     protected $fillable = [
         'telegram_user_id',
+        'email',
         'assessed_at',
         'next_review_at',
         'financial_stage_score',
@@ -50,6 +51,23 @@ class FinancialBaseline extends Model
             'has_income_protection' => 'boolean',
             'has_life_insurance' => 'boolean',
         ];
+    }
+
+    public static function latestForEmail(string $email): ?self
+    {
+        if (! FinancialBaselineSchema::isReady()) {
+            return null;
+        }
+
+        $email = strtolower(trim($email));
+        if ($email === '') {
+            return null;
+        }
+
+        return self::query()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->orderByDesc('assessed_at')
+            ->first();
     }
 
     public static function latestForUser(int $telegramUserId): ?self

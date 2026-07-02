@@ -15,4 +15,14 @@ return [
             explode(',', (string) env('PORTAL_FTSA_UNLOCK_PRODUCT_CODES', 'yfd-ftsa-premium'))
         ))),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bot-only buyers (isi baseline lengkap di portal, bukan landing check-up)
+    |--------------------------------------------------------------------------
+    */
+    'bot_only_product_codes' => array_values(array_filter(array_map(
+        fn (string $v) => trim($v),
+        explode(',', (string) env('PORTAL_BOT_ONLY_PRODUCT_CODES', 'yfd-bot-telegram'))
+    ))),
 ];

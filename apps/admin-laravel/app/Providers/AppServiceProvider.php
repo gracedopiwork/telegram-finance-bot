@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\FinancialBaseline;
 use App\Models\Setting;
+use App\Services\PortalOnboardingService;
 use App\Support\FinancialBaselineSchema;
 use App\Support\PortalSession;
 use App\Support\PrimaryCheckupUrl;
@@ -106,8 +107,15 @@ class AppServiceProvider extends ServiceProvider
                     return;
                 }
                 $telegramUserId = (int) PortalSession::telegramUserId($request);
+                $email = (string) (PortalSession::email($request) ?? '');
+                $onboarding = app(PortalOnboardingService::class);
                 $view->with('needsBaseline', FinancialBaseline::userNeedsBaseline($telegramUserId));
-                $view->with('baselineUrl', route('portal.baseline.create'));
+                $view->with(
+                    'baselineUrl',
+                    FinancialBaseline::userNeedsBaseline($telegramUserId)
+                        ? $onboarding->firstBaselineUrl($email, $telegramUserId)
+                        : route('portal.baseline')
+                );
             } catch (\Throwable) {
                 // Portal routes may not be registered during early boot.
             }

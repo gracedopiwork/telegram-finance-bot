@@ -5,7 +5,7 @@ namespace App\Support;
 use App\Models\Setting;
 
 /**
- * URL utama untuk CTA "Mulai Health Check Up" / diagnosa — sama dengan hero.cta_primary_url.
+ * URL utama untuk CTA "Mulai Health Check Up" / diagnosa — halaman check-up gratis di landing.
  */
 final class PrimaryCheckupUrl
 {
@@ -14,32 +14,16 @@ final class PrimaryCheckupUrl
      */
     public static function resolve(): array
     {
-        $fallback = self::fallbackPortalLoginUrl();
-
         try {
-            $raw = trim((string) (Setting::val('hero.cta_primary_url') ?? ''));
+            return ['url' => route('checkup.show'), 'new_tab' => false];
         } catch (\Throwable) {
-            $raw = '';
-        }
+            try {
+                $raw = trim((string) (Setting::val('hero.cta_primary_url') ?? ''));
+            } catch (\Throwable) {
+                $raw = '';
+            }
 
-        // Semua CTA Financial Check-Up diarahkan ke diagnostik internal portal.
-        // Nilai setting lama (mis. Typeform) sengaja diabaikan.
-        if ($raw !== '') {
-            return ['url' => $fallback, 'new_tab' => false];
-        }
-
-        if ($raw === '') {
-            return ['url' => $fallback, 'new_tab' => false];
-        }
-        return ['url' => $fallback, 'new_tab' => false];
-    }
-
-    private static function fallbackPortalLoginUrl(): string
-    {
-        try {
-            return route('portal.login');
-        } catch (\Throwable) {
-            return '#';
+            return ['url' => $raw !== '' ? $raw : '#', 'new_tab' => false];
         }
     }
 }

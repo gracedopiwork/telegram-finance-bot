@@ -7,6 +7,7 @@ use App\Models\FinancialBaseline;
 use App\Services\BaselineAssessmentService;
 use App\Services\BucketPrescriptionService;
 use App\Services\PortalFeatureService;
+use App\Services\PortalOnboardingService;
 use App\Support\FinancialBaselineSchema;
 use App\Support\PortalSession;
 use Illuminate\Database\QueryException;
@@ -28,7 +29,7 @@ class BaselineController extends Controller
         $baseline = FinancialBaseline::latestForUser($telegramUserId);
 
         if ($baseline === null) {
-            return redirect()->route('portal.baseline.create');
+            return $this->redirectWhenNoBaseline($request);
         }
 
         try {
@@ -72,6 +73,14 @@ class BaselineController extends Controller
         if (! FinancialBaselineSchema::isReady()) {
             return redirect()->route('portal.dashboard')
                 ->with('error', 'Database baseline belum siap. Admin: php artisan migrate --force && php artisan config:clear');
+        }
+
+        $email = (string) (PortalSession::email($request) ?? '');
+        $onboarding = app(PortalOnboardingService::class);
+        if (FinancialBaseline::userNeedsBaseline($telegramUserId) && ! $onboarding->isBotOnlyBuyer($email, $telegramUserId)) {
+            return redirect()->route('checkup.show')
+                ->with('warning', 'Silakan lengkapi Financial Health Check-Up di halaman landing terlebih dahulu.')
+                ->withInput(['email' => $email]);
         }
 
         $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
@@ -126,7 +135,7 @@ class BaselineController extends Controller
             $result = $service->assess($validated, $ftsaUnlocked);
             $snapshot = $validated['snapshot'] ?? [];
 
-            FinancialBaseline::query()->create($this->buildBaselinePayload($telegramUserId, $result, $snapshot, $ftsaUnlocked));
+            FinancialBaseline::query()->create($this->buildBaselinePayload($request, $telegramUserId, $result, $snapshot, $ftsaUnlocked));
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
         } catch (QueryException $e) {
@@ -157,10 +166,11 @@ class BaselineController extends Controller
      * @param  array<string, mixed>  $snapshot
      * @return array<string, mixed>
      */
-    private function buildBaselinePayload(int $telegramUserId, array $result, array $snapshot, bool $ftsaUnlocked): array
+    private function buildBaselinePayload(Request $request, int $telegramUserId, array $result, array $snapshot, bool $ftsaUnlocked): array
     {
         $payload = [
             'telegram_user_id' => $telegramUserId,
+            'email' => $this->sessionEmail($request),
             'assessed_at' => $result['assessed_at'],
             'next_review_at' => $result['next_review_at'],
             'financial_stage_score' => $result['financial_stage_score'],
@@ -260,5 +270,28 @@ class BaselineController extends Controller
         }
 
         return $options;
+    }
+
+    private function sessionEmail(Request $request): ?string
+    {
+        $email = PortalSession::email($request);
+
+        return $email !== null && $email !== '' ? $email : null;
+    }
+
+    private function redirectWhenNoBaseline(Request $request): RedirectResponse
+    {
+        $telegramUserId = (int) PortalSession::telegramUserId($request);
+        $email = (string) (PortalSession::email($request) ?? '');
+        $onboarding = app(PortalOnboardingService::class);
+
+        if ($onboarding->isBotOnlyBuyer($email, $telegramUserId)) {
+            return redirect()->route('portal.baseline.create')
+                ->with('info', 'Lengkapi Baseline Data untuk mengaktifkan dashboard bot.');
+        }
+
+        return redirect()->route('checkup.show')
+            ->with('warning', 'Silakan lengkapi Financial Health Check-Up terlebih dahulu.')
+            ->withInput(['email' => $email]);
     }
 }

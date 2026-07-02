@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\PublicCheckupController;
 use App\Http\Controllers\Portal\AuthController as PortalAuthController;
 use App\Http\Controllers\Portal\BaselineController as PortalBaselineController;
 use App\Http\Controllers\Portal\DashboardController as PortalDashboardController;
@@ -38,6 +39,15 @@ Route::get('/informasi',     [LandingController::class, 'informasi'])->name('com
 
 // Alias backward-compat untuk nama route lama 'landing'
 Route::get('/landing',       [LandingController::class, 'home'])->name('landing');
+
+/*
+|--------------------------------------------------------------------------
+| Financial Health Check-Up (gratis di landing — tanpa login)
+|--------------------------------------------------------------------------
+*/
+Route::get('/check-up', [PublicCheckupController::class, 'show'])->name('checkup.show');
+Route::post('/check-up', [PublicCheckupController::class, 'store'])->name('checkup.store');
+Route::get('/check-up/hasil', [PublicCheckupController::class, 'result'])->name('checkup.result');
 
 /*
 |--------------------------------------------------------------------------

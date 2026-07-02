@@ -1,5 +1,5 @@
 @php
-    $portalHref = rtrim((string) config('app.url'), '/') . '/portal/baseline/baru';
+    $portalHref = rtrim((string) config('app.url'), '/') . '/check-up';
 @endphp
 <!DOCTYPE html>
 <html lang="id">

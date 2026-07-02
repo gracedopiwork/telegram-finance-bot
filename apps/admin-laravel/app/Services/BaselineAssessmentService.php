@@ -198,4 +198,26 @@ class BaselineAssessmentService
 
         return $rules;
     }
+
+    /**
+     * Aturan validasi untuk check-up gratis di landing (tahap keuangan saja + email).
+     *
+     * @return array<string, string>
+     */
+    public function validationRulesFinancialStageOnly(): array
+    {
+        $rules = ['email' => 'required|email|max:255'];
+
+        foreach (config('baseline_assessment.financial_stage.profile', []) as $q) {
+            $options = implode(',', array_keys($q['options']));
+            $rules["fs.{$q['key']}"] = "required|in:{$options}";
+        }
+
+        foreach (config('baseline_assessment.financial_stage.scored', []) as $q) {
+            $options = implode(',', array_keys($q['options']));
+            $rules["fs.{$q['key']}"] = "required|in:{$options}";
+        }
+
+        return $rules;
+    }
 }
