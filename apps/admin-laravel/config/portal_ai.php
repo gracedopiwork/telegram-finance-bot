@@ -1,0 +1,69 @@
+<?php
+
+return [
+    'enabled' => (bool) env('PORTAL_AI_ENABLED', env('FTSA_AI_ENABLED', true)),
+
+    'api_key' => env('GEMINI_API_KEY'),
+
+    'models' => array_values(array_filter(array_map(
+        fn (string $v) => trim($v),
+        explode(',', (string) env('PORTAL_AI_MODELS', env('FTSA_AI_MODELS', 'gemini-2.5-flash,gemini-2.0-flash,gemini-2.0-flash-lite')))
+    ))),
+
+    'temperature' => (float) env('PORTAL_AI_TEMPERATURE', env('FTSA_AI_TEMPERATURE', 0.3)),
+    'timeout_seconds' => (int) env('PORTAL_AI_TIMEOUT', env('FTSA_AI_TIMEOUT', 45)),
+
+    'cache_ttl_days_ftsa' => (int) env('PORTAL_AI_CACHE_DAYS_FTSA', 30),
+    'cache_ttl_hours_dashboard' => (int) env('PORTAL_AI_CACHE_HOURS_DASHBOARD', 24),
+
+    'max_insights' => 3,
+    'max_recommendations' => 3,
+    'max_general_recommendations' => 3,
+    'max_findings' => 5,
+
+    'shared_rules' => [
+        'Gunakan Bahasa Indonesia yang hangat, profesional, dan tidak menghakimi.',
+        'Hanya merujuk data yang diberikan — jangan mengarang angka, kategori, atau diagnosis medis.',
+        'Fokus pada kesadaran behavioral finansial, bukan saran investasi spesifik atau produk keuangan.',
+        'Jangan menyebut bahwa Anda adalah AI; tulis seolah dr. Financial dari YFD.',
+        'Hindari kalimat absolut ("selalu", "pasti"); gunakan nuansa probabilistik.',
+        'Rekomendasi harus konkret, bisa dilakukan dalam 1–2 minggu.',
+    ],
+
+    'ftsa_rules' => [
+        'Insight menjelaskan pola perilaku yang mungkin muncul dari archetype dan skor domain FTSA.',
+        'Jika skor domain tinggi (≥25/40), tekankan risiko dysregulation tanpa menakut-nakuti.',
+        'Jika skor rendah, tekankan penguatan kebiasaan positif yang sudah ada.',
+    ],
+
+    'behavioral_rules' => [
+        'Hubungkan pola mood, impulsivitas, dan profil FTSA jika tersedia.',
+        'Insight fokus pada pola emosional yang terlihat dari data transaksi.',
+        'Rekomendasi personal spesifik untuk kondisi user; rekomendasi umum berlaku untuk siapa saja.',
+    ],
+
+    'financial_rules' => [
+        'Clinical summary merangkum kondisi arus kas dan bucket prescription periode ini.',
+        'Doctor\'s note memberikan interpretasi dan prioritas tindakan praktis.',
+        'Status clinical_summary harus salah satu: healthy, fair, attention, critical.',
+    ],
+
+    'archetype_fallback' => [
+        'controller' => [
+            'insight' => 'Pola Controller cenderung mengaitkan rasa aman dengan kontrol penuh atas angka dan keputusan keuangan.',
+            'recommendation' => 'Coba delegasikan satu keputusan keuangan rutin per minggu dan amati apakah kecemasan benar-benar meningkat.',
+        ],
+        'avoider' => [
+            'insight' => 'Pola Avoider sering menunda paparan informasi keuangan untuk menghindari ketidaknyamanan emosional.',
+            'recommendation' => 'Jadwalkan 10 menit mingguan hanya untuk melihat ringkasan keuangan — tanpa harus mengambil tindakan besar.',
+        ],
+        'overworker' => [
+            'insight' => 'Pola Overworker sering mengaitkan nilai diri dan keamanan dengan produktivitas berkelanjutan.',
+            'recommendation' => 'Tetapkan satu aktivitas istirahat terjadwal minggu ini tanpa merasa bersalah secara finansial.',
+        ],
+        'impulsive' => [
+            'insight' => 'Pola Impulsive rentan menggunakan belanja sebagai regulator emosi jangka pendek.',
+            'recommendation' => 'Terapkan aturan jeda 24 jam untuk pembelian di luar daftar belanja mingguan.',
+        ],
+    ],
+];

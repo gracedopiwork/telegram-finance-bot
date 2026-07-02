@@ -105,6 +105,7 @@
         <span class="material-symbols-outlined text-2xl text-navy-800">clinical_notes</span>
         <div class="flex-1 min-w-0">
             <div class="text-xs uppercase tracking-wider font-bold text-slate-500">Clinical Summary · {{ $summary['period_label'] }}</div>
+            @include('portal.partials.ai-source-badge', ['aiSource' => $summary['ai_source'] ?? null])
             <h3 class="font-extrabold text-navy-800 text-lg mt-1">{{ $summary['clinical_summary']['headline'] }}</h3>
             <ul class="mt-2 space-y-1 text-sm text-slate-700">
                 @foreach($summary['clinical_summary']['findings'] as $finding)
@@ -194,6 +195,7 @@
                 {{ $summary['pulse']['label'] }}
             </div>
             <div class="text-sm text-slate-600 mt-4 text-left border-t pt-4 leading-relaxed space-y-2">
+                @include('portal.partials.ai-source-badge', ['aiSource' => $summary['ai_source'] ?? null])
                 <p><span class="font-semibold text-navy-800">Doctor's Note:</span> {{ $noteSummary }}</p>
                 @if(is_array($note))
                     @if(!empty($note['interpretation']))

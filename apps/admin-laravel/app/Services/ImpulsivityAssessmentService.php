@@ -64,10 +64,9 @@ class ImpulsivityAssessmentService
       $baseline = FinancialBaseline::latestForEmail($email);
     }
     $ftsaProfile = $this->ftsaProfile($baseline);
-    $insights = $this->autoInsights($impulsiveRate, $dominantMood, $dominantPattern, $moodGroups, $highestLeakage, $ftsaProfile);
-    $recommendations = $this->recommendations($impulsiveRate, $dominantMood, $ftsaProfile, $moodGroups);
+    $emotionalBalance = $this->emotionalBalanceScore($expenses);
 
-    return [
+    $core = [
       'month' => $month,
       'period_months' => $periodMonths,
       'period_label' => $periodMonths === 1
@@ -93,10 +92,13 @@ class ImpulsivityAssessmentService
       'dominant_mood' => $dominantMood,
       'dominant_pattern' => $dominantPattern,
       'highest_leakage' => $highestLeakage,
-      'emotional_balance' => $this->emotionalBalanceScore($expenses),
+      'emotional_balance' => $emotionalBalance,
       'ftsa_profile' => $ftsaProfile,
-      'insights' => $insights,
-      'recommendations' => $recommendations,
+    ];
+
+    $fallbackGuidance = [
+      'insights' => $this->autoInsights($impulsiveRate, $dominantMood, $dominantPattern, $moodGroups, $highestLeakage, $ftsaProfile),
+      'recommendations' => $this->recommendations($impulsiveRate, $dominantMood, $ftsaProfile, $moodGroups),
       'doctors_note' => $this->doctorsNote(
         $impulsiveRate,
         $dominantMood,
@@ -105,6 +107,23 @@ class ImpulsivityAssessmentService
         $ftsaProfile,
       ),
     ];
+
+    $aiGuidance = app(PortalAiGuidanceService::class)->behavioral(
+      $telegramUserId,
+      $month,
+      $periodMonths,
+      $core,
+      $baseline,
+      $fallbackGuidance,
+    );
+
+    return array_merge($core, [
+      'insights' => $aiGuidance['insights'],
+      'recommendations' => $aiGuidance['recommendations'],
+      'doctors_note' => $aiGuidance['doctors_note'],
+      'ai_source' => $aiGuidance['ai_source'],
+      'ai_generated_at' => $aiGuidance['generated_at'],
+    ]);
   }
 
   /**

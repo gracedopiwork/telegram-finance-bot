@@ -186,6 +186,7 @@
                      style="width: {{ min(100, $assessment['impulsive_rate']) }}%"></div>
             </div>
             <div class="text-sm text-slate-600 mt-4 border-t pt-4 leading-relaxed space-y-2">
+                @include('portal.partials.ai-source-badge', ['aiSource' => $assessment['ai_source'] ?? null])
                 <p><span class="font-semibold text-navy-800">Doctor's Note:</span> {{ $noteSummary }}</p>
                 @if(is_array($note) && !empty($note['priority']))
                     <p class="text-xs text-navy-800"><span class="font-semibold">Prioritas:</span> {{ $note['priority'] }}</p>
@@ -221,10 +222,11 @@
 
     @if(!empty($assessment['insights']))
     <div class="bg-gradient-to-r from-navy-800 to-navy-600 rounded-2xl p-5 text-white">
-        <h3 class="font-bold mb-3 flex items-center gap-2">
-            <span class="material-symbols-outlined text-gold-400">lightbulb</span> Auto Insights
+        <h3 class="font-bold mb-1 flex items-center gap-2">
+            <span class="material-symbols-outlined text-gold-400">lightbulb</span> Insight Behavioral
         </h3>
-        <ul class="space-y-2 text-sm text-white/90">
+        @include('portal.partials.ai-source-badge', ['aiSource' => $assessment['ai_source'] ?? null, 'tone' => 'dark'])
+        <ul class="space-y-2 text-sm text-white/90 mt-2">
             @foreach($assessment['insights'] as $insight)
                 <li class="flex gap-2"><span class="text-gold-400">→</span>{{ $insight }}</li>
             @endforeach
@@ -289,16 +291,18 @@
 
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-            <h3 class="font-bold text-navy-800 mb-3">Rekomendasi Personal</h3>
-            <ul class="space-y-2 text-sm text-slate-700">
+            <h3 class="font-bold text-navy-800 mb-1">Rekomendasi Personal</h3>
+            @include('portal.partials.ai-source-badge', ['aiSource' => $assessment['ai_source'] ?? null])
+            <ul class="space-y-2 text-sm text-slate-700 mt-2">
                 @foreach($assessment['recommendations']['personalized'] as $rec)
-                    <li class="flex gap-2"><span class="text-navy-600 font-bold">1.</span>{{ $rec }}</li>
+                    <li class="flex gap-2"><span class="text-navy-600 font-bold shrink-0">•</span>{{ $rec }}</li>
                 @endforeach
             </ul>
         </div>
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-            <h3 class="font-bold text-navy-800 mb-3">Rekomendasi Umum</h3>
-            <ul class="space-y-2 text-sm text-slate-600">
+            <h3 class="font-bold text-navy-800 mb-1">Rekomendasi Umum</h3>
+            @include('portal.partials.ai-source-badge', ['aiSource' => $assessment['ai_source'] ?? null])
+            <ul class="space-y-2 text-sm text-slate-600 mt-2">
                 @foreach($assessment['recommendations']['general'] as $rec)
                     <li class="flex gap-2"><span class="text-slate-400">•</span>{{ $rec }}</li>
                 @endforeach

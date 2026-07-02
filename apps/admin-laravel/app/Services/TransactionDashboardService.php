@@ -71,8 +71,29 @@ class TransactionDashboardService
       $baseline = FinancialBaseline::latestForEmail($email);
     }
     $incomeAnalysis = $this->incomeAnalysis($rows, $income);
-    $clinicalSummary = $this->clinicalSummary($income, $expense, $cashflow, $savingRate, $buckets, $baseline, $periodMonths);
-    $doctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $pulse['score'], $buckets, $baseline);
+    $fallbackClinical = $this->clinicalSummary($income, $expense, $cashflow, $savingRate, $buckets, $baseline, $periodMonths);
+    $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $pulse['score'], $buckets, $baseline);
+
+    $aiGuidance = app(PortalAiGuidanceService::class)->financial(
+      $telegramUserId,
+      $month,
+      $periodMonths,
+      [
+        'period_label' => $this->periodLabel($month, $periodMonths),
+        'income' => $income,
+        'expense' => $expense,
+        'cashflow' => $cashflow,
+        'saving_rate' => $savingRate,
+        'pulse_score' => $pulse['score'],
+        'transaction_count' => $transactionCount,
+        'buckets' => $buckets,
+      ],
+      $baseline,
+      [
+        'clinical_summary' => $fallbackClinical,
+        'doctors_note' => $fallbackDoctorsNote,
+      ],
+    );
 
     return [
       'month' => $month,
@@ -96,8 +117,10 @@ class TransactionDashboardService
       'trend' => $trend,
       'pulse' => $pulse,
       'income_analysis' => $incomeAnalysis,
-      'clinical_summary' => $clinicalSummary,
-      'doctors_note' => $doctorsNote,
+      'clinical_summary' => $aiGuidance['clinical_summary'],
+      'doctors_note' => $aiGuidance['doctors_note'],
+      'ai_source' => $aiGuidance['ai_source'],
+      'ai_generated_at' => $aiGuidance['generated_at'],
       'transactions' => $rows->take(50)->map(fn (BotTransaction $t) => $this->serializeTransaction($t))->all(),
     ];
   }
