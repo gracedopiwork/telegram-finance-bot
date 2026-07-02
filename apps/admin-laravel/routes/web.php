@@ -89,6 +89,11 @@ Route::post('/logout', [AuthController::class, 'logout'])
 */
 Route::redirect('/login', '/portal/login', 302);
 
+// Form lama yang masih POST ke /login (sebelum admin dipindah ke /admin/login)
+Route::post('/login', [AuthController::class, 'login'])
+    ->middleware('guest')
+    ->name('login.legacy.attempt');
+
 /*
 |--------------------------------------------------------------------------
 | Admin (Company Profile CRUD) — protected
