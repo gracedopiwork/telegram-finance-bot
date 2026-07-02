@@ -172,7 +172,7 @@
                     <div class="custom-control custom-switch mb-3">
                         <input type="checkbox" name="is_featured" id="isFeatured" class="custom-control-input" value="1"
                                @checked(old('is_featured', $product->is_featured))>
-                        <label class="custom-control-label" for="isFeatured">Featured (jadi flagship hero)</label>
+                        <label class="custom-control-label" for="isFeatured">Featured (menu Layanan → Produk Digital & hero /produk)</label>
                     </div>
                     <div class="form-row">
                         <div class="form-group col-md-6">

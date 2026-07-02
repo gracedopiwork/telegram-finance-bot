@@ -2,8 +2,8 @@
     $active = $active ?? '';
 
     // Item dropdown "Layanan" — kolom kiri = jasa (perlu interaksi manusia),
-    // kolom kanan = produk digital self-serve. Untuk "coming_soon", tinggal isi
-    // 'route' atau 'url' nanti dan ubah 'badge' ke null. Mudah ditambah/edit.
+    // kolom kanan = produk digital self-serve (diisi dari admin: Produk Digital → Featured).
+    $digitalMenuItems = app(\App\Services\DigitalProductMenuService::class)->featuredMenuItems();
     $servicesMenu = [
         'jasa' => [
             'title' => 'Jasa & Pendampingan',
@@ -18,11 +18,7 @@
         'digital' => [
             'title' => 'Produk Digital',
             'icon'  => 'auto_awesome',
-            'items' => [
-                ['key' => 'produk',      'label' => 'YFD Bot Telegram', 'desc' => 'Catat keuangan via chat — AI auto-parse ke dashboard web', 'route' => 'company.produk',      'icon' => 'send',         'badge' => 'Tersedia'],
-                ['key' => null,          'label' => 'YFD Mobile App',    'desc' => 'Aplikasi Android & iOS — dashboard visual',                'icon' => 'phone_iphone', 'badge' => 'Coming Soon', 'url' => null],
-                ['key' => null,          'label' => 'Calculator Tools',  'desc' => 'Dana darurat, KPR, pensiun, compound interest',            'icon' => 'calculate',    'badge' => 'Coming Soon', 'url' => null],
-            ],
+            'items' => $digitalMenuItems,
             'cta' => ['label' => 'Lihat semua produk digital', 'route' => 'company.produk'],
         ],
     ];
