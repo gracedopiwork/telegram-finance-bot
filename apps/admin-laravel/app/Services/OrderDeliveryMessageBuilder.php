@@ -20,6 +20,10 @@ class OrderDeliveryMessageBuilder
             return $this->whatsAppFtsaOnlyText($order);
         }
 
+        if ($onboarding->isBotAfterFtsaOrder($order)) {
+            return $this->whatsAppBotAfterFtsaText($order);
+        }
+
         return $this->whatsAppFullLicenseText($order, ftsaUnlocked: false);
     }
 
@@ -97,6 +101,43 @@ class OrderDeliveryMessageBuilder
             $lines[] = 'Tidak perlu /activate ulang jika bot sudah aktif.';
         }
 
+        $lines[] = '';
+        $lines[] = '— YFD (Your Financial Doctor)';
+
+        return implode("\n", $lines);
+    }
+
+    public function whatsAppBotAfterFtsaText(Order $order): string
+    {
+        $licenseKey = trim((string) ($order->license?->license_key ?? ''));
+        $botUrl = TelegramBotUrl::resolve() ?? '';
+        $portalUrl = rtrim((string) config('app.url'), '/').'/portal/login';
+
+        $lines = [
+            'Hai '.$order->full_name.',',
+            '',
+            'Pembayaran *'.$order->order_code.'* (YFD Bot Telegram) sudah kami terima.',
+            '',
+            'Lisensi Anda *tetap sama* dengan pembelian FTSA — tidak ada kode baru.',
+            'Data FTSA & diagnostik di portal ikut terhubung setelah aktivasi bot.',
+            '',
+        ];
+
+        if ($botUrl !== '') {
+            $lines[] = '🤖 *Bot Telegram*';
+            $lines[] = $botUrl;
+            $lines[] = '';
+        }
+
+        if ($licenseKey !== '') {
+            $lines[] = '🔑 *Aktivasi bot* (kode sama dengan FTSA):';
+            $lines[] = '/activate '.$licenseKey;
+            $lines[] = '';
+        }
+
+        $lines[] = '📊 Portal: '.$portalUrl;
+        $lines[] = 'Email checkout: *'.$order->email.'*';
+        $lines[] = 'Setelah /activate, login portal atau ketik */web* di bot.';
         $lines[] = '';
         $lines[] = '— YFD (Your Financial Doctor)';
 

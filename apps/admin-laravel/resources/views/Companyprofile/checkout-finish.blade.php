@@ -11,6 +11,7 @@
         : '';
     $isFtsaUpgrade = ($orderContext['is_ftsa_upgrade'] ?? false);
     $isFtsaOnly = ($orderContext['is_ftsa_only'] ?? false);
+    $isBotAfterFtsa = ($orderContext['is_bot_after_ftsa'] ?? false);
 @endphp
 
 @push('head')
@@ -41,6 +42,16 @@
                     selama <strong>12 bulan evaluasi</strong>.
                     Login portal dengan email <strong>{{ $order->email }}</strong> dan kode lisensi bot yang sudah pernah di-/activate.
                 </p>
+            @elseif($isBotAfterFtsa)
+                <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
+                    Pembayaran <strong>lunas</strong>. <strong>YFD Bot Telegram</strong> aktif pada <strong>lisensi FTSA yang sama</strong>
+                    (tidak ada kode baru). Aktifkan di bot dengan <code class="bg-white px-1 rounded">/activate {{ $order->license->license_key }}</code>
+                    — data FTSA & diagnostik ikut terhubung.
+                </p>
+                <div class="bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 max-w-lg mx-auto text-left mb-6">
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-primary mb-2">Kode lisensi (sama dengan FTSA)</p>
+                    <code id="licenseKeyDisplay" class="block text-base sm:text-lg font-mono font-bold text-primary break-all select-all bg-white px-4 py-3 rounded-xl border border-outline-variant">{{ $order->license->license_key }}</code>
+                </div>
             @elseif($isFtsaOnly)
                 <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
                     Pembayaran <strong>lunas</strong>. Akses <strong>dashboard FTSA</strong> aktif selama <strong>12 bulan evaluasi</strong>.
@@ -88,6 +99,10 @@
                         @if($isFtsaUpgrade)
                             <li>Login portal: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> dengan email & lisensi bot yang sama</li>
                             <li>Buka menu <strong>BASELINE DATA</strong> untuk mengisi FTSA 1–32</li>
+                        @elseif($isBotAfterFtsa)
+                            <li>Buka bot Telegram → <code class="bg-white px-1 rounded">/activate {{ $order->license->license_key }}</code> (kode sama dengan FTSA)</li>
+                            <li>Login portal: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> atau <code class="bg-white px-1 rounded">/web</code> di bot</li>
+                            <li>Dashboard lengkap + FTSA — lisensi bot berlaku <strong>selamanya</strong></li>
                         @elseif($isFtsaOnly)
                             <li>Login portal: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> dengan email & kode lisensi di atas</li>
                             <li><strong class="text-primary">Isi Financial Health Check-Up</strong> di landing</li>
@@ -100,6 +115,8 @@
                         @endif
                     </ol>
                     @if($isFtsaUpgrade)
+                        <a href="{{ route('portal.login') }}" class="btn btn-primary mt-4 w-full text-sm">Buka Portal</a>
+                    @elseif($isBotAfterFtsa)
                         <a href="{{ route('portal.login') }}" class="btn btn-primary mt-4 w-full text-sm">Buka Portal</a>
                     @elseif($isFtsaOnly)
                         <a href="{{ route('checkup.show') }}" class="btn btn-primary mt-4 w-full text-sm">Mulai Check-Up</a>

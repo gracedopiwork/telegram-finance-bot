@@ -99,17 +99,37 @@ class PortalOnboardingService
     }
 
     /**
-     * @return array{is_ftsa: bool, is_ftsa_upgrade: bool, is_ftsa_only: bool}
+     * Upgrade bot setelah pembeli FTSA-only pada lisensi yang sama.
+     */
+    public function isBotAfterFtsaOrder(Order $order): bool
+    {
+        $code = (string) ($order->digitalProduct?->code ?? $order->plan ?? '');
+        if (! in_array($code, $this->botOnlyProductCodes(), true) || ! $order->license_id) {
+            return false;
+        }
+
+        return Order::query()
+            ->where('status', 'paid')
+            ->where('license_id', $order->license_id)
+            ->where('id', '<', $order->id)
+            ->whereHas('digitalProduct', fn ($q) => $q->whereIn('code', $this->ftsaUnlockProductCodes()))
+            ->exists();
+    }
+
+    /**
+     * @return array{is_ftsa: bool, is_ftsa_upgrade: bool, is_ftsa_only: bool, is_bot_after_ftsa: bool}
      */
     public function orderDeliveryContext(Order $order): array
     {
         $isFtsa = $this->isFtsaUnlockOrder($order);
         $isUpgrade = $isFtsa && $this->isFtsaUpgradeOrder($order);
+        $isBotAfterFtsa = $this->isBotAfterFtsaOrder($order);
 
         return [
             'is_ftsa' => $isFtsa,
             'is_ftsa_upgrade' => $isUpgrade,
             'is_ftsa_only' => $isFtsa && ! $isUpgrade,
+            'is_bot_after_ftsa' => $isBotAfterFtsa,
         ];
     }
 

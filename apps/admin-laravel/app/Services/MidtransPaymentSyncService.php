@@ -6,9 +6,9 @@ use App\Jobs\DeliverPaidOrderJob;
 use App\Models\License;
 use App\Models\Order;
 use App\Models\PaymentEvent;
+use App\Services\LicenseProvisioningService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class MidtransPaymentSyncService
 {
@@ -122,68 +122,6 @@ class MidtransPaymentSyncService
 
     private function resolveLicenseForPaidOrder(Order $order): License
     {
-        if ($this->isFtsaUnlockOrder($order)) {
-            $existing = $this->findExistingLicenseForEmail($order->email);
-            if ($existing !== null) {
-                return $existing;
-            }
-        }
-
-        return License::create([
-            'license_key' => $this->generateLicenseKey(),
-            'plan' => $order->plan,
-            'status' => 'active',
-            'expires_at' => app(LicenseEntitlementService::class)->expiresAtForNewLicense($order),
-            'max_accounts' => 1,
-        ]);
-    }
-
-    private function isFtsaUnlockOrder(Order $order): bool
-    {
-        $code = $order->digitalProduct?->code ?? $order->plan;
-
-        return in_array($code, (array) config('portal.ftsa.unlock_product_codes', []), true);
-    }
-
-    private function findExistingLicenseForEmail(string $email): ?License
-    {
-        $email = strtolower(trim($email));
-        $botCodes = (array) config('portal.bot_only_product_codes', ['yfd-bot-telegram']);
-
-        $priorBot = Order::query()
-            ->where('status', 'paid')
-            ->whereRaw('LOWER(email) = ?', [$email])
-            ->whereNotNull('license_id')
-            ->whereHas('digitalProduct', fn ($q) => $q->whereIn('code', $botCodes))
-            ->orderByDesc('id')
-            ->first();
-
-        if ($priorBot !== null) {
-            return License::query()
-                ->whereKey($priorBot->license_id)
-                ->where('status', 'active')
-                ->first();
-        }
-
-        $priorOrder = Order::query()
-            ->where('status', 'paid')
-            ->whereRaw('LOWER(email) = ?', [$email])
-            ->whereNotNull('license_id')
-            ->orderByDesc('id')
-            ->first();
-
-        if ($priorOrder === null) {
-            return null;
-        }
-
-        return License::query()
-            ->whereKey($priorOrder->license_id)
-            ->where('status', 'active')
-            ->first();
-    }
-
-    private function generateLicenseKey(): string
-    {
-        return 'TFB-'.Str::upper(Str::random(4)).'-'.Str::upper(Str::random(4)).'-'.Str::upper(Str::random(4));
+        return app(LicenseProvisioningService::class)->resolveLicenseForPaidOrder($order);
     }
 }

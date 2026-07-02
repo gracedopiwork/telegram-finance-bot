@@ -68,6 +68,14 @@ class AuthController extends Controller
         $access = app(PortalAccessService::class);
         $isFtsaOnlyOrder = $access->isFtsaOnlyOrder($order);
 
+        if ($access->hasBotPortalAccess($email)
+            && $license->assigned_user_id
+            && $access->isSyntheticPortalUserId((int) $license->assigned_user_id)) {
+            return back()->withInput()->withErrors([
+                'license_key' => 'Paket bot sudah dibeli. Aktifkan dulu di Telegram: /activate '.$license->license_key,
+            ]);
+        }
+
         if (! $license->assigned_user_id) {
             if ($isFtsaOnlyOrder) {
                 $portalUserId = $access->ensureLicensePortalActivation($license->fresh());

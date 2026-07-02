@@ -21,6 +21,7 @@ from telegram.ext import (
 
 from ai_health import log_ai_health_config, report_ai_event, report_gemini_failure
 from laravel_api import log_laravel_api_config
+from license_activate import activate_license_via_api
 from ai_quota import (
     format_quota_exhausted_notice,
     format_quota_status,
@@ -930,33 +931,44 @@ async def activate_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
 
     user = update.effective_user
-    try:
-        activated_key, license_id = activate_license_for_user(
-            key, user.id if user else 0, user.username if user else None
-        )
-    except ValueError as exc:
+    user_id = user.id if user else 0
+    if not user_id:
+        await update.message.reply_text("Aktivasi gagal: akun Telegram tidak dikenali.")
+        return
+
+    ok, payload = activate_license_via_api(
+        key, user_id, user.username if user else None
+    )
+    if not ok:
         mapping = {
-            "empty_key": "Kode lisensi tidak boleh kosong.",
+            "bot_not_purchased": "Lisensi ini belum termasuk paket YFD Bot. Beli bot Telegram dulu untuk aktivasi.",
             "license_not_found": "Kode lisensi tidak ditemukan.",
             "license_not_active": "Lisensi tidak aktif (mungkin suspended).",
             "license_expired": "Lisensi sudah expired.",
             "license_used_by_other_user": "Lisensi sudah terpakai oleh akun Telegram lain.",
+            "config_missing": payload.get("message", "Server belum dikonfigurasi."),
+            "network_error": "Aktivasi gagal (koneksi server). Coba lagi atau hubungi admin YFD.",
         }
-        await update.message.reply_text(mapping.get(str(exc), "Aktivasi gagal."))
-        return
-    except Exception as exc:  # pragma: no cover - external db guard
-        logger.exception("Aktivasi lisensi gagal: %s", exc)
-        await update.message.reply_text("Aktivasi gagal karena masalah server.")
+        code = str(payload.get("error", ""))
+        await update.message.reply_text(mapping.get(code, payload.get("message", "Aktivasi gagal.")))
         return
 
+    activated_key = str(payload.get("license_key", key)).strip().upper()
     if user:
         PENDING_NAME_USERS.add(user.id)
+    migrated = bool(payload.get("migrated_from_synthetic"))
+    extra = (
+        "\n\nData FTSA & diagnostik dari portal sudah dipindahkan ke akun Telegram Anda."
+        if migrated
+        else ""
+    )
     await update.message.reply_text(
         f"Lisensi aktif. Kode: `{activated_key}`\nSekarang kamu mau dipanggil siapa?\n\n"
         "Setelah ini:\n"
         "1) Ketik `/web` untuk masuk dashboard\n"
         "2) **Wajib** isi *Baseline Data (Diagnostik)* di menu portal\n"
-        "3) Baru `/catat` transaksi harian",
+        "3) Baru `/catat` transaksi harian"
+        f"{extra}",
         parse_mode="Markdown",
     )
 

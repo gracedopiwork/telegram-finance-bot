@@ -11,6 +11,7 @@ use App\Services\CustomerDataPurgeService;
 use App\Services\MidtransPaymentSyncService;
 use App\Services\MidtransService;
 use App\Services\LicenseEntitlementService;
+use App\Services\LicenseProvisioningService;
 use App\Services\OrderDeliveryNotifier;
 use App\Support\TelegramBotUrl;
 use Illuminate\Http\Request;
@@ -110,16 +111,13 @@ class OrdersController extends Controller
 
         if ($data['status'] === 'paid') {
             $order->paid_at = $order->paid_at ?? now();
+            $order->loadMissing(['digitalProduct', 'license']);
             // Auto-generate license jika belum punya
             if (! $order->license_id) {
-                $license = License::create([
-                    'license_key'  => $this->generateLicenseKey(),
-                    'plan'         => $order->plan ?? ($order->digitalProduct?->code ?? 'manual'),
-                    'status'       => 'active',
-                    'expires_at'   => app(LicenseEntitlementService::class)->expiresAtForNewLicense($order),
-                    'max_accounts' => 1,
-                ]);
+                $license = app(LicenseProvisioningService::class)->resolveLicenseForPaidOrder($order);
                 $order->license_id = $license->id;
+            } elseif ($order->license) {
+                app(LicenseProvisioningService::class)->syncEntitlementsOntoLicense($order, $order->license);
             }
         }
 
