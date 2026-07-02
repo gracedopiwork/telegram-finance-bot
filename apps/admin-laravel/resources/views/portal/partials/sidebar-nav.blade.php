@@ -22,10 +22,10 @@
     </a>
     @endif
     <a href="{{ route('portal.baseline') }}"
-       class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'baseline' ? 'nav-active font-semibold' : 'hover:bg-white/10' }} {{ ($needsBaseline ?? false) ? 'ring-2 ring-gold-400/80 bg-gold-400/10' : '' }}">
+       class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'baseline' ? 'nav-active font-semibold' : 'hover:bg-white/10' }} {{ (($needsBaseline ?? false) || ($needsFtsa ?? false)) ? 'ring-2 ring-gold-400/80 bg-gold-400/10' : '' }}">
         <span class="material-symbols-outlined text-lg opacity-80">fact_check</span>
-        <span class="flex-1">BASELINE DATA (WAJIB DI ISI)</span>
-        @if($needsBaseline ?? false)
+        <span class="flex-1">{{ ($isFtsaOnlyPortalUser ?? false) ? 'FTSA 1–32' : 'BASELINE DATA (WAJIB DI ISI)' }}</span>
+        @if(($needsBaseline ?? false) || ($needsFtsa ?? false))
             <span class="text-[9px] bg-gold-400 text-navy-900 px-1.5 py-0.5 rounded font-bold animate-pulse">ISI</span>
         @endif
     </a>

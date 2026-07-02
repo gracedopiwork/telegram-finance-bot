@@ -111,15 +111,22 @@ class AppServiceProvider extends ServiceProvider
                 $email = (string) (PortalSession::email($request) ?? '');
                 $onboarding = app(PortalOnboardingService::class);
                 $access = app(PortalAccessService::class);
-                $view->with('needsBaseline', FinancialBaseline::userNeedsBaseline($telegramUserId));
+                $needsBaseline = FinancialBaseline::userNeedsBaseline($telegramUserId);
+                $needsFtsa = $onboarding->userNeedsFtsa($email, $telegramUserId);
+                $needsFinancialDiagnostic = $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId);
+
+                $view->with('needsBaseline', $needsBaseline);
+                $view->with('needsFtsa', $needsFtsa);
+                $view->with('needsFinancialDiagnostic', $needsFinancialDiagnostic);
                 $view->with('hasBotPortalAccess', $access->hasBotPortalAccess($email));
                 $view->with('isFtsaOnlyPortalUser', $access->isFtsaOnlyPortalUser($email));
                 $view->with(
                     'baselineUrl',
-                    FinancialBaseline::userNeedsBaseline($telegramUserId)
+                    $needsBaseline || $needsFtsa
                         ? $onboarding->firstBaselineUrl($email, $telegramUserId)
                         : route('portal.baseline')
                 );
+                $view->with('diagnosticCheckupUrl', $onboarding->diagnosticCheckupUrl());
             } catch (\Throwable) {
                 // Portal routes may not be registered during early boot.
             }

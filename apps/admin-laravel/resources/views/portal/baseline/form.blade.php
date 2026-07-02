@@ -11,9 +11,22 @@
     $currentSection = '';
     $ftsaUnlocked = $ftsaUnlocked ?? true;
     $isFtsaOnlyPortalUser = $isFtsaOnlyPortalUser ?? false;
+    $needsFinancialDiagnostic = $needsFinancialDiagnostic ?? false;
 @endphp
 
 <div class="max-w-3xl">
+    @if($isFtsaOnlyPortalUser && $needsFinancialDiagnostic)
+        <div class="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 mb-6 text-sm text-sky-900">
+            <div class="font-bold">Belum ada diagnostik tahap keuangan?</div>
+            <p class="mt-1">Check-up gratis opsional — hasil otomatis terhubung ke akun Anda via email.</p>
+            <a href="{{ $diagnosticCheckupUrl ?? route('checkup.show') }}"
+               class="inline-flex items-center gap-2 mt-3 bg-navy-800 hover:bg-navy-700 text-white font-bold px-4 py-2 rounded-xl text-sm">
+                <span class="material-symbols-outlined text-lg">health_and_safety</span>
+                Jalankan Financial Health Check-Up
+            </a>
+        </div>
+    @endif
+
     @if($hasBaseline ?? false)
         <div class="bg-sky-50 border border-sky-200 rounded-2xl px-5 py-4 mb-6 text-sm text-sky-900">
             Anda mengisi ulang {{ $isFtsaOnlyPortalUser ? 'FTSA' : 'diagnostik' }}. Data sebelumnya akan digantikan setelah disimpan.

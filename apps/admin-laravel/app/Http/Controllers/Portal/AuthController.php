@@ -141,18 +141,23 @@ class AuthController extends Controller
 
         $access = app(PortalAccessService::class);
 
+        if ($access->isFtsaOnlyPortalUser($email)) {
+            if ($onboarding->userNeedsFtsa($email, $telegramUserId)) {
+                return redirect()->route('portal.baseline.create')
+                    ->with('info', 'Lengkapi kuesioner FTSA 1–32 untuk mengaktifkan dashboard behavioral Anda.');
+            }
+
+            return redirect()->route('portal.emotional')
+                ->with('success', 'Selamat datang di dashboard FTSA Premium.');
+        }
+
         if ($onboarding->userNeedsBaseline($telegramUserId)) {
             if ($onboarding->isBotOnlyBuyer($email, $telegramUserId)) {
                 return redirect()->route('portal.baseline.create')
                     ->with(
                         'info',
-                        'Lengkapi Baseline Data di portal untuk mengaktifkan prescription bucket dan dashboard bot.'
+                        'Lengkapi Baseline Data (diagnostik) terlebih dahulu untuk mengaktifkan Financial Health Dashboard.'
                     );
-            }
-
-            if ($access->isFtsaOnlyPortalUser($email)) {
-                return redirect()->route('portal.baseline.create')
-                    ->with('info', 'Lengkapi kuesioner FTSA 1–32 untuk mengaktifkan dashboard behavioral Anda.');
             }
 
             return redirect()->route('checkup.show')

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\FinancialBaseline;
 use App\Services\BaselineAssessmentService;
 use App\Services\DiagnosticConfigService;
+use App\Services\FtsaAnswerSummaryService;
+use App\Services\PortalAccessService;
 use App\Support\FinancialBaselineSchema;
 use App\Support\PortalSession;
 use Illuminate\Database\QueryException;
@@ -50,14 +52,29 @@ class PublicCheckupController extends Controller
         $validated = $request->validate($service->validationRulesFinancialStageOnly());
         $email = strtolower(trim($validated['email']));
 
-        try {
-            $result = $service->assess($validated, false);
-            $baseline = FinancialBaseline::query()->create($this->buildGuestPayload($email, $result));
+        $telegramUserId = PortalSession::isAuthenticated($request)
+            ? (int) PortalSession::telegramUserId($request)
+            : 0;
+        $existing = $telegramUserId > 0 ? FinancialBaseline::latestForUser($telegramUserId) : null;
+        $ftsaService = app(FtsaAnswerSummaryService::class);
+        $includeFtsa = $existing !== null && $ftsaService->hasFtsaAnswers($existing);
 
-            if (PortalSession::isAuthenticated($request)) {
-                $baseline->update([
-                    'telegram_user_id' => (int) PortalSession::telegramUserId($request),
-                ]);
+        if ($includeFtsa) {
+            $validated['ftsa'] = $existing->answers_json['ftsa'] ?? [];
+        }
+
+        try {
+            $result = $service->assess($validated, $includeFtsa);
+
+            if ($existing !== null && $telegramUserId > 0) {
+                $existing->update($this->buildUpdatePayload($email, $telegramUserId, $result, $existing));
+                $baseline = $existing->fresh();
+            } else {
+                $payload = $this->buildGuestPayload($email, $result);
+                if ($telegramUserId > 0) {
+                    $payload['telegram_user_id'] = $telegramUserId;
+                }
+                $baseline = FinancialBaseline::query()->create($payload);
             }
         } catch (QueryException $e) {
             report($e);
@@ -94,12 +111,67 @@ class PublicCheckupController extends Controller
             (int) $baseline->financial_stage_score,
         );
         $fromPortal = PortalSession::isAuthenticated($request);
+        $portalEmail = (string) (PortalSession::email($request) ?? $baseline->email ?? '');
+        $access = app(PortalAccessService::class);
+        $isFtsaOnlyPortal = $fromPortal && $access->isFtsaOnlyPortalUser($portalEmail);
+        $portalHomeRoute = $isFtsaOnlyPortal
+            ? 'portal.emotional'
+            : ($fromPortal && $access->hasBotPortalAccess($portalEmail) ? 'portal.dashboard' : null);
 
         return view('checkup.result', [
             'baseline' => $baseline,
             'stageDisplay' => $stageDisplay,
             'fromPortal' => $fromPortal,
+            'isFtsaOnlyPortal' => $isFtsaOnlyPortal,
+            'portalHomeRoute' => $portalHomeRoute,
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $result
+     * @return array<string, mixed>
+     */
+    private function buildUpdatePayload(
+        string $email,
+        int $telegramUserId,
+        array $result,
+        FinancialBaseline $existing,
+    ): array {
+        $payload = $this->buildGuestPayload($email, $result);
+        $payload['telegram_user_id'] = $telegramUserId;
+
+        if (app(FtsaAnswerSummaryService::class)->hasFtsaAnswers($existing)) {
+            $payload['ftsa_chd'] = $result['ftsa_chd'];
+            $payload['ftsa_rvd'] = $result['ftsa_rvd'];
+            $payload['ftsa_ssd'] = $result['ftsa_ssd'];
+            $payload['ftsa_esd'] = $result['ftsa_esd'];
+            $payload['dominant_archetype'] = $result['dominant_archetype'];
+            $payload['dominant_archetype_label'] = $result['dominant_archetype_label'];
+            $payload['chd_level'] = $result['chd_level'];
+            $payload['rvd_level'] = $result['rvd_level'];
+            $payload['ssd_level'] = $result['ssd_level'];
+            $payload['esd_level'] = $result['esd_level'];
+        }
+
+        foreach ([
+            'current_goal',
+            'avg_monthly_income',
+            'emergency_fund',
+            'cash_savings',
+            'total_investment',
+            'total_asset',
+            'total_debt',
+            'has_bpjs',
+            'has_health_insurance',
+            'has_income_protection',
+            'has_life_insurance',
+        ] as $field) {
+            if (($payload[$field] === null || $payload[$field] === false) && $existing->{$field} !== null) {
+                $payload[$field] = $existing->{$field};
+            }
+        }
+
+        return $payload;
     }
 
     /**

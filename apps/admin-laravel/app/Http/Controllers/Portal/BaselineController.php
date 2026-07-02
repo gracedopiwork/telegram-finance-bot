@@ -105,6 +105,7 @@ class BaselineController extends Controller
             'ftsaUnlocked' => $ftsaUnlocked,
             'ftsaEndsAt' => $ftsaStatus['ends_at'],
             'isFtsaOnlyPortalUser' => $isFtsaOnly,
+            'needsFinancialDiagnostic' => $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId),
             'months' => $this->monthOptions(),
         ]);
     }
@@ -150,13 +151,24 @@ class BaselineController extends Controller
             }
 
             $validated = $request->validate($rules);
+            $existing = FinancialBaseline::latestForUser($telegramUserId);
+
             if ($isFtsaOnly) {
-                $validated['fs'] = [];
+                $priorFs = $existing?->answers_json['fs'] ?? [];
+                $validated['fs'] = (is_array($priorFs) && $priorFs !== []) ? $priorFs : [];
             }
+
             $result = $service->assess($validated, $ftsaUnlocked);
             $snapshot = $validated['snapshot'] ?? [];
 
-            FinancialBaseline::query()->create($this->buildBaselinePayload($request, $telegramUserId, $result, $snapshot, $ftsaUnlocked));
+            $payload = $this->buildBaselinePayload($request, $telegramUserId, $result, $snapshot, $ftsaUnlocked);
+
+            if ($isFtsaOnly && $existing !== null) {
+                $payload = $this->mergeExistingSnapshotFields($existing, $payload);
+                $existing->update($payload);
+            } else {
+                FinancialBaseline::query()->create($payload);
+            }
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
         } catch (QueryException $e) {
@@ -241,6 +253,33 @@ class BaselineController extends Controller
         return $payload;
     }
 
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function mergeExistingSnapshotFields(FinancialBaseline $existing, array $payload): array
+    {
+        foreach ([
+            'current_goal',
+            'avg_monthly_income',
+            'emergency_fund',
+            'cash_savings',
+            'total_investment',
+            'total_asset',
+            'total_debt',
+            'has_bpjs',
+            'has_health_insurance',
+            'has_income_protection',
+            'has_life_insurance',
+        ] as $field) {
+            if (($payload[$field] === null || $payload[$field] === false) && $existing->{$field} !== null) {
+                $payload[$field] = $existing->{$field};
+            }
+        }
+
+        return $payload;
+    }
+
     private function normalizeSnapshotInput(Request $request): void
     {
         $snapshot = $request->input('snapshot', []);
@@ -319,8 +358,12 @@ class BaselineController extends Controller
         $access = app(PortalAccessService::class);
 
         if ($access->isFtsaOnlyPortalUser($email)) {
-            return redirect()->route('portal.baseline.create')
-                ->with('info', 'Lengkapi kuesioner FTSA 1–32 untuk mengaktifkan dashboard behavioral.');
+            if ($onboarding->userNeedsFtsa($email, $telegramUserId)) {
+                return redirect()->route('portal.baseline.create')
+                    ->with('info', 'Lengkapi kuesioner FTSA 1–32 untuk mengaktifkan dashboard behavioral.');
+            }
+
+            return redirect()->route('portal.emotional');
         }
 
         if ($onboarding->isBotOnlyBuyer($email, $telegramUserId)) {

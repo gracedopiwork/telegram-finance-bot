@@ -34,6 +34,18 @@
 
 @if(empty($summary['baseline']))
     @include('portal.partials.onboarding-checklist')
+@elseif($needsBaseline ?? false)
+    <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div class="text-sm text-amber-900">
+            <div class="font-bold">Lengkapi diagnostik terlebih dahulu</div>
+            <div class="mt-0.5">Financial Health Dashboard aktif setelah Baseline Data (tahap keuangan) diisi.</div>
+        </div>
+        <a href="{{ $baselineUrl ?? route('portal.baseline.create') }}"
+           class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm">
+            <span class="material-symbols-outlined text-lg">fact_check</span>
+            Isi Baseline Data
+        </a>
+    </div>
 @endif
 
 @if(!$hasData)

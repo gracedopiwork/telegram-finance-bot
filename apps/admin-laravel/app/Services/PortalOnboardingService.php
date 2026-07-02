@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\FinancialBaseline;
 use App\Models\Order;
 
 class PortalOnboardingService
@@ -118,7 +119,45 @@ class PortalOnboardingService
             return false;
         }
 
-        return \App\Models\FinancialBaseline::userNeedsBaseline($telegramUserId);
+        return FinancialBaseline::userNeedsBaseline($telegramUserId);
+    }
+
+    public function hasFinancialDiagnostic(?FinancialBaseline $baseline): bool
+    {
+        if ($baseline === null) {
+            return false;
+        }
+
+        $fs = $baseline->answers_json['fs'] ?? [];
+
+        return is_array($fs) && $fs !== [];
+    }
+
+    public function userNeedsFinancialDiagnostic(string $email, int $telegramUserId): bool
+    {
+        if (! \App\Support\FinancialBaselineSchema::isReady()) {
+            return false;
+        }
+
+        return ! $this->hasFinancialDiagnostic(FinancialBaseline::latestForUser($telegramUserId));
+    }
+
+    public function userNeedsFtsa(string $email, int $telegramUserId): bool
+    {
+        if (! \App\Support\FinancialBaselineSchema::isReady()) {
+            return false;
+        }
+
+        if (! app(PortalFeatureService::class)->canAccessFtsa($telegramUserId)) {
+            return false;
+        }
+
+        $baseline = FinancialBaseline::latestForUser($telegramUserId);
+        if ($baseline === null) {
+            return true;
+        }
+
+        return ! app(FtsaAnswerSummaryService::class)->hasFtsaAnswers($baseline);
     }
 
     /**
@@ -131,9 +170,21 @@ class PortalOnboardingService
         }
 
         if ($this->isFtsaOnlyBuyer($email)) {
-            return route('portal.baseline.create');
+            if ($this->userNeedsFtsa($email, $telegramUserId)) {
+                return route('portal.baseline.create');
+            }
+
+            return route('checkup.show');
         }
 
+        return route('checkup.show');
+    }
+
+    /**
+     * URL check-up diagnostik (landing) — dipakai FTSA-only yang belum punya tahap keuangan.
+     */
+    public function diagnosticCheckupUrl(): string
+    {
         return route('checkup.show');
     }
 }

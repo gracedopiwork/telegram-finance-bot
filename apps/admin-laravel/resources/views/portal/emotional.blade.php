@@ -21,6 +21,32 @@
             Beli YFD Bot
         </a>
     </div>
+    @if($needsFtsa ?? false)
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+            <div class="text-sm text-amber-900">
+                <div class="font-bold">Lengkapi FTSA 1–32</div>
+                <div class="mt-0.5">Profil behavioral finansial aktif setelah kuesioner diisi.</div>
+            </div>
+            <a href="{{ $baselineUrl ?? route('portal.baseline.create') }}"
+               class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm">
+                <span class="material-symbols-outlined text-lg">edit_note</span>
+                Isi FTSA Sekarang
+            </a>
+        </div>
+    @endif
+    @if($needsFinancialDiagnostic ?? false)
+        <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+            <div class="text-sm text-slate-700">
+                <div class="font-bold">Diagnostik tahap keuangan (opsional)</div>
+                <div class="mt-0.5">Check-up gratis di portal — hasil terhubung otomatis via email Anda.</div>
+            </div>
+            <a href="{{ $diagnosticCheckupUrl ?? route('checkup.show') }}"
+               class="inline-flex items-center gap-2 border border-navy-800 text-navy-800 hover:bg-navy-50 font-bold px-4 py-2 rounded-xl text-sm">
+                <span class="material-symbols-outlined text-lg">health_and_safety</span>
+                Mulai Check-Up
+            </a>
+        </div>
+    @endif
 @elseif(!($ftsaUnlocked ?? false))
     <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
         <div class="text-sm text-amber-900">

@@ -73,14 +73,29 @@
             <div class="mt-6 rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 text-sm text-sky-900">
                 Hasil disimpan untuk <strong>{{ $baseline->email }}</strong>.
                 @if($fromPortal)
-                    Dashboard Anda sudah bisa dipakai — lanjutkan ke menu transaksi dan pantau kesehatan finansial.
+                    @if($isFtsaOnlyPortal ?? false)
+                        Data diagnostik terhubung ke dashboard FTSA Anda. Lanjutkan ke FTSA 1–32 jika belum diisi.
+                    @else
+                        Dashboard Anda sudah bisa dipakai — lanjutkan ke menu transaksi dan pantau kesehatan finansial.
+                    @endif
                 @else
                     Saat Anda membeli YFD First Aid / Bot, gunakan email yang sama — dashboard akan langsung mengenali hasil check-up ini.
                 @endif
             </div>
 
             <div class="flex flex-wrap gap-3 mt-8 justify-center">
-                @if($fromPortal)
+                @if($fromPortal && !empty($portalHomeRoute))
+                    <a href="{{ route($portalHomeRoute) }}" class="btn btn-gold btn-lg">
+                        <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                        {{ ($isFtsaOnlyPortal ?? false) ? 'Buka Dashboard FTSA' : 'Buka Dashboard' }}
+                    </a>
+                    @if($isFtsaOnlyPortal ?? false)
+                        <a href="{{ route('portal.baseline.create') }}" class="btn btn-ghost btn-lg">
+                            <span class="material-symbols-outlined text-[20px]">psychology</span>
+                            Lengkapi FTSA 1–32
+                        </a>
+                    @endif
+                @elseif($fromPortal)
                     <a href="{{ route('portal.dashboard') }}" class="btn btn-gold btn-lg">
                         <span class="material-symbols-outlined text-[20px]">dashboard</span>
                         Buka Dashboard
