@@ -14,7 +14,7 @@
     $needsFinancialDiagnostic = $needsFinancialDiagnostic ?? false;
 @endphp
 
-<div class="max-w-3xl">
+<div class="w-full max-w-6xl mx-auto">
     @if($isFtsaOnlyPortalUser && $needsFinancialDiagnostic)
         <div class="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 mb-6 text-sm text-sky-900">
             <div class="font-bold">Belum ada diagnostik tahap keuangan?</div>
@@ -153,30 +153,31 @@
                     </div>
                 </div>
             @else
-            <div class="p-5 sm:p-6 space-y-6">
+            <div class="p-5 sm:p-8 space-y-8">
                 @if(!empty($ftsaEndsAt))
                     <div class="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 px-4 py-3 text-sm">
                         Masa evaluasi FTSA berlaku hingga <strong>{{ $ftsaEndsAt->format('d M Y') }}</strong>.
                     </div>
                 @endif
                 @foreach(range(1, 32) as $qNum)
-                    <fieldset>
-                        <legend class="text-sm text-slate-800 mb-2">
-                            <span class="font-semibold text-navy-600">{{ $qNum }}.</span>
+                    <fieldset class="rounded-xl border border-slate-100 bg-slate-50/50 p-4 sm:p-5">
+                        <legend class="text-sm sm:text-base text-slate-800 mb-4 leading-relaxed">
+                            <span class="inline-flex items-center justify-center min-w-[1.75rem] h-7 px-1.5 rounded-lg bg-navy-800 text-white text-xs font-bold mr-2">{{ $qNum }}</span>
                             {{ $ftsaQuestions[$qNum] ?? $ftsaQuestions[(string) $qNum] ?? '' }}
                         </legend>
-                        <div class="flex flex-wrap gap-2">
+                        <div class="grid grid-cols-5 gap-2 sm:gap-3">
                             @foreach($likert as $score => $label)
-                                <label class="flex-1 min-w-[4.5rem] text-center rounded-lg border border-slate-200 px-2 py-2 cursor-pointer hover:border-navy-500 has-[:checked]:border-gold-500 has-[:checked]:bg-gold-50 has-[:checked]:ring-2 has-[:checked]:ring-gold-300">
+                                <label class="ftsa-likert-btn group flex flex-col items-center justify-center rounded-xl border-2 border-slate-200 bg-white px-1 py-3 sm:py-4 cursor-pointer transition-all duration-150
+                                    hover:border-navy-400 hover:bg-slate-50">
                                     <input type="radio" name="ftsa[{{ $qNum }}]" value="{{ $score }}"
                                            class="sr-only" @checked((int) old("ftsa.{$qNum}") === $score) required>
-                                    <div class="text-lg font-bold text-navy-800">{{ $score }}</div>
-                                    <div class="text-[10px] text-slate-500 leading-tight hidden sm:block">{{ $label }}</div>
+                                    <div class="ftsa-likert-num text-xl sm:text-2xl font-extrabold text-navy-800">{{ $score }}</div>
+                                    <div class="ftsa-likert-label mt-1 text-[9px] sm:text-[10px] leading-tight text-center text-slate-500 font-medium px-0.5">{{ $label }}</div>
                                 </label>
                             @endforeach
                         </div>
                         @error("ftsa.{$qNum}")
-                            <p class="text-rose-600 text-xs mt-1">{{ $message }}</p>
+                            <p class="text-rose-600 text-xs mt-2">{{ $message }}</p>
                         @enderror
                     </fieldset>
                 @endforeach
@@ -251,4 +252,21 @@
         </div>
     </form>
 </div>
+
+@push('scripts')
+<style>
+    .ftsa-likert-btn:has(input:checked) {
+        background-color: #0c2240;
+        border-color: #f5c130;
+        box-shadow: 0 10px 15px -3px rgb(12 34 64 / 0.25);
+        transform: scale(1.03);
+    }
+    .ftsa-likert-btn:has(input:checked) .ftsa-likert-num {
+        color: #f5c130;
+    }
+    .ftsa-likert-btn:has(input:checked) .ftsa-likert-label {
+        color: #fff;
+    }
+</style>
+@endpush
 @endsection
