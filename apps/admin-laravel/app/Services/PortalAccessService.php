@@ -35,16 +35,32 @@ class PortalAccessService
     }
 
     /**
-     * ID portal untuk lisensi FTSA-only (negatif agar tidak bentrok dengan Telegram).
+     * ID portal untuk lisensi FTSA-only (offset tinggi, tidak bentrok Telegram).
      */
+    public function syntheticUserIdBase(): int
+    {
+        return max(1_000_000_000_000, (int) config('portal.synthetic_user_id_base', 9_000_000_000_000));
+    }
+
     public function syntheticPortalUserId(int $licenseId): int
     {
-        return -1 * abs($licenseId);
+        return $this->syntheticUserIdBase() + abs($licenseId);
     }
 
     public function isSyntheticPortalUserId(int $telegramUserId): bool
     {
-        return $telegramUserId < 0;
+        return $telegramUserId >= $this->syntheticUserIdBase();
+    }
+
+    public function licenseIdFromSyntheticUserId(int $portalUserId): ?int
+    {
+        if (! $this->isSyntheticPortalUserId($portalUserId)) {
+            return null;
+        }
+
+        $licenseId = $portalUserId - $this->syntheticUserIdBase();
+
+        return $licenseId > 0 ? $licenseId : null;
     }
 
     /**

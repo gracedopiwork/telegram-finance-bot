@@ -26,4 +26,12 @@ return [
         fn (string $v) => trim($v),
         explode(',', (string) env('PORTAL_BOT_ONLY_PRODUCT_CODES', 'yfd-bot-telegram'))
     ))),
+
+    /*
+    |--------------------------------------------------------------------------
+    | FTSA-only portal user IDs (tanpa aktivasi Telegram)
+    |--------------------------------------------------------------------------
+    | assigned_user_id = base + license_id — harus unsigned BIGINT (bukan negatif).
+    */
+    'synthetic_user_id_base' => (int) env('PORTAL_SYNTHETIC_USER_ID_BASE', 9_000_000_000_000),
 ];
