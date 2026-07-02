@@ -12,6 +12,9 @@ class FtsaConfigService
      */
     public function questionMap(): array
     {
+        $fromConfig = $this->normalizedConfigQuestions();
+        $map = [];
+
         if ($this->usesDatabase()) {
             $rows = FtsaQuestion::query()
                 ->where('is_active', true)
@@ -19,17 +22,39 @@ class FtsaConfigService
                 ->orderBy('question_num')
                 ->get();
 
-            if ($rows->isNotEmpty()) {
-                $map = [];
-                foreach ($rows as $row) {
-                    $map[(int) $row->question_num] = (string) $row->text;
-                }
-
-                return $map;
+            foreach ($rows as $row) {
+                $map[(int) $row->question_num] = (string) $row->text;
             }
         }
 
-        return (array) config('baseline_assessment.ftsa_questions', []);
+        for ($i = 1; $i <= 32; $i++) {
+            if (! isset($map[$i]) || trim($map[$i]) === '') {
+                if (isset($fromConfig[$i])) {
+                    $map[$i] = $fromConfig[$i];
+                }
+            }
+        }
+
+        ksort($map);
+
+        return $map !== [] ? $map : $fromConfig;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function normalizedConfigQuestions(): array
+    {
+        $raw = (array) config('baseline_assessment.ftsa_questions', []);
+        $map = [];
+        foreach ($raw as $num => $text) {
+            $n = (int) $num;
+            if ($n >= 1 && $n <= 32 && is_string($text) && trim($text) !== '') {
+                $map[$n] = trim($text);
+            }
+        }
+
+        return $map;
     }
 
     /**

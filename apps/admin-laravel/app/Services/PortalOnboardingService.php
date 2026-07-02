@@ -130,6 +130,10 @@ class PortalOnboardingService
             return route('portal.baseline.create');
         }
 
+        if ($this->isFtsaOnlyBuyer($email)) {
+            return route('portal.baseline.create');
+        }
+
         return route('checkup.show');
     }
 }

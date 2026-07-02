@@ -78,7 +78,12 @@ class BaselineController extends Controller
 
         $email = (string) (PortalSession::email($request) ?? '');
         $onboarding = app(PortalOnboardingService::class);
-        if (FinancialBaseline::userNeedsBaseline($telegramUserId) && ! $onboarding->isBotOnlyBuyer($email, $telegramUserId)) {
+        $access = app(PortalAccessService::class);
+        $isFtsaOnly = $access->isFtsaOnlyPortalUser($email);
+
+        if (FinancialBaseline::userNeedsBaseline($telegramUserId)
+            && ! $onboarding->isBotOnlyBuyer($email, $telegramUserId)
+            && ! $isFtsaOnly) {
             return redirect()->route('checkup.show')
                 ->with('warning', 'Silakan lengkapi Financial Health Check-Up di halaman landing terlebih dahulu.')
                 ->withInput(['email' => $email]);
@@ -99,6 +104,7 @@ class BaselineController extends Controller
             'hasBaseline' => ! FinancialBaseline::userNeedsBaseline($telegramUserId),
             'ftsaUnlocked' => $ftsaUnlocked,
             'ftsaEndsAt' => $ftsaStatus['ends_at'],
+            'isFtsaOnlyPortalUser' => $isFtsaOnly,
             'months' => $this->monthOptions(),
         ]);
     }
@@ -125,16 +131,28 @@ class BaselineController extends Controller
 
         $this->normalizeSnapshotInput($request);
 
+        $email = (string) (PortalSession::email($request) ?? '');
+        $isFtsaOnly = app(PortalAccessService::class)->isFtsaOnlyPortalUser($email);
+
         try {
             $service = app(BaselineAssessmentService::class);
             $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
-            $rules = $service->validationRules();
-            if (! $ftsaUnlocked) {
-                foreach (range(1, 32) as $i) {
-                    unset($rules["ftsa.{$i}"]);
+
+            if ($isFtsaOnly) {
+                $rules = $service->validationRulesFtsaOnly($ftsaUnlocked);
+            } else {
+                $rules = $service->validationRules();
+                if (! $ftsaUnlocked) {
+                    foreach (range(1, 32) as $i) {
+                        unset($rules["ftsa.{$i}"]);
+                    }
                 }
             }
+
             $validated = $request->validate($rules);
+            if ($isFtsaOnly) {
+                $validated['fs'] = [];
+            }
             $result = $service->assess($validated, $ftsaUnlocked);
             $snapshot = $validated['snapshot'] ?? [];
 
@@ -159,9 +177,13 @@ class BaselineController extends Controller
             );
         }
 
+        $successMsg = ($isFtsaOnly ?? false)
+            ? 'FTSA berhasil disimpan. Behavioral dashboard Anda sudah aktif.'
+            : 'Baseline berhasil disimpan. Prescription bucket dashboard disesuaikan dengan tahap keuangan Anda.';
+
         return redirect()
-            ->route('portal.baseline')
-            ->with('success', 'Baseline berhasil disimpan. Prescription bucket dashboard disesuaikan dengan tahap keuangan Anda.');
+            ->route(($isFtsaOnly ?? false) ? 'portal.emotional' : 'portal.baseline')
+            ->with('success', $successMsg);
     }
 
     /**
@@ -294,6 +316,12 @@ class BaselineController extends Controller
         $telegramUserId = (int) PortalSession::telegramUserId($request);
         $email = (string) (PortalSession::email($request) ?? '');
         $onboarding = app(PortalOnboardingService::class);
+        $access = app(PortalAccessService::class);
+
+        if ($access->isFtsaOnlyPortalUser($email)) {
+            return redirect()->route('portal.baseline.create')
+                ->with('info', 'Lengkapi kuesioner FTSA 1–32 untuk mengaktifkan dashboard behavioral.');
+        }
 
         if ($onboarding->isBotOnlyBuyer($email, $telegramUserId)) {
             return redirect()->route('portal.baseline.create')

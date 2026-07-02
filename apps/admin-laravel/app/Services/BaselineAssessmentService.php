@@ -204,6 +204,36 @@ class BaselineAssessmentService
     }
 
     /**
+     * Portal pembeli FTSA saja — tanpa blok soal diagnostik tahap keuangan.
+     *
+     * @return array<string, string>
+     */
+    public function validationRulesFtsaOnly(bool $includeFtsa = true): array
+    {
+        $rules = [
+            'snapshot.current_goal' => 'nullable|string|max:512',
+            'snapshot.avg_monthly_income' => 'nullable|integer|min:0',
+            'snapshot.emergency_fund' => 'nullable|integer|min:0',
+            'snapshot.cash_savings' => 'nullable|integer|min:0',
+            'snapshot.total_investment' => 'nullable|integer|min:0',
+            'snapshot.total_asset' => 'nullable|integer|min:0',
+            'snapshot.total_debt' => 'nullable|integer|min:0',
+            'snapshot.has_bpjs' => 'sometimes|boolean',
+            'snapshot.has_health_insurance' => 'sometimes|boolean',
+            'snapshot.has_income_protection' => 'sometimes|boolean',
+            'snapshot.has_life_insurance' => 'sometimes|boolean',
+        ];
+
+        if ($includeFtsa) {
+            for ($i = 1; $i <= 32; $i++) {
+                $rules["ftsa.{$i}"] = 'required|integer|min:1|max:5';
+            }
+        }
+
+        return $rules;
+    }
+
+    /**
      * Aturan validasi untuk check-up gratis di landing (tahap keuangan saja + email).
      *
      * @return array<string, string>

@@ -1,7 +1,7 @@
 @extends('portal.layouts.app')
 
-@section('title', 'Baseline Data — YFD')
-@section('heading', 'Baseline Data (Wajib Diisi)')
+@section('title', $isFtsaOnlyPortalUser ?? false ? 'FTSA Premium — YFD' : 'Baseline Data — YFD')
+@section('heading', ($isFtsaOnlyPortalUser ?? false) ? 'Kuesioner FTSA 1–32' : 'Baseline Data (Wajib Diisi)')
 
 @section('content')
 @php
@@ -10,23 +10,30 @@
     $ftsaQuestions = $config['ftsa_questions'] ?? [];
     $currentSection = '';
     $ftsaUnlocked = $ftsaUnlocked ?? true;
+    $isFtsaOnlyPortalUser = $isFtsaOnlyPortalUser ?? false;
 @endphp
 
 <div class="max-w-3xl">
     @if($hasBaseline ?? false)
         <div class="bg-sky-50 border border-sky-200 rounded-2xl px-5 py-4 mb-6 text-sm text-sky-900">
-            Anda mengisi ulang diagnostik. Data sebelumnya akan digantikan setelah disimpan.
+            Anda mengisi ulang {{ $isFtsaOnlyPortalUser ? 'FTSA' : 'diagnostik' }}. Data sebelumnya akan digantikan setelah disimpan.
         </div>
-    @else
+    @elseif(!$isFtsaOnlyPortalUser)
         @include('portal.partials.onboarding-checklist', ['compact' => true])
         <div class="h-6"></div>
     @endif
 
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 mb-6">
         <p class="text-slate-600 text-sm leading-relaxed">
-            Jawablah sesuai kondisi Anda <strong>saat ini</strong>. Baseline ini menentukan tahap keuangan dan archetype trauma finansial,
-            serta mengatur <em>prescription</em> bucket di dashboard. Diulang setiap <strong>6 bulan</strong>.
+            @if($isFtsaOnlyPortalUser)
+                Paket <strong>FTSA Premium</strong> — jawab kuesioner 1–32 untuk melihat profil behavioral finansial Anda.
+                Snapshot keuangan di bawah opsional.
+            @else
+                Jawablah sesuai kondisi Anda <strong>saat ini</strong>. Baseline ini menentukan tahap keuangan dan archetype trauma finansial,
+                serta mengatur <em>prescription</em> bucket di dashboard. Diulang setiap <strong>6 bulan</strong>.
+            @endif
         </p>
+        @if(!$isFtsaOnlyPortalUser)
         <div class="mt-3 grid sm:grid-cols-2 gap-3 text-xs">
             <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">
                 <div class="font-semibold text-slate-700">Last Check-up</div>
@@ -37,11 +44,13 @@
                 <div class="text-slate-500">Otomatis +6 bulan (sesuai template baseline Excel).</div>
             </div>
         </div>
+        @endif
     </div>
 
     <form method="post" action="{{ route('portal.baseline.store') }}" class="space-y-8">
         @csrf
 
+        @if(!$isFtsaOnlyPortalUser)
         {{-- Financial Stage --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
             <div class="bg-navy-800 text-white px-5 py-4">
@@ -104,6 +113,7 @@
                 @endforeach
             </div>
         </div>
+        @endif
 
         {{-- FTSA-32 --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -140,7 +150,7 @@
                     <fieldset>
                         <legend class="text-sm text-slate-800 mb-2">
                             <span class="font-semibold text-navy-600">{{ $qNum }}.</span>
-                            {{ $ftsaQuestions[$qNum] ?? '' }}
+                            {{ $ftsaQuestions[$qNum] ?? $ftsaQuestions[(string) $qNum] ?? '' }}
                         </legend>
                         <div class="flex flex-wrap gap-2">
                             @foreach($likert as $score => $label)
@@ -218,10 +228,10 @@
             <button type="submit"
                     class="inline-flex items-center gap-2 bg-navy-800 hover:bg-navy-700 text-white font-semibold px-6 py-3 rounded-xl shadow-sm">
                 <span class="material-symbols-outlined">save</span>
-                Simpan Baseline
+                {{ ($isFtsaOnlyPortalUser ?? false) ? 'Simpan FTSA' : 'Simpan Baseline' }}
             </button>
             @if($hasBaseline ?? false)
-                <a href="{{ route('portal.dashboard') }}" class="inline-flex items-center px-4 py-3 text-sm text-slate-600 hover:text-navy-800">
+                <a href="{{ route(($isFtsaOnlyPortalUser ?? false) ? 'portal.emotional' : 'portal.dashboard') }}" class="inline-flex items-center px-4 py-3 text-sm text-slate-600 hover:text-navy-800">
                     Batal
                 </a>
             @endif
