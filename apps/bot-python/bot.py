@@ -140,6 +140,36 @@ EXPLICIT_IMPULSIVE_KEYWORDS = (
     "spontan",
 )
 
+# Belanja euforia pasca-gajian / self-reward — pola impulsif behavioral YFD.
+PAYDAY_SPLURGE_KEYWORDS = (
+    "habis gajian",
+    "abis gajian",
+    "baru gajian",
+    "baru nerima gaji",
+    "baru terima gaji",
+    "baru dapat gaji",
+    "gajianan",
+    "habis gajianan",
+    "abis gajianan",
+    "setelah gajian",
+    "pas gajian",
+    "tanggal gajian",
+    "hari gajian",
+)
+
+REWARD_SPENDING_KEYWORDS = (
+    "reward",
+    "nge treat",
+    "netreat",
+    "self treat",
+    "self-treat",
+    "rayain",
+    "merayakan",
+    "celebrate",
+    "celebratory",
+    "traktir",
+)
+
 PREMIUM_SPENDING_KEYWORDS = (
     "restaurant",
     "restoran",
@@ -155,7 +185,18 @@ PREMIUM_SPENDING_KEYWORDS = (
 )
 
 MOOD_KEYWORDS: Dict[str, tuple[str, ...]] = {
-    "Happy": ("sangat senang", "bahagia", "excited", "bersyukur", "senang banget", "happy"),
+    "Happy": (
+        "sangat senang",
+        "bahagia",
+        "excited",
+        "bersyukur",
+        "senang banget",
+        "happy",
+        "habis gajian",
+        "abis gajian",
+        "baru gajian",
+        "gajianan",
+    ),
     "Neutral": ("biasa saja", "biasa aja", "lumayan", "neutral"),
     "Sad": ("sedih banget", "kecewa", "kesepian", "sedih", "sad"),
     "Stressed": ("overwhelmed", "overthinking", "cemas", "stress", "stressed", "panik"),
@@ -193,7 +234,7 @@ def detect_mood_in_text(text: str) -> str | None:
 
 
 def infer_impulsif(parsed: Dict[str, Any], source_text: str = "") -> str:
-    """Tandai impulsif: spontan eksplisit atau belanja premium saat mood negatif."""
+    """Tandai impulsif: spontan eksplisit, euforia pasca-gajian, atau belanja premium saat mood negatif."""
     combined = f"{parsed.get('keterangan', '')} {source_text}".lower()
 
     if any(keyword in combined for keyword in EXPLICIT_IMPULSIVE_KEYWORDS):
@@ -202,12 +243,21 @@ def infer_impulsif(parsed: Dict[str, Any], source_text: str = "") -> str:
     if parsed.get("jenis") != "Pengeluaran":
         return "No"
 
+    if any(keyword in combined for keyword in PAYDAY_SPLURGE_KEYWORDS + REWARD_SPENDING_KEYWORDS):
+        return "Yes"
+
     mood = str(parsed.get("mood", "Neutral"))
     nominal = int(parsed.get("nominal", 0) or 0)
     kategori = str(parsed.get("kategori", ""))
     sifat = str(parsed.get("sifat", ""))
     is_food_out = kategori in {"Jajan", "Makan"}
     is_premium = any(keyword in combined for keyword in PREMIUM_SPENDING_KEYWORDS)
+
+    if mood == "Happy":
+        if sifat == "Wants":
+            return "Yes"
+        if is_food_out and nominal >= 100_000:
+            return "Yes"
 
     if mood in NEGATIVE_MOODS_FOR_IMPULSE:
         if sifat == "Wants":
@@ -615,7 +665,11 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
     elif any(keyword in lower_text for keyword in ["makan", "nasi", "sarapan", "lunch", "dinner", "restaurant", "restoran"]):
         kategori = "Makan"
         sub_kategori = "Jajan / Makan diluar"
-        sifat = "Need"
+        sifat = (
+            "Wants"
+            if any(keyword in lower_text for keyword in PAYDAY_SPLURGE_KEYWORDS + REWARD_SPENDING_KEYWORDS)
+            else "Need"
+        )
     elif any(keyword in lower_text for keyword in ["hadiah", "amplop", "ultah", "ulang tahun", "konser"]):
         kategori = "Social"
         sub_kategori = "Hadiah / Amplop sosial"

@@ -250,7 +250,9 @@ Aturan:
    Contoh: tagihan air/pdam → kategori Air, sub_kategori "Pengeluaran lain-lain".
    Jika tidak yakin kategori/sub → kategori Jajan, sub_kategori "Pengeluaran lain-lain".
 5) impulsif: "Yes" jika pembelian spontan (iseng, kepengen, diskon, tiba-tiba) ATAU
-   perilaku belanja premium saat mood negatif (Sad/Stressed/Angry/Tired).
+   perilaku belanja premium saat mood negatif (Sad/Stressed/Angry/Tired) ATAU
+   euforia pasca-gajian / self-reward (habis gajian, gajianan, baru gajian, traktir, rayain) ATAU
+   pengeluaran Wants saat mood Happy, atau makan di luar ≥100rb saat Happy.
    Bisa tetap "Need" untuk sifat, tetapi impulsif "Yes" bila ada alternatif lebih murah.
 6) Balas HANYA JSON murni, tanpa markdown dan tanpa teks tambahan.
 7) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
