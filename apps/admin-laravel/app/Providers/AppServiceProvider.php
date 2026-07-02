@@ -120,11 +120,14 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('needsFinancialDiagnostic', $needsFinancialDiagnostic);
                 $view->with('hasBotPortalAccess', $access->hasBotPortalAccess($email));
                 $view->with('isFtsaOnlyPortalUser', $access->isFtsaOnlyPortalUser($email));
+                $ftsaEval = app(\App\Services\FtsaEvaluationService::class);
+                $view->with('ftsaRetakeLocked', $ftsaEval->isRetakeLocked($telegramUserId));
+                $view->with('ftsaRetakeAvailableAt', $ftsaEval->retakeAvailableAt($telegramUserId));
                 $view->with(
                     'baselineUrl',
-                    $needsBaseline || $needsFtsa
+                    $needsBaseline || ($needsFtsa && ! $ftsaEval->isRetakeLocked($telegramUserId))
                         ? $onboarding->firstBaselineUrl($email, $telegramUserId)
-                        : route('portal.baseline')
+                        : ($access->isFtsaOnlyPortalUser($email) ? route('portal.emotional') : route('portal.baseline'))
                 );
                 $view->with('diagnosticCheckupUrl', $onboarding->diagnosticCheckupUrl());
             } catch (\Throwable) {

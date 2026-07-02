@@ -29,7 +29,11 @@
 
     @if($hasBaseline ?? false)
         <div class="bg-sky-50 border border-sky-200 rounded-2xl px-5 py-4 mb-6 text-sm text-sky-900">
-            Anda mengisi ulang {{ $isFtsaOnlyPortalUser ? 'FTSA' : 'diagnostik' }}. Data sebelumnya akan digantikan setelah disimpan.
+            @if($ftsaRetakeLocked ?? false)
+                Masa evaluasi FTSA masih berjalan. Bagian FTSA terkunci — Anda hanya dapat memperbarui data diagnostik lainnya.
+            @else
+                Anda mengisi ulang {{ $isFtsaOnlyPortalUser ? 'FTSA' : 'diagnostik' }}. Data sebelumnya akan digantikan setelah disimpan.
+            @endif
         </div>
     @elseif(!$isFtsaOnlyPortalUser)
         @include('portal.partials.onboarding-checklist', ['compact' => true])
@@ -157,8 +161,18 @@
                 @if(!empty($ftsaEndsAt))
                     <div class="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 px-4 py-3 text-sm">
                         Masa evaluasi FTSA berlaku hingga <strong>{{ $ftsaEndsAt->format('d M Y') }}</strong>.
+                        @if($ftsaRetakeLocked ?? false)
+                            <span class="block mt-1">Kuesioner terkunci — pengisian ulang tersedia setelah masa evaluasi berakhir.</span>
+                        @endif
                     </div>
                 @endif
+                @if($ftsaRetakeLocked ?? false)
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 text-slate-700 px-4 py-4 text-sm">
+                        <div class="font-bold text-navy-800">FTSA sudah tersimpan</div>
+                        <p class="mt-1">Hasil evaluasi saat ini tetap berlaku hingga {{ $ftsaEndsAt?->format('d M Y') ?? 'masa evaluasi berakhir' }}.
+                            Lihat hasil di <a href="{{ route('portal.emotional') }}" class="font-semibold text-navy-800 hover:underline">Hasil FTSA</a>.</p>
+                    </div>
+                @else
                 @foreach(range(1, 32) as $qNum)
                     <fieldset class="rounded-xl border border-slate-100 bg-slate-50/50 p-4 sm:p-5">
                         <legend class="text-sm sm:text-base text-slate-800 mb-4 leading-relaxed">
@@ -181,6 +195,7 @@
                         @enderror
                     </fieldset>
                 @endforeach
+                @endif
             </div>
             @endif
         </div>

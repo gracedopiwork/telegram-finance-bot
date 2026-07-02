@@ -31,6 +31,9 @@
         @if(!empty($ftsaEndsAt))
             <div class="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 px-4 py-3 text-sm mb-6">
                 Masa evaluasi FTSA berlaku hingga <strong>{{ $ftsaEndsAt->format('d M Y') }}</strong>.
+                @if($ftsaRetakeLocked ?? false)
+                    <span class="block mt-1">Pengisian ulang FTSA akan tersedia setelah tanggal tersebut.</span>
+                @endif
             </div>
         @endif
 
@@ -43,11 +46,17 @@
                         Profil ini dihitung dari kuesioner FTSA 1–32 berdasarkan domain dengan skor tertinggi.
                     </p>
                 </div>
-                <a href="{{ route('portal.baseline.create') }}"
-                   class="inline-flex items-center gap-2 border border-navy-800 text-navy-800 hover:bg-navy-50 font-bold px-4 py-2 rounded-xl text-sm shrink-0">
-                    <span class="material-symbols-outlined text-lg">edit</span>
-                    Isi Ulang FTSA
-                </a>
+                @if(!($ftsaRetakeLocked ?? false))
+                    <a href="{{ route('portal.baseline.create') }}"
+                       class="inline-flex items-center gap-2 border border-navy-800 text-navy-800 hover:bg-navy-50 font-bold px-4 py-2 rounded-xl text-sm shrink-0">
+                        <span class="material-symbols-outlined text-lg">edit</span>
+                        Isi Ulang FTSA
+                    </a>
+                @else
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-600 max-w-xs">
+                        <span class="font-semibold text-navy-800">Terkunci</span> — evaluasi ulang setelah {{ $ftsaEndsAt?->format('d M Y') ?? 'masa berlaku habis' }}.
+                    </div>
+                @endif
             </div>
 
             <div class="space-y-5">
@@ -80,29 +89,19 @@
         </div>
 
         @php
-            $ftsaInsights = array_values(array_filter(
-                $assessment['insights'] ?? [],
-                fn (string $i): bool => stripos($i, 'FTSA') !== false
-                    || stripos($i, 'archetype') !== false
-                    || stripos($i, 'Profil') !== false
-            ));
-            if (empty($ftsaInsights)) {
-                $ftsaInsights[] = "Archetype dominan Anda: {$ftsaProfile['archetype']}. Gunakan insight ini sebagai titik awal kesadaran behavioral finansial.";
-            }
-            $ftsaRecommendations = array_values(array_filter(
-                $assessment['recommendations']['personalized'] ?? [],
-                fn (string $r): bool => stripos($r, 'FTSA') !== false || stripos($r, 'archetype') !== false
-            ));
-            if (empty($ftsaRecommendations)) {
-                $ftsaRecommendations[] = "Refleksikan pola {$ftsaProfile['archetype']} — catat satu pemicu emosional terkait uang minggu ini.";
-            }
+            $ftsaInsights = $ftsaAiGuidance['insights'] ?? [];
+            $ftsaRecommendations = $ftsaAiGuidance['recommendations'] ?? [];
+            $ftsaAiSource = $ftsaAiGuidance['source'] ?? 'none';
         @endphp
 
         @if(!empty($ftsaInsights))
             <div class="bg-gradient-to-r from-navy-800 to-navy-600 rounded-2xl p-5 sm:p-6 text-white mb-6">
-                <h3 class="font-bold mb-3 flex items-center gap-2">
+                <h3 class="font-bold mb-1 flex items-center gap-2">
                     <span class="material-symbols-outlined text-gold-400">lightbulb</span> Insight FTSA
                 </h3>
+                @if($ftsaAiSource === 'ai')
+                    <p class="text-[11px] text-white/60 mb-3">Dipersonalisasi oleh dr. Financial (AI) berdasarkan hasil kuesioner Anda.</p>
+                @endif
                 <ul class="space-y-2 text-sm text-white/90">
                     @foreach($ftsaInsights as $insight)
                         <li class="flex gap-2"><span class="text-gold-400 shrink-0">→</span>{{ $insight }}</li>
@@ -111,6 +110,7 @@
             </div>
         @endif
 
+        @if(!empty($ftsaRecommendations))
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 mb-6">
             <h3 class="font-bold text-navy-800 mb-3">Rekomendasi untuk Profil Anda</h3>
             <ul class="space-y-2 text-sm text-slate-700">
@@ -119,6 +119,7 @@
                 @endforeach
             </ul>
         </div>
+        @endif
 
         @if($needsFinancialDiagnostic ?? false)
             <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 flex flex-wrap items-center justify-between gap-3 mb-6">

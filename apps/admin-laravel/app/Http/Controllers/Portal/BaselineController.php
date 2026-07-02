@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FinancialBaseline;
 use App\Services\BaselineAssessmentService;
 use App\Services\BucketPrescriptionService;
+use App\Services\FtsaEvaluationService;
 use App\Services\PortalAccessService;
 use App\Services\PortalFeatureService;
 use App\Services\PortalOnboardingService;
@@ -91,6 +92,17 @@ class BaselineController extends Controller
 
         $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
         $ftsaStatus = app(PortalFeatureService::class)->ftsaEntitlementStatus($telegramUserId);
+        $ftsaEval = app(FtsaEvaluationService::class);
+        $ftsaRetakeLocked = $ftsaEval->isRetakeLocked($telegramUserId);
+
+        if ($isFtsaOnly && $ftsaRetakeLocked) {
+            return redirect()->route('portal.emotional')
+                ->with(
+                    'info',
+                    'FTSA tidak dapat diisi ulang sebelum masa evaluasi berakhir pada '
+                    .$ftsaStatus['ends_at']?->format('d M Y').'.'
+                );
+        }
 
         $baselineConfig = app(\App\Services\DiagnosticConfigService::class)->fullBaselineConfig();
         if (! isset($baselineConfig['financial_stage'])) {
@@ -104,6 +116,7 @@ class BaselineController extends Controller
             'hasBaseline' => ! FinancialBaseline::userNeedsBaseline($telegramUserId),
             'ftsaUnlocked' => $ftsaUnlocked,
             'ftsaEndsAt' => $ftsaStatus['ends_at'],
+            'ftsaRetakeLocked' => $ftsaRetakeLocked,
             'isFtsaOnlyPortalUser' => $isFtsaOnly,
             'needsFinancialDiagnostic' => $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId),
             'months' => $this->monthOptions(),
@@ -134,6 +147,18 @@ class BaselineController extends Controller
 
         $email = (string) (PortalSession::email($request) ?? '');
         $isFtsaOnly = app(PortalAccessService::class)->isFtsaOnlyPortalUser($email);
+        $ftsaEval = app(FtsaEvaluationService::class);
+
+        if ($ftsaEval->isRetakeLocked($telegramUserId)) {
+            if ($isFtsaOnly) {
+                $endsAt = app(PortalFeatureService::class)->ftsaEntitlementStatus($telegramUserId)['ends_at'];
+
+                return back()->withInput()->with(
+                    'error',
+                    'FTSA tidak dapat diisi ulang sebelum masa evaluasi berakhir pada '.$endsAt?->format('d M Y').'.'
+                );
+            }
+        }
 
         try {
             $service = app(BaselineAssessmentService::class);
@@ -150,8 +175,21 @@ class BaselineController extends Controller
                 }
             }
 
+            if ($ftsaEval->isRetakeLocked($telegramUserId)) {
+                foreach (range(1, 32) as $i) {
+                    unset($rules["ftsa.{$i}"]);
+                }
+            }
+
             $validated = $request->validate($rules);
             $existing = FinancialBaseline::latestForUser($telegramUserId);
+
+            if ($ftsaEval->isRetakeLocked($telegramUserId) && $existing !== null) {
+                $priorFtsa = $existing->answers_json['ftsa'] ?? [];
+                if (is_array($priorFtsa) && $priorFtsa !== []) {
+                    $validated['ftsa'] = $priorFtsa;
+                }
+            }
 
             if ($isFtsaOnly) {
                 $priorFs = $existing?->answers_json['fs'] ?? [];

@@ -194,7 +194,7 @@ class PortalOnboardingService
                 return route('portal.baseline.create');
             }
 
-            return route('checkup.show');
+            return route('portal.emotional');
         }
 
         return route('checkup.show');

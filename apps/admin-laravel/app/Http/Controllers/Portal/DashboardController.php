@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Models\FinancialBaseline;
+use App\Services\FtsaAiGuidanceService;
 use App\Services\ImpulsivityAssessmentService;
 use App\Services\PortalFeatureService;
 use App\Services\TransactionDashboardService;
@@ -59,12 +61,16 @@ class DashboardController extends Controller
     $featureService = app(PortalFeatureService::class);
     $ftsaUnlocked = $featureService->canAccessFtsa($telegramUserId);
     $ftsaStatus = $featureService->ftsaEntitlementStatus($telegramUserId);
+    $baseline = FinancialBaseline::latestForUser($telegramUserId);
+    $ftsaAiGuidance = app(FtsaAiGuidanceService::class)->forBaseline($baseline);
 
     return view('portal.emotional', [
       'active' => 'emotional',
       'assessment' => $assessment,
       'ftsaUnlocked' => $ftsaUnlocked,
       'ftsaEndsAt' => $ftsaStatus['ends_at'],
+      'ftsaRetakeLocked' => app(\App\Services\FtsaEvaluationService::class)->isRetakeLocked($telegramUserId),
+      'ftsaAiGuidance' => $ftsaAiGuidance,
       'months' => $this->monthOptions(),
       'periods' => $this->periodOptions(),
       'currentPeriod' => $period,
