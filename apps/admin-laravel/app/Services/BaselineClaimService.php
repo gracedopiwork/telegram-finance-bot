@@ -28,13 +28,14 @@ class BaselineClaimService
         }
 
         $existing = FinancialBaseline::latestForUser($telegramUserId);
-        if ($existing !== null && $this->baselineIsCompleteForBot($existing)) {
+        if ($existing !== null && $this->baselineIsFullyComplete($existing)) {
             return $existing;
         }
 
         $this->reassignClaimableBaselines($email, $telegramUserId);
 
-        return $this->mergeSiblingBaselines($email, $telegramUserId);
+        return $this->mergeSiblingBaselines($email, $telegramUserId)
+            ?? FinancialBaseline::latestForUser($telegramUserId);
     }
 
     private function reassignClaimableBaselines(string $email, int $telegramUserId): void
@@ -149,11 +150,11 @@ class BaselineClaimService
         }
     }
 
-    private function baselineIsCompleteForBot(FinancialBaseline $baseline): bool
+    private function baselineIsFullyComplete(FinancialBaseline $baseline): bool
     {
         $hasFs = is_array($baseline->answers_json['fs'] ?? null)
             && $baseline->answers_json['fs'] !== [];
 
-        return $hasFs || $this->ftsaSummary->hasFtsaAnswers($baseline);
+        return $hasFs && $this->ftsaSummary->hasCompletedFtsa($baseline);
     }
 }

@@ -97,6 +97,10 @@ class BotLicenseActivationService
             ]);
         });
 
+        if ($email !== '') {
+            app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+        }
+
         return [
             'license_key' => $licenseKey,
             'license_id' => (int) $license->id,

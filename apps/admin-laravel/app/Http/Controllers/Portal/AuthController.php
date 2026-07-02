@@ -164,6 +164,13 @@ class AuthController extends Controller
                 ->with('success', 'Selamat datang di dashboard FTSA Premium.');
         }
 
+        if ($access->hasBotPortalAccess($email)
+            && $onboarding->isBotAfterFtsaBuyer($email)
+            && $onboarding->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
+            return redirect()->route('portal.dashboard')
+                ->with('success', 'Selamat datang di Financial Health Dashboard. Data FTSA & diagnostik sudah terhubung.');
+        }
+
         if ($onboarding->userNeedsBotOnboardingBaseline($email, $telegramUserId)) {
             if ($onboarding->isBotAfterFtsaBuyer($email)) {
                 if ($onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {

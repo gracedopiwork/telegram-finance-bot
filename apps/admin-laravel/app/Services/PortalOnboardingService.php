@@ -166,17 +166,38 @@ class PortalOnboardingService
 
         app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
 
+        if ($this->isBotAfterFtsaBuyer($email)) {
+            return ! $this->hasFtsaPortalOnboardingComplete($email, $telegramUserId);
+        }
+
         $baseline = FinancialBaseline::latestForUser($telegramUserId);
         if ($baseline === null) {
             return true;
         }
 
-        if ($this->isBotAfterFtsaBuyer($email)) {
-            return ! $this->hasFinancialDiagnostic($baseline)
-                && ! app(FtsaAnswerSummaryService::class)->hasFtsaAnswers($baseline);
+        return false;
+    }
+
+    /**
+     * Pembeli bot setelah FTSA — diagnostik + FTSA 1–32 sudah selesai di portal FTSA.
+     */
+    public function hasFtsaPortalOnboardingComplete(string $email, int $telegramUserId): bool
+    {
+        if (! \App\Support\FinancialBaselineSchema::isReady()) {
+            return false;
         }
 
-        return false;
+        app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+
+        $baseline = FinancialBaseline::latestForUser($telegramUserId)
+            ?? FinancialBaseline::latestForEmail($email);
+
+        if ($baseline === null) {
+            return false;
+        }
+
+        return $this->hasFinancialDiagnostic($baseline)
+            && app(FtsaAnswerSummaryService::class)->hasCompletedFtsa($baseline);
     }
 
     public function hasFinancialDiagnostic(?FinancialBaseline $baseline): bool
@@ -196,7 +217,17 @@ class PortalOnboardingService
             return false;
         }
 
-        return ! $this->hasFinancialDiagnostic(FinancialBaseline::latestForUser($telegramUserId));
+        if ($this->isBotAfterFtsaBuyer($email)
+            && $this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
+            return false;
+        }
+
+        app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+
+        $baseline = FinancialBaseline::latestForUser($telegramUserId)
+            ?? FinancialBaseline::latestForEmail($email);
+
+        return ! $this->hasFinancialDiagnostic($baseline);
     }
 
     public function userNeedsFtsa(string $email, int $telegramUserId): bool
@@ -205,11 +236,19 @@ class PortalOnboardingService
             return false;
         }
 
+        if ($this->isBotAfterFtsaBuyer($email)
+            && $this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
+            return false;
+        }
+
         if (! app(PortalFeatureService::class)->canAccessFtsa($telegramUserId)) {
             return false;
         }
 
-        $baseline = FinancialBaseline::latestForUser($telegramUserId);
+        app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+
+        $baseline = FinancialBaseline::latestForUser($telegramUserId)
+            ?? FinancialBaseline::latestForEmail($email);
         if ($baseline === null) {
             return true;
         }
@@ -239,6 +278,10 @@ class PortalOnboardingService
     public function firstBaselineUrl(string $email, int $telegramUserId): string
     {
         if ($this->isBotAfterFtsaBuyer($email)) {
+            if ($this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
+                return route('portal.dashboard');
+            }
+
             if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
                 return route('checkup.show');
             }
