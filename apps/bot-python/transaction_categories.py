@@ -5,80 +5,40 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, Iterable
 
-VALID_KATEGORI: tuple[str, ...] = (
-    "Makan",
-    "Transport",
-    "Listrik",
-    "Air",
-    "Jajan",
-    "Social",
-    "Gaji",
+from category_rules_cache import (
+    apply_admin_nature,
+    fallback_kategori,
+    fallback_sub,
+    get_rules,
+    kategori_sub_map,
+    valid_kategori,
+    valid_sub_kategori,
 )
 
-VALID_SUB_KATEGORI: tuple[str, ...] = (
-    # Gambar 2
-    "Listrik",
-    "Pakaian",
-    "Servis Kendaraan",
-    "Nonton Konser",
-    "Pengeluaran lain-lain",
-    "Hadiah / Amplop sosial",
-    "Popok",
-    "Jajan / Makan diluar",
-    # Gambar 3
-    "Angkutan Umum",
-    "Skincare",
-    "Mainan Anak",
-    "Ulang Tahun keluarga",
-    "Vitamin",
-    "Alat Kesehatan",
-)
+def _kategori_aliases() -> dict[str, str]:
+    fb = fallback_kategori()
+    return {
+        "lain-lain": fb,
+        "lain lain": fb,
+        "other": fb,
+        "umum": fb,
+        "misc": fb,
+        "belanja": fb,
+        "beli": fb,
+    }
 
-# Sub kategori yang boleh per kategori induk (dropdown Sheet).
-KATEGORI_SUB_MAP: dict[str, tuple[str, ...]] = {
-    "Makan": ("Jajan / Makan diluar",),
-    "Jajan": (
-        "Jajan / Makan diluar",
-        "Skincare",
-        "Pakaian",
-        "Popok",
-        "Mainan Anak",
-        "Vitamin",
-        "Alat Kesehatan",
-        "Pengeluaran lain-lain",
-    ),
-    "Transport": ("Angkutan Umum", "Servis Kendaraan"),
-    "Listrik": ("Listrik",),
-    "Air": ("Pengeluaran lain-lain",),
-    "Social": (
-        "Hadiah / Amplop sosial",
-        "Nonton Konser",
-        "Ulang Tahun keluarga",
-    ),
-    "Gaji": ("Pengeluaran lain-lain",),
-}
 
-DEFAULT_FALLBACK_KATEGORI = "Jajan"
-DEFAULT_FALLBACK_SUB = "Pengeluaran lain-lain"
+def _sub_aliases() -> dict[str, str]:
+    fb = fallback_sub()
+    return {
+        "lain-lain": fb,
+        "lain lain": fb,
+        "pengeluaran lain lain": fb,
+        "other": fb,
+        "misc": fb,
+        "umum": fb,
+    }
 
-_KATEGORI_ALIASES: dict[str, str] = {
-    "lain-lain": DEFAULT_FALLBACK_KATEGORI,
-    "lain lain": DEFAULT_FALLBACK_KATEGORI,
-    "other": DEFAULT_FALLBACK_KATEGORI,
-    "umum": DEFAULT_FALLBACK_KATEGORI,
-    "misc": DEFAULT_FALLBACK_KATEGORI,
-    "belanja": DEFAULT_FALLBACK_KATEGORI,
-    "beli": DEFAULT_FALLBACK_KATEGORI,
-}
-
-_SUB_ALIASES: dict[str, str] = {
-    "lain-lain": DEFAULT_FALLBACK_SUB,
-    "lain lain": DEFAULT_FALLBACK_SUB,
-    "pengeluaran lain lain": DEFAULT_FALLBACK_SUB,
-    "other": DEFAULT_FALLBACK_SUB,
-    "misc": DEFAULT_FALLBACK_SUB,
-    "umum": DEFAULT_FALLBACK_SUB,
-}
 
 _WATER_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
     re.compile(pattern, re.IGNORECASE)
@@ -170,7 +130,7 @@ def _infer_kategori_from_text(text: str) -> str:
         return "Makan"
     if is_electronics_expense(text):
         return "Jajan"
-    return DEFAULT_FALLBACK_KATEGORI
+    return fallback_kategori()
 
 
 def _kategori_from_strong_signals(text: str) -> str | None:
@@ -193,13 +153,15 @@ def _kategori_from_strong_signals(text: str) -> str | None:
 
 
 def _parents_for_sub(sub: str) -> tuple[str, ...]:
-    return tuple(parent for parent, subs in KATEGORI_SUB_MAP.items() if sub in subs)
+    return tuple(parent for parent, subs in kategori_sub_map().items() if sub in subs)
 
 
 def _resolve_parent_for_sub(sub: str, text: str, current_kategori: str) -> str:
     parents = _parents_for_sub(sub)
+    valid = valid_kategori()
+    fb = fallback_kategori()
     if not parents:
-        return current_kategori if current_kategori in VALID_KATEGORI else "Jajan"
+        return current_kategori if current_kategori in valid else fb
     if current_kategori in parents:
         return current_kategori
 
@@ -218,10 +180,38 @@ def _resolve_parent_for_sub(sub: str, text: str, current_kategori: str) -> str:
 
 
 def build_system_prompt_rules() -> str:
+    rules_data = get_rules()
+    categories = rules_data.get("categories") or list(valid_kategori())
+    subs = rules_data.get("sub_categories") or list(valid_sub_kategori())
+    sub_map = rules_data.get("category_sub_map") or kategori_sub_map()
+    fb_cat = rules_data.get("fallback_category") or fallback_kategori()
+    fb_sub = rules_data.get("fallback_sub") or fallback_sub()
+
     mapping_lines = []
-    for kategori, subs in KATEGORI_SUB_MAP.items():
-        mapping_lines.append(f"   - {kategori}: {', '.join(subs)}")
-    mapping_block = "\n".join(mapping_lines)
+    for kategori, sub_list in sub_map.items():
+        mapping_lines.append(f"   - {kategori}: {', '.join(sub_list)}")
+
+    admin_hints = []
+    for rule in rules_data.get("rules") or []:
+        if not isinstance(rule, dict):
+            continue
+        cat = rule.get("category")
+        if not cat or cat == "*":
+            continue
+        reason = (rule.get("reason") or "").strip()
+        bucket = (rule.get("bucket") or "").strip()
+        sub = rule.get("sub_category") or ""
+        hint = f"   - {cat}"
+        if sub:
+            hint += f" / {sub}"
+        if bucket:
+            hint += f" → {bucket}"
+        if reason:
+            hint += f" ({reason})"
+        admin_hints.append(hint)
+
+    mapping_block = "\n".join(mapping_lines) if mapping_lines else "   (belum ada — admin Laravel)"
+    hints_block = "\n".join(admin_hints[:40]) if admin_hints else ""
 
     return f"""
 Anda adalah parser keuangan pribadi.
@@ -230,8 +220,8 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
   "keterangan": string,
   "nominal": integer,
   "jenis": "Pemasukan" | "Pengeluaran",
-  "kategori": {_enum_join(VALID_KATEGORI)},
-  "sub_kategori": {_enum_join(VALID_SUB_KATEGORI)},
+  "kategori": {_enum_join(categories)},
+  "sub_kategori": {_enum_join(subs)},
   "sifat": "Need" | "Wants" | "Saving/Investement" | "Donation",
   "mood": "Happy" | "Neutral" | "Sad" | "Stressed" | "Angry" | "Tired",
   "impulsif": "Yes" | "No"
@@ -244,23 +234,12 @@ Aturan:
 4) kategori & sub_kategori: WAJIB persis dari enum (huruf besar/kecil sama).
    Pasangan yang benar:
 {mapping_block}
-   Contoh: makan/restoran → kategori Makan, sub_kategori "Jajan / Makan diluar".
-   Contoh: ojek/transport → kategori Transport, sub_kategori "Angkutan Umum".
-   Contoh: beli hp/laptop/gadget → kategori Jajan, sub_kategori "Pengeluaran lain-lain".
-   Contoh: tagihan air/pdam → kategori Air, sub_kategori "Pengeluaran lain-lain".
-   Jika tidak yakin kategori/sub → kategori Jajan, sub_kategori "Pengeluaran lain-lain".
+   Petunjuk admin (bucket):
+{hints_block}
+   Jika tidak yakin kategori/sub → kategori {fb_cat}, sub_kategori "{fb_sub}".
 5) impulsif — WAJIB pertimbangkan konteks & niat, bukan hanya nominal besar:
-   "Yes" jika:
-   - spontan / tanpa rencana (iseng, kepengen, diskon, tiba-tiba, fomo)
-   - euforia pasca-gajian (habis gajian, gajianan, baru gajian)
-   - belanja hiburan saat mood negatif (Sad/Stressed/Angry/Tired) terutama Wants
-   "No" jika:
-   - acara sosial terencana (ulang tahun, ultah, pernikahan, wisuda, syukuran, makan dengan keluarga untuk perayaan)
-   - tagihan/kebutuhan wajib (listrik, cicilan, bpjs, sewa, obat, sekolah)
-   - pengeluaran Need yang memang sudah direncanakan
-   Contoh Yes: "makan malam 600rb karena habis gajian"
-   Contoh No: "makan malam dengan keluarga karena papa ulang tahun 600rb"
-   Bisa Wants tetapi impulsif "No" bila perayaan keluarga terencana.
+   "Yes" jika spontan / fomo / euforia gajian / mood negatif + wants.
+   "No" jika terencana, tagihan wajib, atau perayaan keluarga.
 6) Balas HANYA JSON murni, tanpa markdown dan tanpa teks tambahan.
 7) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
    {{"error":"invalid_input"}}
@@ -282,37 +261,45 @@ def _normalize_alias(value: str, aliases: dict[str, str]) -> str:
 
 def _fallback_sub_for_kategori(kategori: str) -> str:
     allowed = _allowed_subs_for_kategori(kategori)
-    if DEFAULT_FALLBACK_SUB in allowed:
-        return DEFAULT_FALLBACK_SUB
+    fb = fallback_sub()
+    if fb in allowed:
+        return fb
     return allowed[0]
 
 
 def _allowed_subs_for_kategori(kategori: str) -> tuple[str, ...]:
-    return KATEGORI_SUB_MAP.get(kategori, (DEFAULT_FALLBACK_SUB,))
+    subs = kategori_sub_map().get(kategori)
+    if subs:
+        return subs
+    return (fallback_sub(),)
 
 
 def normalize_category_fields(parsed: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
-    """Selaraskan kategori/sub_kategori dengan dropdown Sheet YFD."""
-    kategori = _normalize_alias(str(parsed.get("kategori", "")), _KATEGORI_ALIASES)
-    sub = _normalize_alias(str(parsed.get("sub_kategori", "")), _SUB_ALIASES)
+    """Selaraskan kategori/sub_kategori dengan aturan admin Laravel."""
+    kategori = _normalize_alias(str(parsed.get("kategori", "")), _kategori_aliases())
+    sub = _normalize_alias(str(parsed.get("sub_kategori", "")), _sub_aliases())
     combined = f"{parsed.get('keterangan', '')} {source_text}".strip().lower()
+    valid_cats = valid_kategori()
+    valid_subs = valid_sub_kategori()
+    fb_cat = fallback_kategori()
+    fb_sub = fallback_sub()
 
     strong_kategori = _kategori_from_strong_signals(combined)
     if strong_kategori is not None:
         kategori = strong_kategori
-    elif kategori not in VALID_KATEGORI:
-        kategori = DEFAULT_FALLBACK_KATEGORI
-        sub = DEFAULT_FALLBACK_SUB
+    elif kategori not in valid_cats:
+        kategori = fb_cat
+        sub = fb_sub
     elif kategori == "Air" and not is_water_expense(combined):
         kategori = _infer_kategori_from_text(combined)
 
     allowed = _allowed_subs_for_kategori(kategori)
 
-    if sub not in VALID_SUB_KATEGORI:
+    if sub not in valid_subs:
         detected = _detect_sub_from_text(combined)
         if detected in allowed:
             sub = detected
-        elif sub in VALID_SUB_KATEGORI:
+        elif sub in valid_subs:
             kategori = _resolve_parent_for_sub(sub, combined, kategori)
             allowed = _allowed_subs_for_kategori(kategori)
         else:
@@ -321,7 +308,7 @@ def normalize_category_fields(parsed: Dict[str, Any], source_text: str = "") -> 
         detected = _detect_sub_from_text(combined)
         if detected in allowed:
             sub = detected
-        elif sub in VALID_SUB_KATEGORI:
+        elif sub in valid_subs:
             kategori = _resolve_parent_for_sub(sub, combined, kategori)
             allowed = _allowed_subs_for_kategori(kategori)
         else:
@@ -336,4 +323,4 @@ def normalize_category_fields(parsed: Dict[str, Any], source_text: str = "") -> 
 
     parsed["kategori"] = kategori
     parsed["sub_kategori"] = sub
-    return parsed
+    return apply_admin_nature(parsed)

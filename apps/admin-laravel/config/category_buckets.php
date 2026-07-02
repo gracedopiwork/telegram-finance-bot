@@ -22,4 +22,6 @@ return [
         'gadget', 'fomo',
     ],
     'essential_categories' => ['makan', 'transport', 'listrik', 'air', 'gaji'],
+    'bot_fallback_category' => 'Jajan',
+    'bot_fallback_sub' => 'Pengeluaran lain-lain',
 ];

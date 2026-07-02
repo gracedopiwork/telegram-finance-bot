@@ -32,13 +32,14 @@ from ai_quota import (
     should_notify_quota_exhausted,
 )
 from portal_link import fetch_portal_login_url
+from category_rules_cache import get_rules, refresh as refresh_category_rules
 from transaction_store import save_transaction_to_api
 from transaction_categories import (
-    VALID_KATEGORI,
-    VALID_SUB_KATEGORI,
     build_system_prompt_rules,
     is_water_expense,
     normalize_category_fields,
+    valid_kategori,
+    valid_sub_kategori,
 )
 from impulsive_rules import (
     PAYDAY_SPLURGE_KEYWORDS,
@@ -54,7 +55,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = build_system_prompt_rules()
+
+def get_system_prompt() -> str:
+    return build_system_prompt_rules()
 
 HELP_TEXT = (
     "Input belum terbaca.\n"
@@ -75,8 +78,6 @@ ACTIVATE_HELP_TEXT = (
 )
 
 VALID_JENIS = {"Pemasukan", "Pengeluaran"}
-VALID_KATEGORI_SET = set(VALID_KATEGORI)
-VALID_SUB_KATEGORI_SET = set(VALID_SUB_KATEGORI)
 VALID_SIFAT = {"Need", "Wants", "Saving/Investement", "Donation"}
 VALID_MOOD = {"Happy", "Neutral", "Sad", "Stressed", "Angry", "Tired"}
 VALID_IMPULSIF = {"Yes", "No"}
@@ -447,9 +448,9 @@ def normalize_ai_result(data: Dict[str, Any]) -> Dict[str, Any]:
 
     if data["jenis"] not in VALID_JENIS:
         raise ValueError("invalid_jenis")
-    if data["kategori"] not in VALID_KATEGORI_SET:
+    if data["kategori"] not in set(valid_kategori()):
         raise ValueError("invalid_kategori")
-    if data["sub_kategori"] not in VALID_SUB_KATEGORI_SET:
+    if data["sub_kategori"] not in set(valid_sub_kategori()):
         raise ValueError("invalid_sub_kategori")
     if data["sifat"] not in VALID_SIFAT:
         raise ValueError("invalid_sifat")
@@ -478,7 +479,7 @@ def analyze_with_gemini(user_text: str) -> Dict[str, Any]:
         try:
             model = genai.GenerativeModel(model_name)
             response = model.generate_content(
-                [SYSTEM_PROMPT, f"Input user: {user_text}"],
+                [get_system_prompt(), f"Input user: {user_text}"],
                 generation_config={"temperature": 0},
             )
             raw_text = response.text if hasattr(response, "text") else ""
@@ -1361,6 +1362,14 @@ def main() -> None:
     logger.info("Bot berjalan...")
     log_laravel_api_config()
     log_ai_health_config()
+    refresh_category_rules(force=True)
+    rules_meta = get_rules()
+    logger.info(
+        "category_rules: siap — %s kategori (source=%s, v=%s)",
+        len(rules_meta.get("categories", [])),
+        rules_meta.get("source"),
+        rules_meta.get("version"),
+    )
     app.run_polling()
 
 
