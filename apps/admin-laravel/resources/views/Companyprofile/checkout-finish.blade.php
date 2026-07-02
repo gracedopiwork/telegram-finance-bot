@@ -9,6 +9,8 @@
     $deliveryContact = $order
         ? ($deliveryViaEmail ? $order->email : $order->phone)
         : '';
+    $isFtsaUpgrade = ($orderContext['is_ftsa_upgrade'] ?? false);
+    $isFtsaOnly = ($orderContext['is_ftsa_only'] ?? false);
 @endphp
 
 @push('head')
@@ -33,9 +35,14 @@
         </p>
 
         @if($order->status === 'paid' && $order->license)
-            @if($deliveryViaEmail)
+            @if($isFtsaUpgrade)
                 <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
-                    Pembayaran <strong>lunas</strong>. Kode aktivasi bot dan akses dashboard web sudah dikirim ke email
+                    Pembayaran <strong>lunas</strong>. <strong>FTSA Premium</strong> sudah aktif pada lisensi bot Anda yang sama.
+                    Login portal dengan email <strong>{{ $order->email }}</strong> dan kode lisensi bot yang sudah pernah di-/activate.
+                </p>
+            @elseif($deliveryViaEmail)
+                <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
+                    Pembayaran <strong>lunas</strong>. Kode aktivasi{{ $isFtsaOnly ? '' : ' bot' }} dan akses dashboard web sudah dikirim ke email
                     <strong>{{ $order->email }}</strong>. Cek inbox (dan folder Spam) lalu lanjutkan aktivasi.
                 </p>
             @else
@@ -45,7 +52,7 @@
                 </p>
 
                 <div class="bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 max-w-lg mx-auto text-left mb-6">
-                    <p class="text-[11px] font-bold uppercase tracking-wider text-primary mb-2">Kode lisensi bot</p>
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-primary mb-2">Kode lisensi{{ $isFtsaOnly ? '' : ' bot' }}</p>
                     <code id="licenseKeyDisplay" class="block text-base sm:text-lg font-mono font-bold text-primary break-all select-all bg-white px-4 py-3 rounded-xl border border-outline-variant">{{ $order->license->license_key }}</code>
                     <button type="button"
                             class="mt-4 w-full btn btn-primary text-sm"
@@ -63,14 +70,25 @@
                 <div class="bg-primary-container/5 border border-primary-container/20 rounded-2xl p-6 max-w-lg mx-auto text-left mb-6">
                     <p class="text-[11px] font-bold uppercase tracking-wider text-primary mb-3">Langkah selanjutnya</p>
                     <ol class="text-[13px] text-on-surface-variant space-y-3 list-decimal list-inside">
-                        <li>Buka bot Telegram → <code class="bg-white px-1 rounded">/activate {{ $order->license->license_key }}</code></li>
-                        <li>Masuk dashboard: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> atau ketik <code class="bg-white px-1 rounded">/web</code> di bot</li>
-                        <li><strong class="text-primary">Isi Baseline Data (Diagnostik)</strong> — wajib, menu <em>BASELINE DATA</em></li>
-                        <li>Catat transaksi harian di bot, pantau dashboard</li>
+                        @if($isFtsaUpgrade)
+                            <li>Login portal: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> dengan email & lisensi bot yang sama</li>
+                            <li>Buka menu <strong>BASELINE DATA</strong> untuk mengisi FTSA 1–32</li>
+                        @else
+                            <li>Buka bot Telegram → <code class="bg-white px-1 rounded">/activate {{ $order->license->license_key }}</code></li>
+                            <li>Masuk dashboard: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> atau ketik <code class="bg-white px-1 rounded">/web</code> di bot</li>
+                            <li><strong class="text-primary">Isi Financial Health Check-Up</strong> — hasil diagnostik tersimpan & terhubung ke akun Anda</li>
+                            @if($isFtsaOnly)
+                                <li>Setelah check-up, isi <strong>FTSA 1–32</strong> di menu Baseline Data (sudah aktif)</li>
+                            @else
+                                <li>Catat transaksi harian di bot, pantau dashboard</li>
+                            @endif
+                        @endif
                     </ol>
-                    <a href="{{ route('checkup.show') }}" class="btn btn-primary mt-4 w-full text-sm">
-                        Isi Diagnostik Sekarang
-                    </a>
+                    @if(!$isFtsaUpgrade)
+                        <a href="{{ route('checkup.show') }}" class="btn btn-primary mt-4 w-full text-sm">
+                            Isi Diagnostik Sekarang
+                        </a>
+                    @endif
                 </div>
             @endif
         @else

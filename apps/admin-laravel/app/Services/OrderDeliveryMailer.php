@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Mail\FtsaUnlockDeliveredMail;
 use App\Mail\PaidOrderDeliveredMail;
+use App\Services\PortalOnboardingService;
 use App\Models\Order;
 use Illuminate\Support\Facades\Mail;
 
@@ -31,9 +32,9 @@ class OrderDeliveryMailer
             throw new \RuntimeException('Email checkout kosong.');
         }
 
-        $mailable = $this->isFtsaUnlockOrder($order)
+        $mailable = $this->isFtsaUnlockOrder($order) && app(PortalOnboardingService::class)->isFtsaUpgradeOrder($order)
             ? new FtsaUnlockDeliveredMail($order)
-            : new PaidOrderDeliveredMail($order);
+            : new PaidOrderDeliveredMail($order, includeFtsaUnlock: $this->isFtsaUnlockOrder($order));
 
         Mail::to($order->email)->send($mailable);
     }

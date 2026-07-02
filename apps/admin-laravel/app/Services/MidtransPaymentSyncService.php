@@ -147,9 +147,27 @@ class MidtransPaymentSyncService
 
     private function findExistingLicenseForEmail(string $email): ?License
     {
+        $email = strtolower(trim($email));
+        $botCodes = (array) config('portal.bot_only_product_codes', ['yfd-bot-telegram']);
+
+        $priorBot = Order::query()
+            ->where('status', 'paid')
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->whereNotNull('license_id')
+            ->whereHas('digitalProduct', fn ($q) => $q->whereIn('code', $botCodes))
+            ->orderByDesc('id')
+            ->first();
+
+        if ($priorBot !== null) {
+            return License::query()
+                ->whereKey($priorBot->license_id)
+                ->where('status', 'active')
+                ->first();
+        }
+
         $priorOrder = Order::query()
             ->where('status', 'paid')
-            ->whereRaw('LOWER(email) = ?', [strtolower(trim($email))])
+            ->whereRaw('LOWER(email) = ?', [$email])
             ->whereNotNull('license_id')
             ->orderByDesc('id')
             ->first();

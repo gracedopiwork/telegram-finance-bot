@@ -61,6 +61,9 @@
     <p style="font-size: 0.875rem; color: #52525b;">
         Setelah masuk dashboard, langkah pertama adalah mengisi <strong>Baseline Data (Diagnostik Keuangan)</strong>.
         Ini menentukan tahap keuangan Anda dan mengaktifkan prescription bucket di dashboard.
+        @if(!empty($includeFtsaUnlock))
+            <strong>FTSA 1–32</strong> juga sudah aktif — bisa diisi setelah diagnostik tahap keuangan.
+        @endif
     </p>
     <p>
         <a href="{{ $baselineHref }}" style="display: inline-block; background: #dca115; color: #0c2240; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 700;">Isi Diagnostik Sekarang</a>

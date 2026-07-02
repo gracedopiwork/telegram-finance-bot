@@ -197,10 +197,12 @@ class CheckoutController extends Controller
 
         $notifier = app(OrderDeliveryNotifier::class);
         $channels = $notifier->enabledChannels();
+        $orderContext = $order ? app(\App\Services\PortalOnboardingService::class)->orderDeliveryContext($order) : null;
 
         return view('Companyprofile.checkout-finish', [
             'active' => 'produk',
             'order'  => $order,
+            'orderContext' => $orderContext,
             'deliveryChannelLabel' => $notifier->primaryChannelLabel(),
             'deliveryViaEmail' => in_array('email', $channels, true),
         ]);

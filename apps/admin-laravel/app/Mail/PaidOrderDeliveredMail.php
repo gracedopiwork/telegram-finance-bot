@@ -15,7 +15,10 @@ class PaidOrderDeliveredMail extends Mailable
     use Queueable;
     use SerializesModels;
 
-    public function __construct(public Order $order) {}
+    public function __construct(
+        public Order $order,
+        public bool $includeFtsaUnlock = false,
+    ) {}
 
     public function envelope(): Envelope
     {
@@ -32,6 +35,7 @@ class PaidOrderDeliveredMail extends Mailable
                 'telegramBotUrl' => TelegramBotUrl::resolve(),
                 'telegramBotAppUrl' => TelegramBotUrl::appDeepLink(),
                 'telegramBotUsername' => TelegramBotUrl::username(),
+                'includeFtsaUnlock' => $this->includeFtsaUnlock,
             ],
         );
     }

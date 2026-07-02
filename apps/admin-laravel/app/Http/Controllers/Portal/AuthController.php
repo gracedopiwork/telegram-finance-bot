@@ -135,11 +135,12 @@ class AuthController extends Controller
                     );
             }
 
+            $checkupMsg = $onboarding->isFtsaOnlyBuyer($email)
+                ? 'Silakan lengkapi Financial Health Check-Up. Hasil diagnostik akan tersimpan dan terhubung ke akun FTSA Anda.'
+                : 'Silakan lengkapi Financial Health Check-Up terlebih dahulu. Gunakan email yang sama dengan pembelian Anda.';
+
             return redirect()->route('checkup.show')
-                ->with(
-                    'warning',
-                    'Silakan lengkapi Financial Health Check-Up terlebih dahulu. Gunakan email yang sama dengan pembelian Anda.'
-                )
+                ->with('warning', $checkupMsg)
                 ->withInput(['email' => $email]);
         }
 
