@@ -14,7 +14,7 @@
     $needsFinancialDiagnostic = $needsFinancialDiagnostic ?? false;
 @endphp
 
-<div class="w-full max-w-6xl mx-auto">
+<div class="{{ ($isFtsaOnlyPortalUser ?? false) ? 'w-full' : 'w-full max-w-6xl mx-auto' }}">
     @if($isFtsaOnlyPortalUser && $needsFinancialDiagnostic)
         <div class="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 mb-6 text-sm text-sky-900">
             <div class="font-bold">Belum ada diagnostik tahap keuangan?</div>
