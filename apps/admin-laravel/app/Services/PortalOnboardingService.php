@@ -153,9 +153,13 @@ class PortalOnboardingService
             return false;
         }
 
-        app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+        if ($this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
+            return false;
+        }
 
-        return FinancialBaseline::userNeedsBaseline($telegramUserId);
+        $baseline = $this->resolveBaseline($email, $telegramUserId);
+
+        return $baseline === null;
     }
 
     public function userNeedsBotOnboardingBaseline(string $email, int $telegramUserId): bool
@@ -168,16 +172,31 @@ class PortalOnboardingService
             return false;
         }
 
+        if ($this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
+            return false;
+        }
+
         app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
 
         if ($this->isBotAfterFtsaBuyer($email)) {
             return ! $this->hasFtsaPortalOnboardingComplete($email, $telegramUserId);
         }
 
-        $baseline = FinancialBaseline::latestForUser($telegramUserId)
-            ?? FinancialBaseline::latestForEmail($email);
+        $baseline = $this->resolveBaseline($email, $telegramUserId);
 
         return ! $this->hasFinancialDiagnostic($baseline);
+    }
+
+    public function resolveBaseline(string $email, int $telegramUserId): ?FinancialBaseline
+    {
+        if (! \App\Support\FinancialBaselineSchema::isReady() || $telegramUserId <= 0) {
+            return null;
+        }
+
+        app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+
+        return FinancialBaseline::latestForUser($telegramUserId)
+            ?? FinancialBaseline::latestForEmail($email);
     }
 
     /**
@@ -189,10 +208,7 @@ class PortalOnboardingService
             return false;
         }
 
-        app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
-
-        $baseline = FinancialBaseline::latestForUser($telegramUserId)
-            ?? FinancialBaseline::latestForEmail($email);
+        $baseline = $this->resolveBaseline($email, $telegramUserId);
 
         if ($baseline === null) {
             return false;
@@ -200,6 +216,11 @@ class PortalOnboardingService
 
         return $this->hasFinancialDiagnostic($baseline)
             && app(FtsaAnswerSummaryService::class)->hasCompletedFtsa($baseline);
+    }
+
+    public function hasPortalAssessmentComplete(string $email, int $telegramUserId): bool
+    {
+        return $this->hasFtsaPortalOnboardingComplete($email, $telegramUserId);
     }
 
     public function hasFinancialDiagnostic(?FinancialBaseline $baseline): bool
@@ -219,15 +240,11 @@ class PortalOnboardingService
             return false;
         }
 
-        if ($this->isBotAfterFtsaBuyer($email)
-            && $this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
+        if ($this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
             return false;
         }
 
-        app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
-
-        $baseline = FinancialBaseline::latestForUser($telegramUserId)
-            ?? FinancialBaseline::latestForEmail($email);
+        $baseline = $this->resolveBaseline($email, $telegramUserId);
 
         return ! $this->hasFinancialDiagnostic($baseline);
     }
@@ -238,8 +255,7 @@ class PortalOnboardingService
             return false;
         }
 
-        if ($this->isBotAfterFtsaBuyer($email)
-            && $this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
+        if ($this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
             return false;
         }
 
@@ -247,10 +263,7 @@ class PortalOnboardingService
             return false;
         }
 
-        app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
-
-        $baseline = FinancialBaseline::latestForUser($telegramUserId)
-            ?? FinancialBaseline::latestForEmail($email);
+        $baseline = $this->resolveBaseline($email, $telegramUserId);
         if ($baseline === null) {
             return true;
         }
@@ -273,9 +286,13 @@ class PortalOnboardingService
         return route('portal.baseline.create');
     }
 
-    public function portalBaselineUrl(): string
+    public function portalBaselineUrl(string $email, int $telegramUserId): string
     {
-        return route('portal.baseline.create');
+        if ($this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
+            return route('portal.baseline');
+        }
+
+        return $this->firstBaselineUrl($email, $telegramUserId);
     }
 
     /**

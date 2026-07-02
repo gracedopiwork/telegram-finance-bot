@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
-use App\Models\FinancialBaseline;
 use App\Services\BaselineClaimService;
 use App\Services\FtsaAiGuidanceService;
 use App\Services\FtsaAnswerSummaryService;
 use App\Services\ImpulsivityAssessmentService;
 use App\Services\PortalFeatureService;
+use App\Services\PortalOnboardingService;
 use App\Services\TransactionDashboardService;
 use App\Support\PortalSession;
 use Carbon\Carbon;
@@ -40,11 +40,11 @@ class DashboardController extends Controller
 
     [$month, $period] = $this->filters($request);
     $summary = app(TransactionDashboardService::class)->summary($telegramUserId, $month, $period, $email);
-    $impulsivity = app(ImpulsivityAssessmentService::class)->assess($telegramUserId, $month, $period);
+    $impulsivity = app(ImpulsivityAssessmentService::class)->assess($telegramUserId, $month, $period, $email);
     $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email);
-    $baseline = FinancialBaseline::latestForUser($telegramUserId)
-      ?? FinancialBaseline::latestForEmail($email);
+    $baseline = app(PortalOnboardingService::class)->resolveBaseline($email, $telegramUserId);
     $ftsaSummary = $baseline ? app(FtsaAnswerSummaryService::class)->scoreSummary($baseline) : null;
+    $ftsaAiGuidance = app(FtsaAiGuidanceService::class)->forBaseline($baseline);
 
     return view('portal.dashboard', [
       'active' => 'dashboard',
@@ -52,6 +52,7 @@ class DashboardController extends Controller
       'ftsaUnlocked' => $ftsaUnlocked,
       'baselineRecord' => $baseline,
       'ftsaSummary' => $ftsaSummary,
+      'ftsaAiGuidance' => $ftsaAiGuidance,
       'impulsivity' => [
         'score' => $impulsivity['score'],
         'grade' => $impulsivity['grade'],
@@ -70,11 +71,11 @@ class DashboardController extends Controller
     app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
 
     [$month, $period] = $this->filters($request);
-    $assessment = app(ImpulsivityAssessmentService::class)->assess($telegramUserId, $month, $period);
+    $assessment = app(ImpulsivityAssessmentService::class)->assess($telegramUserId, $month, $period, $email);
     $featureService = app(PortalFeatureService::class);
     $ftsaUnlocked = $featureService->canAccessFtsa($telegramUserId, $email);
     $ftsaStatus = $featureService->ftsaEntitlementStatus($telegramUserId, $email);
-    $baseline = FinancialBaseline::latestForUser($telegramUserId);
+    $baseline = app(PortalOnboardingService::class)->resolveBaseline($email, $telegramUserId);
     $ftsaAiGuidance = app(FtsaAiGuidanceService::class)->forBaseline($baseline);
 
     return view('portal.emotional', [

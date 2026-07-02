@@ -22,15 +22,17 @@
     </a>
     @endif
     @php
-        $baselineNavUrl = ($isFtsaOnlyPortalUser ?? false)
-            ? ($baselineUrl ?? route('portal.baseline.create'))
-            : route('portal.baseline');
-        $baselineNavHighlight = ($needsBaseline ?? false)
+        $baselineNavUrl = $baselineUrl ?? route('portal.baseline.create');
+        $baselineNavHighlight = !($portalOnboardingComplete ?? false) && (
+            ($needsBaseline ?? false)
             || (($needsFtsa ?? false) && !($ftsaRetakeLocked ?? false))
-            || (($isFtsaOnlyPortalUser ?? false) && ($needsFinancialDiagnostic ?? false));
-        $baselineNavLabel = ($isFtsaOnlyPortalUser ?? false)
-            ? (($needsFinancialDiagnostic ?? false) ? 'DIAGNOSTIK KEUANGAN' : 'FTSA 1–32')
-            : 'BASELINE DATA (WAJIB DI ISI)';
+            || (($isFtsaOnlyPortalUser ?? false) && ($needsFinancialDiagnostic ?? false))
+        );
+        $baselineNavLabel = ($portalOnboardingComplete ?? false)
+            ? 'BASELINE DATA'
+            : (($isFtsaOnlyPortalUser ?? false)
+                ? (($needsFinancialDiagnostic ?? false) ? 'DIAGNOSTIK KEUANGAN' : 'FTSA 1–32')
+                : 'BASELINE DATA (WAJIB DI ISI)');
     @endphp
     <a href="{{ $baselineNavUrl }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'baseline' ? 'nav-active font-semibold' : 'hover:bg-white/10' }} {{ $baselineNavHighlight ? 'ring-2 ring-gold-400/80 bg-gold-400/10' : '' }}">

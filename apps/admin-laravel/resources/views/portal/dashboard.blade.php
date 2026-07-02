@@ -81,10 +81,17 @@
     </div>
 @endif
 
+@if($showFtsaSummary)
+    @include('portal.partials.ftsa-ai-guidance', ['ftsaAiGuidance' => $ftsaAiGuidance ?? []])
+@endif
+
+@php $hasAssessment = ($summary['baseline'] ?? null) || $showFtsaSummary; @endphp
 @if(!$hasData)
     @include('portal.partials.empty-state', [
-        'title' => 'Dashboard masih kosong',
-        'message' => 'Mulai catat pemasukan & pengeluaran lewat bot Telegram. Semua metrik di bawah akan terisi otomatis.',
+        'title' => $hasAssessment ? 'Belum ada transaksi bot' : 'Dashboard masih kosong',
+        'message' => $hasAssessment
+            ? 'Diagnostik dan FTSA Anda sudah tersimpan. Catat pemasukan & pengeluaran lewat bot Telegram — metrik harian akan terisi otomatis.'
+            : 'Mulai catat pemasukan & pengeluaran lewat bot Telegram. Semua metrik di bawah akan terisi otomatis.',
     ])
 @endif
 

@@ -29,10 +29,12 @@ class BaselineController extends Controller
                 ->with('error', 'Database baseline belum siap. Admin: php artisan migrate --force');
         }
 
-        $baseline = FinancialBaseline::latestForUser($telegramUserId);
+        $email = (string) (PortalSession::email($request) ?? '');
+        $onboarding = app(PortalOnboardingService::class);
+        $baseline = $onboarding->resolveBaseline($email, $telegramUserId);
 
         if ($baseline === null) {
-            return $this->redirectWhenNoBaseline($request);
+            return redirect($onboarding->firstBaselineUrl($email, $telegramUserId));
         }
 
         try {
@@ -385,7 +387,10 @@ class BaselineController extends Controller
 
     private function redirectWhenNoBaseline(Request $request): RedirectResponse
     {
-        return redirect()->route($this->portalHomeRoute($request))
-            ->with('info', 'Belum ada data baseline. Gunakan banner di dashboard untuk mengisi diagnostik atau FTSA.');
+        $email = (string) (PortalSession::email($request) ?? '');
+        $telegramUserId = (int) PortalSession::telegramUserId($request);
+        $onboarding = app(PortalOnboardingService::class);
+
+        return redirect($onboarding->firstBaselineUrl($email, $telegramUserId));
     }
 }

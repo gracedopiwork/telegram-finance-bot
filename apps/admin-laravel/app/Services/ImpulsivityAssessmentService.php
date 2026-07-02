@@ -21,7 +21,7 @@ class ImpulsivityAssessmentService
   /** @var list<string> */
   private const MOOD_ORDER = ['Happy', 'Neutral', 'Sad', 'Stressed', 'Angry', 'Tired'];
 
-  public function assess(int $telegramUserId, ?string $month = null, ?int $period = null): array
+  public function assess(int $telegramUserId, ?string $month = null, ?int $period = null, ?string $email = null): array
   {
     $dashboard = app(TransactionDashboardService::class);
     $month = $dashboard->monthKey($month);
@@ -60,6 +60,9 @@ class ImpulsivityAssessmentService
     $dominantMood = $this->dominantMood($expenses);
     $moodCalendar = $this->moodCalendar($rows, $month);
     $baseline = FinancialBaseline::latestForUser($telegramUserId);
+    if ($baseline === null && is_string($email) && trim($email) !== '') {
+      $baseline = FinancialBaseline::latestForEmail($email);
+    }
     $ftsaProfile = $this->ftsaProfile($baseline);
     $insights = $this->autoInsights($impulsiveRate, $dominantMood, $dominantPattern, $moodGroups, $highestLeakage, $ftsaProfile);
     $recommendations = $this->recommendations($impulsiveRate, $dominantMood, $ftsaProfile, $moodGroups);
