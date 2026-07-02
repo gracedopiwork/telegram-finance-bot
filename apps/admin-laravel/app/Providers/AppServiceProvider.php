@@ -123,12 +123,16 @@ class AppServiceProvider extends ServiceProvider
                 $ftsaEval = app(\App\Services\FtsaEvaluationService::class);
                 $view->with('ftsaRetakeLocked', $ftsaEval->isRetakeLocked($telegramUserId));
                 $view->with('ftsaRetakeAvailableAt', $ftsaEval->retakeAvailableAt($telegramUserId));
-                $view->with(
-                    'baselineUrl',
-                    $needsBaseline || ($needsFtsa && ! $ftsaEval->isRetakeLocked($telegramUserId))
-                        ? $onboarding->firstBaselineUrl($email, $telegramUserId)
-                        : ($access->isFtsaOnlyPortalUser($email) ? route('portal.emotional') : route('portal.baseline'))
-                );
+                if ($access->isFtsaOnlyPortalUser($email)) {
+                    $view->with('baselineUrl', $onboarding->nextFtsaOnlyOnboardingUrl($email, $telegramUserId));
+                } else {
+                    $view->with(
+                        'baselineUrl',
+                        $needsBaseline || ($needsFtsa && ! $ftsaEval->isRetakeLocked($telegramUserId))
+                            ? $onboarding->firstBaselineUrl($email, $telegramUserId)
+                            : route('portal.baseline')
+                    );
+                }
                 $view->with('diagnosticCheckupUrl', $onboarding->diagnosticCheckupUrl());
             } catch (\Throwable) {
                 // Portal routes may not be registered during early boot.

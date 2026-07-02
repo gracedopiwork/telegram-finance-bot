@@ -67,9 +67,12 @@ class FtsaAnswerSummaryService
 
     public function hasFtsaAnswers(FinancialBaseline $baseline): bool
     {
-        $ftsa = $this->rawFtsaAnswers($baseline);
+        return count($this->rawFtsaAnswers($baseline)) > 0;
+    }
 
-        return count($ftsa) > 0;
+    public function hasCompletedFtsa(FinancialBaseline $baseline): bool
+    {
+        return count($this->rawFtsaAnswers($baseline)) >= 32;
     }
 
     public function isFtsaLocked(FinancialBaseline $baseline): bool

@@ -7,6 +7,7 @@ use App\Services\BaselineAssessmentService;
 use App\Services\DiagnosticConfigService;
 use App\Services\FtsaAnswerSummaryService;
 use App\Services\PortalAccessService;
+use App\Services\PortalOnboardingService;
 use App\Support\FinancialBaselineSchema;
 use App\Support\PortalSession;
 use Illuminate\Database\QueryException;
@@ -114,9 +115,24 @@ class PublicCheckupController extends Controller
         $portalEmail = (string) (PortalSession::email($request) ?? $baseline->email ?? '');
         $access = app(PortalAccessService::class);
         $isFtsaOnlyPortal = $fromPortal && $access->isFtsaOnlyPortalUser($portalEmail);
-        $portalHomeRoute = $isFtsaOnlyPortal
-            ? 'portal.emotional'
-            : ($fromPortal && $access->hasBotPortalAccess($portalEmail) ? 'portal.dashboard' : null);
+        $portalHomeRoute = null;
+        $portalNextUrl = null;
+        $portalNextLabel = null;
+
+        if ($fromPortal && $isFtsaOnlyPortal) {
+            $onboarding = app(PortalOnboardingService::class);
+            $portalUserId = (int) PortalSession::telegramUserId($request);
+            $portalNextUrl = $onboarding->nextFtsaOnlyOnboardingUrl($portalEmail, $portalUserId);
+
+            if ($onboarding->userNeedsFtsa($portalEmail, $portalUserId)) {
+                $portalNextLabel = 'Lengkapi FTSA 1–32';
+            } else {
+                $portalNextLabel = 'Buka Dashboard FTSA';
+                $portalHomeRoute = 'portal.emotional';
+            }
+        } elseif ($fromPortal && $access->hasBotPortalAccess($portalEmail)) {
+            $portalHomeRoute = 'portal.dashboard';
+        }
 
         return view('checkup.result', [
             'baseline' => $baseline,
@@ -124,6 +140,8 @@ class PublicCheckupController extends Controller
             'fromPortal' => $fromPortal,
             'isFtsaOnlyPortal' => $isFtsaOnlyPortal,
             'portalHomeRoute' => $portalHomeRoute,
+            'portalNextUrl' => $portalNextUrl,
+            'portalNextLabel' => $portalNextLabel,
         ]);
     }
 

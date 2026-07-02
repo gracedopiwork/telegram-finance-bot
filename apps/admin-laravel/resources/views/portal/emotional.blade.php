@@ -122,10 +122,10 @@
         @endif
 
         @if($needsFinancialDiagnostic ?? false)
-            <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 flex flex-wrap items-center justify-between gap-3 mb-6">
-                <div class="text-sm text-slate-700">
-                    <div class="font-bold">Diagnostik tahap keuangan (opsional)</div>
-                    <div class="mt-0.5">Check-up gratis — hasil terhubung otomatis via email Anda.</div>
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3 mb-6">
+                <div class="text-sm text-amber-900">
+                    <div class="font-bold">Lengkapi diagnostik keuangan</div>
+                    <div class="mt-0.5">Wajib sebelum mengisi FTSA — hasil terhubung otomatis via email Anda.</div>
                 </div>
                 <a href="{{ $diagnosticCheckupUrl ?? route('checkup.show') }}"
                    class="inline-flex items-center gap-2 border border-navy-800 text-navy-800 hover:bg-navy-50 font-bold px-4 py-2 rounded-xl text-sm">

@@ -150,9 +150,14 @@ class AuthController extends Controller
         $access = app(PortalAccessService::class);
 
         if ($access->isFtsaOnlyPortalUser($email)) {
+            if ($onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
+                return redirect()->route('checkup.show')
+                    ->with('info', 'Lengkapi diagnostik keuangan terlebih dahulu, lalu lanjut ke kuesioner FTSA 1–32.');
+            }
+
             if ($onboarding->userNeedsFtsa($email, $telegramUserId)) {
                 return redirect()->route('portal.baseline.create')
-                    ->with('info', 'Lengkapi kuesioner FTSA 1–32 untuk mengaktifkan dashboard behavioral Anda.');
+                    ->with('info', 'Diagnostik selesai. Lengkapi kuesioner FTSA 1–32 untuk mengaktifkan dashboard behavioral Anda.');
             }
 
             return redirect()->route('portal.emotional')

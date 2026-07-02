@@ -85,6 +85,12 @@ class BaselineController extends Controller
 
         app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
 
+        if ($isFtsaOnly && $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
+            return redirect()->route('checkup.show')
+                ->with('info', 'Selesaikan diagnostik keuangan terlebih dahulu sebelum mengisi FTSA 1–32.')
+                ->withInput(['email' => $email]);
+        }
+
         if (! $isFtsaOnly
             && ! $onboarding->isBotAfterFtsaBuyer($email)
             && ! $onboarding->isBotOnlyBuyer($email, $telegramUserId)
@@ -159,6 +165,12 @@ class BaselineController extends Controller
         $email = (string) (PortalSession::email($request) ?? '');
         $isFtsaOnly = app(PortalAccessService::class)->isFtsaOnlyPortalUser($email);
         $ftsaEval = app(FtsaEvaluationService::class);
+
+        if ($isFtsaOnly && app(PortalOnboardingService::class)->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
+            return redirect()->route('checkup.show')
+                ->with('warning', 'Selesaikan diagnostik keuangan terlebih dahulu sebelum mengisi FTSA 1–32.')
+                ->withInput(['email' => $email]);
+        }
 
         if ($ftsaEval->isRetakeLocked($telegramUserId)) {
             if ($isFtsaOnly) {
@@ -407,6 +419,11 @@ class BaselineController extends Controller
         $access = app(PortalAccessService::class);
 
         if ($access->isFtsaOnlyPortalUser($email)) {
+            if ($onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
+                return redirect()->route('checkup.show')
+                    ->with('info', 'Lengkapi diagnostik keuangan terlebih dahulu.');
+            }
+
             if ($onboarding->userNeedsFtsa($email, $telegramUserId)) {
                 return redirect()->route('portal.baseline.create')
                     ->with('info', 'Lengkapi kuesioner FTSA 1–32 untuk mengaktifkan dashboard behavioral.');

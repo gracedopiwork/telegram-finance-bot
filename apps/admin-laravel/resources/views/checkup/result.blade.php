@@ -84,7 +84,12 @@
             </div>
 
             <div class="flex flex-wrap gap-3 mt-8 justify-center">
-                @if($fromPortal && !empty($portalHomeRoute))
+                @if($fromPortal && !empty($portalNextUrl))
+                    <a href="{{ $portalNextUrl }}" class="btn btn-gold btn-lg">
+                        <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                        {{ $portalNextLabel ?? 'Lanjutkan' }}
+                    </a>
+                @elseif($fromPortal && !empty($portalHomeRoute))
                     <a href="{{ route($portalHomeRoute) }}" class="btn btn-gold btn-lg">
                         <span class="material-symbols-outlined text-[20px]">dashboard</span>
                         {{ ($isFtsaOnlyPortal ?? false) ? 'Buka Dashboard FTSA' : 'Buka Dashboard' }}

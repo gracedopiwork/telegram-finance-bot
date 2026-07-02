@@ -442,6 +442,10 @@ class ImpulsivityAssessmentService
       return null;
     }
 
+    if (! app(FtsaAnswerSummaryService::class)->hasCompletedFtsa($baseline)) {
+      return null;
+    }
+
     return [
       'archetype' => $baseline->dominant_archetype_label ?? $baseline->dominant_archetype,
       'domains' => [

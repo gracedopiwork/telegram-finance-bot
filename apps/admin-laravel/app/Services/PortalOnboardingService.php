@@ -214,7 +214,23 @@ class PortalOnboardingService
             return true;
         }
 
-        return ! app(FtsaAnswerSummaryService::class)->hasFtsaAnswers($baseline);
+        return ! app(FtsaAnswerSummaryService::class)->hasCompletedFtsa($baseline);
+    }
+
+    /**
+     * Urutan onboarding pembeli FTSA-only: diagnostik → FTSA → hasil.
+     */
+    public function nextFtsaOnlyOnboardingUrl(string $email, int $telegramUserId): string
+    {
+        if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
+            return route('checkup.show');
+        }
+
+        if ($this->userNeedsFtsa($email, $telegramUserId)) {
+            return route('portal.baseline.create');
+        }
+
+        return route('portal.emotional');
     }
 
     /**
@@ -223,11 +239,11 @@ class PortalOnboardingService
     public function firstBaselineUrl(string $email, int $telegramUserId): string
     {
         if ($this->isBotAfterFtsaBuyer($email)) {
-            if ($this->userNeedsFtsa($email, $telegramUserId)) {
-                return route('portal.baseline.create');
-            }
             if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
                 return route('checkup.show');
+            }
+            if ($this->userNeedsFtsa($email, $telegramUserId)) {
+                return route('portal.baseline.create');
             }
 
             return route('portal.dashboard');
@@ -238,11 +254,7 @@ class PortalOnboardingService
         }
 
         if ($this->isFtsaOnlyBuyer($email)) {
-            if ($this->userNeedsFtsa($email, $telegramUserId)) {
-                return route('portal.baseline.create');
-            }
-
-            return route('portal.emotional');
+            return $this->nextFtsaOnlyOnboardingUrl($email, $telegramUserId);
         }
 
         return route('checkup.show');
