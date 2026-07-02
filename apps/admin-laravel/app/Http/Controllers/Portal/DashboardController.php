@@ -20,8 +20,9 @@ class DashboardController extends Controller
   public function transactions(Request $request): View
   {
     $telegramUserId = (int) PortalSession::telegramUserId($request);
+    $email = (string) (PortalSession::email($request) ?? '');
     [$month, $period] = $this->filters($request);
-    $summary = app(TransactionDashboardService::class)->summary($telegramUserId, $month, $period);
+    $summary = app(TransactionDashboardService::class)->summary($telegramUserId, $month, $period, $email);
 
     return view('portal.transactions', [
       'active' => 'transactions',

@@ -70,7 +70,7 @@
     </div>
 </div>
 
-@if($baseline)
+@if($baseline && ($baseline['has_financial_snapshot'] ?? false))
 <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
     <div class="bg-slate-50 px-5 py-4 border-b flex flex-wrap items-center justify-between gap-2">
         <h3 class="font-bold text-navy-800 flex items-center gap-2">
@@ -118,9 +118,45 @@
         @endif
     </div>
 </div>
-@else
+@elseif($baseline || ($portalOnboardingComplete ?? false))
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h3 class="font-bold text-navy-800 flex items-center gap-2">
+                    <span class="material-symbols-outlined">fact_check</span>
+                    Profil Diagnostik & FTSA
+                </h3>
+                <p class="text-sm text-slate-600 mt-2">
+                    Data kuesioner Anda sudah tersimpan.
+                    @if(!($baseline['has_financial_snapshot'] ?? false))
+                        Snapshot angka keuangan (pendapatan, tabungan, dll.) opsional — bisa dilengkapi lewat menu Baseline Data.
+                    @endif
+                </p>
+            </div>
+            <a href="{{ route('portal.emotional') }}"
+               class="inline-flex items-center gap-1 text-sm font-bold text-navy-800 hover:underline shrink-0">
+                Lihat hasil <span class="material-symbols-outlined text-base">arrow_forward</span>
+            </a>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3 mt-4 text-sm">
+            @if(!empty($baseline['stage_label']))
+                <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
+                    <div class="text-xs text-slate-500">Tahap keuangan</div>
+                    <div class="font-bold text-navy-800 mt-0.5">{{ $baseline['stage_label'] }}</div>
+                </div>
+            @endif
+            @if(!empty($baseline['dominant_archetype_label']))
+                <div class="rounded-xl bg-navy-800 text-white px-4 py-3">
+                    <div class="text-xs text-white/70">Profil FTSA</div>
+                    <div class="font-bold mt-0.5">{{ $baseline['dominant_archetype_label'] }}</div>
+                </div>
+            @endif
+        </div>
+    </div>
+@elseif(($needsFinancialDiagnostic ?? false) || ($needsFtsa ?? false))
     <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
-        Belum ada baseline snapshot. <a href="{{ $portalBaselineUrl ?? route('portal.baseline.create') }}" class="font-semibold underline">Isi Baseline Data</a> di portal untuk melengkapi data fondasi.
+        Lengkapi diagnostik & FTSA di portal.
+        <a href="{{ $baselineUrl ?? route('portal.diagnostic') }}" class="font-semibold underline">Mulai sekarang</a>
     </div>
 @endif
 

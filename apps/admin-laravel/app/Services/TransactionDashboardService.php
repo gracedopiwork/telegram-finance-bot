@@ -475,7 +475,26 @@ class TransactionDashboardService
       ],
       'dominant_archetype_label' => $baseline->dominant_archetype_label,
       'assessed_at' => $baseline->assessed_at->format('d M Y'),
+      'has_financial_snapshot' => $this->baselineHasFinancialSnapshot($baseline),
     ];
+  }
+
+  private function baselineHasFinancialSnapshot(FinancialBaseline $baseline): bool
+  {
+    if ($baseline->current_goal) {
+      return true;
+    }
+
+    foreach (['avg_monthly_income', 'emergency_fund', 'cash_savings', 'total_investment', 'total_asset', 'total_debt'] as $field) {
+      if ($baseline->{$field} !== null && (int) $baseline->{$field} > 0) {
+        return true;
+      }
+    }
+
+    return $baseline->has_bpjs
+      || $baseline->has_health_insurance
+      || $baseline->has_income_protection
+      || $baseline->has_life_insurance;
   }
 
   private function monthLabel(string $month): string

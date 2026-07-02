@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\PortalSessionSyncService;
 use App\Support\PortalSession;
 use Closure;
 use Illuminate\Http\Request;
@@ -15,6 +16,8 @@ class EnsurePortalAuth
             return redirect()->route('portal.login')
                 ->with('warning', 'Silakan login untuk membuka dashboard keuangan Anda.');
         }
+
+        app(PortalSessionSyncService::class)->sync($request);
 
         return $next($request);
     }
