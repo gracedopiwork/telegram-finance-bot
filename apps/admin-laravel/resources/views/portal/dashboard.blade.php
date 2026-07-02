@@ -11,6 +11,20 @@
     $noteSummary = is_array($note) ? ($note['summary'] ?? '') : (string) $note;
 @endphp
 
+@if(!($ftsaUnlocked ?? false))
+    <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="text-sm text-amber-900">
+            <div class="font-bold">FTSA Premium belum aktif</div>
+            <div class="mt-0.5">Unlock kuesioner FTSA 1–32 dan rekomendasi personal selama <strong>12 bulan evaluasi</strong>.</div>
+        </div>
+        <a href="{{ route('checkout.show', ['code' => 'yfd-ftsa-premium']) }}"
+           class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm">
+            <span class="material-symbols-outlined text-lg">lock_open</span>
+            Beli FTSA Premium
+        </a>
+    </div>
+@endif
+
 @if($summary['baseline_review_due'] ?? false)
     <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-3">
         <span>Sudah 6 bulan sejak baseline terakhir. Evaluasi ulang untuk memperbarui tahap & prescription bucket.</span>

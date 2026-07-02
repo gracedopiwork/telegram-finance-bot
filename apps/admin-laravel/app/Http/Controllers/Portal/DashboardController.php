@@ -34,10 +34,12 @@ class DashboardController extends Controller
     [$month, $period] = $this->filters($request);
     $summary = app(TransactionDashboardService::class)->summary($telegramUserId, $month, $period);
     $impulsivity = app(ImpulsivityAssessmentService::class)->assess($telegramUserId, $month, $period);
+    $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
 
     return view('portal.dashboard', [
       'active' => 'dashboard',
       'summary' => $summary,
+      'ftsaUnlocked' => $ftsaUnlocked,
       'impulsivity' => [
         'score' => $impulsivity['score'],
         'grade' => $impulsivity['grade'],
