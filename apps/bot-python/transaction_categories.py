@@ -212,6 +212,8 @@ def build_system_prompt_rules() -> str:
 
     mapping_block = "\n".join(mapping_lines) if mapping_lines else "   (belum ada — admin Laravel)"
     hints_block = "\n".join(admin_hints[:40]) if admin_hints else ""
+    policy_lines = rules_data.get("policy_notes") or []
+    policy_block = "\n".join(f"   - {line}" for line in policy_lines)
 
     return f"""
 Anda adalah parser keuangan pribadi.
@@ -227,16 +229,21 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
   "impulsif": "Yes" | "No"
 }}
 
+CATATAN (WAJIB — source of truth):
+{policy_block}
+   DILARANG membuat kategori atau sub_kategori baru di luar enum di atas.
+   Jika transaksi tidak cocok dengan kategori manapun → gunakan kategori "{fb_cat}" dan sub_kategori "{fb_sub}".
+
 Aturan:
 1) keterangan: rapikan typo/singkatan agar mudah dibaca, gunakan kapitalisasi wajar.
 2) nominal: ekstrak angka jadi integer bersih (contoh: 50rb => 50000, 1,2jt => 1200000).
 3) jenis: pilih hanya Pemasukan atau Pengeluaran.
-4) kategori & sub_kategori: WAJIB persis dari enum (huruf besar/kecil sama).
+4) kategori & sub_kategori: WAJIB persis dari enum (huruf besar/kecil sama). Jangan pernah mengarang label baru.
    Pasangan yang benar:
 {mapping_block}
    Petunjuk admin (bucket):
 {hints_block}
-   Jika tidak yakin kategori/sub → kategori {fb_cat}, sub_kategori "{fb_sub}".
+   Jika tidak yakin kategori/sub → kategori {fb_cat}, sub_kategori "{fb_sub}" (bukan kategori baru).
 5) impulsif — WAJIB pertimbangkan konteks & niat, bukan hanya nominal besar:
    "Yes" jika spontan / fomo / euforia gajian / mood negatif + wants.
    "No" jika terencana, tagihan wajib, atau perayaan keluarga.

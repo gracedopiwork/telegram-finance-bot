@@ -24,4 +24,9 @@ return [
     'essential_categories' => ['makan', 'transport', 'listrik', 'air', 'gaji'],
     'bot_fallback_category' => 'Jajan',
     'bot_fallback_sub' => 'Pengeluaran lain-lain',
+    'source_of_truth_note' => [
+        'Tabel Pemetaan Bucket di admin adalah sumber kebenaran (source of truth) pemetaan kategori → bucket.',
+        'Saat AI kategorisasi via bot Telegram aktif, AI HANYA boleh menghasilkan nilai Kategori yang ada di tabel ini (kolom Kategori).',
+        'Kategori baru dari pengguna harus ditambahkan ke tabel ini dulu oleh tim YFD sebelum bisa terbaca otomatis oleh dashboard.',
+    ],
 ];

@@ -21,7 +21,7 @@
                             <input type="text" name="category" class="form-control" required
                                    value="{{ old('category', $mapping->category) }}"
                                    placeholder="Makan, Gaji, Jajan, atau * untuk wildcard sifat">
-                            <small class="text-muted">Sesuai kategori bot / sheet (case tidak sensitif).</small>
+                            <small class="text-muted">Harus sudah terdaftar di tabel ini (kolom A). Tambah baris baru di admin dulu sebelum bot/dashboard bisa memakainya.</small>
                         </div>
                         <div class="form-group col-md-6">
                             <label>Sub-kategori</label>

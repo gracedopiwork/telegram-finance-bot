@@ -17,6 +17,30 @@
 @endsection
 
 @section('main')
+@php
+    $policyNotes = (array) config('category_buckets.source_of_truth_note', []);
+    $registeredCategories = $mappings->pluck('category')->unique()->filter(fn ($c) => $c !== '*' && $c !== '')->sort()->values();
+@endphp
+
+@if($policyNotes !== [])
+<div class="alert alert-warning border-left border-warning shadow-sm mb-3">
+    <h5 class="alert-heading mb-2"><i class="fas fa-exclamation-triangle mr-1"></i> CATATAN — Source of Truth</h5>
+    <ul class="mb-2 pl-3">
+        @foreach($policyNotes as $note)
+            <li>{{ $note }}</li>
+        @endforeach
+    </ul>
+    @if($registeredCategories->isNotEmpty())
+        <div class="small text-muted mb-0">
+            <strong>Kategori terdaftar (kolom A):</strong>
+            @foreach($registeredCategories as $cat)
+                <span class="badge badge-light border mr-1">{{ $cat }}</span>
+            @endforeach
+        </div>
+    @endif
+</div>
+@endif
+
 <div class="row">
     <div class="col-lg-8">
         <div class="card card-outline card-success">

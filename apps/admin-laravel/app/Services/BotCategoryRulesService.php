@@ -73,7 +73,20 @@ class BotCategoryRulesService
             'fallback_sub' => (string) config('category_buckets.bot_fallback_sub', 'Pengeluaran lain-lain'),
             'natures' => ['Need', 'Wants', 'Saving/Investement', 'Donation'],
             'source' => 'database',
+            'policy_notes' => $this->policyNotes(),
+            'strict_categories_only' => true,
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function policyNotes(): array
+    {
+        return array_values(array_filter(array_map(
+            'strval',
+            (array) config('category_buckets.source_of_truth_note', [])
+        )));
     }
 
     /**
@@ -129,6 +142,8 @@ class BotCategoryRulesService
             'fallback_sub' => (string) config('category_buckets.bot_fallback_sub', 'Pengeluaran lain-lain'),
             'natures' => ['Need', 'Wants', 'Saving/Investement', 'Donation'],
             'source' => 'config',
+            'policy_notes' => $this->policyNotes(),
+            'strict_categories_only' => true,
         ];
     }
 }
