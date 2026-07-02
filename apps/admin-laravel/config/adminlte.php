@@ -259,7 +259,7 @@ return [
     'use_route_url' => false,
     'dashboard_url' => 'admin',
     'logout_url' => 'logout',
-    'login_url' => 'login',
+    'login_url' => 'admin/login',
     'register_url' => null,
     'password_reset_url' => null,
     'password_email_url' => null,

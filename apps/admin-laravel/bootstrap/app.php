@@ -15,7 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\RedirectLegacyHosts::class,
         ]);
-        $middleware->alias([
+        $middleware->redirectGuestsTo(fn (\Illuminate\Http\Request $request) => $request->is('admin') || $request->is('admin/*')
+            ? route('admin.login')
+            : route('portal.login'));
             'portal.auth' => \App\Http\Middleware\EnsurePortalAuth::class,
             'portal.bot' => \App\Http\Middleware\EnsureBotPortalAccess::class,
             'portal.baseline' => \App\Http\Middleware\EnsureBaselineExists::class,

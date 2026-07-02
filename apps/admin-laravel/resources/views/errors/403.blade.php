@@ -12,7 +12,7 @@
         Ke beranda
     </a>
     @if (Route::has('login'))
-        <a href="{{ route('login') }}"
+        <a href="{{ route('portal.login') }}"
            class="inline-flex items-center gap-2 rounded-xl border border-white/25 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition">
             <span class="material-symbols-outlined text-[18px]">login</span>
             Login

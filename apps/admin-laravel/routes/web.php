@@ -68,17 +68,26 @@ Route::post('/webhooks/midtrans', [WebhookController::class, 'midtrans'])
 
 /*
 |--------------------------------------------------------------------------
-| Authentication (AdminLTE)
+| Authentication (AdminLTE) — /admin/login (bukan /login publik)
 |--------------------------------------------------------------------------
 */
-Route::middleware('guest')->group(function () {
-    Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+        Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
+    });
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
+
+/*
+|--------------------------------------------------------------------------
+| Login publik → portal pelanggan (bukan admin console)
+|--------------------------------------------------------------------------
+*/
+Route::redirect('/login', '/portal/login', 302);
 
 /*
 |--------------------------------------------------------------------------
