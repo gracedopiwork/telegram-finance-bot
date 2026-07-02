@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FinancialBaseline;
 use App\Services\BaselineAssessmentService;
-use App\Services\BucketPrescriptionService;
+use App\Services\DiagnosticConfigService;
 use App\Support\FinancialBaselineSchema;
 use App\Support\PortalSession;
 use Illuminate\Database\QueryException;
@@ -21,8 +21,9 @@ class PublicCheckupController extends Controller
                 ->with('error', 'Check-up sementara tidak tersedia. Coba lagi nanti.');
         }
 
-        $baselineConfig = config('baseline_assessment');
-        if (! is_array($baselineConfig) || ! isset($baselineConfig['financial_stage'])) {
+        $diagnostic = app(DiagnosticConfigService::class);
+        $financialStage = $diagnostic->financialStageQuestions();
+        if ($financialStage['profile'] === [] && $financialStage['scored'] === []) {
             return redirect()->route('company.home')
                 ->with('error', 'Konfigurasi check-up belum siap.');
         }
@@ -33,7 +34,7 @@ class PublicCheckupController extends Controller
         }
 
         return view('checkup.form', [
-            'config' => $baselineConfig,
+            'financialStage' => $financialStage,
             'prefillEmail' => $prefillEmail,
         ]);
     }
@@ -87,12 +88,15 @@ class PublicCheckupController extends Controller
             return redirect()->route('checkup.show');
         }
 
-        $stageMeta = app(BucketPrescriptionService::class)->stageMeta($baseline->financial_stage);
+        $stageDisplay = app(DiagnosticConfigService::class)->stageDisplay(
+            (string) $baseline->financial_stage,
+            (int) $baseline->financial_stage_score,
+        );
         $fromPortal = PortalSession::isAuthenticated($request);
 
         return view('checkup.result', [
             'baseline' => $baseline,
-            'stageMeta' => $stageMeta,
+            'stageDisplay' => $stageDisplay,
             'fromPortal' => $fromPortal,
         ]);
     }

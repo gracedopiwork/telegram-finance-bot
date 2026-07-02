@@ -6,6 +6,10 @@ use Carbon\Carbon;
 
 class BaselineAssessmentService
 {
+    public function __construct(
+        private readonly DiagnosticConfigService $diagnosticConfig,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $answers
      * @return array<string, mixed>
@@ -14,7 +18,7 @@ class BaselineAssessmentService
     {
         $financialScore = $this->scoreFinancialStage($answers);
         $stage = $this->resolveStage($financialScore);
-        $stageMeta = config("baseline_assessment.stage_labels.{$stage}", []);
+        $stageMeta = $this->diagnosticConfig->stageLabels()[$stage] ?? [];
 
         if ($includeFtsa) {
             $domainScores = $this->scoreFtsaDomains($answers);
@@ -72,7 +76,7 @@ class BaselineAssessmentService
     {
         $total = 0;
 
-        foreach (config('baseline_assessment.financial_stage.scored', []) as $question) {
+        foreach ($this->financialStageScored() as $question) {
             $key = $question['key'];
             $value = $answers['fs'][$key] ?? null;
             if (! is_string($value)) {
@@ -89,7 +93,7 @@ class BaselineAssessmentService
 
     public function resolveStage(int $score): string
     {
-        foreach (config('baseline_assessment.stage_thresholds', []) as $stage => $range) {
+        foreach ($this->diagnosticConfig->stageThresholds() as $stage => $range) {
             if ($score >= $range['min'] && $score <= $range['max']) {
                 return $stage;
             }
@@ -170,12 +174,12 @@ class BaselineAssessmentService
     {
         $rules = [];
 
-        foreach (config('baseline_assessment.financial_stage.profile', []) as $q) {
+        foreach ($this->financialStageProfile() as $q) {
             $options = implode(',', array_keys($q['options']));
             $rules["fs.{$q['key']}"] = "required|in:{$options}";
         }
 
-        foreach (config('baseline_assessment.financial_stage.scored', []) as $q) {
+        foreach ($this->financialStageScored() as $q) {
             $options = implode(',', array_keys($q['options']));
             $rules["fs.{$q['key']}"] = "required|in:{$options}";
         }
@@ -208,16 +212,32 @@ class BaselineAssessmentService
     {
         $rules = ['email' => 'required|email|max:255'];
 
-        foreach (config('baseline_assessment.financial_stage.profile', []) as $q) {
+        foreach ($this->financialStageProfile() as $q) {
             $options = implode(',', array_keys($q['options']));
             $rules["fs.{$q['key']}"] = "required|in:{$options}";
         }
 
-        foreach (config('baseline_assessment.financial_stage.scored', []) as $q) {
+        foreach ($this->financialStageScored() as $q) {
             $options = implode(',', array_keys($q['options']));
             $rules["fs.{$q['key']}"] = "required|in:{$options}";
         }
 
         return $rules;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function financialStageProfile(): array
+    {
+        return $this->diagnosticConfig->financialStageQuestions()['profile'] ?? [];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function financialStageScored(): array
+    {
+        return $this->diagnosticConfig->financialStageQuestions()['scored'] ?? [];
     }
 }

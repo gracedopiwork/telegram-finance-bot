@@ -60,7 +60,7 @@ class BucketPrescriptionService
     public function stageMeta(?string $stage): array
     {
         $stage = is_string($stage) && $stage !== '' ? $stage : self::DEFAULT_STAGE;
-        $labels = config('baseline_assessment.stage_labels', []);
+        $labels = app(DiagnosticConfigService::class)->stageLabels();
         if (! is_array($labels)) {
             $labels = [];
         }

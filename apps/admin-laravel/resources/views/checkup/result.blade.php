@@ -4,29 +4,70 @@
 @section('description', 'Hasil Financial Health Check-Up Anda — tahap keuangan dan skor.')
 
 @section('content')
-<section class="bg-surface-container-lowest py-12 md:py-16">
-    <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
-        <div class="max-w-2xl mx-auto">
-            <div class="text-center mb-8">
-                <span class="inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 px-4 py-1.5 rounded-full text-label-md font-semibold">
-                    <span class="material-symbols-outlined text-[18px]">check_circle</span>
-                    Check-Up Selesai
-                </span>
-                <h1 class="font-display text-3xl md:text-4xl font-extrabold text-primary mt-4">
-                    Hasil Financial Health Check-Up
-                </h1>
-            </div>
+@php
+    $panelColor = $stageDisplay['panel_color'] ?? '#7EC8C8';
+    $logo = asset($yfd['logo'] ?? 'images/yfd-logo.png');
+@endphp
 
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 text-center">
-                <div class="text-5xl mb-3">{{ $stageMeta['emoji'] ?? '' }}</div>
-                <div class="text-sm font-bold uppercase tracking-wider text-slate-500">{{ $stageMeta['phase'] ?? '' }}</div>
-                <div class="text-3xl font-extrabold text-primary mt-2">{{ $baseline->stage_label }}</div>
-                <div class="text-lg font-semibold text-secondary-fixed mt-3">
-                    Skor {{ $baseline->financial_stage_score }}/39
+<section class="bg-surface-container-lowest py-10 md:py-16">
+    <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+        <div class="max-w-5xl mx-auto">
+            {{-- Kartu hasil ala mockup klien --}}
+            <div class="rounded-3xl overflow-hidden shadow-2xl border border-black/5 bg-white">
+                <div class="grid md:grid-cols-2 min-h-[420px]">
+                    {{-- Panel kiri: teks + skor --}}
+                    <div class="p-8 sm:p-10 flex flex-col justify-center text-slate-900" style="background-color: {{ $panelColor }}">
+                        <div class="flex items-center gap-3 mb-8">
+                            <img src="{{ $logo }}" alt="YFD" class="h-10 w-auto bg-white/90 rounded-lg px-2 py-1">
+                            <span class="font-extrabold text-lg tracking-tight">{{ $yfd['short'] ?? 'YFD' }}</span>
+                        </div>
+
+                        <div class="text-sm font-bold uppercase tracking-[0.2em] text-slate-800/70 mb-2">
+                            {{ $stageDisplay['phase'] ?? '' }}
+                        </div>
+                        <h1 class="font-display text-4xl sm:text-5xl font-extrabold leading-tight text-slate-900">
+                            {{ $stageDisplay['label'] ?? $baseline->stage_label }}
+                        </h1>
+
+                        <div class="inline-flex items-center gap-2 mt-5 bg-white/80 backdrop-blur rounded-full px-4 py-2 w-fit shadow-sm">
+                            <span class="material-symbols-outlined text-primary text-xl">score</span>
+                            <span class="font-bold text-lg">Skor {{ $baseline->financial_stage_score }}/39</span>
+                        </div>
+
+                        <div class="mt-8 pt-6 border-t border-slate-900/10">
+                            <div class="flex items-start gap-2 text-slate-900">
+                                <span class="material-symbols-outlined text-xl mt-0.5">health_and_safety</span>
+                                <div>
+                                    <div class="font-bold">{{ $stageDisplay['risk_label'] ?? 'Risiko keuangan' }}:</div>
+                                    <p class="text-sm sm:text-base leading-relaxed mt-1 text-slate-800/90">
+                                        {{ $stageDisplay['risk_description'] ?? ($stageDisplay['diagnosis'] ?? '') }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Panel kanan: ilustrasi --}}
+                    <div class="relative bg-gradient-to-br from-slate-50 to-white flex items-center justify-center p-6 sm:p-10 overflow-hidden">
+                        @if(!empty($stageDisplay['illustration_url']))
+                            <img src="{{ $stageDisplay['illustration_url'] }}" alt="{{ $stageDisplay['label'] }}"
+                                 class="max-h-[360px] w-full object-contain">
+                        @else
+                            <div class="text-center">
+                                <div class="text-7xl mb-4">{{ $stageDisplay['emoji'] ?? '💰' }}</div>
+                                <div class="font-display text-4xl font-extrabold text-secondary-fixed drop-shadow-sm">
+                                    {{ $stageDisplay['label'] ?? $baseline->stage_label }}
+                                </div>
+                                <p class="text-sm text-slate-500 mt-3 max-w-xs mx-auto">
+                                    {{ $stageDisplay['diagnosis'] ?? '' }}
+                                </p>
+                            </div>
+                        @endif
+                        <div class="absolute top-4 right-4 bg-secondary-fixed text-on-secondary-container text-xs font-bold px-3 py-1 rounded-full shadow">
+                            {{ $stageDisplay['label'] ?? '' }}
+                        </div>
+                    </div>
                 </div>
-                <p class="text-sm text-slate-600 mt-4 leading-relaxed max-w-md mx-auto">
-                    {{ $stageMeta['diagnosis'] ?? '' }}
-                </p>
             </div>
 
             <div class="mt-6 rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 text-sm text-sky-900">

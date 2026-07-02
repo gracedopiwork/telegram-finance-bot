@@ -346,6 +346,11 @@ return [
             'icon' => 'fas fa-fw fa-book-open',
         ],
         [
+            'text' => 'Soal Diagnostik',
+            'route' => 'admin.diagnostic-questions.index',
+            'icon' => 'fas fa-fw fa-clipboard-list',
+        ],
+        [
             'text' => 'Produk Digital',
             'route' => 'admin.digital-products.index',
             'icon' => 'fas fa-fw fa-cube',

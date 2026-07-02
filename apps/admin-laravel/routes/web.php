@@ -3,6 +3,8 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Admin\AdvisorsController;
 use App\Http\Controllers\Admin\ArticlesController;
+use App\Http\Controllers\Admin\DiagnosticQuestionsController;
+use App\Http\Controllers\Admin\DiagnosticStagesController;
 use App\Http\Controllers\Admin\DigitalProductsController;
 use App\Http\Controllers\Admin\FaqsController;
 use App\Http\Controllers\Admin\OrdersController;
@@ -96,6 +98,10 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::resource('faqs',             FaqsController::class)->except(['show']);
     Route::resource('articles',         ArticlesController::class)->except(['show']);
     Route::resource('digital-products', DigitalProductsController::class)->except(['show']);
+    Route::resource('diagnostic-questions', DiagnosticQuestionsController::class)->except(['show']);
+    Route::get('diagnostic-stages', [DiagnosticStagesController::class, 'index'])->name('diagnostic-stages.index');
+    Route::get('diagnostic-stages/{diagnostic_stage}/edit', [DiagnosticStagesController::class, 'edit'])->name('diagnostic-stages.edit');
+    Route::put('diagnostic-stages/{diagnostic_stage}', [DiagnosticStagesController::class, 'update'])->name('diagnostic-stages.update');
 
     // Transaksi (read-mostly)
     Route::get('orders',                [OrdersController::class, 'index'])->name('orders.index');

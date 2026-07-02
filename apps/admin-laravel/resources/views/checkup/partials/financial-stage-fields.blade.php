@@ -1,5 +1,5 @@
 @php
-    $fs = $config['financial_stage'] ?? [];
+    $fs = $financialStage ?? ['profile' => [], 'scored' => []];
     $currentSection = '';
 @endphp
 
@@ -19,6 +19,9 @@
             @endif
             <fieldset class="space-y-3">
                 <legend class="font-semibold text-slate-800 text-sm">{{ $q['text'] }}</legend>
+                @if(!empty($q['note']))
+                    <p class="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">{{ $q['note'] }}</p>
+                @endif
                 <div class="grid gap-2 sm:grid-cols-2">
                     @foreach($q['options'] as $value => $label)
                         <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2.5 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary/5">
@@ -42,6 +45,9 @@
             @endif
             <fieldset class="space-y-3">
                 <legend class="font-semibold text-slate-800 text-sm">{{ $q['text'] }}</legend>
+                @if(!empty($q['note']))
+                    <p class="text-xs text-slate-500 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">{{ $q['note'] }}</p>
+                @endif
                 <div class="grid gap-2">
                     @foreach($q['options'] as $value => $opt)
                         <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2.5 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary/5">

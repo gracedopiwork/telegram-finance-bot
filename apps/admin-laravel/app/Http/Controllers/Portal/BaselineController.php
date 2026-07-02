@@ -85,8 +85,8 @@ class BaselineController extends Controller
 
         $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
 
-        $baselineConfig = config('baseline_assessment');
-        if (! is_array($baselineConfig) || ! isset($baselineConfig['financial_stage'])) {
+        $baselineConfig = app(\App\Services\DiagnosticConfigService::class)->fullBaselineConfig();
+        if (! isset($baselineConfig['financial_stage'])) {
             return redirect()->route('portal.dashboard')
                 ->with('error', 'Konfigurasi baseline tidak terbaca. Admin: php artisan config:clear');
         }
@@ -115,8 +115,8 @@ class BaselineController extends Controller
             );
         }
 
-        $baselineConfig = config('baseline_assessment');
-        if (! is_array($baselineConfig) || ! isset($baselineConfig['financial_stage'])) {
+        $baselineConfig = app(\App\Services\DiagnosticConfigService::class)->fullBaselineConfig();
+        if (! isset($baselineConfig['financial_stage'])) {
             return back()->withInput()->with('error', 'Konfigurasi baseline tidak terbaca. Admin: php artisan config:clear');
         }
 

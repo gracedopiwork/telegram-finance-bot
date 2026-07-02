@@ -51,7 +51,7 @@
                     @enderror
                 </div>
 
-                @include('checkup.partials.financial-stage-fields', ['config' => $config])
+                @include('checkup.partials.financial-stage-fields', ['financialStage' => $financialStage])
 
                 <div class="flex flex-wrap gap-3 pb-4">
                     <button type="submit" class="btn btn-gold btn-lg">
