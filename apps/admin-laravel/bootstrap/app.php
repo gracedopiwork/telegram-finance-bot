@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn (\Illuminate\Http\Request $request) => $request->is('admin') || $request->is('admin/*')
             ? route('admin.login')
             : route('portal.login'));
+        $middleware->alias([
             'portal.auth' => \App\Http\Middleware\EnsurePortalAuth::class,
             'portal.bot' => \App\Http\Middleware\EnsureBotPortalAccess::class,
             'portal.baseline' => \App\Http\Middleware\EnsureBaselineExists::class,
