@@ -123,7 +123,7 @@ class AuthController extends Controller
         if (FinancialBaselineSchema::isReady() && FinancialBaseline::userNeedsBaseline($telegramUserId)) {
             return $redirect->with(
                 'info',
-                'Selamat datang! Langkah pertama: isi Baseline Data (diagnostik keuangan) dari menu kiri atau tombol di bawah.'
+                'Lengkapi Financial Health Check-Up dari menu Baseline agar tahapan finansial dan prescription dashboard aktif.'
             );
         }
 

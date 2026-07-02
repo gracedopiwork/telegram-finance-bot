@@ -12,6 +12,8 @@ class PortalSession
 
     public const EMAIL = 'portal.email';
 
+    public const USER_TYPE = 'portal.user_type';
+
     public static function telegramUserId(Request $request): ?int
     {
         $id = $request->session()->get(self::TELEGRAM_USER_ID);
@@ -24,15 +26,36 @@ class PortalSession
         return self::telegramUserId($request) !== null;
     }
 
-    public static function login(Request $request, int $telegramUserId, string $displayName, string $email): void
+    public static function email(Request $request): ?string
+    {
+        $email = $request->session()->get(self::EMAIL);
+
+        return is_string($email) && $email !== '' ? strtolower($email) : null;
+    }
+
+    public static function userType(Request $request): string
+    {
+        $type = $request->session()->get(self::USER_TYPE);
+
+        return is_string($type) && $type !== '' ? $type : 'free';
+    }
+
+    public static function login(
+        Request $request,
+        int $telegramUserId,
+        string $displayName,
+        string $email,
+        string $userType = 'licensed',
+    ): void
     {
         $request->session()->put(self::TELEGRAM_USER_ID, $telegramUserId);
         $request->session()->put(self::DISPLAY_NAME, $displayName);
-        $request->session()->put(self::EMAIL, $email);
+        $request->session()->put(self::EMAIL, strtolower($email));
+        $request->session()->put(self::USER_TYPE, $userType);
     }
 
     public static function logout(Request $request): void
     {
-        $request->session()->forget([self::TELEGRAM_USER_ID, self::DISPLAY_NAME, self::EMAIL]);
+        $request->session()->forget([self::TELEGRAM_USER_ID, self::DISPLAY_NAME, self::EMAIL, self::USER_TYPE]);
     }
 }

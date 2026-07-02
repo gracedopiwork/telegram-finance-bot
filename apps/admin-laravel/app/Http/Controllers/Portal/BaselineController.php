@@ -66,7 +66,7 @@ class BaselineController extends Controller
         $telegramUserId = (int) PortalSession::telegramUserId($request);
         if ($telegramUserId <= 0) {
             return redirect()->route('portal.login')
-                ->with('warning', 'Sesi portal habis. Buka bot Telegram lalu ketik /web untuk login ulang.');
+                ->with('warning', 'Sesi portal habis. Silakan login ulang.');
         }
 
         if (! FinancialBaselineSchema::isReady()) {
@@ -96,7 +96,7 @@ class BaselineController extends Controller
         $telegramUserId = (int) PortalSession::telegramUserId($request);
         if ($telegramUserId <= 0) {
             return redirect()->route('portal.login')
-                ->with('warning', 'Sesi portal habis. Buka bot Telegram lalu ketik /web untuk login ulang.');
+                ->with('warning', 'Sesi portal habis. Silakan login ulang.');
         }
 
         if (! FinancialBaselineSchema::isReady()) {

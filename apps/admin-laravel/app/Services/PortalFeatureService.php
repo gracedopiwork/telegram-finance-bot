@@ -14,17 +14,17 @@ class PortalFeatureService
             return true;
         }
 
+        $codes = (array) config('portal.ftsa.unlock_product_codes', []);
+        if (empty($codes)) {
+            return false;
+        }
+
         $licenseIds = License::query()
             ->where('assigned_user_id', $telegramUserId)
             ->where('status', 'active')
             ->pluck('id');
 
         if ($licenseIds->isEmpty()) {
-            return false;
-        }
-
-        $codes = (array) config('portal.ftsa.unlock_product_codes', []);
-        if (empty($codes)) {
             return false;
         }
 
