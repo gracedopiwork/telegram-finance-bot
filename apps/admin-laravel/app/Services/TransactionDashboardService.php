@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BotTransaction;
 use App\Models\FinancialBaseline;
+use App\Services\BaselineClaimService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -36,8 +37,13 @@ class TransactionDashboardService
   /**
    * @return array<string, mixed>
    */
-  public function summary(int $telegramUserId, ?string $month = null, ?int $period = null): array
+  public function summary(int $telegramUserId, ?string $month = null, ?int $period = null, ?string $email = null): array
   {
+    $email = strtolower(trim((string) $email));
+    if ($email !== '') {
+      app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+    }
+
     $month = $this->monthKey($month);
     $periodMonths = $this->periodMonths($period);
     $range = $this->periodRange($month, $periodMonths);
@@ -61,6 +67,9 @@ class TransactionDashboardService
     $trend = $this->cashflowTrend($telegramUserId, $month, min(6, $periodMonths));
     $pulse = $this->financialPulse($income, $expense, $savingRate, $buckets);
     $baseline = FinancialBaseline::latestForUser($telegramUserId);
+    if ($baseline === null && $email !== '') {
+      $baseline = FinancialBaseline::latestForEmail($email);
+    }
     $incomeAnalysis = $this->incomeAnalysis($rows, $income);
     $clinicalSummary = $this->clinicalSummary($income, $expense, $cashflow, $savingRate, $buckets, $baseline, $periodMonths);
     $doctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $pulse['score'], $buckets, $baseline);

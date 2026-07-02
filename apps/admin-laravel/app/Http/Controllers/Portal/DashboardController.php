@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FinancialBaseline;
 use App\Services\BaselineClaimService;
 use App\Services\FtsaAiGuidanceService;
+use App\Services\FtsaAnswerSummaryService;
 use App\Services\ImpulsivityAssessmentService;
 use App\Services\PortalFeatureService;
 use App\Services\TransactionDashboardService;
@@ -38,14 +39,19 @@ class DashboardController extends Controller
     app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
 
     [$month, $period] = $this->filters($request);
-    $summary = app(TransactionDashboardService::class)->summary($telegramUserId, $month, $period);
+    $summary = app(TransactionDashboardService::class)->summary($telegramUserId, $month, $period, $email);
     $impulsivity = app(ImpulsivityAssessmentService::class)->assess($telegramUserId, $month, $period);
     $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email);
+    $baseline = FinancialBaseline::latestForUser($telegramUserId)
+      ?? FinancialBaseline::latestForEmail($email);
+    $ftsaSummary = $baseline ? app(FtsaAnswerSummaryService::class)->scoreSummary($baseline) : null;
 
     return view('portal.dashboard', [
       'active' => 'dashboard',
       'summary' => $summary,
       'ftsaUnlocked' => $ftsaUnlocked,
+      'baselineRecord' => $baseline,
+      'ftsaSummary' => $ftsaSummary,
       'impulsivity' => [
         'score' => $impulsivity['score'],
         'grade' => $impulsivity['grade'],
