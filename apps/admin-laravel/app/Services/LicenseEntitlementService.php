@@ -188,11 +188,27 @@ class LicenseEntitlementService
         return array_values(array_unique($codes));
     }
 
-    public function resolvePlanSlugForLicense(License $license): string
+    /**
+     * Nilai singkat untuk kolom licenses.plan (varchar 32) — bukan daftar kode produk penuh.
+     */
+    public function resolveStoredPlanForLicense(License $license): string
     {
-        $codes = $this->licenseEntitlementCodes($license);
+        $hasBot = $this->hasPaidBotOrderOnLicense($license);
+        $hasFtsa = $this->hasPaidFtsaOrderOnLicense($license);
 
-        return $codes !== [] ? implode('+', $codes) : (string) ($license->plan ?: 'manual');
+        if ($hasBot && $hasFtsa) {
+            return 'yfd-ftsa+bot';
+        }
+
+        if ($hasBot) {
+            return $this->botProductCodes()[0] ?? 'yfd-bot-telegram';
+        }
+
+        if ($hasFtsa) {
+            return $this->ftsaProductCodes()[0] ?? 'yfd-ftsa-premium';
+        }
+
+        return (string) ($license->plan ?: 'manual');
     }
 
     private function productCode(Order $order): string

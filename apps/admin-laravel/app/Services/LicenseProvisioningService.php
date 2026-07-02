@@ -83,7 +83,7 @@ class LicenseProvisioningService
 
     public function refreshLicensePlanFromOrders(License $license): void
     {
-        $slug = $this->entitlements->resolvePlanSlugForLicense($license);
+        $slug = $this->entitlements->resolveStoredPlanForLicense($license);
 
         if ($slug !== '' && $slug !== (string) $license->plan) {
             $license->forceFill(['plan' => $slug])->save();
