@@ -1,0 +1,192 @@
+"""Aturan impulsif YFD — AI utama, guardrail untuk kasus jelas."""
+
+from __future__ import annotations
+
+from typing import Any
+
+VALID_IMPULSIF = frozenset({"Yes", "No"})
+
+EXPLICIT_IMPULSIVE_KEYWORDS = (
+    "iseng",
+    "diskon",
+    "tiba-tiba",
+    "lapar mata",
+    "lucu",
+    "gemes",
+    "pengen",
+    "kepengen",
+    "fomo",
+    "spontan",
+    "nggak niat",
+    "ngga niat",
+    "tidak niat",
+    "tanpa rencana",
+)
+
+PAYDAY_SPLURGE_KEYWORDS = (
+    "habis gajian",
+    "abis gajian",
+    "baru gajian",
+    "baru nerima gaji",
+    "baru terima gaji",
+    "baru dapat gaji",
+    "gajianan",
+    "habis gajianan",
+    "abis gajianan",
+    "setelah gajian",
+    "pas gajian",
+    "tanggal gajian",
+    "hari gajian",
+)
+
+REWARD_SPENDING_KEYWORDS = (
+    "reward",
+    "nge treat",
+    "netreat",
+    "self treat",
+    "self-treat",
+    "celebrate",
+    "celebratory",
+)
+
+# Acara sosial terencana — bukan impulsif meski nominal besar / mood Happy.
+PLANNED_SOCIAL_KEYWORDS = (
+    "ulang tahun",
+    "ultah",
+    "birthday",
+    "pernikahan",
+    "wedding",
+    "resepsi",
+    "syukuran",
+    "tasyakuran",
+    "aqiqah",
+    "khitan",
+    "baptis",
+    "wisuda",
+    "graduation",
+    "anniversary",
+    "peringatan",
+    "pemakaman",
+    "duka",
+    "arisan rutin",
+    "kondangan",
+    "undangan",
+    "acara keluarga",
+    "makan keluarga",
+    "dengan keluarga",
+    "bareng keluarga",
+)
+
+ESSENTIAL_KEYWORDS = (
+    "tagihan",
+    "cicilan",
+    "angsuran",
+    "bpjs",
+    "sewa",
+    "kontrakan",
+    "kos-kosan",
+    "listrik",
+    "pln",
+    "pdam",
+    "spp",
+    "sekolah",
+    "kuliah",
+    "obat",
+    "rumah sakit",
+    "rs ",
+    "dokter",
+)
+
+PREMIUM_SPENDING_KEYWORDS = (
+    "restaurant",
+    "restoran",
+    "cafe",
+    "kafe",
+    "starbucks",
+    "coffee shop",
+    "fine dining",
+    "gofood",
+    "grab food",
+    "shopeefood",
+    "delivery",
+)
+
+NEGATIVE_MOODS_FOR_IMPULSE = frozenset({"Sad", "Stressed", "Angry", "Tired"})
+
+
+def _combined_text(parsed: dict[str, Any], source_text: str) -> str:
+    return f"{parsed.get('keterangan', '')} {source_text}".lower()
+
+
+def is_planned_social(combined: str) -> bool:
+    return any(keyword in combined for keyword in PLANNED_SOCIAL_KEYWORDS)
+
+
+def is_essential_obligation(parsed: dict[str, Any], combined: str) -> bool:
+    if parsed.get("jenis") != "Pengeluaran":
+        return False
+    kategori = str(parsed.get("kategori", ""))
+    if kategori in {"Listrik", "Air", "Gaji"}:
+        return True
+    sifat = str(parsed.get("sifat", ""))
+    if sifat == "Need" and any(keyword in combined for keyword in ESSENTIAL_KEYWORDS):
+        return True
+    return any(keyword in combined for keyword in ESSENTIAL_KEYWORDS)
+
+
+def resolve_impulsif(
+    parsed: dict[str, Any],
+    source_text: str = "",
+    *,
+    ai_suggested: str | None = None,
+    trust_ai: bool = False,
+) -> str:
+    """
+    Urutan keputusan:
+    1) Guardrail wajib (acara sosial / tagihan) — override AI
+    2) Sinyal impulsif kuat (spontan / pasca-gajian)
+    3) Keputusan AI (jika path Gemini)
+    4) Heuristik fallback sempit
+    """
+    if parsed.get("jenis") != "Pengeluaran":
+        return "No"
+
+    combined = _combined_text(parsed, source_text)
+
+    if is_planned_social(combined):
+        return "No"
+
+    if is_essential_obligation(parsed, combined):
+        return "No"
+
+    if any(keyword in combined for keyword in EXPLICIT_IMPULSIVE_KEYWORDS):
+        return "Yes"
+
+    if any(keyword in combined for keyword in PAYDAY_SPLURGE_KEYWORDS):
+        return "Yes"
+
+    if any(keyword in combined for keyword in REWARD_SPENDING_KEYWORDS):
+        return "Yes"
+
+    if trust_ai and ai_suggested in VALID_IMPULSIF:
+        return ai_suggested
+
+    return infer_impulsif_fallback(parsed, combined)
+
+
+def infer_impulsif_fallback(parsed: dict[str, Any], combined: str) -> str:
+    """Parser tanpa AI — heuristik konservatif."""
+    mood = str(parsed.get("mood", "Neutral"))
+    nominal = int(parsed.get("nominal", 0) or 0)
+    kategori = str(parsed.get("kategori", ""))
+    sifat = str(parsed.get("sifat", ""))
+    is_food_out = kategori in {"Jajan", "Makan"}
+    is_premium = any(keyword in combined for keyword in PREMIUM_SPENDING_KEYWORDS)
+
+    if mood in NEGATIVE_MOODS_FOR_IMPULSE:
+        if sifat == "Wants":
+            return "Yes"
+        if is_food_out and (is_premium or nominal >= 100_000):
+            return "Yes"
+
+    return "No"

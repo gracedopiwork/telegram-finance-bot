@@ -40,6 +40,11 @@ from transaction_categories import (
     is_water_expense,
     normalize_category_fields,
 )
+from impulsive_rules import (
+    PAYDAY_SPLURGE_KEYWORDS,
+    REWARD_SPENDING_KEYWORDS,
+    resolve_impulsif,
+)
 
 load_dotenv()
 
@@ -125,65 +130,6 @@ MOOD_ALIASES = {
     "tured": "Tired",
 }
 
-NEGATIVE_MOODS_FOR_IMPULSE = {"Sad", "Stressed", "Angry", "Tired"}
-
-EXPLICIT_IMPULSIVE_KEYWORDS = (
-    "iseng",
-    "diskon",
-    "tiba-tiba",
-    "lapar mata",
-    "lucu",
-    "gemes",
-    "pengen",
-    "kepengen",
-    "fomo",
-    "spontan",
-)
-
-# Belanja euforia pasca-gajian / self-reward — pola impulsif behavioral YFD.
-PAYDAY_SPLURGE_KEYWORDS = (
-    "habis gajian",
-    "abis gajian",
-    "baru gajian",
-    "baru nerima gaji",
-    "baru terima gaji",
-    "baru dapat gaji",
-    "gajianan",
-    "habis gajianan",
-    "abis gajianan",
-    "setelah gajian",
-    "pas gajian",
-    "tanggal gajian",
-    "hari gajian",
-)
-
-REWARD_SPENDING_KEYWORDS = (
-    "reward",
-    "nge treat",
-    "netreat",
-    "self treat",
-    "self-treat",
-    "rayain",
-    "merayakan",
-    "celebrate",
-    "celebratory",
-    "traktir",
-)
-
-PREMIUM_SPENDING_KEYWORDS = (
-    "restaurant",
-    "restoran",
-    "cafe",
-    "kafe",
-    "starbucks",
-    "coffee shop",
-    "fine dining",
-    "gofood",
-    "grab food",
-    "shopeefood",
-    "delivery",
-)
-
 MOOD_KEYWORDS: Dict[str, tuple[str, ...]] = {
     "Happy": (
         "sangat senang",
@@ -233,44 +179,20 @@ def detect_mood_in_text(text: str) -> str | None:
     return None
 
 
-def infer_impulsif(parsed: Dict[str, Any], source_text: str = "") -> str:
-    """Tandai impulsif: spontan eksplisit, euforia pasca-gajian, atau belanja premium saat mood negatif."""
-    combined = f"{parsed.get('keterangan', '')} {source_text}".lower()
-
-    if any(keyword in combined for keyword in EXPLICIT_IMPULSIVE_KEYWORDS):
-        return "Yes"
-
-    if parsed.get("jenis") != "Pengeluaran":
-        return "No"
-
-    if any(keyword in combined for keyword in PAYDAY_SPLURGE_KEYWORDS + REWARD_SPENDING_KEYWORDS):
-        return "Yes"
-
-    mood = str(parsed.get("mood", "Neutral"))
-    nominal = int(parsed.get("nominal", 0) or 0)
-    kategori = str(parsed.get("kategori", ""))
-    sifat = str(parsed.get("sifat", ""))
-    is_food_out = kategori in {"Jajan", "Makan"}
-    is_premium = any(keyword in combined for keyword in PREMIUM_SPENDING_KEYWORDS)
-
-    if mood == "Happy":
-        if sifat == "Wants":
-            return "Yes"
-        if is_food_out and nominal >= 100_000:
-            return "Yes"
-
-    if mood in NEGATIVE_MOODS_FOR_IMPULSE:
-        if sifat == "Wants":
-            return "Yes"
-        if is_food_out and (is_premium or nominal >= 100_000):
-            return "Yes"
-
-    return "No"
-
-
-def finalize_parsed_transaction(parsed: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
+def finalize_parsed_transaction(
+    parsed: Dict[str, Any],
+    source_text: str = "",
+    *,
+    trust_ai_impulsif: bool = False,
+) -> Dict[str, Any]:
     normalize_category_fields(parsed, source_text)
-    parsed["impulsif"] = infer_impulsif(parsed, source_text)
+    ai_val = str(parsed.get("impulsif", "")).strip() if trust_ai_impulsif else None
+    parsed["impulsif"] = resolve_impulsif(
+        parsed,
+        source_text,
+        ai_suggested=ai_val,
+        trust_ai=trust_ai_impulsif,
+    )
     return parsed
 
 
@@ -691,7 +613,7 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
     elif any(keyword in lower_text for keyword in ["ngantuk", "lelah", "burnout", "capek", "tired"]):
         mood = "Tired"
 
-    impulsif = infer_impulsif(
+    impulsif = resolve_impulsif(
         {
             "keterangan": text,
             "nominal": nominal,
@@ -715,7 +637,7 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
         "impulsif": impulsif,
     }
     normalize_category_fields(result, text)
-    result["impulsif"] = infer_impulsif(result, text)
+    result["impulsif"] = resolve_impulsif(result, text)
     return result
 
 
@@ -892,7 +814,7 @@ async def process_note_input(
         )
         return
 
-    finalize_parsed_transaction(parsed, text)
+    finalize_parsed_transaction(parsed, text, trust_ai_impulsif=not basic_mode)
 
     if user_id:
         PENDING_CONFIRMATIONS.pop(user_id, None)
@@ -1147,7 +1069,11 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         parsed = pending["parsed"]
         parsed["mood"] = mood_text
-        finalize_parsed_transaction(parsed, pending.get("source_text", ""))
+        finalize_parsed_transaction(
+            parsed,
+            pending.get("source_text", ""),
+            trust_ai_impulsif=not pending.get("basic_mode", True),
+        )
         greeting_name = pending["greeting_name"]
         basic_mode = pending.get("basic_mode", False)
         PENDING_CONFIRMATIONS[user_id] = {
@@ -1202,7 +1128,11 @@ async def mood_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
     parsed = pending["parsed"]
     parsed["mood"] = mood_value
-    finalize_parsed_transaction(parsed, pending.get("source_text", ""))
+    finalize_parsed_transaction(
+        parsed,
+        pending.get("source_text", ""),
+        trust_ai_impulsif=not pending.get("basic_mode", True),
+    )
     greeting_name = pending["greeting_name"]
     basic_mode = pending.get("basic_mode", False)
     PENDING_CONFIRMATIONS[user_id] = {

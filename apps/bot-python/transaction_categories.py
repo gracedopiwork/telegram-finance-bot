@@ -249,11 +249,18 @@ Aturan:
    Contoh: beli hp/laptop/gadget → kategori Jajan, sub_kategori "Pengeluaran lain-lain".
    Contoh: tagihan air/pdam → kategori Air, sub_kategori "Pengeluaran lain-lain".
    Jika tidak yakin kategori/sub → kategori Jajan, sub_kategori "Pengeluaran lain-lain".
-5) impulsif: "Yes" jika pembelian spontan (iseng, kepengen, diskon, tiba-tiba) ATAU
-   perilaku belanja premium saat mood negatif (Sad/Stressed/Angry/Tired) ATAU
-   euforia pasca-gajian / self-reward (habis gajian, gajianan, baru gajian, traktir, rayain) ATAU
-   pengeluaran Wants saat mood Happy, atau makan di luar ≥100rb saat Happy.
-   Bisa tetap "Need" untuk sifat, tetapi impulsif "Yes" bila ada alternatif lebih murah.
+5) impulsif — WAJIB pertimbangkan konteks & niat, bukan hanya nominal besar:
+   "Yes" jika:
+   - spontan / tanpa rencana (iseng, kepengen, diskon, tiba-tiba, fomo)
+   - euforia pasca-gajian (habis gajian, gajianan, baru gajian)
+   - belanja hiburan saat mood negatif (Sad/Stressed/Angry/Tired) terutama Wants
+   "No" jika:
+   - acara sosial terencana (ulang tahun, ultah, pernikahan, wisuda, syukuran, makan dengan keluarga untuk perayaan)
+   - tagihan/kebutuhan wajib (listrik, cicilan, bpjs, sewa, obat, sekolah)
+   - pengeluaran Need yang memang sudah direncanakan
+   Contoh Yes: "makan malam 600rb karena habis gajian"
+   Contoh No: "makan malam dengan keluarga karena papa ulang tahun 600rb"
+   Bisa Wants tetapi impulsif "No" bila perayaan keluarga terencana.
 6) Balas HANYA JSON murni, tanpa markdown dan tanpa teks tambahan.
 7) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
    {{"error":"invalid_input"}}
