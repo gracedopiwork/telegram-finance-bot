@@ -16,18 +16,20 @@ return new class extends Migration
         if (! Schema::hasColumn('diagnostic_questions', 'wizard_step')) {
             Schema::table('diagnostic_questions', function (Blueprint $table) {
                 $table->unsignedTinyInteger('wizard_step')->default(1)->after('question_key');
-                $table->index('wizard_step');
+                $table->index('wizard_step', 'diag_questions_wizard_step_idx');
             });
         }
 
-        (new DiagnosticContentSeeder)->syncCanonicalQuestions();
+        if (class_exists(DiagnosticContentSeeder::class)) {
+            (new DiagnosticContentSeeder)->syncCanonicalQuestions();
+        }
     }
 
     public function down(): void
     {
         if (Schema::hasTable('diagnostic_questions') && Schema::hasColumn('diagnostic_questions', 'wizard_step')) {
             Schema::table('diagnostic_questions', function (Blueprint $table) {
-                $table->dropIndex(['wizard_step']);
+                $table->dropIndex('diag_questions_wizard_step_idx');
                 $table->dropColumn('wizard_step');
             });
         }
