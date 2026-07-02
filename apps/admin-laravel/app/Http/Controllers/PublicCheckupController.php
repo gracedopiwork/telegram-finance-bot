@@ -24,6 +24,10 @@ class PublicCheckupController extends Controller
                 ->with('error', 'Check-up sementara tidak tersedia. Coba lagi nanti.');
         }
 
+        if (PortalSession::isAuthenticated($request)) {
+            return redirect()->route('portal.diagnostic');
+        }
+
         $diagnostic = app(DiagnosticConfigService::class);
         $wizardSteps = $diagnostic->wizardSteps();
         if ($wizardSteps === []) {

@@ -17,12 +17,12 @@
 <div class="{{ ($isFtsaOnlyPortalUser ?? false) ? 'w-full' : 'w-full max-w-6xl mx-auto' }}">
     @if($isFtsaOnlyPortalUser && $needsFinancialDiagnostic)
         <div class="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 mb-6 text-sm text-sky-900">
-            <div class="font-bold">Belum ada diagnostik tahap keuangan?</div>
-            <p class="mt-1">Check-up gratis opsional — hasil otomatis terhubung ke akun Anda via email.</p>
-            <a href="{{ $diagnosticCheckupUrl ?? route('checkup.show') }}"
+            <div class="font-bold">Langkah 1 — Diagnostik keuangan</div>
+            <p class="mt-1">Isi tahap kesehatan finansial Anda di portal sebelum atau bersamaan dengan FTSA.</p>
+            <a href="{{ $portalDiagnosticUrl ?? route('portal.diagnostic') }}"
                class="inline-flex items-center gap-2 mt-3 bg-navy-800 hover:bg-navy-700 text-white font-bold px-4 py-2 rounded-xl text-sm">
                 <span class="material-symbols-outlined text-lg">health_and_safety</span>
-                Jalankan Financial Health Check-Up
+                Isi Diagnostik di Portal
             </a>
         </div>
     @endif

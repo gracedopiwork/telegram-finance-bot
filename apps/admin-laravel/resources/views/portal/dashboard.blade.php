@@ -11,7 +11,7 @@
     $noteSummary = is_array($note) ? ($note['summary'] ?? '') : (string) $note;
 @endphp
 
-@if(!($ftsaUnlocked ?? false))
+@if(!($ftsaUnlocked ?? false) && ($hasBotPortalAccess ?? false) && !($isFtsaOnlyPortalUser ?? false))
     <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
         <div class="text-sm text-amber-900">
             <div class="font-bold">FTSA Premium belum aktif</div>
@@ -28,25 +28,11 @@
 @if($summary['baseline_review_due'] ?? false)
     <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-3">
         <span>Sudah 6 bulan sejak baseline terakhir. Evaluasi ulang untuk memperbarui tahap & prescription bucket.</span>
-        <a href="{{ $baselineUrl ?? route('checkup.show') }}" class="font-semibold whitespace-nowrap">Health Check-Up →</a>
+        <a href="{{ $portalBaselineUrl ?? route('portal.baseline.create') }}" class="font-semibold whitespace-nowrap">Perbarui Baseline →</a>
     </div>
 @endif
 
-@if(empty($summary['baseline']))
-    @include('portal.partials.onboarding-checklist')
-@elseif($needsBaseline ?? false)
-    <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div class="text-sm text-amber-900">
-            <div class="font-bold">Lengkapi diagnostik terlebih dahulu</div>
-            <div class="mt-0.5">Financial Health Dashboard aktif setelah Baseline Data (tahap keuangan) diisi.</div>
-        </div>
-        <a href="{{ $baselineUrl ?? route('portal.baseline.create') }}"
-           class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm">
-            <span class="material-symbols-outlined text-lg">fact_check</span>
-            Isi Baseline Data
-        </a>
-    </div>
-@endif
+@include('portal.partials.onboarding-banners')
 
 @if(!$hasData)
     @include('portal.partials.empty-state', [

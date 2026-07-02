@@ -164,18 +164,20 @@ class PortalOnboardingService
             return false;
         }
 
+        if (! $this->hasPaidBotOrder($email)) {
+            return false;
+        }
+
         app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
 
         if ($this->isBotAfterFtsaBuyer($email)) {
             return ! $this->hasFtsaPortalOnboardingComplete($email, $telegramUserId);
         }
 
-        $baseline = FinancialBaseline::latestForUser($telegramUserId);
-        if ($baseline === null) {
-            return true;
-        }
+        $baseline = FinancialBaseline::latestForUser($telegramUserId)
+            ?? FinancialBaseline::latestForEmail($email);
 
-        return false;
+        return ! $this->hasFinancialDiagnostic($baseline);
     }
 
     /**
@@ -241,7 +243,7 @@ class PortalOnboardingService
             return false;
         }
 
-        if (! app(PortalFeatureService::class)->canAccessFtsa($telegramUserId)) {
+        if (! app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email)) {
             return false;
         }
 
@@ -256,55 +258,54 @@ class PortalOnboardingService
         return ! app(FtsaAnswerSummaryService::class)->hasCompletedFtsa($baseline);
     }
 
+    public function portalHomeRouteName(string $email): string
+    {
+        return $this->isFtsaOnlyBuyer($email) ? 'portal.emotional' : 'portal.dashboard';
+    }
+
+    public function portalDiagnosticUrl(): string
+    {
+        return route('portal.diagnostic');
+    }
+
+    public function portalFtsaUrl(): string
+    {
+        return route('portal.baseline.create');
+    }
+
+    public function portalBaselineUrl(): string
+    {
+        return route('portal.baseline.create');
+    }
+
     /**
-     * Urutan onboarding pembeli FTSA-only: diagnostik → FTSA → hasil.
+     * @deprecated Gunakan portalDiagnosticUrl() untuk user login portal.
      */
     public function nextFtsaOnlyOnboardingUrl(string $email, int $telegramUserId): string
     {
-        if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
-            return route('checkup.show');
-        }
-
-        if ($this->userNeedsFtsa($email, $telegramUserId)) {
-            return route('portal.baseline.create');
-        }
-
-        return route('portal.emotional');
+        return $this->portalHomeRouteName($email) === 'portal.emotional'
+            ? route('portal.emotional')
+            : route('portal.dashboard');
     }
 
     /**
-     * URL pengisian baseline pertama kali sesuai jalur pembelian.
+     * URL pengisian baseline — selalu di dalam portal, tanpa redirect paksa.
      */
     public function firstBaselineUrl(string $email, int $telegramUserId): string
     {
-        if ($this->isBotAfterFtsaBuyer($email)) {
-            if ($this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
-                return route('portal.dashboard');
-            }
-
-            if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
-                return route('checkup.show');
-            }
-            if ($this->userNeedsFtsa($email, $telegramUserId)) {
-                return route('portal.baseline.create');
-            }
-
-            return route('portal.dashboard');
+        if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
+            return $this->portalDiagnosticUrl();
         }
 
-        if ($this->isBotOnlyBuyer($email, $telegramUserId)) {
-            return route('portal.baseline.create');
+        if ($this->userNeedsFtsa($email, $telegramUserId)) {
+            return $this->portalFtsaUrl();
         }
 
-        if ($this->isFtsaOnlyBuyer($email)) {
-            return $this->nextFtsaOnlyOnboardingUrl($email, $telegramUserId);
-        }
-
-        return route('checkup.show');
+        return route($this->portalHomeRouteName($email));
     }
 
     /**
-     * URL check-up diagnostik (landing) — dipakai FTSA-only yang belum punya tahap keuangan.
+     * Landing check-up gratis (tamu / belum login).
      */
     public function diagnosticCheckupUrl(): string
     {

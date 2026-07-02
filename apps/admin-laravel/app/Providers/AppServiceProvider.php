@@ -111,29 +111,26 @@ class AppServiceProvider extends ServiceProvider
                 $email = (string) (PortalSession::email($request) ?? '');
                 $onboarding = app(PortalOnboardingService::class);
                 $access = app(PortalAccessService::class);
+                $featureService = app(\App\Services\PortalFeatureService::class);
                 $needsBaseline = $onboarding->userNeedsBotOnboardingBaseline($email, $telegramUserId);
                 $needsFtsa = $onboarding->userNeedsFtsa($email, $telegramUserId);
                 $needsFinancialDiagnostic = $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId);
+                $ftsaUnlocked = $featureService->canAccessFtsa($telegramUserId, $email);
 
                 $view->with('needsBaseline', $needsBaseline);
                 $view->with('needsFtsa', $needsFtsa);
                 $view->with('needsFinancialDiagnostic', $needsFinancialDiagnostic);
+                $view->with('ftsaUnlocked', $ftsaUnlocked);
                 $view->with('hasBotPortalAccess', $access->hasBotPortalAccess($email));
                 $view->with('isFtsaOnlyPortalUser', $access->isFtsaOnlyPortalUser($email));
                 $ftsaEval = app(\App\Services\FtsaEvaluationService::class);
                 $view->with('ftsaRetakeLocked', $ftsaEval->isRetakeLocked($telegramUserId));
                 $view->with('ftsaRetakeAvailableAt', $ftsaEval->retakeAvailableAt($telegramUserId));
-                if ($access->isFtsaOnlyPortalUser($email)) {
-                    $view->with('baselineUrl', $onboarding->nextFtsaOnlyOnboardingUrl($email, $telegramUserId));
-                } else {
-                    $view->with(
-                        'baselineUrl',
-                        $needsBaseline || ($needsFtsa && ! $ftsaEval->isRetakeLocked($telegramUserId))
-                            ? $onboarding->firstBaselineUrl($email, $telegramUserId)
-                            : route('portal.baseline')
-                    );
-                }
-                $view->with('diagnosticCheckupUrl', $onboarding->diagnosticCheckupUrl());
+                $view->with('portalDiagnosticUrl', $onboarding->portalDiagnosticUrl());
+                $view->with('portalFtsaUrl', $onboarding->portalFtsaUrl());
+                $view->with('portalBaselineUrl', $onboarding->portalBaselineUrl());
+                $view->with('baselineUrl', $onboarding->firstBaselineUrl($email, $telegramUserId));
+                $view->with('diagnosticCheckupUrl', $onboarding->portalDiagnosticUrl());
             } catch (\Throwable) {
                 // Portal routes may not be registered during early boot.
             }

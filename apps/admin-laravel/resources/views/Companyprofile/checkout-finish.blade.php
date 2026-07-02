@@ -105,12 +105,11 @@
                             <li>Dashboard lengkap + FTSA — lisensi bot berlaku <strong>selamanya</strong></li>
                         @elseif($isFtsaOnly)
                             <li>Login portal: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> dengan email & kode lisensi di atas</li>
-                            <li><strong class="text-primary">Isi Financial Health Check-Up</strong> di landing</li>
-                            <li>Lengkapi <strong>FTSA 1–32</strong> di menu Baseline Data (aktif <strong>12 bulan evaluasi</strong>)</li>
+                            <li>Di dalam portal: isi <strong>diagnostik keuangan</strong> lalu <strong>FTSA 1–32</strong> (aktif <strong>12 bulan evaluasi</strong>)</li>
                         @else
                             <li>Buka bot Telegram → <code class="bg-white px-1 rounded">/activate {{ $order->license->license_key }}</code></li>
                             <li>Masuk dashboard: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> atau ketik <code class="bg-white px-1 rounded">/web</code> di bot</li>
-                            <li><strong class="text-primary">Isi Financial Health Check-Up</strong> — hasil diagnostik tersimpan & terhubung ke akun Anda</li>
+                            <li>Di dalam portal: isi <strong>Baseline Data (diagnostik)</strong> — bukan di landing page</li>
                             <li>Catat transaksi harian di bot, pantau dashboard — lisensi bot berlaku <strong>selamanya</strong></li>
                         @endif
                     </ol>
@@ -119,10 +118,10 @@
                     @elseif($isBotAfterFtsa)
                         <a href="{{ route('portal.login') }}" class="btn btn-primary mt-4 w-full text-sm">Buka Portal</a>
                     @elseif($isFtsaOnly)
-                        <a href="{{ route('checkup.show') }}" class="btn btn-primary mt-4 w-full text-sm">Mulai Check-Up</a>
+                        <a href="{{ route('portal.login') }}" class="btn btn-primary mt-4 w-full text-sm">Buka Portal</a>
                     @else
-                        <a href="{{ route('checkup.show') }}" class="btn btn-primary mt-4 w-full text-sm">
-                            Isi Diagnostik Sekarang
+                        <a href="{{ route('portal.login') }}" class="btn btn-primary mt-4 w-full text-sm">
+                            Buka Portal
                         </a>
                     @endif
                 </div>

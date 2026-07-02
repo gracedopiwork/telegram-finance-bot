@@ -21,6 +21,7 @@ use App\Http\Controllers\PublicCheckupController;
 use App\Http\Controllers\Portal\AuthController as PortalAuthController;
 use App\Http\Controllers\Portal\BaselineController as PortalBaselineController;
 use App\Http\Controllers\Portal\DashboardController as PortalDashboardController;
+use App\Http\Controllers\Portal\DiagnosticController as PortalDiagnosticController;
 use App\Http\Controllers\Portal\TransactionsController as PortalTransactionsController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
@@ -158,6 +159,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::get('/baseline', [PortalBaselineController::class, 'index'])->name('baseline');
         Route::get('/baseline/baru', [PortalBaselineController::class, 'create'])->name('baseline.create');
         Route::post('/baseline', [PortalBaselineController::class, 'store'])->name('baseline.store');
+        Route::get('/diagnostik', [PortalDiagnosticController::class, 'show'])->name('diagnostic');
+        Route::post('/diagnostik', [PortalDiagnosticController::class, 'store'])->name('diagnostic.store');
         Route::get('/emotional', [PortalDashboardController::class, 'emotional'])->name('emotional');
         Route::get('/premium', [PortalDashboardController::class, 'premium'])->name('premium');
 

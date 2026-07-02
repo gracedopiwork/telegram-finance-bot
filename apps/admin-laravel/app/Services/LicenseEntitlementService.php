@@ -69,6 +69,37 @@ class LicenseEntitlementService
         return $this->ftsaEntitlementEndsAt($order)?->isFuture() ?? false;
     }
 
+    public function hasActiveFtsaEntitlementForEmail(string $email): bool
+    {
+        if (! (bool) config('portal.ftsa.requires_upgrade', true)) {
+            return true;
+        }
+
+        $email = strtolower(trim($email));
+        if ($email === '') {
+            return false;
+        }
+
+        $codes = $this->ftsaProductCodes();
+        if ($codes === []) {
+            return false;
+        }
+
+        $order = Order::query()
+            ->where('status', 'paid')
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->whereHas('digitalProduct', fn ($q) => $q->whereIn('code', $codes))
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($order === null) {
+            return false;
+        }
+
+        return $this->ftsaEntitlementEndsAt($order)?->isFuture() ?? false;
+    }
+
     public function ftsaEntitlementEndsAt(Order $order): ?Carbon
     {
         if (! $this->isFtsaProductCode($this->productCode($order))) {

@@ -147,56 +147,12 @@ class AuthController extends Controller
         $email = (string) (PortalSession::email($request) ?? '');
         $onboarding = app(PortalOnboardingService::class);
 
-        $access = app(PortalAccessService::class);
-
-        if ($access->isFtsaOnlyPortalUser($email)) {
-            if ($onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
-                return redirect()->route('checkup.show')
-                    ->with('info', 'Lengkapi diagnostik keuangan terlebih dahulu, lalu lanjut ke kuesioner FTSA 1–32.');
-            }
-
-            if ($onboarding->userNeedsFtsa($email, $telegramUserId)) {
-                return redirect()->route('portal.baseline.create')
-                    ->with('info', 'Diagnostik selesai. Lengkapi kuesioner FTSA 1–32 untuk mengaktifkan dashboard behavioral Anda.');
-            }
-
-            return redirect()->route('portal.emotional')
-                ->with('success', 'Selamat datang di dashboard FTSA Premium.');
+        if (FinancialBaselineSchema::isReady()) {
+            app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
         }
 
-        if ($access->hasBotPortalAccess($email)
-            && $onboarding->isBotAfterFtsaBuyer($email)
-            && $onboarding->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
-            return redirect()->route('portal.dashboard')
-                ->with('success', 'Selamat datang di Financial Health Dashboard. Data FTSA & diagnostik sudah terhubung.');
-        }
-
-        if ($onboarding->userNeedsBotOnboardingBaseline($email, $telegramUserId)) {
-            if ($onboarding->isBotAfterFtsaBuyer($email)) {
-                if ($onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
-                    return redirect()->route('checkup.show')
-                        ->with('info', 'Lengkapi diagnostik tahap keuangan (check-up) untuk mengaktifkan Financial Health Dashboard.')
-                        ->withInput(['email' => $email]);
-                }
-
-                return redirect()->route('portal.baseline.create')
-                    ->with('info', 'Lengkapi data baseline yang masih kurang.');
-            }
-
-            if ($onboarding->isBotOnlyBuyer($email, $telegramUserId)) {
-                return redirect()->route('portal.baseline.create')
-                    ->with(
-                        'info',
-                        'Lengkapi Baseline Data (diagnostik) terlebih dahulu untuk mengaktifkan Financial Health Dashboard.'
-                    );
-            }
-
-            return redirect()->route('checkup.show')
-                ->with('warning', 'Silakan lengkapi Financial Health Check-Up terlebih dahulu. Gunakan email yang sama dengan pembelian Anda.')
-                ->withInput(['email' => $email]);
-        }
-
-        return redirect()->route($access->defaultPortalHomeRoute($email));
+        return redirect()->route($onboarding->portalHomeRouteName($email))
+            ->with('success', 'Selamat datang di portal YFD.');
     }
 
     public function logout(Request $request): RedirectResponse

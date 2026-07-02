@@ -15,13 +15,15 @@
 @endphp
 
 @if($isFtsaOnly)
+    @include('portal.partials.onboarding-banners')
+
     @if($needsFtsa ?? false)
         @include('portal.partials.empty-state', [
             'title' => 'Lengkapi kuesioner FTSA 1–32',
             'message' => 'Isi semua pertanyaan untuk melihat archetype behavioral finansial dan skor domain CHD, RVD, SSD, ESD.',
         ])
         <div class="mt-4">
-            <a href="{{ $baselineUrl ?? route('portal.baseline.create') }}"
+            <a href="{{ $portalFtsaUrl ?? route('portal.baseline.create') }}"
                class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-5 py-3 rounded-xl text-sm">
                 <span class="material-symbols-outlined text-lg">edit_note</span>
                 Isi FTSA Sekarang
@@ -119,20 +121,6 @@
                 @endforeach
             </ul>
         </div>
-        @endif
-
-        @if($needsFinancialDiagnostic ?? false)
-            <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3 mb-6">
-                <div class="text-sm text-amber-900">
-                    <div class="font-bold">Lengkapi diagnostik keuangan</div>
-                    <div class="mt-0.5">Wajib sebelum mengisi FTSA — hasil terhubung otomatis via email Anda.</div>
-                </div>
-                <a href="{{ $diagnosticCheckupUrl ?? route('checkup.show') }}"
-                   class="inline-flex items-center gap-2 border border-navy-800 text-navy-800 hover:bg-navy-50 font-bold px-4 py-2 rounded-xl text-sm">
-                    <span class="material-symbols-outlined text-lg">health_and_safety</span>
-                    Mulai Check-Up
-                </a>
-            </div>
         @endif
 
         <div class="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-900">

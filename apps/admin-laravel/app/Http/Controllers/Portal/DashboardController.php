@@ -4,15 +4,13 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\FinancialBaseline;
+use App\Services\BaselineClaimService;
 use App\Services\FtsaAiGuidanceService;
 use App\Services\ImpulsivityAssessmentService;
-use App\Services\PortalAccessService;
 use App\Services\PortalFeatureService;
-use App\Services\PortalOnboardingService;
 use App\Services\TransactionDashboardService;
 use App\Support\PortalSession;
 use Carbon\Carbon;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -36,10 +34,13 @@ class DashboardController extends Controller
   public function index(Request $request): View
   {
     $telegramUserId = (int) PortalSession::telegramUserId($request);
+    $email = (string) (PortalSession::email($request) ?? '');
+    app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+
     [$month, $period] = $this->filters($request);
     $summary = app(TransactionDashboardService::class)->summary($telegramUserId, $month, $period);
     $impulsivity = app(ImpulsivityAssessmentService::class)->assess($telegramUserId, $month, $period);
-    $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
+    $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email);
 
     return view('portal.dashboard', [
       'active' => 'dashboard',
@@ -56,30 +57,17 @@ class DashboardController extends Controller
     ]);
   }
 
-  public function emotional(Request $request): View|RedirectResponse
+  public function emotional(Request $request): View
   {
     $telegramUserId = (int) PortalSession::telegramUserId($request);
     $email = (string) (PortalSession::email($request) ?? '');
-    $onboarding = app(PortalOnboardingService::class);
-    $access = app(PortalAccessService::class);
-
-    if ($access->isFtsaOnlyPortalUser($email)) {
-      if ($onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
-        return redirect()->route('checkup.show')
-          ->with('info', 'Lengkapi diagnostik keuangan terlebih dahulu sebelum melihat hasil FTSA.');
-      }
-
-      if ($onboarding->userNeedsFtsa($email, $telegramUserId)) {
-        return redirect()->route('portal.baseline.create')
-          ->with('info', 'Lengkapi kuesioner FTSA 1–32 untuk mengaktifkan dashboard behavioral Anda.');
-      }
-    }
+    app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
 
     [$month, $period] = $this->filters($request);
     $assessment = app(ImpulsivityAssessmentService::class)->assess($telegramUserId, $month, $period);
     $featureService = app(PortalFeatureService::class);
-    $ftsaUnlocked = $featureService->canAccessFtsa($telegramUserId);
-    $ftsaStatus = $featureService->ftsaEntitlementStatus($telegramUserId);
+    $ftsaUnlocked = $featureService->canAccessFtsa($telegramUserId, $email);
+    $ftsaStatus = $featureService->ftsaEntitlementStatus($telegramUserId, $email);
     $baseline = FinancialBaseline::latestForUser($telegramUserId);
     $ftsaAiGuidance = app(FtsaAiGuidanceService::class)->forBaseline($baseline);
 
@@ -98,9 +86,11 @@ class DashboardController extends Controller
 
   public function premium(): View
   {
-    $telegramUserId = (int) PortalSession::telegramUserId(request());
-    $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
-    $ftsaStatus = app(PortalFeatureService::class)->ftsaEntitlementStatus($telegramUserId);
+    $request = request();
+    $telegramUserId = (int) PortalSession::telegramUserId($request);
+    $email = (string) (PortalSession::email($request) ?? '');
+    $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email);
+    $ftsaStatus = app(PortalFeatureService::class)->ftsaEntitlementStatus($telegramUserId, $email);
 
     return view('portal.premium', [
       'active' => 'premium',
