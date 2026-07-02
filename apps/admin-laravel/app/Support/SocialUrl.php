@@ -19,7 +19,7 @@ final class SocialUrl
         if (str_starts_with($raw, '//')) {
             return 'https:'.$raw;
         }
-        if (preg_match('#^(?:www\.)?instagram\.com(/|[\?#]|$)#i', $raw)) {
+        if (preg_match('#^(?:www\.)?instagram\.com(/|[\?\#]|$)#i', $raw)) {
             return 'https://'.ltrim($raw, '/');
         }
 
@@ -38,7 +38,7 @@ final class SocialUrl
         if (str_starts_with($raw, '//')) {
             return 'https:'.$raw;
         }
-        if (preg_match('#^(?:(?:vm|vt|www)\.)?tiktok\.com(/|[\?#]|$)#i', $raw)) {
+        if (preg_match('#^(?:(?:vm|vt|www)\.)?tiktok\.com(/|[\?\#]|$)#i', $raw)) {
             return 'https://'.ltrim($raw, '/');
         }
 
@@ -57,7 +57,7 @@ final class SocialUrl
         if (str_starts_with($raw, '//')) {
             return 'https:'.$raw;
         }
-        if (preg_match('#^(?:www\.)?threads\.net(/|[\?#]|$)#i', $raw)) {
+        if (preg_match('#^(?:www\.)?threads\.net(/|[\?\#]|$)#i', $raw)) {
             return 'https://'.ltrim($raw, '/');
         }
 
