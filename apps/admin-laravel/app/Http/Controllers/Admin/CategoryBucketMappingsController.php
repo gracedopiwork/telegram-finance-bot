@@ -7,6 +7,7 @@ use App\Models\CategoryBucketMapping;
 use App\Services\CategoryBucketMappingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -14,14 +15,15 @@ class CategoryBucketMappingsController extends Controller
 {
     public function index(): View
     {
-        $mappings = CategoryBucketMapping::query()
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->get();
+        $tableReady = Schema::hasTable('category_bucket_mappings');
+        $mappings = $tableReady
+            ? CategoryBucketMapping::query()->orderBy('sort_order')->orderBy('id')->get()
+            : collect();
 
         return view('admin.category_bucket_mappings.index', [
             'mappings' => $mappings,
             'buckets' => CategoryBucketMapping::BUCKETS,
+            'tableReady' => $tableReady,
         ]);
     }
 
@@ -41,6 +43,10 @@ class CategoryBucketMappingsController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        if ($error = $this->ensureTableReady()) {
+            return $error;
+        }
+
         $mapping = CategoryBucketMapping::query()->create($this->validated($request));
         app(CategoryBucketMappingService::class)->forgetCache();
 
@@ -60,6 +66,10 @@ class CategoryBucketMappingsController extends Controller
 
     public function update(Request $request, CategoryBucketMapping $category_bucket_mapping): RedirectResponse
     {
+        if ($error = $this->ensureTableReady()) {
+            return $error;
+        }
+
         $category_bucket_mapping->update($this->validated($request));
         app(CategoryBucketMappingService::class)->forgetCache();
 
@@ -69,6 +79,10 @@ class CategoryBucketMappingsController extends Controller
 
     public function destroy(CategoryBucketMapping $category_bucket_mapping): RedirectResponse
     {
+        if ($error = $this->ensureTableReady()) {
+            return $error;
+        }
+
         $category_bucket_mapping->delete();
         app(CategoryBucketMappingService::class)->forgetCache();
 
@@ -78,6 +92,10 @@ class CategoryBucketMappingsController extends Controller
 
     public function syncDefaults(): RedirectResponse
     {
+        if ($error = $this->ensureTableReady()) {
+            return $error;
+        }
+
         $this->seedDefaults();
         app(CategoryBucketMappingService::class)->forgetCache();
 
@@ -108,6 +126,16 @@ class CategoryBucketMappingsController extends Controller
         $data['sub_category'] = trim((string) ($data['sub_category'] ?? '')) ?: null;
 
         return $data;
+    }
+
+    private function ensureTableReady(): ?RedirectResponse
+    {
+        if (Schema::hasTable('category_bucket_mappings')) {
+            return null;
+        }
+
+        return redirect()->route('admin.category-bucket-mappings.index')
+            ->with('error', 'Tabel category_bucket_mappings belum ada. Jalankan: php artisan migrate --force');
     }
 
     private function seedDefaults(): void

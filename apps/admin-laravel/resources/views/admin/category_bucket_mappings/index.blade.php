@@ -18,9 +18,21 @@
 
 @section('main')
 @php
+    $tableReady = $tableReady ?? true;
     $policyNotes = (array) config('category_buckets.source_of_truth_note', []);
     $registeredCategories = $mappings->pluck('category')->unique()->filter(fn ($c) => $c !== '*' && $c !== '')->sort()->values();
 @endphp
+
+@if(!$tableReady)
+<div class="alert alert-danger">
+  Tabel <code>category_bucket_mappings</code> belum ada di database.
+  Di server Laravel jalankan:
+  <pre class="mb-0 mt-2 bg-dark text-white p-2 rounded"><code>cd /path/to/apps/admin-laravel
+php artisan migrate --force
+php artisan config:clear</code></pre>
+  Setelah migrate, klik <strong>Sync Default</strong> untuk mengisi data awal.
+</div>
+@endif
 
 @if($policyNotes !== [])
 <div class="alert alert-warning border-left border-warning shadow-sm mb-3">
