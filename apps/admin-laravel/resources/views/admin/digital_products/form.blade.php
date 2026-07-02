@@ -83,7 +83,7 @@
                         <div class="form-group col-md-2">
                             <label>Periode</label>
                             <input type="text" name="period" class="form-control"
-                                   value="{{ old('period', $product->period) }}" placeholder="per tahun">
+                                   value="{{ old('period', $product->period) }}" placeholder="selamanya / 12 bulan evaluasi">
                         </div>
                     </div>
                     @if($isEdit && $product->on_sale)

@@ -26,7 +26,13 @@
         <div class="lg:col-span-7">
             <div class="bg-white rounded-2xl border border-outline-variant shadow-soft p-7 md:p-9">
                 <h2 class="font-heading text-[20px] font-bold text-primary mb-1">Data Pembeli</h2>
-                <p class="text-[13px] text-on-surface-variant mb-6">Email wajib diisi — setelah pembayaran lunas, kami kirim ke email tersebut: <strong>tautan bot Telegram</strong>, <strong>kode /activate</strong>, dan <strong>akses dashboard web</strong>. Kode aktivasi <strong>tidak ditampilkan di website</strong>, hanya lewat email. Nomor WhatsApp untuk kontak darurat.</p>
+                <p class="text-[13px] text-on-surface-variant mb-6">
+                    @if($product->code === 'yfd-ftsa-premium')
+                        Email wajib diisi — gunakan <strong>email yang sama</strong> dengan akun bot YFD Anda agar FTSA terhubung ke lisensi yang sudah aktif. Setelah lunas, FTSA 1–32 aktif selama <strong>12 bulan evaluasi</strong>.
+                    @else
+                        Email wajib diisi — setelah pembayaran lunas, kami kirim ke email tersebut: <strong>tautan bot Telegram</strong>, <strong>kode /activate</strong>, dan <strong>akses dashboard web</strong>. Lisensi bot berlaku <strong>selamanya</strong> (sekali bayar). Kode aktivasi <strong>tidak ditampilkan di website</strong>, hanya lewat email. Nomor WhatsApp untuk kontak darurat.
+                    @endif
+                </p>
 
                 <div class="space-y-4">
                     <div>
@@ -117,8 +123,14 @@
 
                 <ul class="mt-5 space-y-2 text-[12.5px] text-on-surface-variant">
                     <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">verified</span> Pembayaran via Midtrans (kartu, VA, GoPay, OVO, ShopeePay, QRIS)</li>
-                    <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">mail</span> Setelah lunas: <strong>email otomatis</strong> berisi link bot Telegram, kode lisensi, &amp; akses dashboard web</li>
-                    <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">support_agent</span> Onboarding 1×24 jam oleh tim YFD</li>
+                    @if($product->code === 'yfd-ftsa-premium')
+                        <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">psychology</span> FTSA 1–32 aktif <strong>12 bulan evaluasi</strong> sejak pembayaran lunas</li>
+                        <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">link</span> Sudah punya bot? Upgrade memakai <strong>lisensi & email yang sama</strong></li>
+                    @else
+                        <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">mail</span> Setelah lunas: <strong>email otomatis</strong> berisi link bot Telegram, kode lisensi, &amp; akses dashboard web</li>
+                        <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">all_inclusive</span> Lisensi bot &amp; dashboard berlaku <strong>selamanya</strong> (sekali bayar)</li>
+                        <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">support_agent</span> Onboarding 1×24 jam oleh tim YFD</li>
+                    @endif
                 </ul>
             </div>
         </div>

@@ -37,7 +37,8 @@
         @if($order->status === 'paid' && $order->license)
             @if($isFtsaUpgrade)
                 <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
-                    Pembayaran <strong>lunas</strong>. <strong>FTSA Premium</strong> sudah aktif pada lisensi bot Anda yang sama.
+                    Pembayaran <strong>lunas</strong>. <strong>FTSA Premium</strong> sudah aktif pada lisensi bot Anda yang sama
+                    selama <strong>12 bulan evaluasi</strong>.
                     Login portal dengan email <strong>{{ $order->email }}</strong> dan kode lisensi bot yang sudah pernah di-/activate.
                 </p>
             @elseif($deliveryViaEmail)
@@ -78,9 +79,9 @@
                             <li>Masuk dashboard: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> atau ketik <code class="bg-white px-1 rounded">/web</code> di bot</li>
                             <li><strong class="text-primary">Isi Financial Health Check-Up</strong> — hasil diagnostik tersimpan & terhubung ke akun Anda</li>
                             @if($isFtsaOnly)
-                                <li>Setelah check-up, isi <strong>FTSA 1–32</strong> di menu Baseline Data (sudah aktif)</li>
+                                <li>Setelah check-up, isi <strong>FTSA 1–32</strong> di menu Baseline Data (aktif <strong>12 bulan evaluasi</strong>)</li>
                             @else
-                                <li>Catat transaksi harian di bot, pantau dashboard</li>
+                                <li>Catat transaksi harian di bot, pantau dashboard — lisensi bot berlaku <strong>selamanya</strong></li>
                             @endif
                         @endif
                     </ol>

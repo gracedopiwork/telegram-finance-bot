@@ -13,7 +13,7 @@
     <p>Hai {{ $order->full_name }},</p>
     <p>Terima kasih. Pembayaran <strong>{{ $order->product_name ?? 'FTSA Premium Unlock' }}</strong> (order <strong>{{ $order->order_code }}</strong>) sudah kami terima.</p>
 
-    <p>FTSA 1–32 di portal YFD sekarang <strong>sudah aktif</strong> pada akun lisensi bot Anda yang sama.</p>
+    <p>FTSA 1–32 di portal YFD sekarang <strong>sudah aktif</strong> pada akun lisensi bot Anda yang sama, berlaku <strong>12 bulan evaluasi</strong> sejak pembayaran.</p>
 
     <p>
         <a href="{{ $portalHref }}" style="display: inline-block; background: #003366; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 600;">Buka Portal YFD</a>

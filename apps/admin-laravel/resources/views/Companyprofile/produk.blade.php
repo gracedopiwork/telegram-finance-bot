@@ -67,6 +67,18 @@
                     <p class="text-body-md text-on-surface-variant mb-6 max-w-xl">{{ $descriptionText }}</p>
                 @endif
 
+                @if($featured->price > 0 && $featured->billing_mode !== 'soon' && $featured->period)
+                    <p class="text-[13px] text-primary-container/90 mb-6 max-w-xl">
+                        @if($featured->code === 'yfd-ftsa-premium')
+                            <span class="material-symbols-outlined text-[16px] align-[-3px]">schedule</span>
+                            Masa aktif: <strong>{{ $featured->period }}</strong> sejak pembayaran lunas.
+                        @elseif($featured->code === 'yfd-bot-telegram')
+                            <span class="material-symbols-outlined text-[16px] align-[-3px]">all_inclusive</span>
+                            Lisensi bot &amp; dashboard berlaku <strong>{{ $featured->period }}</strong> — sekali bayar, tanpa langganan bulanan.
+                        @endif
+                    </p>
+                @endif
+
                 {{-- Price block --}}
                 @if($featured->price > 0 && $featured->billing_mode !== 'soon')
                     <div class="bg-surface-container-low border border-outline-variant rounded-2xl p-5 mb-6 inline-flex flex-wrap items-end gap-x-5 gap-y-2">
@@ -78,13 +90,13 @@
                                     <span class="text-[18px] text-on-surface-variant line-through">{{ $featured->priceLabel($featured->price) }}</span>
                                     <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-[11px] font-bold">−{{ $featured->discount_percent }}%</span>
                                 </div>
-                                <div class="text-[12px] text-on-surface-variant mt-1">{{ $featured->period }}</div>
+                                <div class="text-[12px] text-on-surface-variant mt-1 font-semibold">{{ $featured->period }}</div>
                             </div>
                         @else
                             <div>
                                 <div class="text-[12px] uppercase tracking-widest text-on-surface-variant font-semibold mb-1">Harga</div>
                                 <div class="font-display text-[36px] md:text-[44px] font-extrabold text-primary-container leading-none">{{ $featured->priceLabel($featured->price) }}</div>
-                                <div class="text-[12px] text-on-surface-variant mt-1">{{ $featured->period }}</div>
+                                <div class="text-[12px] text-on-surface-variant mt-1 font-semibold">{{ $featured->period }}</div>
                             </div>
                         @endif
                     </div>
@@ -289,7 +301,7 @@
                         @else
                             <span class="font-display text-[22px] font-extrabold text-primary-container">{{ $p->priceLabel($p->price) }}</span>
                         @endif
-                        <div class="text-[12px] text-on-surface-variant">{{ $p->period }}</div>
+                        <div class="text-[12px] text-on-surface-variant mt-1 font-semibold">{{ $p->period }}</div>
                     </div>
                 @endif
 

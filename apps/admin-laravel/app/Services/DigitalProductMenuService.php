@@ -56,6 +56,10 @@ class DigitalProductMenuService
         if ($desc === '' && $product->description) {
             $desc = Str::limit(strip_tags((string) $product->description), 90);
         }
+        $period = trim((string) ($product->period ?? ''));
+        if ($period !== '' && ! in_array($period, ['—', 'gratis'], true)) {
+            $desc = $desc !== '' ? "{$desc} · {$period}" : $period;
+        }
 
         $item = [
             'key' => $product->code,
