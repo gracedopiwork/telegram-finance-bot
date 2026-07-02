@@ -14,6 +14,16 @@ class DiagnosticContentSeeder extends Seeder
     {
         $this->seedStages();
         $this->syncCanonicalQuestions();
+        $this->syncFtsaQuestions();
+    }
+
+    public function syncFtsaQuestions(): void
+    {
+        if (! Schema::hasTable('ftsa_questions')) {
+            return;
+        }
+
+        app(\App\Services\FtsaConfigService::class)->syncFromConfig();
     }
 
     public function syncCanonicalQuestions(): void

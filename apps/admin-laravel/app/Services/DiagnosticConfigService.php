@@ -229,6 +229,7 @@ class DiagnosticConfigService
             $config = [];
         }
         $config['financial_stage'] = $this->financialStageQuestions();
+        $config['ftsa_questions'] = app(FtsaConfigService::class)->questionMap();
 
         return $config;
     }

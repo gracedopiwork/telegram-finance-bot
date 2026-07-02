@@ -11,13 +11,7 @@ class FtsaAnswerSummaryService
      */
     public function questionTexts(): array
     {
-        $fromConfig = app(DiagnosticConfigService::class)->fullBaselineConfig()['ftsa_questions'] ?? [];
-
-        if (is_array($fromConfig) && $fromConfig !== []) {
-            return array_map('strval', $fromConfig);
-        }
-
-        return (array) config('baseline_assessment.ftsa_questions', []);
+        return app(FtsaConfigService::class)->questionMap();
     }
 
     /**
@@ -29,10 +23,31 @@ class FtsaAnswerSummaryService
     }
 
     /**
-     * @return array<string, array{code: string, label: string, questions: list<int>}>
+     * @return array<int, array{key: string, code: string, label: string}>
      */
     public function domainMap(): array
     {
+        if (app(FtsaConfigService::class)->usesDatabase()) {
+            $rows = \App\Models\FtsaQuestion::query()
+                ->where('is_active', true)
+                ->orderBy('question_num')
+                ->get();
+
+            if ($rows->isNotEmpty()) {
+                $map = [];
+                foreach ($rows as $row) {
+                    $meta = $row->domainMeta();
+                    $map[(int) $row->question_num] = [
+                        'key' => (string) $row->domain_key,
+                        'code' => $meta['code'],
+                        'label' => $meta['label'],
+                    ];
+                }
+
+                return $map;
+            }
+        }
+
         $map = [];
         foreach ((array) config('baseline_assessment.ftsa_domains', []) as $key => $domain) {
             if (! is_array($domain)) {

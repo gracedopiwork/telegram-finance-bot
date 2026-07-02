@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ArticlesController;
 use App\Http\Controllers\Admin\DiagnosticQuestionsController;
 use App\Http\Controllers\Admin\DiagnosticResultsController;
 use App\Http\Controllers\Admin\DiagnosticStagesController;
+use App\Http\Controllers\Admin\FtsaQuestionsController;
 use App\Http\Controllers\Admin\FtsaResultsController;
 use App\Http\Controllers\Admin\DigitalProductsController;
 use App\Http\Controllers\Admin\FaqsController;
@@ -107,6 +108,10 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('ftsa-results', [FtsaResultsController::class, 'index'])->name('ftsa-results.index');
     Route::get('ftsa-results/{financial_baseline}', [FtsaResultsController::class, 'show'])->name('ftsa-results.show');
     Route::delete('ftsa-results/{financial_baseline}', [FtsaResultsController::class, 'destroy'])->name('ftsa-results.destroy');
+    Route::get('ftsa-questions', [FtsaQuestionsController::class, 'index'])->name('ftsa-questions.index');
+    Route::post('ftsa-questions/sync', [FtsaQuestionsController::class, 'sync'])->name('ftsa-questions.sync');
+    Route::get('ftsa-questions/{ftsa_question}/edit', [FtsaQuestionsController::class, 'edit'])->name('ftsa-questions.edit');
+    Route::put('ftsa-questions/{ftsa_question}', [FtsaQuestionsController::class, 'update'])->name('ftsa-questions.update');
     Route::get('diagnostic-stages', [DiagnosticStagesController::class, 'index'])->name('diagnostic-stages.index');
     Route::get('diagnostic-stages/{diagnostic_stage}/edit', [DiagnosticStagesController::class, 'edit'])->name('diagnostic-stages.edit');
     Route::put('diagnostic-stages/{diagnostic_stage}', [DiagnosticStagesController::class, 'update'])->name('diagnostic-stages.update');

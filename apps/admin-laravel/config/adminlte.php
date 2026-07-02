@@ -351,6 +351,11 @@ return [
             'icon' => 'fas fa-fw fa-clipboard-list',
         ],
         [
+            'text' => 'Soal FTSA',
+            'route' => 'admin.ftsa-questions.index',
+            'icon' => 'fas fa-fw fa-list-ol',
+        ],
+        [
             'text' => 'Hasil Diagnostik',
             'route' => 'admin.diagnostic-results.index',
             'icon' => 'fas fa-fw fa-poll',

@@ -7,6 +7,9 @@
 <a href="{{ route('admin.diagnostic-results.index') }}" class="btn btn-outline-secondary btn-sm mr-1">
     <i class="fas fa-poll mr-1"></i> Hasil Diagnostik
 </a>
+<a href="{{ route('admin.ftsa-questions.index') }}" class="btn btn-outline-primary btn-sm mr-1">
+    <i class="fas fa-list-ol mr-1"></i> Soal FTSA
+</a>
 <a href="{{ route('admin.diagnostic-questions.index') }}" class="btn btn-outline-info btn-sm">
     <i class="fas fa-clipboard-list mr-1"></i> Soal Diagnostik
 </a>
