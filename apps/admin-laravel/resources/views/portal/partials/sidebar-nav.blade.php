@@ -39,14 +39,16 @@
     <a href="{{ route('portal.emotional', $query) }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'emotional' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">psychology</span>
-        BEHAVIORAL FINANCIAL DASHBOARD
+        <span class="flex-1">{{ ($isFtsaOnlyPortalUser ?? false) ? 'HASIL FTSA' : 'BEHAVIORAL FINANCIAL DASHBOARD' }}</span>
     </a>
+    @if(!($isFtsaOnlyPortalUser ?? false))
     <a href="{{ route('portal.premium') }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'premium' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">monitor_heart</span>
         <span class="flex-1">YOUR FINANCIAL HEALTH INDEX</span>
         <span class="text-[9px] bg-gold-400/20 text-gold-400 px-1.5 py-0.5 rounded font-bold">PREMIUM</span>
     </a>
+    @endif
     <div class="flex items-center gap-2 rounded-lg px-3 py-3 text-white/35 cursor-not-allowed">
         <span class="material-symbols-outlined text-lg">flag</span>
         <span class="flex-1">YOUR FINANCIAL GOAL PLANNING</span>

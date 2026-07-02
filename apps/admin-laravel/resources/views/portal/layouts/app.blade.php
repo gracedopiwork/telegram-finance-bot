@@ -67,6 +67,7 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 sm:gap-3">
+                    @if(!($isFtsaOnlyPortalUser ?? false))
                     <form method="get" class="flex items-center gap-2 flex-wrap">
                         <span class="material-symbols-outlined text-slate-400 text-xl hidden sm:inline">calendar_month</span>
                         <select name="month" onchange="this.form.submit()"
@@ -84,6 +85,7 @@
                             </select>
                         @endif
                     </form>
+                    @endif
                     <form method="post" action="{{ route('portal.logout') }}">
                         @csrf
                         <button type="submit" class="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-red-600 px-2 py-2">

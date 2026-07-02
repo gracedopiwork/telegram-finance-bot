@@ -56,12 +56,15 @@ class DashboardController extends Controller
     $telegramUserId = (int) PortalSession::telegramUserId($request);
     [$month, $period] = $this->filters($request);
     $assessment = app(ImpulsivityAssessmentService::class)->assess($telegramUserId, $month, $period);
-    $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
+    $featureService = app(PortalFeatureService::class);
+    $ftsaUnlocked = $featureService->canAccessFtsa($telegramUserId);
+    $ftsaStatus = $featureService->ftsaEntitlementStatus($telegramUserId);
 
     return view('portal.emotional', [
       'active' => 'emotional',
       'assessment' => $assessment,
       'ftsaUnlocked' => $ftsaUnlocked,
+      'ftsaEndsAt' => $ftsaStatus['ends_at'],
       'months' => $this->monthOptions(),
       'periods' => $this->periodOptions(),
       'currentPeriod' => $period,
