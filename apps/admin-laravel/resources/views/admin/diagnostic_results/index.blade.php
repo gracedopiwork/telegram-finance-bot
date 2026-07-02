@@ -7,6 +7,9 @@
 <a href="{{ route('admin.diagnostic-questions.index') }}" class="btn btn-outline-secondary btn-sm mr-1">
     <i class="fas fa-clipboard-list mr-1"></i> Soal Diagnostik
 </a>
+<a href="{{ route('admin.ftsa-results.index') }}" class="btn btn-outline-primary btn-sm mr-1">
+    <i class="fas fa-brain mr-1"></i> Hasil FTSA
+</a>
 <a href="{{ route('admin.diagnostic-stages.index') }}" class="btn btn-outline-info btn-sm">
     <i class="fas fa-palette mr-1"></i> Tahap Hasil
 </a>
@@ -53,13 +56,17 @@
                     <th>Email</th>
                     <th>Tahap</th>
                     <th class="text-center">Skor</th>
+                    <th>FTSA</th>
                     <th>Sumber</th>
                     <th class="text-right">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($results as $row)
-                    @php $email = $summaryService->resolvedEmail($row); @endphp
+                    @php
+                        $email = $summaryService->resolvedEmail($row);
+                        $ftsaFilled = app(\App\Services\FtsaAnswerSummaryService::class)->scoreSummary($row)['filled'];
+                    @endphp
                     <tr>
                         <td class="text-nowrap">{{ $row->formatDate('d M Y H:i') }}</td>
                         <td>
@@ -73,6 +80,16 @@
                             <span class="badge badge-info">{{ $row->stage_label ?: ucfirst($row->financial_stage) }}</span>
                         </td>
                         <td class="text-center font-weight-bold">{{ $row->financial_stage_score }}/39</td>
+                        <td>
+                            @if(($row->dominant_archetype ?? '') === 'locked' && $ftsaFilled === 0)
+                                <span class="badge badge-secondary">Terkunci</span>
+                            @elseif($ftsaFilled > 0)
+                                <span class="badge badge-primary">{{ $row->dominant_archetype_label ?: 'FTSA' }}</span>
+                                <small class="text-muted d-block">{{ $ftsaFilled }}/32</small>
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
+                        </td>
                         <td>
                             @if($row->telegram_user_id)
                                 <span class="badge badge-primary">Portal</span>
@@ -93,7 +110,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">Belum ada hasil diagnostik tersimpan.</td>
+                        <td colspan="7" class="text-center text-muted py-4">Belum ada hasil diagnostik tersimpan.</td>
                     </tr>
                 @endforelse
             </tbody>

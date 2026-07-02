@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FinancialBaseline;
 use App\Services\DiagnosticAnswerSummaryService;
 use App\Services\DiagnosticConfigService;
+use App\Services\FtsaAnswerSummaryService;
 use App\Support\FinancialBaselineSchema;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -57,6 +58,7 @@ class DiagnosticResultsController extends Controller
     public function show(FinancialBaseline $financial_baseline): View
     {
         $summaryService = app(DiagnosticAnswerSummaryService::class);
+        $ftsaService = app(FtsaAnswerSummaryService::class);
         $stageDisplay = app(DiagnosticConfigService::class)->stageDisplay(
             (string) $financial_baseline->financial_stage,
             (int) $financial_baseline->financial_stage_score,
@@ -67,6 +69,10 @@ class DiagnosticResultsController extends Controller
             'email' => $summaryService->resolvedEmail($financial_baseline),
             'summary' => $summaryService->summarize($financial_baseline),
             'stageDisplay' => $stageDisplay,
+            'ftsaAnswers' => $ftsaService->summarizeAnswers($financial_baseline),
+            'ftsaSummary' => $ftsaService->scoreSummary($financial_baseline),
+            'hasFtsa' => $ftsaService->hasFtsaAnswers($financial_baseline),
+            'isFtsaLocked' => $ftsaService->isFtsaLocked($financial_baseline),
         ]);
     }
 

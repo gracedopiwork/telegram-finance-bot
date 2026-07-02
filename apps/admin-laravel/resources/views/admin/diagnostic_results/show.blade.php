@@ -7,6 +7,11 @@
 <a href="{{ route('admin.diagnostic-results.index') }}" class="btn btn-outline-secondary btn-sm mr-1">
     <i class="fas fa-arrow-left mr-1"></i> Semua Hasil
 </a>
+@if($hasFtsa ?? false)
+<a href="{{ route('admin.ftsa-results.show', $baseline) }}" class="btn btn-outline-primary btn-sm mr-1">
+    <i class="fas fa-brain mr-1"></i> Lihat FTSA
+</a>
+@endif
 @include('admin.partials.delete-form', [
     'action' => route('admin.diagnostic-results.destroy', $baseline),
     'confirm' => 'Hapus hasil diagnostik ini? Data jawaban dan skor akan hilang permanen.',
@@ -71,6 +76,20 @@
                             <th>Archetype</th>
                             <td>{{ $baseline->dominant_archetype_label }}</td>
                         </tr>
+                    @elseif($isFtsaLocked ?? false)
+                        <tr>
+                            <th>FTSA</th>
+                            <td><span class="badge badge-secondary">Terkunci / belum diisi</span></td>
+                        </tr>
+                    @endif
+                    @if($hasFtsa ?? false)
+                        <tr>
+                            <th>Skor FTSA</th>
+                            <td>
+                                CHD {{ $baseline->ftsa_chd }} · RVD {{ $baseline->ftsa_rvd }} ·
+                                SSD {{ $baseline->ftsa_ssd }} · ESD {{ $baseline->ftsa_esd }}
+                            </td>
+                        </tr>
                     @endif
                 </table>
             </div>
@@ -131,4 +150,36 @@
         </div>
     </div>
 </div>
+
+@if($hasFtsa ?? false)
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card card-outline card-primary">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>FTSA 1–32 — Jawaban User</strong>
+                <a href="{{ route('admin.ftsa-results.show', $baseline) }}" class="btn btn-sm btn-outline-primary">Detail FTSA</a>
+            </div>
+            <div class="card-body p-0">
+                @php $ftsaGrouped = collect($ftsaAnswers)->groupBy('domain_code'); @endphp
+                @foreach($ftsaGrouped as $domainCode => $items)
+                    <div class="border-bottom">
+                        <div class="px-3 py-2 bg-light font-weight-bold small">{{ $domainCode }}</div>
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                @foreach($items as $item)
+                                    <tr>
+                                        <td style="width:5%" class="text-muted">{{ $item['num'] }}</td>
+                                        <td style="width:60%">{{ $item['question'] }}</td>
+                                        <td><span class="badge badge-warning">{{ $item['score'] }}</span> {{ $item['score_label'] }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 @endsection

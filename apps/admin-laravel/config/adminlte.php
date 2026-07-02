@@ -356,6 +356,11 @@ return [
             'icon' => 'fas fa-fw fa-poll',
         ],
         [
+            'text' => 'Hasil FTSA',
+            'route' => 'admin.ftsa-results.index',
+            'icon' => 'fas fa-fw fa-brain',
+        ],
+        [
             'text' => 'Produk Digital',
             'route' => 'admin.digital-products.index',
             'icon' => 'fas fa-fw fa-cube',
