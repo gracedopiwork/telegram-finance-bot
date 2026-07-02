@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Services\ImpulsivityAssessmentService;
+use App\Services\PortalFeatureService;
 use App\Services\TransactionDashboardService;
 use App\Support\PortalSession;
 use Carbon\Carbon;
@@ -53,10 +54,12 @@ class DashboardController extends Controller
     $telegramUserId = (int) PortalSession::telegramUserId($request);
     [$month, $period] = $this->filters($request);
     $assessment = app(ImpulsivityAssessmentService::class)->assess($telegramUserId, $month, $period);
+    $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
 
     return view('portal.emotional', [
       'active' => 'emotional',
       'assessment' => $assessment,
+      'ftsaUnlocked' => $ftsaUnlocked,
       'months' => $this->monthOptions(),
       'periods' => $this->periodOptions(),
       'currentPeriod' => $period,
@@ -65,8 +68,12 @@ class DashboardController extends Controller
 
   public function premium(): View
   {
+    $telegramUserId = (int) PortalSession::telegramUserId(request());
+    $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId);
+
     return view('portal.premium', [
       'active' => 'premium',
+      'ftsaUnlocked' => $ftsaUnlocked,
       'months' => $this->monthOptions(),
       'periods' => $this->periodOptions(),
       'currentPeriod' => 1,

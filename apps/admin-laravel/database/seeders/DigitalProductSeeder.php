@@ -51,8 +51,8 @@ class DigitalProductSeeder extends Seeder
                 'is_active'      => true,
                 'is_featured'    => false,
                 'sort'           => 5,
-                'price'          => 99000,
-                'discount_price' => 69000,
+                'price'          => 50000,
+                'discount_price' => null,
                 'currency'       => 'IDR',
                 'period'         => 'sekali bayar',
                 'features'       => [

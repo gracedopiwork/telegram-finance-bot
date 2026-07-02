@@ -14,7 +14,7 @@ final class PrimaryCheckupUrl
      */
     public static function resolve(): array
     {
-        $fallback = self::fallbackPaketUrl();
+        $fallback = self::fallbackPortalLoginUrl();
 
         try {
             $raw = trim((string) (Setting::val('hero.cta_primary_url') ?? ''));
@@ -22,24 +22,22 @@ final class PrimaryCheckupUrl
             $raw = '';
         }
 
-        if ($raw === '') {
+        // Semua CTA Financial Check-Up diarahkan ke diagnostik internal portal.
+        // Nilai setting lama (mis. Typeform) sengaja diabaikan.
+        if ($raw !== '') {
             return ['url' => $fallback, 'new_tab' => false];
         }
 
-        if (preg_match('#^https?://#i', $raw)) {
-            $host = parse_url($raw, PHP_URL_HOST);
-            $newTab = $host && strcasecmp((string) $host, request()->getHost()) !== 0;
-
-            return ['url' => $raw, 'new_tab' => $newTab];
+        if ($raw === '') {
+            return ['url' => $fallback, 'new_tab' => false];
         }
-
-        return ['url' => url('/' . ltrim($raw, '/')), 'new_tab' => false];
+        return ['url' => $fallback, 'new_tab' => false];
     }
 
-    private static function fallbackPaketUrl(): string
+    private static function fallbackPortalLoginUrl(): string
     {
         try {
-            return route('company.paket');
+            return route('portal.login');
         } catch (\Throwable) {
             return '#';
         }

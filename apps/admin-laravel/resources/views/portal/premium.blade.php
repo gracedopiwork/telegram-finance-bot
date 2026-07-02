@@ -5,6 +5,21 @@
 
 @section('content')
 <div class="max-w-2xl mx-auto text-center py-12">
+    <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 mb-6 text-left">
+        @if($ftsaUnlocked ?? false)
+            <div class="text-sm text-emerald-800 font-bold">FTSA Premium sudah aktif</div>
+            <div class="text-sm text-emerald-700 mt-1">Kuesioner FTSA 1-32 dan personalisasi rekomendasi sudah terbuka di Baseline & Behavioral Dashboard.</div>
+        @else
+            <div class="text-sm text-amber-900 font-bold">FTSA Premium tersedia di dalam dashboard</div>
+            <div class="text-sm text-amber-800 mt-1">Bisa dibeli sekarang untuk membuka FTSA 1-32 dan rekomendasi behavioral yang lebih personal.</div>
+            <a href="{{ route('checkout.show', ['code' => 'yfd-ftsa-premium']) }}"
+               class="inline-flex items-center gap-2 mt-3 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm">
+                <span class="material-symbols-outlined text-lg">shopping_cart</span>
+                Beli FTSA Premium
+            </a>
+        @endif
+    </div>
+
     <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-gold-400 to-gold-500 flex items-center justify-center mx-auto mb-6 shadow-lg">
         <span class="material-symbols-outlined text-4xl text-navy-800">monitor_heart</span>
     </div>
