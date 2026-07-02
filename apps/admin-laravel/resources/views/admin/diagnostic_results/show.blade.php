@@ -4,9 +4,13 @@
 @section('page_subheading', $email ?: 'Tanpa email')
 
 @section('page_actions')
-<a href="{{ route('admin.diagnostic-results.index') }}" class="btn btn-outline-secondary btn-sm">
+<a href="{{ route('admin.diagnostic-results.index') }}" class="btn btn-outline-secondary btn-sm mr-1">
     <i class="fas fa-arrow-left mr-1"></i> Semua Hasil
 </a>
+@include('admin.partials.delete-form', [
+    'action' => route('admin.diagnostic-results.destroy', $baseline),
+    'confirm' => 'Hapus hasil diagnostik ini? Data jawaban dan skor akan hilang permanen.',
+])
 @endsection
 
 @section('main')

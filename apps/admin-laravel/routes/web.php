@@ -102,6 +102,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::resource('diagnostic-questions', DiagnosticQuestionsController::class)->except(['show']);
     Route::get('diagnostic-results', [DiagnosticResultsController::class, 'index'])->name('diagnostic-results.index');
     Route::get('diagnostic-results/{financial_baseline}', [DiagnosticResultsController::class, 'show'])->name('diagnostic-results.show');
+    Route::delete('diagnostic-results/{financial_baseline}', [DiagnosticResultsController::class, 'destroy'])->name('diagnostic-results.destroy');
     Route::get('diagnostic-stages', [DiagnosticStagesController::class, 'index'])->name('diagnostic-stages.index');
     Route::get('diagnostic-stages/{diagnostic_stage}/edit', [DiagnosticStagesController::class, 'edit'])->name('diagnostic-stages.edit');
     Route::put('diagnostic-stages/{diagnostic_stage}', [DiagnosticStagesController::class, 'update'])->name('diagnostic-stages.update');

@@ -9,7 +9,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'YFD Young Financial Doctor')</title>
+    <title>@yield('title', 'YFD Your Financial Doctor')</title>
+    <link rel="icon" type="image/png" href="{{ asset($yfd['logo'] ?? 'images/yfd-logo.png') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -53,11 +54,14 @@
         <header class="bg-white border-b border-slate-200 px-4 sm:px-6 py-4">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center gap-3 min-w-0">
-                    <button type="button" class="lg:hidden p-2 rounded-lg border border-slate-200"
+                    <button type="button" class="lg:hidden p-2 rounded-lg border border-slate-200 shrink-0"
                             onclick="document.getElementById('mobileDrawer').classList.remove('hidden')">
                         <span class="material-symbols-outlined">menu</span>
                     </button>
+                    <img src="{{ asset($yfd['logo'] ?? 'images/yfd-logo.png') }}" alt="{{ $yfd['short'] ?? 'YFD' }}"
+                         class="h-9 w-auto rounded-lg bg-white border border-slate-200 px-1.5 py-1 shrink-0 lg:hidden">
                     <div class="min-w-0">
+                        <div class="text-[10px] uppercase tracking-[0.16em] text-gold-600 font-bold lg:hidden">Your Financial Doctor</div>
                         <div class="text-xs text-slate-500 truncate">Halo, {{ $displayName }}</div>
                         <h1 class="text-lg sm:text-xl font-bold text-navy-800 truncate">@yield('heading')</h1>
                     </div>

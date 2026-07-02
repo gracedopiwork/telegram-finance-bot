@@ -83,8 +83,12 @@
                         </td>
                         <td class="text-right text-nowrap">
                             <a href="{{ route('admin.diagnostic-results.show', $row) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-eye"></i> Detail
+                                <i class="fas fa-eye"></i>
                             </a>
+                            @include('admin.partials.delete-form', [
+                                'action' => route('admin.diagnostic-results.destroy', $row),
+                                'confirm' => 'Hapus hasil diagnostik ini? Data jawaban dan skor akan hilang permanen.',
+                            ])
                         </td>
                     </tr>
                 @empty

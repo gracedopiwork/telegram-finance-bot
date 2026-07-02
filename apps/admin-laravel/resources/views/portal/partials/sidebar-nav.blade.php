@@ -6,10 +6,10 @@
 @endphp
 <div class="p-5 border-b border-white/10">
     <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gold-400 flex items-center justify-center text-navy-800 font-extrabold text-sm">YFD</div>
-        <div>
-            <div class="text-[10px] uppercase tracking-[0.2em] text-gold-400 font-bold">Young Financial</div>
-            <div class="font-extrabold text-base leading-tight">Doctor</div>
+        <img src="{{ asset($yfd['logo'] ?? 'images/yfd-logo.png') }}" alt="{{ $yfd['short'] ?? 'YFD' }}" class="h-11 w-auto rounded-lg bg-white/95 px-1.5 py-1 shrink-0">
+        <div class="min-w-0">
+            <div class="text-[10px] uppercase tracking-[0.18em] text-gold-400 font-bold leading-tight">Your Financial Doctor</div>
+            <div class="text-sm font-extrabold leading-tight text-white/95">First Aid Dashboard</div>
         </div>
     </div>
 </div>

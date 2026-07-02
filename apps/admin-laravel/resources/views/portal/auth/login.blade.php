@@ -1,15 +1,16 @@
 @extends('portal.layouts.guest')
 
-@section('title', 'Login Portal — YFD Young Financial Doctor')
+@section('title', 'Login Portal — YFD Your Financial Doctor')
 
 @section('content')
+@php $logoUrl = asset($yfd['logo'] ?? 'images/yfd-logo.png'); @endphp
 <div class="min-h-screen flex">
     <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-navy-800 via-navy-700 to-navy-800 text-white p-12 flex-col justify-between">
         <div>
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-2xl bg-gold-400 text-navy-800 font-extrabold flex items-center justify-center">YFD</div>
+                <img src="{{ $logoUrl }}" alt="{{ $yfd['short'] ?? 'YFD' }}" class="h-12 w-auto rounded-xl bg-white/95 px-2 py-1">
                 <div>
-                    <div class="text-xs uppercase tracking-widest text-gold-400 font-bold">Young Financial Doctor</div>
+                    <div class="text-xs uppercase tracking-widest text-gold-400 font-bold">Your Financial Doctor</div>
                     <div class="text-xl font-extrabold">YFD First Aid Dashboard</div>
                 </div>
             </div>
@@ -28,8 +29,8 @@
     <div class="flex-1 flex items-center justify-center p-6 sm:p-12 bg-slate-50">
         <div class="w-full max-w-md">
             <div class="lg:hidden flex items-center gap-3 mb-8">
-                <div class="w-10 h-10 rounded-xl bg-navy-800 text-gold-400 font-extrabold flex items-center justify-center text-sm">YFD</div>
-                <div class="font-bold text-navy-800">Young Financial Doctor</div>
+                <img src="{{ $logoUrl }}" alt="{{ $yfd['short'] ?? 'YFD' }}" class="h-10 w-auto rounded-lg bg-white px-1.5 py-1">
+                <div class="font-bold text-navy-800">Your Financial Doctor</div>
             </div>
 
             <div class="bg-white rounded-2xl shadow-lg border border-slate-200/80 p-8">

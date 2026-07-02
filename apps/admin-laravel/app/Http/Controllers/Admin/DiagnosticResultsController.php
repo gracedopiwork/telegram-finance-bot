@@ -7,6 +7,7 @@ use App\Models\FinancialBaseline;
 use App\Services\DiagnosticAnswerSummaryService;
 use App\Services\DiagnosticConfigService;
 use App\Support\FinancialBaselineSchema;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -67,5 +68,14 @@ class DiagnosticResultsController extends Controller
             'summary' => $summaryService->summarize($financial_baseline),
             'stageDisplay' => $stageDisplay,
         ]);
+    }
+
+    public function destroy(FinancialBaseline $financial_baseline): RedirectResponse
+    {
+        $email = app(DiagnosticAnswerSummaryService::class)->resolvedEmail($financial_baseline);
+        $financial_baseline->delete();
+
+        return redirect()->route('admin.diagnostic-results.index')
+            ->with('success', 'Hasil diagnostik'.($email ? " untuk {$email}" : '').' berhasil dihapus.');
     }
 }
