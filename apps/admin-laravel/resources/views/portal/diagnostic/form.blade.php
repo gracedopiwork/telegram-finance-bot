@@ -3,53 +3,33 @@
 @section('title', 'Diagnostik Keuangan — YFD')
 @section('heading', 'Diagnostik Keuangan')
 
-@push('head')
-<style>
-    .checkup-wizard { background: #B8E8E0; border-radius: 1rem; }
-    .checkup-step-badge {
-        width: 2.25rem; height: 2.25rem;
-        background: #0c2240; color: #fff;
-        font-weight: 800; border-radius: 0.5rem;
-        display: inline-flex; align-items: center; justify-content: center;
-    }
-    .checkup-option {
-        display: flex; align-items: center; gap: 0.75rem;
-        background: rgba(255,255,255,0.35);
-        border: 2px solid rgba(12,34,64,0.15);
-        border-radius: 0.75rem;
-        padding: 0.85rem 1rem;
-        cursor: pointer;
-    }
-    .checkup-option:has(input:checked) {
-        border-color: #0c2240;
-        background: rgba(255,255,255,0.65);
-    }
-    .checkup-option-letter {
-        width: 1.75rem; height: 1.75rem;
-        border: 2px solid rgba(12,34,64,0.35);
-        border-radius: 0.35rem;
-        display: inline-flex; align-items: center; justify-content: center;
-        font-weight: 800; font-size: 0.8rem; flex-shrink: 0;
-    }
-    .checkup-option input { position: absolute; opacity: 0; pointer-events: none; }
-    .checkup-ok-btn {
-        background: #d4a843; color: #0c2240; font-weight: 800;
-        border-radius: 0.75rem; padding: 0.65rem 1.5rem;
-        border: none; cursor: pointer;
-    }
-    .checkup-progress { height: 4px; background: rgba(12,34,64,0.12); border-radius: 999px; overflow: hidden; }
-    .checkup-progress-bar { height: 100%; background: #0c2240; transition: width .25s; }
-</style>
-@endpush
-
 @section('content')
-<div class="max-w-2xl mx-auto">
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 mb-6 text-sm text-slate-600">
-        Jawab sesuai kondisi Anda saat ini. Hasil otomatis tersimpan ke akun portal Anda.
+<div class="w-full max-w-3xl mx-auto">
+    @include('portal.partials.onboarding-banners')
+
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 mb-6">
+        <div class="flex items-start gap-3">
+            <span class="material-symbols-outlined text-navy-800 text-2xl shrink-0">health_and_safety</span>
+            <div>
+                <h2 class="font-bold text-navy-800">Tahap 1 — Diagnostik keuangan</h2>
+                <p class="text-sm text-slate-600 mt-1 leading-relaxed">
+                    Jawab sesuai kondisi Anda <strong>saat ini</strong>. Hasil otomatis tersimpan ke akun portal Anda
+                    dan dipakai untuk insight FTSA serta dashboard.
+                </p>
+            </div>
+        </div>
     </div>
 
-    <div class="checkup-progress mb-4">
-        <div class="checkup-progress-bar" id="progressBar" style="width: {{ round(100 / max(1, $totalSteps)) }}%"></div>
+    <div class="mb-6">
+        <div class="flex items-center justify-between text-xs font-semibold text-slate-500 mb-2">
+            <span>Langkah <span id="stepLabel">1</span> dari {{ $totalSteps }}</span>
+            <span id="progressPct">{{ round(100 / max(1, $totalSteps)) }}%</span>
+        </div>
+        <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div id="progressBar"
+                 class="h-full bg-gradient-to-r from-navy-800 to-navy-600 rounded-full transition-all duration-300"
+                 style="width: {{ round(100 / max(1, $totalSteps)) }}%"></div>
+        </div>
     </div>
 
     <form method="post" action="{{ route('portal.diagnostic.store') }}" id="checkupForm">
@@ -57,57 +37,73 @@
         <input type="hidden" name="email" value="{{ $email }}">
 
         @foreach($wizardSteps as $index => $step)
-            <div class="checkup-step {{ $index === 0 ? '' : 'hidden' }} checkup-wizard p-6 sm:p-8 mb-4"
+            <div class="checkup-step {{ $index === 0 ? '' : 'hidden' }} bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden mb-4"
                  data-step="{{ $step['step'] }}">
-                <div class="flex items-start gap-3 mb-2">
-                    <span class="checkup-step-badge">{{ $step['step'] }}</span>
-                    <div class="flex-1">
-                        @if($step['intro'] ?? null)
-                            <h2 class="text-xl font-extrabold text-slate-900">{{ $step['intro']['title'] ?? 'Profil' }}</h2>
-                            @if(!empty($step['intro']['note']))
-                                <p class="text-sm text-slate-700 mt-2">{{ $step['intro']['note'] }}</p>
+                <div class="bg-navy-800 text-white px-5 py-4">
+                    <div class="flex items-start gap-3">
+                        <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-400 text-navy-900 font-extrabold text-sm">
+                            {{ $step['step'] }}
+                        </span>
+                        <div class="min-w-0">
+                            @if($step['intro'] ?? null)
+                                <h2 class="font-bold text-lg leading-snug">{{ $step['intro']['title'] ?? 'Profil' }}</h2>
+                                @if(!empty($step['intro']['note']))
+                                    <p class="text-white/75 text-sm mt-1 leading-relaxed">{{ $step['intro']['note'] }}</p>
+                                @endif
+                            @else
+                                <h2 class="font-bold text-lg">Langkah {{ $step['step'] }}</h2>
                             @endif
-                        @endif
+                        </div>
                     </div>
                 </div>
 
-                <div class="space-y-8 mt-6">
+                <div class="p-5 sm:p-6 space-y-8">
                     @foreach($step['questions'] as $q)
                         <fieldset class="space-y-3">
-                            <legend class="text-base font-bold text-slate-900">{{ $q['text'] }}</legend>
+                            <legend class="font-semibold text-navy-800 text-sm">{{ $q['text'] }}</legend>
                             @if(!empty($q['note']))
-                                <p class="text-sm text-slate-700 whitespace-pre-line">{{ $q['note'] }}</p>
+                                <p class="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 leading-relaxed whitespace-pre-line">{{ $q['note'] }}</p>
                             @endif
-                            <div class="space-y-2.5">
-                                @php $letters = range('A', 'Z'); @endphp
+                            <div class="grid gap-2 sm:grid-cols-2">
                                 @foreach($q['options'] as $value => $opt)
-                                    @php
-                                        $label = is_array($opt) ? ($opt['label'] ?? '') : $opt;
-                                        $letter = $letters[$loop->index] ?? '?';
-                                    @endphp
-                                    <label class="checkup-option relative">
+                                    @php $label = is_array($opt) ? ($opt['label'] ?? '') : $opt; @endphp
+                                    <label class="flex items-center gap-2.5 rounded-xl border border-slate-200 px-3 py-3 cursor-pointer hover:border-navy-500 has-[:checked]:border-navy-600 has-[:checked]:bg-navy-50 transition-colors">
                                         <input type="radio" name="fs[{{ $q['key'] }}]" value="{{ $value }}"
+                                               class="text-navy-600 shrink-0"
                                                @checked(old("fs.{$q['key']}") === (string) $value) required>
-                                        <span class="checkup-option-letter">{{ $letter }}</span>
-                                        <span class="text-sm font-medium text-slate-900">{{ $label }}</span>
+                                        <span class="text-sm text-slate-800">{{ $label }}</span>
                                     </label>
                                 @endforeach
                             </div>
                             @error("fs.{$q['key']}")
-                                <p class="text-rose-700 text-xs">{{ $message }}</p>
+                                <p class="text-rose-600 text-xs">{{ $message }}</p>
                             @enderror
                         </fieldset>
                     @endforeach
                 </div>
 
-                <div class="mt-8 flex gap-3">
+                <div class="px-5 py-4 border-t border-slate-100 bg-slate-50/80 flex flex-wrap gap-3">
                     @if($index > 0)
-                        <button type="button" class="checkup-ok-btn" data-action="back">Kembali</button>
+                        <button type="button"
+                                class="inline-flex items-center gap-2 border border-navy-800 text-navy-800 hover:bg-white font-bold px-5 py-2.5 rounded-xl text-sm"
+                                data-action="back">
+                            <span class="material-symbols-outlined text-lg">arrow_back</span>
+                            Kembali
+                        </button>
                     @endif
                     @if($index < count($wizardSteps) - 1)
-                        <button type="button" class="checkup-ok-btn" data-action="next">Lanjut</button>
+                        <button type="button"
+                                class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-5 py-2.5 rounded-xl text-sm ml-auto"
+                                data-action="next">
+                            Lanjut
+                            <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                        </button>
                     @else
-                        <button type="submit" class="checkup-ok-btn">Simpan Diagnostik</button>
+                        <button type="submit"
+                                class="inline-flex items-center gap-2 bg-navy-800 hover:bg-navy-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm ml-auto">
+                            <span class="material-symbols-outlined text-lg">save</span>
+                            Simpan Diagnostik
+                        </button>
                     @endif
                 </div>
             </div>
@@ -121,12 +117,17 @@
 (function () {
     const steps = Array.from(document.querySelectorAll('.checkup-step'));
     const total = {{ (int) $totalSteps }};
+    const progressBar = document.getElementById('progressBar');
+    const stepLabel = document.getElementById('stepLabel');
+    const progressPct = document.getElementById('progressPct');
     let current = 0;
 
     function showPanel(idx) {
         steps.forEach((el, i) => el.classList.toggle('hidden', i !== idx));
         const progress = Math.round(((idx + 1) / total) * 100);
-        document.getElementById('progressBar').style.width = progress + '%';
+        progressBar.style.width = progress + '%';
+        stepLabel.textContent = String(idx + 1);
+        progressPct.textContent = progress + '%';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 

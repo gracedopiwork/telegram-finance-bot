@@ -34,6 +34,7 @@
         .nav-active { background: rgba(255,255,255,.14); box-shadow: inset 3px 0 0 #f5c130; }
         .pulse-ring { background: conic-gradient(#26528b calc(var(--score) * 1%), #e2e8f0 0); }
     </style>
+    @stack('head')
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen">
 <div class="flex min-h-screen">
