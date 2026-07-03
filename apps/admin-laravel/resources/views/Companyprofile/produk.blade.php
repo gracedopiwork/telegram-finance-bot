@@ -240,7 +240,7 @@
     </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
         @foreach([
-            ['no' => '01', 'ic' => 'shopping_cart',    'title' => 'Beli & Bayar Online',     'desc' => 'Klik tombol Beli Sekarang, isi form, lanjutkan ke Midtrans (kartu/VA/e-wallet/QRIS).'],
+            ['no' => '01', 'ic' => 'shopping_cart',    'title' => 'Beli & Bayar Online',     'desc' => 'Klik tombol Beli Sekarang, isi form, lalu bayar via QRIS di halaman Midtrans.'],
             ['no' => '02', 'ic' => 'verified_user',    'title' => 'Aktivasi di Bot',         'desc' => 'Salin kode dari halaman setelah bayar (sama dengan WhatsApp). Di YFD First Aid: /activate KODE-LISENSI (harus persis).'],
             ['no' => '03', 'ic' => 'forum',            'title' => 'Catat Sambil Ngobrol',    'desc' => 'Tinggal chat: "bensin 50rb", "gajian 5jt", "nabung 200rb". YFD First Aid urus sisanya.'],
         ] as $step)

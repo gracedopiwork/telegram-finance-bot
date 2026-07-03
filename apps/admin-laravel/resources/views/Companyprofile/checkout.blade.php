@@ -1,7 +1,7 @@
 @extends('Companyprofile.layouts.main')
 
 @section('title', "Checkout — {$product->name}")
-@section('description', "Selesaikan pembelian {$product->name}. Pembayaran aman lewat Midtrans (kartu, VA, e-wallet, QRIS).")
+@section('description', "Selesaikan pembelian {$product->name}. Pembayaran aman lewat Midtrans — QRIS saja.")
 
 @section('content')
 
@@ -13,7 +13,7 @@
             <span class="text-primary font-semibold">Checkout</span>
         </nav>
         <h1 class="font-heading text-headline-lg text-primary">Checkout</h1>
-        <p class="text-body-md text-on-surface-variant mt-1">Lengkapi data Anda. Setelah submit, Anda diarahkan ke halaman pembayaran Midtrans.</p>
+        <p class="text-body-md text-on-surface-variant mt-1">Lengkapi data Anda. Setelah submit, Anda diarahkan ke halaman pembayaran Midtrans (QRIS).</p>
     </div>
 </section>
 
@@ -122,7 +122,7 @@
                 </div>
 
                 <ul class="mt-5 space-y-2 text-[12.5px] text-on-surface-variant">
-                    <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">verified</span> Pembayaran via Midtrans (kartu, VA, GoPay, OVO, ShopeePay, QRIS)</li>
+                    <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">verified</span> Pembayaran via <strong>QRIS</strong> (scan &amp; bayar di aplikasi bank/e-wallet Anda)</li>
                     @if($product->code === 'yfd-ftsa-premium')
                         <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">psychology</span> Dashboard FTSA &amp; behavioral aktif <strong>12 bulan evaluasi</strong></li>
                         <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">info</span> <strong>Tidak termasuk</strong> YFD First Aid &amp; dashboard transaksi</li>

@@ -41,6 +41,8 @@ return [
         'is_production' => env('MIDTRANS_IS_PRODUCTION', false),
         'finish_url'    => env('MIDTRANS_FINISH_URL'),
         'use_finish_callback' => env('MIDTRANS_USE_FINISH_CALLBACK', true),
+        // Snap enabled_payments — default QRIS saja (other_qris). Pisahkan dengan koma jika perlu tambah metode.
+        'enabled_payments' => env('MIDTRANS_ENABLED_PAYMENTS', 'other_qris'),
     ],
 
     'telegram' => [

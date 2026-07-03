@@ -52,6 +52,11 @@ class MidtransService
             }
         }
 
+        $enabledPayments = $this->enabledPayments();
+        if ($enabledPayments !== []) {
+            $payload['enabled_payments'] = $enabledPayments;
+        }
+
         // Callback finish (redirect setelah bayar). Bisa dimatikan lewat env jika Midtrans menolak URL (uji isolasi).
         $finishUrl = trim((string) config('services.midtrans.finish_url', ''));
         $useCallbacks = filter_var(config('services.midtrans.use_finish_callback', true), FILTER_VALIDATE_BOOL);
@@ -161,6 +166,21 @@ class MidtransService
     public function notificationUrl(): string
     {
         return rtrim((string) config('app.url'), '/').'/webhooks/midtrans';
+    }
+
+    /**
+     * Metode pembayaran Snap yang diizinkan (Midtrans enabled_payments).
+     *
+     * @return list<string>
+     */
+    public function enabledPayments(): array
+    {
+        $methods = array_values(array_filter(array_map(
+            fn (string $v) => trim($v),
+            explode(',', (string) config('services.midtrans.enabled_payments', 'other_qris'))
+        )));
+
+        return $methods !== [] ? $methods : ['other_qris'];
     }
 
     private function normalizeServerKey(string $key): string
