@@ -112,6 +112,7 @@ class AppServiceProvider extends ServiceProvider
                 app(\App\Services\BaselineClaimService::class)->claimForUser($email, $telegramUserId);
                 $onboarding = app(PortalOnboardingService::class);
                 $access = app(PortalAccessService::class);
+                $access->syncSessionUserType($request, $email, $telegramUserId);
                 $featureService = app(\App\Services\PortalFeatureService::class);
                 $portalOnboardingComplete = $access->hasBotPortalAccess($email, $telegramUserId)
                     ? $onboarding->hasBotPortalOnboardingComplete($email, $telegramUserId)

@@ -174,16 +174,7 @@ class LicenseEntitlementService
             ->where('license_id', $license->id)
             ->where(function ($q) use ($codes) {
                 $q->whereIn('plan', $codes)
-                    ->orWhereHas('digitalProduct', function ($dq) use ($codes) {
-                        $dq->where(function ($productQ) use ($codes) {
-                            $productQ->whereIn('code', $codes)
-                                ->orWhere(function ($flagshipQ) {
-                                    $flagshipQ->where('billing_mode', 'midtrans')
-                                        ->where('is_featured', true)
-                                        ->where('is_active', true);
-                                });
-                        });
-                    });
+                    ->orWhereHas('digitalProduct', fn ($dq) => $dq->whereIn('code', $codes));
             })
             ->exists();
     }
@@ -202,16 +193,7 @@ class LicenseEntitlementService
             ->whereRaw('LOWER(email) = ?', [$email])
             ->where(function ($q) use ($codes) {
                 $q->whereIn('plan', $codes)
-                    ->orWhereHas('digitalProduct', function ($dq) use ($codes) {
-                        $dq->where(function ($productQ) use ($codes) {
-                            $productQ->whereIn('code', $codes)
-                                ->orWhere(function ($flagshipQ) {
-                                    $flagshipQ->where('billing_mode', 'midtrans')
-                                        ->where('is_featured', true)
-                                        ->where('is_active', true);
-                                });
-                        });
-                    });
+                    ->orWhereHas('digitalProduct', fn ($dq) => $dq->whereIn('code', $codes));
             })
             ->exists();
     }
