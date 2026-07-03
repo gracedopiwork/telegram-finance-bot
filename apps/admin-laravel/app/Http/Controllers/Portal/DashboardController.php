@@ -21,6 +21,8 @@ class DashboardController extends Controller
   {
     $telegramUserId = (int) PortalSession::telegramUserId($request);
     $email = (string) (PortalSession::email($request) ?? '');
+    app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+
     [$month, $period] = $this->filters($request);
     $summary = app(TransactionDashboardService::class)->summary($telegramUserId, $month, $period, $email);
 
