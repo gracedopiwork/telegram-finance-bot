@@ -20,6 +20,11 @@ class PortalAccessService
      */
     public function hasBotPortalAccess(string $email, int $telegramUserId = 0): bool
     {
+        $request = request();
+        if ($request !== null && PortalSession::userType($request) === 'ftsa_only') {
+            return false;
+        }
+
         if ($this->isFtsaOnlyPortalUser($email, $telegramUserId)) {
             return false;
         }
@@ -37,6 +42,11 @@ class PortalAccessService
      */
     public function isFtsaOnlyPortalUser(string $email, int $telegramUserId = 0): bool
     {
+        $request = request();
+        if ($request !== null && PortalSession::userType($request) === 'ftsa_only') {
+            return true;
+        }
+
         $license = $this->resolvePortalLicense($email, $telegramUserId);
         if ($license === null) {
             return $this->onboarding->isFtsaOnlyBuyer($email);
@@ -55,8 +65,12 @@ class PortalAccessService
             return;
         }
 
+        if (PortalSession::userType($request) === 'ftsa_only') {
+            return;
+        }
+
         $license = $this->resolvePortalLicense($email, $telegramUserId);
-        if ($license !== null) {
+        if ($license !== null && PortalSession::licenseId($request) === null) {
             $request->session()->put(PortalSession::LICENSE_ID, (int) $license->id);
         }
 

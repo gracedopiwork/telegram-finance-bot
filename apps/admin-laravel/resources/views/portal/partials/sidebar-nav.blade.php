@@ -9,7 +9,7 @@
         <img src="{{ asset($yfd['logo'] ?? 'images/yfd-logo.png') }}" alt="{{ $yfd['short'] ?? 'YFD' }}" class="h-11 w-auto rounded-lg bg-white/95 px-1.5 py-1 shrink-0">
         <div class="min-w-0">
             <div class="text-[10px] uppercase tracking-[0.18em] text-gold-400 font-bold leading-tight">Your Financial Doctor</div>
-            <div class="text-sm font-extrabold leading-tight text-white/95">First Aid Dashboard</div>
+            <div class="text-sm font-extrabold leading-tight text-white/95">{{ ($isFtsaOnlyPortalUser ?? false) ? 'FTSA Premium Dashboard' : 'First Aid Dashboard' }}</div>
         </div>
     </div>
 </div>

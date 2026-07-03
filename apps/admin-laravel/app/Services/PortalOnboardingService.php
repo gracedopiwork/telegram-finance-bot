@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\FinancialBaseline;
 use App\Models\Order;
+use App\Support\PortalSession;
 
 class PortalOnboardingService
 {
@@ -342,6 +343,15 @@ class PortalOnboardingService
 
     public function portalHomeRouteName(string $email, int $telegramUserId = 0): string
     {
+        $request = request();
+        if ($request !== null && PortalSession::userType($request) === 'ftsa_only') {
+            if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
+                return 'portal.diagnostic';
+            }
+
+            return 'portal.emotional';
+        }
+
         return app(PortalAccessService::class)->hasBotPortalAccess($email, $telegramUserId)
             ? 'portal.dashboard'
             : 'portal.emotional';

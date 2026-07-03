@@ -173,12 +173,28 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::post('/checkout/ftsa', [PortalCheckoutController::class, 'ftsaSnap'])->name('checkout.ftsa');
         Route::get('/checkout/ftsa/{order}/status', [PortalCheckoutController::class, 'ftsaStatus'])->name('checkout.ftsa.status');
 
+        Route::get('/', function () {
+            $request = request();
+            $email = (string) (\App\Support\PortalSession::email($request) ?? '');
+            $telegramUserId = (int) \App\Support\PortalSession::telegramUserId($request);
+
+            if (\App\Support\PortalSession::userType($request) === 'ftsa_only') {
+                return redirect()->route('portal.emotional');
+            }
+
+            if (app(\App\Services\PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId)) {
+                return redirect()->route('portal.emotional');
+            }
+
+            return redirect()->route('portal.dashboard');
+        })->name('home');
+
         Route::middleware('portal.bot')->group(function () {
             Route::get('/transaksi', [PortalDashboardController::class, 'transactions'])->name('transactions');
             Route::get('/transaksi/template', [PortalTransactionsController::class, 'importTemplate'])->name('transactions.template');
             Route::post('/transaksi/import', [PortalTransactionsController::class, 'import'])->name('transactions.import');
             Route::delete('/transaksi/{transaction}', [PortalTransactionsController::class, 'destroy'])->name('transactions.destroy');
-            Route::get('/', [PortalDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/dashboard', [PortalDashboardController::class, 'index'])->name('dashboard');
         });
     });
 });
