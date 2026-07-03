@@ -382,10 +382,6 @@ class PortalOnboardingService
 
     public function portalSnapshotEntryUrl(string $email, int $telegramUserId, array $query = []): string
     {
-        if ($this->hasPaidBotOrderForUser($email, $telegramUserId)) {
-            return $this->portalDashboardSnapshotUrl($query);
-        }
-
         return route('portal.baseline.create', $query);
     }
 

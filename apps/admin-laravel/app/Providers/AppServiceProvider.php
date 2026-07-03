@@ -136,12 +136,9 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('portalFtsaUrl', $onboarding->portalFtsaUrl());
                 $view->with('portalBaselineUrl', $onboarding->portalBaselineUrl($email, $telegramUserId));
                 $view->with('portalTransactionsUrl', $onboarding->portalTransactionsUrl());
-                $needsSnapshotOnly = $needsBaseline && ! $needsFinancialDiagnostic;
                 $view->with('baselineUrl', $portalOnboardingComplete
                     ? route('portal.baseline')
-                    : ($needsSnapshotOnly
-                        ? $onboarding->portalSnapshotEntryUrl($email, $telegramUserId)
-                        : $onboarding->firstBaselineUrl($email, $telegramUserId)));
+                    : $onboarding->firstBaselineUrl($email, $telegramUserId));
                 $view->with('diagnosticCheckupUrl', $onboarding->portalDiagnosticUrl());
             } catch (\Throwable) {
                 // Portal routes may not be registered during early boot.

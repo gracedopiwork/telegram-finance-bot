@@ -62,7 +62,6 @@
     'baseline' => $summary['baseline'] ?? null,
     'existingBaseline' => $baselineRecord ?? null,
     'editUrl' => route('portal.baseline.create'),
-    'embedSnapshotForm' => ($needsBaseline ?? false),
 ])
 
 @php $hasAssessment = ($summary['baseline'] ?? null); @endphp
@@ -79,7 +78,7 @@
         'actionUrl' => ($needsFinancialDiagnostic ?? false) && !($isFtsaOnlyPortalUser ?? false)
             ? route('portal.baseline.create')
             : (($needsBaseline ?? false)
-                ? (route('portal.dashboard', request()->only(['month', 'period'])) . '#baseline-snapshot')
+                ? route('portal.baseline.create')
                 : route('portal.transactions')),
         'actionLabel' => ($needsBaseline ?? false) && !($needsFinancialDiagnostic ?? false)
             ? 'Isi Snapshot'

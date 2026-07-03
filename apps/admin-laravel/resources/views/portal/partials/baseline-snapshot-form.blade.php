@@ -18,7 +18,7 @@
                 <span class="material-symbols-outlined">inventory_2</span>
                 Snapshot Keuangan (Baseline Data)
             </h2>
-            <p class="text-white/70 text-sm mt-1">Isi perkiraan terbaik Anda saat ini — langsung di dashboard</p>
+            <p class="text-white/70 text-sm mt-1">Opsional — isi perkiraan terbaik Anda saat ini</p>
         </div>
         <form method="post" action="{{ route('portal.baseline.store') }}" class="p-5 sm:p-6 space-y-5">
             @csrf

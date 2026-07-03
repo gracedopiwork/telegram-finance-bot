@@ -3,7 +3,6 @@
     $fmt = $fmt ?? fn (int $n) => 'Rp ' . number_format($n, 0, ',', '.');
     $editUrl = $editUrl ?? route('portal.baseline.create');
     $hasSnapshot = $baseline && ($baseline['has_financial_snapshot'] ?? false);
-    $embedSnapshotForm = $embedSnapshotForm ?? false;
 @endphp
 
 @if($hasSnapshot)
@@ -51,16 +50,10 @@
         </div>
     </div>
 </div>
-@elseif($baseline && $embedSnapshotForm)
-    @include('portal.partials.baseline-snapshot-form', [
-        'existingBaseline' => $existingBaseline ?? null,
-        'stageLabel' => $baseline['stage_label'] ?? null,
-    ])
 @elseif($baseline)
 <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-3">
     <span>Diagnostik: <strong>{{ $baseline['stage_label'] ?? '—' }}</strong> — snapshot belum lengkap.</span>
-    <a href="{{ route('portal.dashboard', request()->only(['month', 'period'])) }}#baseline-snapshot"
-       class="font-semibold whitespace-nowrap hover:underline">Lengkapi di Dashboard →</a>
+    <a href="{{ route('portal.baseline.create') }}" class="font-semibold whitespace-nowrap hover:underline">Lengkapi Baseline Data →</a>
 </div>
 @elseif(($needsFinancialDiagnostic ?? false) || ($needsBaseline ?? false))
 <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-3">

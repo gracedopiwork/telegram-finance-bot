@@ -112,8 +112,8 @@ class DiagnosticController extends Controller
         }
 
         if ($onboarding->userNeedsSnapshotBaseline($email, $telegramUserId)) {
-            return redirect()->to($onboarding->portalSnapshotEntryUrl($email, $telegramUserId))
-                ->with('success', 'Diagnostik tersimpan. Lengkapi snapshot keuangan selanjutnya.');
+            return redirect()->route('portal.baseline.create')
+                ->with('success', 'Diagnostik tersimpan. Lengkapi snapshot di halaman Baseline Data.');
         }
 
         return redirect()->route($onboarding->portalHomeRouteName($email, $telegramUserId))

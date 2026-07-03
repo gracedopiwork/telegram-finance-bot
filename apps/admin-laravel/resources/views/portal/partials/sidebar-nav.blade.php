@@ -23,13 +23,12 @@
     @endif
     @php
         $baselineNavUrl = $baselineUrl ?? route('portal.baseline.create');
-        $needsSnapshotOnly = ($needsBaseline ?? false) && !($needsFinancialDiagnostic ?? false);
         $baselineNavHighlight = !($portalOnboardingComplete ?? false) && (
-            (($needsBaseline ?? false) && ($needsFinancialDiagnostic ?? false))
+            ($needsBaseline ?? false)
             || (($needsFtsa ?? false) && !($ftsaRetakeLocked ?? false))
             || (($isFtsaOnlyPortalUser ?? false) && ($needsFinancialDiagnostic ?? false))
         );
-        $dashboardNavHighlight = $needsSnapshotOnly;
+        $dashboardNavHighlight = false;
         $baselineNavLabel = ($portalOnboardingComplete ?? false)
             ? 'BASELINE DATA'
             : (($isFtsaOnlyPortalUser ?? false)
