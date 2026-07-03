@@ -3,6 +3,6 @@
         <span class="material-symbols-outlined text-4xl text-navy-800">chat</span>
     </div>
     <h3 class="text-lg font-bold text-navy-800">{{ $title ?? 'Belum ada data' }}</h3>
-    <p class="text-sm text-slate-600 mt-2 max-w-md mx-auto">{{ $message ?? 'Catat transaksi via bot Telegram YFD. Data akan otomatis muncul di dashboard ini.' }}</p>
+    <p class="text-sm text-slate-600 mt-2 max-w-md mx-auto">{{ $message ?? 'Catat transaksi via YFD First Aid di Telegram. Data akan otomatis muncul di dashboard ini.' }}</p>
     <p class="text-xs text-slate-500 mt-4">Contoh: <code class="bg-slate-100 px-2 py-1 rounded">/catat makan siang 35rb</code></p>
 </div>

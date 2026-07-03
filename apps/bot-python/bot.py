@@ -847,7 +847,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
     if not is_license_active_for_user(user_id):
         await update.message.reply_text(
-            "Selamat datang di *YFD First Aid Bot*.\n"
+            "Selamat datang di *YFD First Aid*.\n"
             "Sebelum pakai bot, masukkan kode lisensi Anda (sama persis dengan di halaman pembayaran lunas atau email).\n"
             "Format: `/activate KODE-LISENSI-ANDA`",
             parse_mode="Markdown",
@@ -918,7 +918,7 @@ async def activate_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     )
     if not ok:
         mapping = {
-            "bot_not_purchased": "Lisensi ini belum termasuk paket YFD Bot. Beli bot Telegram dulu untuk aktivasi.",
+            "bot_not_purchased": "Lisensi ini belum termasuk paket YFD First Aid. Beli YFD First Aid di Telegram dulu untuk aktivasi.",
             "license_not_found": "Kode lisensi tidak ditemukan.",
             "license_not_active": "Lisensi tidak aktif (mungkin suspended).",
             "license_expired": "Lisensi sudah expired.",

@@ -18,7 +18,7 @@
                 Catat lewat Telegram, pantau cashflow, bucket budget, dan skor impulsifitas — semua di satu tempat.
             </p>
             <ul class="mt-8 space-y-3 text-sm text-white/75">
-                <li class="flex items-center gap-2"><span class="material-symbols-outlined text-gold-400">check_circle</span> Aktivasi bot → masuk dashboard</li>
+                <li class="flex items-center gap-2"><span class="material-symbols-outlined text-gold-400">check_circle</span> Aktivasi YFD First Aid → masuk dashboard</li>
                 <li class="flex items-center gap-2"><span class="material-symbols-outlined text-gold-400">check_circle</span> Isi Baseline Data (diagnostik wajib)</li>
                 <li class="flex items-center gap-2"><span class="material-symbols-outlined text-gold-400">check_circle</span> Catat transaksi & pantau dashboard</li>
             </ul>
@@ -43,7 +43,7 @@
                         <div>
                             <div class="text-sm font-bold text-navy-800">Opsi 1 — Dari Telegram (disarankan)</div>
                             <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-                                Ketik <strong>/web</strong> di bot YFD First Aid Bot → klik link → langsung masuk dashboard.
+                                Ketik <strong>/web</strong> di <strong>YFD First Aid</strong> → klik link → langsung masuk dashboard.
                                 Tanpa isi email atau kode lisensi.
                             </p>
                         </div>
@@ -79,8 +79,8 @@
                                placeholder="YFD-XXXX-XXXX">
                         <p class="text-[11px] text-slate-500 mt-1">
                             Satu kode lisensi per email. <strong>FTSA saja</strong>: login langsung di sini.
-                            <strong>Bot</strong>: aktifkan dulu dengan <code class="text-[10px]">/activate</code> di Telegram.
-                            Beli bot setelah FTSA? Pakai <strong>kode FTSA yang sama</strong>.
+                            <strong>YFD First Aid</strong>: aktifkan dulu dengan <code class="text-[10px]">/activate</code> di Telegram.
+                            Beli YFD First Aid setelah FTSA? Pakai <strong>kode FTSA yang sama</strong>.
                         </p>
                     </div>
                     <button type="submit" class="w-full rounded-xl bg-navy-800 text-white font-bold py-3 hover:bg-navy-700 transition-colors">
@@ -89,7 +89,7 @@
                 </form>
             </div>
             <p class="text-center text-xs text-slate-500 mt-6">
-                Belum punya lisensi? <a href="{{ route('company.produk') }}" class="text-navy-800 font-semibold hover:underline">Lihat YFD Bot</a>
+                Belum punya lisensi? <a href="{{ route('company.produk') }}" class="text-navy-800 font-semibold hover:underline">Lihat YFD First Aid</a>
             </p>
         </div>
     </div>

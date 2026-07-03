@@ -43,7 +43,7 @@ class BotLicenseActivationService
 
         if (! $this->provisioning->hasPaidBotOrderOnLicense($license)) {
             throw ValidationException::withMessages([
-                'license_key' => 'Lisensi ini belum termasuk paket YFD Bot. Beli bot Telegram dulu untuk aktivasi di sini.',
+                'license_key' => 'Lisensi ini belum termasuk paket YFD First Aid. Beli YFD First Aid di Telegram dulu untuk aktivasi di sini.',
             ]);
         }
 

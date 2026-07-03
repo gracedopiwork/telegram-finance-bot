@@ -187,11 +187,11 @@ class LicenseEntitlementService
         $hasFtsa = $this->hasPaidFtsaOrderOnLicense($license);
 
         if ($hasBot && $hasFtsa) {
-            return 'FTSA Premium + Bot Telegram';
+            return 'FTSA Premium + YFD First Aid';
         }
 
         if ($hasBot) {
-            return 'Bot Telegram (selamanya)';
+            return 'YFD First Aid (selamanya)';
         }
 
         if ($hasFtsa) {

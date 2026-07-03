@@ -100,11 +100,11 @@
 
         <div class="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-900">
             <div class="font-bold">Ingin pantau transaksi harian?</div>
-            <div class="mt-0.5">Upgrade ke <strong>YFD Bot Telegram</strong> untuk pencatatan mood, impulsivitas, dan Financial Health Dashboard.</div>
+            <div class="mt-0.5">Upgrade ke <strong>YFD First Aid</strong> untuk pencatatan mood, impulsivitas, dan Financial Health Dashboard.</div>
             <a href="{{ route('checkout.show', ['code' => 'yfd-bot-telegram']) }}"
                class="inline-flex items-center gap-2 mt-3 bg-navy-800 hover:bg-navy-700 text-white font-bold px-4 py-2 rounded-xl text-sm">
                 <span class="material-symbols-outlined text-lg">send</span>
-                Beli YFD Bot
+                Beli YFD First Aid
             </a>
         </div>
     @endif
@@ -127,7 +127,7 @@
     @if(!$hasData)
         @include('portal.partials.empty-state', [
             'title' => 'Belum ada data emosi',
-            'message' => 'Emotional scan terisi setelah ada transaksi pengeluaran dengan mood & flag impulsif dari bot Telegram.',
+            'message' => 'Emotional scan terisi setelah ada transaksi pengeluaran dengan mood & flag impulsif dari YFD First Aid.',
         ])
     @endif
 

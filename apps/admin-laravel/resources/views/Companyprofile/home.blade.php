@@ -74,7 +74,7 @@
                     ['type' => 'route', 'target' => 'company.pertemuan',   'icon' => 'forum',                'label' => 'Konsultasi'],
                     ['type' => 'route', 'target' => 'company.penasihat',   'icon' => 'medical_information',  'label' => 'Tim Dokter'],
                     ['type' => 'route', 'target' => 'company.layanan',     'icon' => 'apps',                 'label' => 'Semua Layanan'],
-                    ['type' => 'route', 'target' => 'company.produk',      'icon' => 'send',                 'label' => 'YFD Bot',         'badge' => 'New'],
+                    ['type' => 'route', 'target' => 'company.produk',      'icon' => 'send',                 'label' => 'YFD First Aid',   'badge' => 'New'],
                     ['type' => 'route', 'target' => 'company.informasi',   'icon' => 'help',                 'label' => 'FAQ'],
                 ];
             @endphp

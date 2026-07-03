@@ -55,7 +55,7 @@ class BotLicenseActivateController extends Controller
     private function errorCodeFromMessage(string $message): string
     {
         return match (true) {
-            str_contains($message, 'belum termasuk paket YFD Bot') => 'bot_not_purchased',
+            str_contains($message, 'belum termasuk paket YFD First Aid') => 'bot_not_purchased',
             str_contains($message, 'tidak ditemukan') => 'license_not_found',
             str_contains($message, 'tidak aktif') => 'license_not_active',
             str_contains($message, 'expired') => 'license_expired',

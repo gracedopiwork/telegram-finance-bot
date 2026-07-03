@@ -368,7 +368,7 @@ class TransactionDashboardService
     if ($income === 0 && $expense === 0) {
       return [
         'headline' => 'Belum ada data transaksi',
-        'findings' => ['Mulai catat pemasukan & pengeluaran via bot Telegram.'],
+        'findings' => ['Mulai catat pemasukan & pengeluaran via YFD First Aid.'],
         'status' => 'no_data',
       ];
     }

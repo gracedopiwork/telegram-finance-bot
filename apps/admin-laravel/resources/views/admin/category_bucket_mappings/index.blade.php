@@ -121,7 +121,7 @@ php artisan config:clear</code></pre>
         </div>
         <div class="card card-outline card-secondary">
             <div class="card-body small text-muted">
-                <p class="mb-1"><i class="fas fa-robot"></i> Bot Telegram memuat aturan ini otomatis dari <code>/api/bot/category-rules</code> (refresh ±5 menit).</p>
+                <p class="mb-1"><i class="fas fa-robot"></i> YFD First Aid memuat aturan ini otomatis dari <code>/api/bot/category-rules</code> (refresh ±5 menit).</p>
                 <p class="mb-1"><i class="fas fa-info-circle"></i> Urutan baris = prioritas pencocokan (atas lebih dulu).</p>
                 <p class="mb-0">Gunakan kategori <code>*</code> + sifat untuk aturan global (mis. semua <em>Wants</em>).</p>
             </div>

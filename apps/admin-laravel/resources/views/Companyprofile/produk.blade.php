@@ -1,7 +1,7 @@
 @extends('Companyprofile.layouts.main')
 
 @section('title', $featured?->meta_title ?? 'Produk Digital — YFD')
-@section('description', $featured?->meta_description ?? 'Ekosistem produk digital YFD. Mulai dari YFD Bot Telegram untuk catat keuangan harian via chat dengan AI parsing otomatis.')
+@section('description', $featured?->meta_description ?? 'Ekosistem produk digital YFD. Mulai dari YFD First Aid untuk catat keuangan harian via chat dengan AI parsing otomatis.')
 
 @section('content')
 
@@ -241,8 +241,8 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
         @foreach([
             ['no' => '01', 'ic' => 'shopping_cart',    'title' => 'Beli & Bayar Online',     'desc' => 'Klik tombol Beli Sekarang, isi form, lanjutkan ke Midtrans (kartu/VA/e-wallet/QRIS).'],
-            ['no' => '02', 'ic' => 'verified_user',    'title' => 'Aktivasi di Bot',         'desc' => 'Salin kode dari halaman setelah bayar (sama dengan WhatsApp). Di YFD Bot: /activate KODE-LISENSI (harus persis).'],
-            ['no' => '03', 'ic' => 'forum',            'title' => 'Catat Sambil Ngobrol',    'desc' => 'Tinggal chat: "bensin 50rb", "gajian 5jt", "nabung 200rb". Bot urus sisanya.'],
+            ['no' => '02', 'ic' => 'verified_user',    'title' => 'Aktivasi di Bot',         'desc' => 'Salin kode dari halaman setelah bayar (sama dengan WhatsApp). Di YFD First Aid: /activate KODE-LISENSI (harus persis).'],
+            ['no' => '03', 'ic' => 'forum',            'title' => 'Catat Sambil Ngobrol',    'desc' => 'Tinggal chat: "bensin 50rb", "gajian 5jt", "nabung 200rb". YFD First Aid urus sisanya.'],
         ] as $step)
             <div class="bg-white border border-outline-variant rounded-2xl p-7 shadow-soft hover:shadow-card transition relative overflow-hidden">
                 <span class="absolute -top-4 -right-2 text-[120px] font-extrabold text-surface-container-high leading-none select-none pointer-events-none">{{ $step['no'] }}</span>
@@ -263,7 +263,7 @@
     <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
         <div class="text-center mb-10 max-w-2xl mx-auto">
             <span class="text-label-md text-secondary block mb-3">APA YANG DICATAT</span>
-            <h2 class="font-heading text-headline-lg text-primary mb-3">Bot otomatis klasifikasikan 7 dimensi finansial</h2>
+            <h2 class="font-heading text-headline-lg text-primary mb-3">YFD First Aid otomatis klasifikasikan 7 dimensi finansial</h2>
             <p class="text-body-md text-on-surface-variant">Sesuai framework <em>Financial Health Check Up</em> YFD — siap analisis lanjut bersama dokter finansial.</p>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -359,7 +359,7 @@
                 <span class="text-label-md text-secondary-fixed block mb-3">EKOSISTEM YFD</span>
                 <h2 class="font-heading text-headline-lg mb-4">Tools digital saja tidak cukup tanpa pendampingan.</h2>
                 <p class="text-body-md text-white/85 max-w-md">
-                    Bot YFD memberi Anda data harian. Tapi membaca data, mengevaluasi, dan
+                    YFD First Aid memberi Anda data harian. Tapi membaca data, mengevaluasi, dan
                     merancang strategi adalah pekerjaan dokter finansial. Gabungkan keduanya.
                 </p>
             </div>

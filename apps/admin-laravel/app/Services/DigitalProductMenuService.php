@@ -104,7 +104,7 @@ class DigitalProductMenuService
         return [
             [
                 'key' => 'produk',
-                'label' => 'YFD Bot Telegram',
+                'label' => 'YFD First Aid',
                 'desc' => 'Catat keuangan via chat — AI auto-parse ke dashboard web',
                 'route' => 'company.produk',
                 'icon' => 'send',

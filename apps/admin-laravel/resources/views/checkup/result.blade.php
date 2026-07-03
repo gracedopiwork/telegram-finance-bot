@@ -108,7 +108,7 @@
                 @else
                     <a href="{{ route('company.produk') }}" class="btn btn-gold btn-lg">
                         <span class="material-symbols-outlined text-[20px]">send</span>
-                        Lihat YFD Bot Telegram
+                        Lihat YFD First Aid
                     </a>
                     <a href="{{ route('company.paket') }}" class="btn btn-ghost btn-lg">
                         Lihat Paket Layanan

@@ -112,7 +112,7 @@ class AuthController extends Controller
         if ($profile === null) {
             return redirect()
                 ->route('portal.login')
-                ->with('warning', 'Link tidak valid atau lisensi belum aktif. Coba /web lagi di bot Telegram.');
+                ->with('warning', 'Link tidak valid atau lisensi belum aktif. Coba /web lagi di YFD First Aid.');
         }
 
         return $this->establishSession(

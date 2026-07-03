@@ -13,7 +13,7 @@
     <p>Hai {{ $order->full_name }},</p>
     <p>Terima kasih. Pembayaran order <strong>{{ $order->order_code }}</strong> sudah kami terima. Berikut yang Anda butuhkan:</p>
 
-    <h2 style="font-size: 1rem; margin-top: 1.75rem;">1) Buka bot Telegram</h2>
+    <h2 style="font-size: 1rem; margin-top: 1.75rem;">1) Buka YFD First Aid di Telegram</h2>
     @if(!empty($telegramBotUrl))
         @if(!empty($telegramBotAppUrl))
             <p>
@@ -31,7 +31,7 @@
         @endif
     @else
         <p style="font-size: 0.875rem; color: #52525b; background: #f4f4f5; padding: 12px 14px; border-radius: 8px;">
-            Buka aplikasi Telegram lalu cari bot YFD Finance Bot, kemudian ketuk <strong>Start</strong>.
+            Buka aplikasi Telegram lalu cari bot <strong>YFD First Aid</strong>, kemudian ketuk <strong>Start</strong>.
             Jika belum ketemu, balas email ini untuk dibantu tim YFD.
         </p>
     @endif

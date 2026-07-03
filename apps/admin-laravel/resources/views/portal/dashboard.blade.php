@@ -90,8 +90,8 @@
     @include('portal.partials.empty-state', [
         'title' => $hasAssessment ? 'Belum ada transaksi bot' : 'Dashboard masih kosong',
         'message' => $hasAssessment
-            ? 'Diagnostik dan FTSA Anda sudah tersimpan. Catat pemasukan & pengeluaran lewat bot Telegram — metrik harian akan terisi otomatis.'
-            : 'Mulai catat pemasukan & pengeluaran lewat bot Telegram. Semua metrik di bawah akan terisi otomatis.',
+            ? 'Diagnostik dan FTSA Anda sudah tersimpan. Catat pemasukan & pengeluaran lewat YFD First Aid — metrik harian akan terisi otomatis.'
+            : 'Mulai catat pemasukan & pengeluaran lewat YFD First Aid. Semua metrik di bawah akan terisi otomatis.',
     ])
 @endif
 

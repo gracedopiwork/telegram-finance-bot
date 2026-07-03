@@ -43,7 +43,7 @@ class OrderDeliveryMessageBuilder
         ];
 
         if ($botUrl !== '') {
-            $lines[] = '🤖 *Bot Telegram*';
+            $lines[] = '🤖 *YFD First Aid*';
             $lines[] = $botUrl;
             $lines[] = '';
         } else {
@@ -116,7 +116,7 @@ class OrderDeliveryMessageBuilder
         $lines = [
             'Hai '.$order->full_name.',',
             '',
-            'Pembayaran *'.$order->order_code.'* (YFD Bot Telegram) sudah kami terima.',
+            'Pembayaran *'.$order->order_code.'* (YFD First Aid) sudah kami terima.',
             '',
             'Lisensi Anda *tetap sama* dengan pembelian FTSA — tidak ada kode baru.',
             'Data FTSA & diagnostik di portal ikut terhubung setelah aktivasi bot.',
@@ -124,7 +124,7 @@ class OrderDeliveryMessageBuilder
         ];
 
         if ($botUrl !== '') {
-            $lines[] = '🤖 *Bot Telegram*';
+            $lines[] = '🤖 *YFD First Aid*';
             $lines[] = $botUrl;
             $lines[] = '';
         }
@@ -167,7 +167,7 @@ class OrderDeliveryMessageBuilder
 
         $lines[] = '📊 Login portal FTSA: '.$portalUrl;
         $lines[] = 'Email checkout: *'.$order->email.'* + kode lisensi di atas.';
-        $lines[] = 'Tidak perlu aktivasi di bot Telegram.';
+        $lines[] = 'Tidak perlu aktivasi di YFD First Aid.';
         $lines[] = '';
         $lines[] = '🩺 Langkah pertama: *Financial Health Check-Up*';
         $lines[] = $checkupUrl;

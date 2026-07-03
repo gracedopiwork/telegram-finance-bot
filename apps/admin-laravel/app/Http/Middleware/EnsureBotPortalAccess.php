@@ -20,6 +20,6 @@ class EnsureBotPortalAccess
 
         return redirect()
             ->route('portal.emotional')
-            ->with('info', 'Paket FTSA Anda mencakup dashboard behavioral & diagnostik FTSA. Dashboard transaksi bot tersedia setelah membeli YFD Bot Telegram.');
+            ->with('info', 'Paket FTSA Anda mencakup dashboard behavioral & diagnostik FTSA. Dashboard transaksi tersedia setelah membeli YFD First Aid.');
     }
 }

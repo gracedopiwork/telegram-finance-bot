@@ -44,7 +44,7 @@
                 </p>
             @elseif($isBotAfterFtsa)
                 <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
-                    Pembayaran <strong>lunas</strong>. <strong>YFD Bot Telegram</strong> aktif pada <strong>lisensi FTSA yang sama</strong>
+                    Pembayaran <strong>lunas</strong>. <strong>YFD First Aid</strong> aktif pada <strong>lisensi FTSA yang sama</strong>
                     (tidak ada kode baru). Aktifkan di bot dengan <code class="bg-white px-1 rounded">/activate {{ $order->license->license_key }}</code>
                     — data FTSA & diagnostik ikut terhubung.
                 </p>
@@ -74,7 +74,7 @@
             @else
                 <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-4">
                     Pembayaran <strong>lunas</strong>. Simpan kode lisensi di bawah ini — kode ini harus sama persis saat Anda
-                    <strong>/activate</strong> di bot Telegram. Ringkasan juga dikirim ke {{ $deliveryLabel }} <strong>{{ $deliveryContact }}</strong>.
+                    <strong>/activate</strong> di YFD First Aid. Ringkasan juga dikirim ke {{ $deliveryLabel }} <strong>{{ $deliveryContact }}</strong>.
                 </p>
 
                 <div class="bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 max-w-lg mx-auto text-left mb-6">
@@ -100,17 +100,17 @@
                             <li>Login portal: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> dengan email & lisensi bot yang sama</li>
                             <li>Buka menu <strong>BASELINE DATA</strong> untuk mengisi FTSA 1–32</li>
                         @elseif($isBotAfterFtsa)
-                            <li>Buka bot Telegram → <code class="bg-white px-1 rounded">/activate {{ $order->license->license_key }}</code> (kode sama dengan FTSA)</li>
-                            <li>Login portal: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> atau <code class="bg-white px-1 rounded">/web</code> di bot</li>
-                            <li>Dashboard lengkap + FTSA — lisensi bot berlaku <strong>selamanya</strong></li>
+                            <li>Buka YFD First Aid di Telegram → <code class="bg-white px-1 rounded">/activate {{ $order->license->license_key }}</code> (kode sama dengan FTSA)</li>
+                            <li>Login portal: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> atau <code class="bg-white px-1 rounded">/web</code> di YFD First Aid</li>
+                            <li>Dashboard lengkap + FTSA — lisensi YFD First Aid berlaku <strong>selamanya</strong></li>
                         @elseif($isFtsaOnly)
                             <li>Login portal: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> dengan email & kode lisensi di atas</li>
                             <li>Di dalam portal: isi <strong>diagnostik keuangan</strong> lalu <strong>FTSA 1–32</strong> (aktif <strong>12 bulan evaluasi</strong>)</li>
                         @else
-                            <li>Buka bot Telegram → <code class="bg-white px-1 rounded">/activate {{ $order->license->license_key }}</code></li>
-                            <li>Masuk dashboard: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> atau ketik <code class="bg-white px-1 rounded">/web</code> di bot</li>
+                            <li>Buka YFD First Aid di Telegram → <code class="bg-white px-1 rounded">/activate {{ $order->license->license_key }}</code></li>
+                            <li>Masuk dashboard: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> atau ketik <code class="bg-white px-1 rounded">/web</code> di YFD First Aid</li>
                             <li>Di dalam portal: isi <strong>Baseline Data (diagnostik)</strong> — bukan di landing page</li>
-                            <li>Catat transaksi harian di bot, pantau dashboard — lisensi bot berlaku <strong>selamanya</strong></li>
+                            <li>Catat transaksi harian di YFD First Aid, pantau dashboard — lisensi berlaku <strong>selamanya</strong></li>
                         @endif
                     </ol>
                     @if($isFtsaUpgrade)

@@ -15,7 +15,7 @@
     <p>Terima kasih. Pembayaran <strong>{{ $order->product_name ?? 'FTSA Premium Unlock' }}</strong> (order <strong>{{ $order->order_code }}</strong>) sudah kami terima.</p>
 
     <p>Paket ini membuka <strong>dashboard FTSA</strong> di portal YFD (kuesioner FTSA 1–32, behavioral insight, dan indeks kesehatan finansial) selama <strong>12 bulan evaluasi</strong>.</p>
-    <p style="font-size: 0.875rem; color: #52525b;">Dashboard pencatatan transaksi via bot Telegram <strong>tidak termasuk</strong> dalam paket ini.</p>
+    <p style="font-size: 0.875rem; color: #52525b;">Dashboard pencatatan transaksi via YFD First Aid <strong>tidak termasuk</strong> dalam paket ini.</p>
 
     @if($licenseKey !== '')
         <p style="font-size: 1.1rem; font-weight: 700; letter-spacing: 0.04em;">{{ $licenseKey }}</p>
@@ -27,7 +27,7 @@
     <p style="font-size: 0.875rem; color: #52525b; word-break: break-all;">{{ $portalHref }}</p>
     <p style="font-size: 0.875rem; color: #52525b;">
         Login dengan email checkout <strong>{{ $order->email }}</strong> dan kode lisensi di atas.
-        <strong>Tidak perlu</strong> aktivasi di bot Telegram.
+        <strong>Tidak perlu</strong> aktivasi di YFD First Aid.
     </p>
 
     <h2 style="font-size: 1rem; margin-top: 1.75rem;">Langkah pertama</h2>

@@ -13,7 +13,7 @@
     <div class="flex items-start gap-3">
         <span class="material-symbols-outlined text-3xl text-gold-400">send</span>
         <div>
-            <h3 class="font-bold text-lg">Catat via Telegram Bot</h3>
+            <h3 class="font-bold text-lg">Catat via YFD First Aid</h3>
             <p class="text-sm text-white/80 mt-1">Kirim teks atau foto struk. AI akan parse kategori, mood, dan impulsifitas — lalu simpan ke dashboard ini.</p>
         </div>
     </div>
