@@ -18,6 +18,7 @@ class CategoryBucketMapping extends Model
     public const TRANSACTION_TYPES = [
         'income' => 'Income',
         'expense' => 'Expense',
+        'saving' => 'Saving/Investment',
         'transfer' => 'Transfer',
     ];
 
@@ -25,8 +26,6 @@ class CategoryBucketMapping extends Model
         '',
         'Need',
         'Wants',
-        'Saving/Investement',
-        'Donation',
     ];
 
     protected $fillable = [

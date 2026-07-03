@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BotTransaction;
+use App\Support\TransactionTaxonomy;
 
 class CategoryBucketService
 {
@@ -31,10 +32,11 @@ class CategoryBucketService
         $notes = mb_strtolower((string) $row->notes);
         $combined = "{$sub} {$notes} {$category}";
 
-        if ($nature === 'Saving/Investement') {
+        if ($row->type === TransactionTaxonomy::TYPE_SAVING) {
             return 'Future Building';
         }
-        if ($nature === 'Donation' || $category === 'social') {
+
+        if ($category === 'social') {
             return 'Flexible + Social';
         }
 

@@ -36,7 +36,9 @@
     <div class="p-5 sm:p-6">
         <p class="text-sm text-slate-600 mb-4">
             Isi data di Excel/Google Sheets lalu simpan sebagai <strong>CSV UTF-8</strong> (koma atau titik-koma).
-            Kolom: tanggal, jenis, kategori, sub_kategori, nominal, sifat, mood, impulsif, keterangan.
+            Kolom: tanggal, <strong>jenis</strong> (Pemasukan / Pengeluaran / Saving/Investment), kategori, sub_kategori, nominal,
+            <strong>sifat</strong> (Need / Wants), mood, impulsif, keterangan.
+            Donasi/ibadah = Pengeluaran + kategori Social. Investasi = jenis Saving/Investment (bukan Pengeluaran).
             Kategori resmi: Makan, Transport, Listrik, Air, Jajan, Social, Gaji — atau isi <strong>sub_kategori</strong> di kolom kategori (mis. <em>Angkutan Umum</em>).
             Nominal: angka polos (<code>35000</code>) atau format Indonesia (<code>35.000</code>, <code>35rb</code>).
             Maks. 500 baris per file.
@@ -162,7 +164,7 @@
     </div>
 @endif
 
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="tx-summary-cards">
+<div class="grid grid-cols-2 sm:grid-cols-5 gap-4" id="tx-summary-cards">
     <div class="bg-white rounded-xl border p-4 text-center">
         <div class="text-2xl font-extrabold text-navy-800" id="tx-stat-count">{{ $summary['transaction_count'] }}</div>
         <div class="text-xs text-slate-500 mt-1">Total transaksi</div>
@@ -176,8 +178,12 @@
         <div class="text-xs text-slate-500 mt-1">Pengeluaran</div>
     </div>
     <div class="bg-white rounded-xl border p-4 text-center">
+        <div class="text-lg font-extrabold text-navy-600" id="tx-stat-saving-amt">{{ $fmt($summary['saving_investment'] ?? 0) }}</div>
+        <div class="text-xs text-slate-500 mt-1">Saving/Investment</div>
+    </div>
+    <div class="bg-white rounded-xl border p-4 text-center">
         <div class="text-lg font-extrabold text-navy-800" id="tx-stat-saving">{{ $summary['saving_rate'] }}%</div>
-        <div class="text-xs text-slate-500 mt-1">Saving rate · {{ $summary['period_label'] }}</div>
+        <div class="text-xs text-slate-500 mt-1">Alokasi saving · {{ $summary['period_label'] }}</div>
     </div>
 </div>
 
@@ -217,7 +223,14 @@
                         data-tx-amount="{{ $t['amount'] }}">
                         <td class="px-4 py-3 whitespace-nowrap text-slate-600">{{ $t['recorded_at'] }}</td>
                         <td class="px-4 py-3">
-                            <span class="inline-flex px-2 py-0.5 rounded text-xs font-semibold {{ $t['type'] === 'Pemasukan' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700' }}">
+                            @php
+                                $typeClass = match($t['type']) {
+                                    'Pemasukan' => 'bg-emerald-50 text-emerald-700',
+                                    'Saving/Investment' => 'bg-sky-50 text-sky-800',
+                                    default => 'bg-rose-50 text-rose-700',
+                                };
+                            @endphp
+                            <span class="inline-flex px-2 py-0.5 rounded text-xs font-semibold {{ $typeClass }}">
                                 {{ $t['type'] }}
                             </span>
                         </td>
@@ -262,6 +275,7 @@
     const fmt = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
     let income = {{ (int) $summary['income'] }};
     let expense = {{ (int) $summary['expense'] }};
+    let savingInvestment = {{ (int) ($summary['saving_investment'] ?? 0) }};
     let count = {{ (int) $summary['transaction_count'] }};
     const toast = document.getElementById('tx-delete-toast');
     let toastTimer = null;
@@ -275,15 +289,17 @@
     }
 
     function updateStats() {
-        const saving = income > 0 ? Math.round(((income - expense) / income) * 1000) / 10 : 0;
+        const savingRate = income > 0 ? Math.round((savingInvestment / income) * 1000) / 10 : 0;
         const countEl = document.getElementById('tx-stat-count');
         const incomeEl = document.getElementById('tx-stat-income');
         const expenseEl = document.getElementById('tx-stat-expense');
+        const savingAmtEl = document.getElementById('tx-stat-saving-amt');
         const savingEl = document.getElementById('tx-stat-saving');
         if (countEl) countEl.textContent = String(count);
         if (incomeEl) incomeEl.textContent = fmt(income);
         if (expenseEl) expenseEl.textContent = fmt(expense);
-        if (savingEl) savingEl.textContent = saving + '%';
+        if (savingAmtEl) savingAmtEl.textContent = fmt(savingInvestment);
+        if (savingEl) savingEl.textContent = savingRate + '%';
     }
 
     document.querySelectorAll('[data-delete-tx]').forEach((btn) => {
@@ -312,6 +328,7 @@
                 const amount = parseInt(row.dataset.txAmount || '0', 10);
                 if (type === 'Pemasukan') income = Math.max(0, income - amount);
                 if (type === 'Pengeluaran') expense = Math.max(0, expense - amount);
+                if (type === 'Saving/Investment') savingInvestment = Math.max(0, savingInvestment - amount);
                 count = Math.max(0, count - 1);
                 updateStats();
 

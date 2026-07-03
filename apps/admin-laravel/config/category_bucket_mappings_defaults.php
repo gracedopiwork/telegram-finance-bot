@@ -28,11 +28,10 @@ return [
     ['category' => 'Jajan', 'sub_category' => 'Pengeluaran lain-lain', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'hp,laptop,gadget,elektronik', 'reason' => 'Belanja lain / gadget', 'sort_order' => 47],
 
     // Social
-    ['category' => 'Social', 'sub_category' => 'Hadiah / Amplop sosial', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Donation', 'match_keywords' => 'hadiah,amplop,sedekah', 'reason' => 'Sosial & hadiah', 'sort_order' => 50],
+    ['category' => 'Social', 'sub_category' => 'Hadiah / Amplop sosial', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'hadiah,amplop,sedekah,persembahan,ibadah,donasi', 'reason' => 'Sosial & donasi', 'sort_order' => 50],
     ['category' => 'Social', 'sub_category' => 'Nonton Konser', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'konser,bioskop,tiket,nonton', 'reason' => 'Hiburan sosial', 'sort_order' => 51],
     ['category' => 'Social', 'sub_category' => 'Ulang Tahun keluarga', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'ultah,ulang tahun,keluarga', 'reason' => 'Perayaan keluarga', 'sort_order' => 52],
 
-    // Aturan global berdasarkan sifat
-    ['category' => '*', 'bucket' => 'Future Building', 'transaction_type' => 'expense', 'nature' => 'Saving/Investement', 'reason' => 'Semua nabung/investasi', 'sort_order' => 5],
-    ['category' => '*', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Donation', 'reason' => 'Semua donasi', 'sort_order' => 6],
+    // Saving / investment (jenis transaksi terpisah — bukan pengeluaran)
+    ['category' => '*', 'bucket' => 'Future Building', 'transaction_type' => 'saving', 'reason' => 'Semua nabung & investasi', 'sort_order' => 5],
 ];

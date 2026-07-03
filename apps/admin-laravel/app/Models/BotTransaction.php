@@ -2,10 +2,17 @@
 
 namespace App\Models;
 
+use App\Support\TransactionTaxonomy;
 use Illuminate\Database\Eloquent\Model;
 
 class BotTransaction extends Model
 {
+    public const TYPE_INCOME = TransactionTaxonomy::TYPE_INCOME;
+
+    public const TYPE_EXPENSE = TransactionTaxonomy::TYPE_EXPENSE;
+
+    public const TYPE_SAVING = TransactionTaxonomy::TYPE_SAVING;
+
     protected $fillable = [
         'telegram_user_id',
         'recorded_at',
@@ -45,11 +52,16 @@ class BotTransaction extends Model
 
     public function scopeExpenses($query)
     {
-        return $query->where('type', 'Pengeluaran');
+        return $query->where('type', self::TYPE_EXPENSE);
+    }
+
+    public function scopeSavingInvestment($query)
+    {
+        return $query->where('type', self::TYPE_SAVING);
     }
 
     public function scopeIncome($query)
     {
-        return $query->where('type', 'Pemasukan');
+        return $query->where('type', self::TYPE_INCOME);
     }
 }

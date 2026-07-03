@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\BotTransaction;
+use App\Support\TransactionTaxonomy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,11 +24,11 @@ class BotTransactionController extends Controller
 
         $validated = $request->validate([
             'telegram_user_id' => ['required', 'integer', 'min:1'],
-            'type' => ['required', 'in:Pemasukan,Pengeluaran'],
+            'type' => ['required', 'in:'.implode(',', TransactionTaxonomy::TYPES)],
             'category' => ['required', 'string', 'max:64'],
             'sub_category' => ['required', 'string', 'max:128'],
             'amount' => ['required', 'integer', 'min:1'],
-            'nature' => ['required', 'string', 'max:32'],
+            'nature' => ['required', 'in:'.implode(',', TransactionTaxonomy::NATURES)],
             'mood' => ['required', 'string', 'max:32'],
             'is_impulsive' => ['required', 'boolean'],
             'notes' => ['required', 'string', 'max:2000'],

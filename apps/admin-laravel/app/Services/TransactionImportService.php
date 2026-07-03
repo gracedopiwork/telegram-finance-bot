@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\TransactionTaxonomy;
 use App\Models\BotTransaction;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
@@ -10,10 +11,10 @@ use Illuminate\Support\Str;
 class TransactionImportService
 {
     /** @var list<string> */
-    private const VALID_TYPES = ['Pemasukan', 'Pengeluaran'];
+    private const VALID_TYPES = TransactionTaxonomy::TYPES;
 
     /** @var list<string> */
-    private const VALID_NATURES = ['Need', 'Wants', 'Saving/Investement', 'Donation'];
+    private const VALID_NATURES = TransactionTaxonomy::NATURES;
 
     /** @var list<string> */
     private const VALID_MOODS = ['Happy', 'Neutral', 'Sad', 'Stressed', 'Angry', 'Tired'];
@@ -84,6 +85,8 @@ class TransactionImportService
         $examples = [
             '2026-06-15,Pengeluaran,Makan,Jajan / Makan diluar,35000,Need,Neutral,No,Makan siang kantor',
             '2026-06-14,Pengeluaran,Transport,Angkutan Umum,15000,Need,Neutral,No,Ojek ke kantor',
+            '2026-06-10,Saving/Investment,Jajan,Pengeluaran lain-lain,500000,Need,Neutral,No,Beli saham BBCA',
+            '2026-06-08,Pengeluaran,Social,Hadiah / Amplop sosial,50000,Need,Neutral,No,Persembahan ibadah',
             '2026-06-01,Pemasukan,Gaji,,5000000,Need,Happy,No,Gaji bulan Juni',
         ];
 
@@ -221,9 +224,26 @@ class TransactionImportService
             $data[$field] = trim((string) ($row[$i] ?? ''));
         }
 
-        $type = $this->normalizeType($data['type'] ?? '');
-        if ($type === null) {
-            return ['error' => 'jenis harus Pemasukan atau Pengeluaran'];
+        $rawType = trim($data['type'] ?? '');
+        $rawNature = trim($data['nature'] ?? '');
+        $taxonomy = TransactionTaxonomy::normalize(
+            $rawType,
+            $rawNature,
+            $data['category'] ?? null,
+        );
+        $type = $taxonomy['type'];
+
+        if ($rawType !== '' && TransactionTaxonomy::normalizeType($rawType) === null) {
+            $legacyOk = in_array(mb_strtolower($rawType), [
+                'saving/investement', 'saving/investment', 'saving', 'investasi', 'investment', 'nabung',
+            ], true) || in_array(mb_strtolower($rawNature), [
+                'saving/investement', 'saving/investment', 'saving', 'investasi', 'investment',
+                'donation', 'donasi', 'sedekah', 'persembahan',
+            ], true);
+
+            if (! $legacyOk) {
+                return ['error' => "jenis tidak valid (\"{$rawType}\") — gunakan Pemasukan, Pengeluaran, atau Saving/Investment"];
+            }
         }
 
         $amount = $this->parseAmount($data['amount'] ?? '');
@@ -236,7 +256,7 @@ class TransactionImportService
         }
 
         $rules = $this->rules();
-        $categoryInput = $data['category'] ?? '';
+        $categoryInput = $taxonomy['category'] ?? ($data['category'] ?? '');
         $subCategoryInput = trim($data['sub_category'] ?? '');
 
         $category = $this->resolveCategory($categoryInput, $subCategoryInput, $type, $rules);
@@ -251,7 +271,7 @@ class TransactionImportService
 
         $recordedAt = $this->parseDate($data['recorded_at'] ?? '') ?? now();
 
-        $nature = $this->normalizeNature($data['nature'] ?? '', $type);
+        $nature = $taxonomy['nature'];
         $mood = $this->normalizeMood($data['mood'] ?? '');
         $isImpulsive = $this->parseBool($data['is_impulsive'] ?? '');
 
@@ -283,11 +303,15 @@ class TransactionImportService
         $categoryInput = trim($categoryInput);
         $subCategoryInput = trim($subCategoryInput);
 
-        if ($categoryInput === '' && $type === 'Pemasukan') {
+        if ($categoryInput === '' && $type === TransactionTaxonomy::TYPE_INCOME) {
             return 'Gaji';
         }
 
-        if ($categoryInput === '' && $type === 'Pengeluaran') {
+        if ($categoryInput === '' && $type === TransactionTaxonomy::TYPE_SAVING) {
+            return (string) ($rules['fallback_category'] ?? 'Jajan');
+        }
+
+        if ($categoryInput === '' && $type === TransactionTaxonomy::TYPE_EXPENSE) {
             if ($subCategoryInput !== '') {
                 $fromSub = $this->categoryFromSubCategory($subCategoryInput, $rules);
                 if ($fromSub !== null) {
@@ -461,30 +485,12 @@ class TransactionImportService
 
     private function normalizeType(string $value): ?string
     {
-        $v = mb_strtolower(trim($value));
-        if (in_array($v, ['pemasukan', 'income', 'masuk'], true)) {
-            return 'Pemasukan';
-        }
-        if (in_array($v, ['pengeluaran', 'expense', 'keluar'], true)) {
-            return 'Pengeluaran';
-        }
-        if (in_array($value, self::VALID_TYPES, true)) {
-            return $value;
-        }
-
-        return null;
+        return TransactionTaxonomy::normalizeType($value);
     }
 
     private function normalizeNature(string $value, string $type): string
     {
-        $v = trim($value);
-        foreach (self::VALID_NATURES as $nature) {
-            if (strcasecmp($nature, $v) === 0) {
-                return $nature;
-            }
-        }
-
-        return 'Need';
+        return TransactionTaxonomy::normalize($type, $value)['nature'];
     }
 
     private function normalizeMood(string $value): string

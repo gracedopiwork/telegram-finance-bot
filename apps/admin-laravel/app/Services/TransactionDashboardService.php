@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BotTransaction;
 use App\Models\FinancialBaseline;
+use App\Support\TransactionTaxonomy;
 use App\Services\BaselineClaimService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -54,18 +55,19 @@ class TransactionDashboardService
       ->orderByDesc('recorded_at')
       ->get();
 
-    $income = (int) $rows->where('type', 'Pemasukan')->sum('amount');
-    $expense = (int) $rows->where('type', 'Pengeluaran')->sum('amount');
-    $cashflow = $income - $expense;
-    $savingRate = $income > 0 ? round(($cashflow / $income) * 100, 1) : 0.0;
+    $income = (int) $rows->where('type', TransactionTaxonomy::TYPE_INCOME)->sum('amount');
+    $expense = (int) $rows->where('type', TransactionTaxonomy::TYPE_EXPENSE)->sum('amount');
+    $savingInvestment = (int) $rows->where('type', TransactionTaxonomy::TYPE_SAVING)->sum('amount');
+    $cashflow = $income - $expense - $savingInvestment;
+    $savingRate = $income > 0 ? round(($savingInvestment / $income) * 100, 1) : 0.0;
     $transactionCount = $rows->count();
 
     $byCategory = $this->spendingByCategory($rows);
     $topExpenses = $byCategory->sortByDesc('amount')->take(10)->values()->all();
     $idealShares = $this->prescription->idealsForUser($telegramUserId);
-    $buckets = $this->budgetBuckets($rows, $expense, $idealShares);
+    $buckets = $this->budgetBuckets($rows, $expense, $savingInvestment, $idealShares);
     $trend = $this->cashflowTrend($telegramUserId, $month, min(6, $periodMonths));
-    $pulse = $this->financialPulse($income, $expense, $savingRate, $buckets);
+    $pulse = $this->financialPulse($income, $expense, $savingInvestment, $savingRate, $buckets);
     $baseline = FinancialBaseline::latestForUser($telegramUserId);
     if ($baseline === null && $email !== '') {
       $baseline = FinancialBaseline::latestForEmail($email);
@@ -82,6 +84,7 @@ class TransactionDashboardService
         'period_label' => $this->periodLabel($month, $periodMonths),
         'income' => $income,
         'expense' => $expense,
+        'saving_investment' => $savingInvestment,
         'cashflow' => $cashflow,
         'saving_rate' => $savingRate,
         'pulse_score' => $pulse['score'],
@@ -102,6 +105,7 @@ class TransactionDashboardService
       'month_label' => $this->monthLabel($month),
       'income' => $income,
       'expense' => $expense,
+      'saving_investment' => $savingInvestment,
       'cashflow' => $cashflow,
       'saving_rate' => $savingRate,
       'transaction_count' => $transactionCount,
@@ -152,7 +156,7 @@ class TransactionDashboardService
    */
   private function spendingByCategory(Collection $rows): Collection
   {
-    $expenses = $rows->where('type', 'Pengeluaran');
+    $expenses = $rows->where('type', TransactionTaxonomy::TYPE_EXPENSE);
     $total = (int) $expenses->sum('amount');
     if ($total === 0) {
       return collect();
@@ -176,9 +180,10 @@ class TransactionDashboardService
    * @param  array<string, float>  $idealShares
    * @return list<array{bucket: string, amount: int, share: float, ideal: float, progress: float, status: string, status_label: string}>
    */
-  private function budgetBuckets(Collection $rows, int $totalExpense, array $idealShares): array
+  private function budgetBuckets(Collection $rows, int $totalExpense, int $totalSaving, array $idealShares): array
   {
-    if ($totalExpense === 0) {
+    $totalAllocated = $totalExpense + $totalSaving;
+    if ($totalAllocated === 0) {
       return collect($idealShares)
         ->map(fn (float $ideal, string $bucket) => [
           'bucket' => $bucket,
@@ -193,7 +198,8 @@ class TransactionDashboardService
         ->all();
     }
 
-    $expenses = $rows->where('type', 'Pengeluaran');
+    $expenses = $rows->where('type', TransactionTaxonomy::TYPE_EXPENSE);
+    $savings = $rows->where('type', TransactionTaxonomy::TYPE_SAVING);
     $bucketTotals = array_fill_keys(array_keys($idealShares), 0);
 
     foreach ($expenses as $row) {
@@ -204,10 +210,14 @@ class TransactionDashboardService
       $bucketTotals[$bucket] += (int) $row->amount;
     }
 
+    foreach ($savings as $row) {
+      $bucketTotals['Future Building'] = ($bucketTotals['Future Building'] ?? 0) + (int) $row->amount;
+    }
+
     $result = [];
     foreach ($idealShares as $bucket => $ideal) {
       $amount = $bucketTotals[$bucket] ?? 0;
-      $share = round(($amount / $totalExpense) * 100, 1);
+      $share = round(($amount / $totalAllocated) * 100, 1);
       $progress = $ideal > 0 ? round(min(150, ($share / $ideal) * 100), 1) : 0.0;
       $status = $this->bucketStatus($bucket, $share, $ideal);
 
@@ -265,14 +275,16 @@ class TransactionDashboardService
       $m = $start->copy()->addMonths($i);
       $key = $m->format('Y-m');
       $monthRows = $rows->filter(fn (BotTransaction $t) => $t->recorded_at->format('Y-m') === $key);
-      $income = (int) $monthRows->where('type', 'Pemasukan')->sum('amount');
-      $expense = (int) $monthRows->where('type', 'Pengeluaran')->sum('amount');
+      $income = (int) $monthRows->where('type', TransactionTaxonomy::TYPE_INCOME)->sum('amount');
+      $expense = (int) $monthRows->where('type', TransactionTaxonomy::TYPE_EXPENSE)->sum('amount');
+      $saving = (int) $monthRows->where('type', TransactionTaxonomy::TYPE_SAVING)->sum('amount');
       $points[] = [
         'month' => $key,
         'label' => $m->translatedFormat('M'),
         'income' => $income,
         'expense' => $expense,
-        'cashflow' => $income - $expense,
+        'saving_investment' => $saving,
+        'cashflow' => $income - $expense - $saving,
       ];
     }
 
@@ -283,12 +295,12 @@ class TransactionDashboardService
    * @param  list<array{bucket: string, amount: int, share: float, ideal: float, progress: float, status: string, status_label: string}>  $buckets
    * @return array{score: int, label: string}
    */
-  private function financialPulse(int $income, int $expense, float $savingRate, array $buckets): array
+  private function financialPulse(int $income, int $expense, int $savingInvestment, float $savingRate, array $buckets): array
   {
     $score = 50;
     if ($income > 0) {
       $score += (int) min(25, max(-25, $savingRate / 2));
-      $score += $expense <= $income ? 10 : -15;
+      $score += ($expense + $savingInvestment) <= $income ? 10 : -15;
     }
     foreach ($buckets as $bucket) {
       $delta = abs($bucket['share'] - $bucket['ideal']);

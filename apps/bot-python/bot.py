@@ -77,8 +77,8 @@ ACTIVATE_HELP_TEXT = (
     "`/activate KODE-LISENSI-ANDA`"
 )
 
-VALID_JENIS = {"Pemasukan", "Pengeluaran"}
-VALID_SIFAT = {"Need", "Wants", "Saving/Investement", "Donation"}
+VALID_JENIS = {"Pemasukan", "Pengeluaran", "Saving/Investment"}
+VALID_SIFAT = {"Need", "Wants"}
 VALID_MOOD = {"Happy", "Neutral", "Sad", "Stressed", "Angry", "Tired"}
 VALID_IMPULSIF = {"Yes", "No"}
 PENDING_NAME_USERS: set[int] = set()
@@ -180,6 +180,35 @@ def detect_mood_in_text(text: str) -> str | None:
     return None
 
 
+def normalize_taxonomy(parsed: Dict[str, Any]) -> Dict[str, Any]:
+    """Selaraskan jenis & sifat dengan taxonomy YFD (Need/Wants + 3 jenis)."""
+    jenis = str(parsed.get("jenis", "Pengeluaran")).strip()
+    sifat = str(parsed.get("sifat", "Need")).strip()
+    sifat_lower = sifat.lower()
+
+    if sifat_lower in {"saving/investement", "saving/investment", "saving", "investasi", "investment"}:
+        parsed["jenis"] = "Saving/Investment"
+        parsed["sifat"] = "Need"
+    elif sifat_lower in {"donation", "donasi", "sedekah", "persembahan"}:
+        parsed["jenis"] = "Pengeluaran"
+        parsed["kategori"] = "Social"
+        parsed["sifat"] = "Need"
+    elif sifat not in VALID_SIFAT:
+        parsed["sifat"] = "Wants" if sifat_lower in {"want", "wants"} else "Need"
+
+    if jenis not in VALID_JENIS:
+        jenis_lower = jenis.lower()
+        if jenis_lower in {"saving/investement", "saving/investment", "saving", "investasi", "investment", "nabung"}:
+            parsed["jenis"] = "Saving/Investment"
+        else:
+            parsed["jenis"] = "Pengeluaran"
+
+    if parsed["sifat"] not in VALID_SIFAT:
+        parsed["sifat"] = "Need"
+
+    return parsed
+
+
 def finalize_parsed_transaction(
     parsed: Dict[str, Any],
     source_text: str = "",
@@ -187,6 +216,7 @@ def finalize_parsed_transaction(
     trust_ai_impulsif: bool = False,
 ) -> Dict[str, Any]:
     normalize_category_fields(parsed, source_text)
+    normalize_taxonomy(parsed)
     ai_val = str(parsed.get("impulsif", "")).strip() if trust_ai_impulsif else None
     parsed["impulsif"] = resolve_impulsif(
         parsed,
@@ -593,10 +623,15 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
             if any(keyword in lower_text for keyword in PAYDAY_SPLURGE_KEYWORDS + REWARD_SPENDING_KEYWORDS)
             else "Need"
         )
-    elif any(keyword in lower_text for keyword in ["hadiah", "amplop", "ultah", "ulang tahun", "konser"]):
+    elif any(keyword in lower_text for keyword in ["saham", "reksa", "obligasi", "nabung", "tabung", "investasi", "investment", "deposito", "avg down", "dividen reinvest"]):
+        jenis = "Saving/Investment"
+        kategori = "Jajan"
+        sub_kategori = "Pengeluaran lain-lain"
+        sifat = "Need"
+    elif any(keyword in lower_text for keyword in ["hadiah", "amplop", "ultah", "ulang tahun", "konser", "sedekah", "persembahan", "ibadah", "donasi"]):
         kategori = "Social"
         sub_kategori = "Hadiah / Amplop sosial"
-        sifat = "Donation"
+        sifat = "Need"
 
     detected_mood = detect_mood_in_text(text)
     if detected_mood:

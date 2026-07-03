@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BotTransaction;
 use App\Models\CategoryBucketMapping;
+use App\Support\TransactionTaxonomy;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -52,7 +53,7 @@ class CategoryBucketMappingService
         $sub = mb_strtolower(trim((string) $row->sub_category));
         $nature = trim((string) $row->nature);
         $combined = mb_strtolower(trim("{$sub} {$row->notes} {$category}"));
-        $txType = $row->type === 'Pemasukan' ? 'income' : 'expense';
+        $txType = TransactionTaxonomy::mappingTransactionType((string) $row->type);
 
         foreach ($this->activeMappings() as $mapping) {
             if ($mapping->transaction_type !== $txType && $mapping->transaction_type !== 'transfer') {

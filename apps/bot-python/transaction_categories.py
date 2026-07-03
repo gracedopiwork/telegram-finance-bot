@@ -221,10 +221,10 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
 {{
   "keterangan": string,
   "nominal": integer,
-  "jenis": "Pemasukan" | "Pengeluaran",
+  "jenis": "Pemasukan" | "Pengeluaran" | "Saving/Investment",
   "kategori": {_enum_join(categories)},
   "sub_kategori": {_enum_join(subs)},
-  "sifat": "Need" | "Wants" | "Saving/Investement" | "Donation",
+  "sifat": "Need" | "Wants",
   "mood": "Happy" | "Neutral" | "Sad" | "Stressed" | "Angry" | "Tired",
   "impulsif": "Yes" | "No"
 }}
@@ -237,18 +237,21 @@ CATATAN (WAJIB — source of truth):
 Aturan:
 1) keterangan: rapikan typo/singkatan agar mudah dibaca, gunakan kapitalisasi wajar.
 2) nominal: ekstrak angka jadi integer bersih (contoh: 50rb => 50000, 1,2jt => 1200000).
-3) jenis: pilih hanya Pemasukan atau Pengeluaran.
-4) kategori & sub_kategori: WAJIB persis dari enum (huruf besar/kecil sama). Jangan pernah mengarang label baru.
+3) jenis: Pemasukan | Pengeluaran | Saving/Investment.
+   - Saving/Investment untuk nabung, saham, reksadana, deposito, avg down — BUKAN pengeluaran hidup.
+   - Donasi/sedekah/persembahan/ibadah = Pengeluaran + kategori Social (bukan jenis/sifat terpisah).
+4) sifat: HANYA Need atau Wants (berlaku untuk semua jenis transaksi).
+5) kategori & sub_kategori: WAJIB persis dari enum (huruf besar/kecil sama). Jangan pernah mengarang label baru.
    Pasangan yang benar:
 {mapping_block}
    Petunjuk admin (bucket):
 {hints_block}
    Jika tidak yakin kategori/sub → kategori {fb_cat}, sub_kategori "{fb_sub}" (bukan kategori baru).
-5) impulsif — WAJIB pertimbangkan konteks & niat, bukan hanya nominal besar:
+6) impulsif — WAJIB pertimbangkan konteks & niat, bukan hanya nominal besar:
    "Yes" jika spontan / fomo / euforia gajian / mood negatif + wants.
    "No" jika terencana, tagihan wajib, atau perayaan keluarga.
-6) Balas HANYA JSON murni, tanpa markdown dan tanpa teks tambahan.
-7) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
+7) Balas HANYA JSON murni, tanpa markdown dan tanpa teks tambahan.
+8) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
    {{"error":"invalid_input"}}
 """
 

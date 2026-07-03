@@ -137,8 +137,8 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
     <x-portal.stat-card label="Total Pendapatan" :value="$fmt($summary['income'])" :hint="$summary['income_share'].'% dari total cash in'" icon="trending_up" tone="emerald" />
     <x-portal.stat-card label="Total Pengeluaran" :value="$fmt($summary['expense'])" :hint="$summary['expense_share'].'% dari pendapatan'" icon="shopping_cart" tone="rose" />
-    <x-portal.stat-card label="Cashflow (Surplus)" :value="$fmt($summary['cashflow'])" :hint="$summary['cashflow_share'].'% dari pendapatan'" icon="account_balance" :tone="$summary['cashflow'] >= 0 ? 'emerald' : 'rose'" />
-    <x-portal.stat-card label="Saving Rate" :value="$summary['saving_rate'].'%'" hint="Ideal ≥ 20%" icon="savings" tone="gold" />
+    <x-portal.stat-card label="Saving/Investment" :value="$fmt($summary['saving_investment'] ?? 0)" :hint="$summary['saving_rate'].'% dari pendapatan'" icon="savings" tone="navy" />
+    <x-portal.stat-card label="Cashflow (Sisa)" :value="$fmt($summary['cashflow'])" :hint="$summary['cashflow_share'].'% dari pendapatan'" icon="account_balance" :tone="$summary['cashflow'] >= 0 ? 'emerald' : 'rose'" />
     <x-portal.stat-card label="Transaksi" :value="(string) $summary['transaction_count']" :hint="$summary['period_label']" icon="receipt_long" tone="navy" />
 </div>
 
