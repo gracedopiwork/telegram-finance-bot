@@ -66,6 +66,8 @@ class DiagnosticController extends Controller
         $validated = $request->validate($service->validationRulesFinancialStageOnly());
         $validated['email'] = $email;
 
+        app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+
         $existing = FinancialBaseline::latestForUser($telegramUserId)
             ?? FinancialBaseline::latestForEmail($email);
         $ftsaService = app(FtsaAnswerSummaryService::class);
@@ -123,7 +125,9 @@ class DiagnosticController extends Controller
         FinancialBaseline $existing,
     ): array {
         $payload = $this->buildGuestPayload($email, $result);
-        $payload['telegram_user_id'] = $telegramUserId;
+        if ($telegramUserId > 0) {
+            $payload['telegram_user_id'] = $telegramUserId;
+        }
 
         if (app(FtsaAnswerSummaryService::class)->hasFtsaAnswers($existing)) {
             $payload['ftsa_chd'] = $result['ftsa_chd'];

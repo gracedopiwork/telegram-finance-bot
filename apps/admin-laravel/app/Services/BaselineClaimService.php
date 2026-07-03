@@ -28,11 +28,6 @@ class BaselineClaimService
             return null;
         }
 
-        $existing = FinancialBaseline::latestForUser($telegramUserId);
-        if ($existing !== null && $this->baselineIsFullyComplete($existing) && $this->baselineHasValidScores($existing)) {
-            return $existing;
-        }
-
         $this->reassignClaimableBaselines($email, $telegramUserId);
 
         $merged = $this->mergeSiblingBaselines($email, $telegramUserId);
@@ -95,11 +90,15 @@ class BaselineClaimService
             return null;
         }
 
+        if ($rows->count() === 1) {
+            return $rows->first();
+        }
+
         /** @var FinancialBaseline $primary */
-        $primary = $rows->first();
+        $primary = $this->pickPrimaryBaseline($rows);
         $mergedAnswers = is_array($primary->answers_json) ? $primary->answers_json : [];
 
-        foreach ($rows->skip(1) as $other) {
+        foreach ($rows->where('id', '!=', $primary->id) as $other) {
             $otherAnswers = is_array($other->answers_json) ? $other->answers_json : [];
             if (empty($mergedAnswers['fs']) && ! empty($otherAnswers['fs'])) {
                 $mergedAnswers['fs'] = $otherAnswers['fs'];
@@ -116,12 +115,41 @@ class BaselineClaimService
             'answers_json' => $mergedAnswers,
         ]);
 
-        $duplicateIds = $rows->skip(1)->pluck('id')->all();
+        $duplicateIds = $rows->where('id', '!=', $primary->id)->pluck('id')->all();
         if ($duplicateIds !== []) {
             FinancialBaseline::query()->whereIn('id', $duplicateIds)->delete();
         }
 
         return $primary->fresh();
+    }
+
+    /**
+     * @param  Collection<int, FinancialBaseline>  $rows
+     */
+    private function pickPrimaryBaseline(Collection $rows): FinancialBaseline
+    {
+        return $rows->sortByDesc(fn (FinancialBaseline $row) => $this->baselineCompletenessScore($row))->first();
+    }
+
+    private function baselineCompletenessScore(FinancialBaseline $baseline): int
+    {
+        $answers = is_array($baseline->answers_json) ? $baseline->answers_json : [];
+        $hasFs = is_array($answers['fs'] ?? null) && $answers['fs'] !== [];
+        $score = 0;
+
+        if ($hasFs) {
+            $score += 1_000_000;
+        }
+        if ($this->ftsaSummary->hasCompletedFtsa($baseline)) {
+            $score += 100_000;
+        } elseif ($this->ftsaSummary->hasFtsaAnswers($baseline)) {
+            $score += 10_000;
+        }
+        if ((int) $baseline->financial_stage_score > 0) {
+            $score += 1_000;
+        }
+
+        return $score + (int) ($baseline->assessed_at?->timestamp ?? 0);
     }
 
     /**
@@ -213,31 +241,5 @@ class BaselineClaimService
         if ($updates !== []) {
             $primary->fill($updates)->save();
         }
-    }
-
-    private function baselineIsFullyComplete(FinancialBaseline $baseline): bool
-    {
-        $hasFs = is_array($baseline->answers_json['fs'] ?? null)
-            && $baseline->answers_json['fs'] !== [];
-
-        return $hasFs && $this->ftsaSummary->hasCompletedFtsa($baseline);
-    }
-
-    private function baselineHasValidScores(FinancialBaseline $baseline): bool
-    {
-        if ($this->ftsaSummary->hasCompletedFtsa($baseline)) {
-            if (in_array((string) ($baseline->dominant_archetype ?? ''), ['guest', 'locked', ''], true)) {
-                return false;
-            }
-
-            return ((int) $baseline->ftsa_chd + (int) $baseline->ftsa_rvd + (int) $baseline->ftsa_ssd + (int) $baseline->ftsa_esd) > 0;
-        }
-
-        $hasFs = is_array($baseline->answers_json['fs'] ?? null) && $baseline->answers_json['fs'] !== [];
-        if ($hasFs) {
-            return (int) $baseline->financial_stage_score > 0;
-        }
-
-        return true;
     }
 }

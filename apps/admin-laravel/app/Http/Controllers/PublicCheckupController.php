@@ -61,6 +61,9 @@ class PublicCheckupController extends Controller
             ? (int) PortalSession::telegramUserId($request)
             : 0;
         $existing = $telegramUserId > 0 ? FinancialBaseline::latestForUser($telegramUserId) : null;
+        if ($existing === null && $email !== '') {
+            $existing = FinancialBaseline::latestForEmail($email);
+        }
         $ftsaService = app(FtsaAnswerSummaryService::class);
         $includeFtsa = $existing !== null && $ftsaService->hasFtsaAnswers($existing);
 
@@ -71,7 +74,7 @@ class PublicCheckupController extends Controller
         try {
             $result = $service->assess($validated, $includeFtsa);
 
-            if ($existing !== null && $telegramUserId > 0) {
+            if ($existing !== null) {
                 $existing->update($this->buildUpdatePayload($email, $telegramUserId, $result, $existing));
                 $baseline = $existing->fresh();
             } else {
@@ -80,6 +83,11 @@ class PublicCheckupController extends Controller
                     $payload['telegram_user_id'] = $telegramUserId;
                 }
                 $baseline = FinancialBaseline::query()->create($payload);
+            }
+
+            if ($telegramUserId > 0) {
+                app(\App\Services\BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+                $baseline = FinancialBaseline::latestForUser($telegramUserId) ?? $baseline;
             }
         } catch (QueryException $e) {
             report($e);
@@ -160,7 +168,9 @@ class PublicCheckupController extends Controller
         FinancialBaseline $existing,
     ): array {
         $payload = $this->buildGuestPayload($email, $result);
-        $payload['telegram_user_id'] = $telegramUserId;
+        if ($telegramUserId > 0) {
+            $payload['telegram_user_id'] = $telegramUserId;
+        }
 
         if (app(FtsaAnswerSummaryService::class)->hasFtsaAnswers($existing)) {
             $payload['ftsa_chd'] = $result['ftsa_chd'];

@@ -206,12 +206,15 @@ class BaselineController extends Controller
 
             $payload = $this->buildBaselinePayload($request, $telegramUserId, $result, $snapshot, $ftsaUnlocked);
 
-            if ($isFtsaOnly && $existing !== null) {
-                $payload = $this->mergeExistingSnapshotFields($existing, $payload);
-                $existing->update($payload);
+            $recordToUpdate = $existing ?? $baseline;
+            if ($recordToUpdate !== null) {
+                $payload = $this->mergeExistingSnapshotFields($recordToUpdate, $payload);
+                $recordToUpdate->update($payload);
             } else {
                 FinancialBaseline::query()->create($payload);
             }
+
+            app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
         } catch (QueryException $e) {
