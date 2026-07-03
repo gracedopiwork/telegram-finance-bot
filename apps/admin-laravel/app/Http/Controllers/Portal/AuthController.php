@@ -66,34 +66,43 @@ class AuthController extends Controller
         }
 
         $access = app(PortalAccessService::class);
+        $entitlements = app(\App\Services\LicenseEntitlementService::class);
         $isFtsaOnlyOrder = $access->isFtsaOnlyOrder($order);
+        $isFtsaOnlyLicense = $entitlements->hasPaidFtsaOrderOnLicense($license)
+            && ! $entitlements->hasPaidBotOrderOnLicense($license);
+        $ftsaOnlyLogin = $isFtsaOnlyOrder || $isFtsaOnlyLicense;
 
-        if ($access->hasBotPortalAccess($email, (int) ($license->assigned_user_id ?? 0))
-            && $license->assigned_user_id
-            && $access->isSyntheticPortalUserId((int) $license->assigned_user_id)) {
-            return back()->withInput()->withErrors([
-                'license_key' => 'Paket bot sudah dibeli. Aktifkan dulu di Telegram: /activate '.$license->license_key,
-            ]);
+        if ($ftsaOnlyLogin) {
+            if (! $license->assigned_user_id) {
+                $portalUserId = $access->ensureLicensePortalActivation($license->fresh());
+            } else {
+                $portalUserId = (int) $license->assigned_user_id;
+            }
+
+            return $this->establishSession(
+                $request,
+                $portalUserId,
+                $license->assigned_username ?: $order->full_name,
+                $email,
+                'ftsa_only',
+                (int) $license->id,
+            );
         }
 
         if (! $license->assigned_user_id) {
-            if ($isFtsaOnlyOrder) {
-                $portalUserId = $access->ensureLicensePortalActivation($license->fresh());
-            } else {
-                return back()->withInput()->withErrors([
-                    'license_key' => 'Lisensi belum diaktifkan di Telegram. Jalankan /activate di bot dulu.',
-                ]);
-            }
-        } else {
-            $portalUserId = (int) $license->assigned_user_id;
+            return back()->withInput()->withErrors([
+                'license_key' => 'Lisensi belum diaktifkan di Telegram. Jalankan /activate '.$license->license_key.' di bot YFD First Aid.',
+            ]);
         }
+
+        $portalUserId = (int) $license->assigned_user_id;
 
         return $this->establishSession(
             $request,
             $portalUserId,
             $license->assigned_username ?: $order->full_name,
             $email,
-            $isFtsaOnlyOrder ? 'ftsa_only' : 'licensed',
+            'licensed',
             (int) $license->id,
         );
     }
