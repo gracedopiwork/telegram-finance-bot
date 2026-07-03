@@ -35,8 +35,10 @@
     </div>
     <div class="p-5 sm:p-6">
         <p class="text-sm text-slate-600 mb-4">
-            Isi data di Excel/Google Sheets lalu simpan sebagai <strong>CSV UTF-8</strong>.
+            Isi data di Excel/Google Sheets lalu simpan sebagai <strong>CSV UTF-8</strong> (koma atau titik-koma).
             Kolom: tanggal, jenis, kategori, sub_kategori, nominal, sifat, mood, impulsif, keterangan.
+            Kategori resmi: Makan, Transport, Listrik, Air, Jajan, Social, Gaji — atau isi <strong>sub_kategori</strong> di kolom kategori (mis. <em>Angkutan Umum</em>).
+            Nominal: angka polos (<code>35000</code>) atau format Indonesia (<code>35.000</code>, <code>35rb</code>).
             Maks. 500 baris per file.
         </p>
         @if(session('import_errors'))

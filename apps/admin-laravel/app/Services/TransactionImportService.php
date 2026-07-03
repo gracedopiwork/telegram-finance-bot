@@ -13,9 +13,6 @@ class TransactionImportService
     private const VALID_TYPES = ['Pemasukan', 'Pengeluaran'];
 
     /** @var list<string> */
-    private const VALID_CATEGORIES = ['Makan', 'Transport', 'Listrik', 'Air', 'Jajan', 'Social', 'Gaji'];
-
-    /** @var list<string> */
     private const VALID_NATURES = ['Need', 'Wants', 'Saving/Investement', 'Donation'];
 
     /** @var list<string> */
@@ -51,6 +48,13 @@ class TransactionImportService
         'catatan' => 'notes',
     ];
 
+    /** @var array<string, mixed>|null */
+    private ?array $categoryRules = null;
+
+    public function __construct(
+        private readonly BotCategoryRulesService $categoryRulesService,
+    ) {}
+
     public function templateCsv(): string
     {
         $header = 'tanggal,jenis,kategori,sub_kategori,nominal,sifat,mood,impulsif,keterangan';
@@ -68,12 +72,27 @@ class TransactionImportService
      */
     public function importFromFile(int $telegramUserId, UploadedFile $file): array
     {
-        $handle = fopen($file->getRealPath(), 'r');
+        $path = $file->getRealPath();
+        if ($path === false) {
+            return ['imported' => 0, 'failed' => 0, 'errors' => ['File tidak bisa dibaca.']];
+        }
+
+        $handle = fopen($path, 'r');
         if ($handle === false) {
             return ['imported' => 0, 'failed' => 0, 'errors' => ['File tidak bisa dibaca.']];
         }
 
-        $headerRow = fgetcsv($handle);
+        $firstLine = fgets($handle);
+        if ($firstLine === false) {
+            fclose($handle);
+
+            return ['imported' => 0, 'failed' => 0, 'errors' => ['File CSV kosong.']];
+        }
+
+        $delimiter = $this->detectDelimiter($firstLine);
+        rewind($handle);
+
+        $headerRow = fgetcsv($handle, 0, $delimiter);
         if ($headerRow === false) {
             fclose($handle);
 
@@ -92,7 +111,7 @@ class TransactionImportService
         $errors = [];
         $line = 1;
 
-        while (($row = fgetcsv($handle)) !== false) {
+        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
             $line++;
             if ($this->isEmptyRow($row)) {
                 continue;
@@ -166,12 +185,25 @@ class TransactionImportService
 
         $amount = $this->parseAmount($data['amount'] ?? '');
         if ($amount === null || $amount < 1) {
-            return ['error' => 'nominal tidak valid'];
+            $rawAmount = trim($data['amount'] ?? '');
+
+            return ['error' => $rawAmount === ''
+                ? 'nominal kosong'
+                : "nominal tidak valid (nilai: \"{$rawAmount}\")"];
         }
 
-        $category = $this->normalizeCategory($data['category'] ?? '', $type);
+        $rules = $this->rules();
+        $categoryInput = $data['category'] ?? '';
+        $subCategoryInput = trim($data['sub_category'] ?? '');
+
+        $category = $this->resolveCategory($categoryInput, $subCategoryInput, $type, $rules);
         if ($category === null) {
-            return ['error' => 'kategori tidak valid (Makan, Transport, Listrik, Air, Jajan, Social, Gaji)'];
+            $allowed = implode(', ', $rules['categories']);
+            $hint = $categoryInput !== ''
+                ? "nilai \"{$categoryInput}\" tidak dikenali"
+                : 'kolom kategori kosong';
+
+            return ['error' => "kategori tidak valid — {$hint}. Gunakan: {$allowed} (sub_kategori juga bisa di kolom kategori, mis. Angkutan Umum → Transport)"];
         }
 
         $recordedAt = $this->parseDate($data['recorded_at'] ?? '') ?? now();
@@ -180,10 +212,7 @@ class TransactionImportService
         $mood = $this->normalizeMood($data['mood'] ?? '');
         $isImpulsive = $this->parseBool($data['is_impulsive'] ?? '');
 
-        $subCategory = trim($data['sub_category'] ?? '');
-        if ($subCategory === '') {
-            $subCategory = '-';
-        }
+        $subCategory = $this->resolveSubCategory($subCategoryInput, $categoryInput, $category, $rules);
 
         $notes = trim($data['notes'] ?? '');
         if ($notes === '') {
@@ -203,9 +232,152 @@ class TransactionImportService
         ];
     }
 
-  /**
-   * @param  list<string|null>  $row
-   */
+    /**
+     * @param  array<string, mixed>  $rules
+     */
+    private function resolveCategory(string $categoryInput, string $subCategoryInput, string $type, array $rules): ?string
+    {
+        $categoryInput = trim($categoryInput);
+        $subCategoryInput = trim($subCategoryInput);
+
+        if ($categoryInput === '' && $type === 'Pemasukan') {
+            return 'Gaji';
+        }
+
+        if ($categoryInput === '' && $type === 'Pengeluaran') {
+            if ($subCategoryInput !== '') {
+                $fromSub = $this->categoryFromSubCategory($subCategoryInput, $rules);
+                if ($fromSub !== null) {
+                    return $fromSub;
+                }
+            }
+
+            return (string) ($rules['fallback_category'] ?? 'Jajan');
+        }
+
+        $canonical = $this->matchCategoryName($categoryInput, $rules);
+        if ($canonical !== null) {
+            return $canonical;
+        }
+
+        return $this->categoryFromSubCategory($categoryInput, $rules);
+    }
+
+    /**
+     * @param  array<string, mixed>  $rules
+     */
+    private function resolveSubCategory(
+        string $subCategoryInput,
+        string $categoryInput,
+        string $resolvedCategory,
+        array $rules,
+    ): string {
+        $subCategoryInput = trim($subCategoryInput);
+        $categoryInput = trim($categoryInput);
+
+        if ($subCategoryInput !== '') {
+            $canonical = $this->matchSubCategoryName($subCategoryInput, $resolvedCategory, $rules);
+            if ($canonical !== null) {
+                return $canonical;
+            }
+
+            return $subCategoryInput;
+        }
+
+        if ($categoryInput !== '' && $this->matchSubCategoryName($categoryInput, $resolvedCategory, $rules) !== null) {
+            return $categoryInput;
+        }
+
+        $subs = $rules['category_sub_map'][$resolvedCategory] ?? [];
+        if (is_array($subs) && $subs !== []) {
+            return (string) $subs[0];
+        }
+
+        return (string) ($rules['fallback_sub'] ?? 'Pengeluaran lain-lain');
+    }
+
+    /**
+     * @param  array<string, mixed>  $rules
+     */
+    private function matchCategoryName(string $value, array $rules): ?string
+    {
+        foreach ($rules['categories'] as $cat) {
+            if (mb_strtolower((string) $cat) === mb_strtolower($value)) {
+                return (string) $cat;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $rules
+     */
+    private function categoryFromSubCategory(string $value, array $rules): ?string
+    {
+        $needle = mb_strtolower(trim($value));
+        if ($needle === '') {
+            return null;
+        }
+
+        /** @var array<string, list<string>> $categorySubMap */
+        $categorySubMap = $rules['category_sub_map'] ?? [];
+        foreach ($categorySubMap as $category => $subs) {
+            foreach ($subs as $sub) {
+                if (mb_strtolower((string) $sub) === $needle) {
+                    return (string) $category;
+                }
+            }
+        }
+
+        foreach ($rules['rules'] as $rule) {
+            if (! is_array($rule)) {
+                continue;
+            }
+            $sub = trim((string) ($rule['sub_category'] ?? ''));
+            $cat = trim((string) ($rule['category'] ?? ''));
+            if ($sub !== '' && $cat !== '' && $cat !== '*' && mb_strtolower($sub) === $needle) {
+                return $cat;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $rules
+     */
+    private function matchSubCategoryName(string $value, string $category, array $rules): ?string
+    {
+        $subs = $rules['category_sub_map'][$category] ?? [];
+        if (! is_array($subs)) {
+            return null;
+        }
+
+        foreach ($subs as $sub) {
+            if (mb_strtolower((string) $sub) === mb_strtolower($value)) {
+                return (string) $sub;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function rules(): array
+    {
+        if ($this->categoryRules === null) {
+            $this->categoryRules = $this->categoryRulesService->export();
+        }
+
+        return $this->categoryRules;
+    }
+
+    /**
+     * @param  list<string|null>  $row
+     */
     private function isEmptyRow(array $row): bool
     {
         foreach ($row as $cell) {
@@ -215,6 +387,14 @@ class TransactionImportService
         }
 
         return true;
+    }
+
+    private function detectDelimiter(string $line): string
+    {
+        $semicolons = substr_count($line, ';');
+        $commas = substr_count($line, ',');
+
+        return $semicolons > $commas ? ';' : ',';
     }
 
     private function normalizeType(string $value): ?string
@@ -233,21 +413,6 @@ class TransactionImportService
         return null;
     }
 
-    private function normalizeCategory(string $value, string $type): ?string
-    {
-        if ($value === '' && $type === 'Pemasukan') {
-            return 'Gaji';
-        }
-
-        foreach (self::VALID_CATEGORIES as $cat) {
-            if (mb_strtolower($cat) === mb_strtolower($value)) {
-                return $cat;
-            }
-        }
-
-        return null;
-    }
-
     private function normalizeNature(string $value, string $type): string
     {
         $v = trim($value);
@@ -255,10 +420,6 @@ class TransactionImportService
             if (strcasecmp($nature, $v) === 0) {
                 return $nature;
             }
-        }
-
-        if ($type === 'Pemasukan') {
-            return 'Need';
         }
 
         return 'Need';
@@ -286,7 +447,7 @@ class TransactionImportService
     private function parseAmount(string $value): ?int
     {
         $raw = mb_strtolower(trim($value));
-        if ($raw === '') {
+        if ($raw === '' || in_array($raw, ['-', '—', 'n/a', 'na', 'null', '#n/a'], true)) {
             return null;
         }
 
@@ -300,14 +461,29 @@ class TransactionImportService
             $raw = preg_replace('/\b(jt|juta|milyun|miliar|rb|ribu|k)\b/u', '', $raw) ?? $raw;
         }
 
-        $digits = preg_replace('/[^\d.,]/', '', $raw) ?? '';
-        $digits = str_replace('.', '', $digits);
-        $digits = str_replace(',', '.', $digits);
-        if ($digits === '' || ! is_numeric($digits)) {
+        $raw = preg_replace('/\brp\.?\s*/u', '', $raw) ?? $raw;
+        $digits = preg_replace('/[^\d.,]/', '', trim($raw)) ?? '';
+        if ($digits === '') {
             return null;
         }
 
-        return (int) round((float) $digits * $multiplier);
+        if (preg_match('/^\d{1,3}(\.\d{3})+(,\d+)?$/', $digits)) {
+            $digits = str_replace('.', '', $digits);
+            $digits = str_replace(',', '.', $digits);
+        } elseif (preg_match('/^\d{1,3}(,\d{3})+(\.\d+)?$/', $digits)) {
+            $digits = str_replace(',', '', $digits);
+        } elseif (preg_match('/^\d+\.\d{3}$/', $digits)) {
+            $digits = str_replace('.', '', $digits);
+        } else {
+            $digits = str_replace('.', '', $digits);
+            $digits = str_replace(',', '.', $digits);
+        }
+
+        if (! is_numeric($digits)) {
+            return null;
+        }
+
+        return max(0, (int) round((float) $digits * $multiplier));
     }
 
     private function parseDate(string $value): ?Carbon
