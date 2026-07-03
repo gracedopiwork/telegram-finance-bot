@@ -1,4 +1,4 @@
-@if(($needsFinancialDiagnostic ?? false) || ($needsFtsa ?? false) || ($needsBaseline ?? false))
+@if(($needsFinancialDiagnostic ?? false) || ($needsFtsa ?? false))
 <div class="space-y-4 mb-6">
     @if($isFtsaOnlyPortalUser ?? false)
         @if($needsFinancialDiagnostic ?? false)
@@ -14,24 +14,16 @@
             </a>
         </div>
         @endif
-    @elseif(($needsFinancialDiagnostic ?? false) || ($needsBaseline ?? false))
+    @elseif($needsFinancialDiagnostic ?? false)
         <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
             <div class="text-sm text-amber-900">
                 <div class="font-bold">Langkah 1 — Baseline Data</div>
-                <div class="mt-0.5">
-                    @if($needsFinancialDiagnostic ?? false)
-                        Isi diagnostik tahap keuangan + snapshot angka (pendapatan, tabungan, utang, proteksi).
-                    @else
-                        Diagnostik sudah tersimpan — lengkapi snapshot angka langsung di dashboard ini.
-                    @endif
-                </div>
+                <div class="mt-0.5">Isi diagnostik tahap keuangan + snapshot angka (pendapatan, tabungan, utang, proteksi).</div>
             </div>
-            <a href="{{ ($needsBaseline ?? false) && !($needsFinancialDiagnostic ?? false)
-                    ? ($baselineUrl ?? route('portal.baseline.create'))
-                    : route('portal.baseline.create') }}"
+            <a href="{{ route('portal.baseline.create') }}"
                class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm shrink-0">
                 <span class="material-symbols-outlined text-lg">fact_check</span>
-                {{ ($needsBaseline ?? false) && !($needsFinancialDiagnostic ?? false) ? 'Isi Snapshot' : 'Isi Baseline Data' }}
+                Isi Baseline Data
             </a>
         </div>
     @endif
