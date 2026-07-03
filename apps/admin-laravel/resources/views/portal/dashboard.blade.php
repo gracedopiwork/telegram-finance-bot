@@ -65,28 +65,6 @@
     'embedSnapshotForm' => ($needsBaseline ?? false),
 ])
 
-@if($hasBotPortalAccess ?? true)
-<section id="input-data" class="scroll-mt-24 space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-lg font-extrabold text-navy-800 flex items-center gap-2">
-            <span class="material-symbols-outlined text-gold-500">edit_note</span>
-            Input Data — Transaksi & Import
-        </h2>
-        <a href="{{ $portalTransactionsUrl ?? route('portal.transactions') }}"
-           class="text-sm font-semibold text-navy-800 hover:underline shrink-0">
-            Buka halaman Input Data →
-        </a>
-    </div>
-    @include('portal.partials.transactions-input-panel', [
-        'summary' => $summary,
-        'fmt' => $fmt,
-        'showBotBanner' => false,
-        'dashboardLink' => false,
-    ])
-</section>
-@include('portal.partials.transactions-delete-script', ['summary' => $summary])
-@endif
-
 @php $hasAssessment = ($summary['baseline'] ?? null); @endphp
 @if(!$hasData)
     @include('portal.partials.empty-state', [

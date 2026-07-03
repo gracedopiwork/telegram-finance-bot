@@ -102,12 +102,9 @@
             Tabel Transaksi
             <span class="text-slate-400 font-normal text-sm">({{ $summary['period_label'] ?? '—' }})</span>
         </h3>
-        @if($dashboardLink)
+        @if($dashboardLink ?? false)
             <a href="{{ route('portal.dashboard', ['month' => $summary['month'] ?? null, 'period' => $summary['period_months'] ?? 1]) }}"
                class="text-sm text-navy-800 font-semibold hover:underline">Lihat Dashboard →</a>
-        @else
-            <a href="{{ route('portal.transactions', request()->only(['month', 'period'])) }}#input-data"
-               class="text-sm text-navy-800 font-semibold hover:underline">Halaman Input Data penuh →</a>
         @endif
     </div>
 
