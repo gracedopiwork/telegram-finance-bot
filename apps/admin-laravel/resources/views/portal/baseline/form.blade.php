@@ -12,6 +12,7 @@
     $ftsaUnlocked = $ftsaUnlocked ?? true;
     $isFtsaOnlyPortalUser = $isFtsaOnlyPortalUser ?? false;
     $needsFinancialDiagnostic = $needsFinancialDiagnostic ?? false;
+    $showFinancialDiagnosticSection = $showFinancialDiagnosticSection ?? (!$isFtsaOnlyPortalUser && $needsFinancialDiagnostic);
 @endphp
 
 <div class="{{ ($isFtsaOnlyPortalUser ?? false) ? 'w-full' : 'w-full max-w-6xl mx-auto' }}">
@@ -67,7 +68,7 @@
     <form method="post" action="{{ route('portal.baseline.store') }}" class="space-y-8">
         @csrf
 
-        @if(!$isFtsaOnlyPortalUser)
+        @if($showFinancialDiagnosticSection)
         {{-- Financial Stage --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
             <div class="bg-navy-800 text-white px-5 py-4">

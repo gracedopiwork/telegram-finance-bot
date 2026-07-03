@@ -84,6 +84,7 @@ class BaselineController extends Controller
         $onboarding = app(PortalOnboardingService::class);
         $access = app(PortalAccessService::class);
         $isFtsaOnly = $access->isFtsaOnlyPortalUser($email);
+        $needsFinancialDiagnostic = $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId);
 
         app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
 
@@ -115,7 +116,8 @@ class BaselineController extends Controller
             'ftsaEndsAt' => $ftsaStatus['ends_at'],
             'ftsaRetakeLocked' => $ftsaRetakeLocked,
             'isFtsaOnlyPortalUser' => $isFtsaOnly,
-            'needsFinancialDiagnostic' => $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId),
+            'needsFinancialDiagnostic' => $needsFinancialDiagnostic,
+            'showFinancialDiagnosticSection' => ! $isFtsaOnly && $needsFinancialDiagnostic,
             'months' => $this->monthOptions(),
         ]);
     }
@@ -144,6 +146,7 @@ class BaselineController extends Controller
 
         $email = (string) (PortalSession::email($request) ?? '');
         $isFtsaOnly = app(PortalAccessService::class)->isFtsaOnlyPortalUser($email);
+        $onboarding = app(PortalOnboardingService::class);
         $ftsaEval = app(FtsaEvaluationService::class);
 
         if ($ftsaEval->isRetakeLocked($telegramUserId)) {
@@ -160,8 +163,14 @@ class BaselineController extends Controller
         try {
             $service = app(BaselineAssessmentService::class);
             $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email);
+            $existing = FinancialBaseline::latestForUser($telegramUserId);
+            $baseline = $existing ?? $onboarding->resolveBaseline($email, $telegramUserId);
+            $hasPriorFinancialDiagnostic = $onboarding->hasFinancialDiagnostic($baseline);
+            $needsFinancialDiagnostic = ! $isFtsaOnly && ! $hasPriorFinancialDiagnostic;
 
             if ($isFtsaOnly) {
+                $rules = $service->validationRulesFtsaOnly($ftsaUnlocked);
+            } elseif (! $needsFinancialDiagnostic) {
                 $rules = $service->validationRulesFtsaOnly($ftsaUnlocked);
             } else {
                 $rules = $service->validationRules();
@@ -179,7 +188,6 @@ class BaselineController extends Controller
             }
 
             $validated = $request->validate($rules);
-            $existing = FinancialBaseline::latestForUser($telegramUserId);
 
             if ($ftsaEval->isRetakeLocked($telegramUserId) && $existing !== null) {
                 $priorFtsa = $existing->answers_json['ftsa'] ?? [];
@@ -188,7 +196,7 @@ class BaselineController extends Controller
                 }
             }
 
-            if ($isFtsaOnly) {
+            if ($isFtsaOnly || ! $needsFinancialDiagnostic) {
                 $priorFs = $existing?->answers_json['fs'] ?? [];
                 $validated['fs'] = (is_array($priorFs) && $priorFs !== []) ? $priorFs : [];
             }
