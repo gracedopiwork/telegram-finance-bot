@@ -96,6 +96,32 @@
                 </div>
             </div>
 
+            {{-- Video Demo --}}
+            <div class="card card-outline card-success mb-4">
+                <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-play-circle mr-2"></i>Video Demo</h3></div>
+                <div class="card-body">
+                    <div class="custom-control custom-switch mb-3">
+                        <input type="checkbox" name="demo_video_enabled" id="demoVideoEnabled" class="custom-control-input" value="1"
+                               @checked(old('demo_video_enabled', $product->demo_video_enabled))>
+                        <label class="custom-control-label" for="demoVideoEnabled">Tampilkan video demo di halaman produk</label>
+                    </div>
+                    <div class="form-group">
+                        <label>URL Video (YouTube / Vimeo)</label>
+                        <input type="url" name="demo_video_url" class="form-control @error('demo_video_url') is-invalid @enderror"
+                               value="{{ old('demo_video_url', $product->demo_video_url) }}"
+                               placeholder="https://www.youtube.com/watch?v=... atau https://youtu.be/...">
+                        <small class="form-text text-muted">Paste link YouTube atau Vimeo. Akan otomatis di-embed di halaman /produk.</small>
+                        @error('demo_video_url')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Deskripsi Video Demo</label>
+                        <textarea name="demo_video_description" class="form-control" rows="4"
+                                  placeholder="Penjelasan singkat di atas video — alur beli, aktivasi bot, catat transaksi, dan lihat dashboard.">{{ old('demo_video_description', $product->demo_video_description) }}</textarea>
+                        <small class="form-text text-muted">Teks ini tampil di section video demo (bisa diedit kapan saja tanpa ubah deskripsi produk utama).</small>
+                    </div>
+                </div>
+            </div>
+
             {{-- Fitur --}}
             <div class="card card-outline card-success mb-4">
                 <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-list-ul mr-2"></i>Fitur</h3></div>

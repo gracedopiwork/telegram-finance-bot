@@ -235,14 +235,15 @@
 <section id="cara-pakai" class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-20">
     <div class="text-center mb-12 max-w-2xl mx-auto">
         <span class="text-label-md text-secondary block mb-3">CARA PAKAI</span>
-        <h2 class="font-heading text-headline-lg text-primary mb-3">3 langkah, 5 menit, langsung dipakai.</h2>
+        <h2 class="font-heading text-headline-lg text-primary mb-3">4 langkah dari beli sampai dashboard.</h2>
         <p class="text-body-md text-on-surface-variant">Tidak perlu install aplikasi tambahan. Cukup punya Telegram & Gmail.</p>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         @foreach([
-            ['no' => '01', 'ic' => 'shopping_cart',    'title' => 'Beli & Bayar Online',     'desc' => 'Klik tombol Beli Sekarang, isi form, lalu bayar via QRIS di halaman Midtrans.'],
-            ['no' => '02', 'ic' => 'verified_user',    'title' => 'Aktivasi di Bot',         'desc' => 'Salin kode dari halaman setelah bayar (sama dengan WhatsApp). Di YFD First Aid: /activate KODE-LISENSI (harus persis).'],
-            ['no' => '03', 'ic' => 'forum',            'title' => 'Catat Sambil Ngobrol',    'desc' => 'Tinggal chat: "bensin 50rb", "gajian 5jt", "nabung 200rb". YFD First Aid urus sisanya.'],
+            ['no' => '01', 'ic' => 'shopping_cart',    'title' => 'Beli & Bayar Online',     'desc' => 'Klik Beli Sekarang, isi form, bayar via QRIS Midtrans.'],
+            ['no' => '02', 'ic' => 'verified_user',    'title' => 'Aktivasi di Bot',         'desc' => 'Salin kode lisensi. Di YFD First Aid: /activate KODE-LISENSI.'],
+            ['no' => '03', 'ic' => 'forum',            'title' => 'Catat via Chat',          'desc' => 'Chat: "bensin 50rb", "gajian 5jt". AI parse kategori, mood & impulsif.'],
+            ['no' => '04', 'ic' => 'dashboard',        'title' => 'Lihat Dashboard',         'desc' => 'Login portal → isi baseline → lihat Financial & Behavioral Dashboard + insight.'],
         ] as $step)
             <div class="bg-white border border-outline-variant rounded-2xl p-7 shadow-soft hover:shadow-card transition relative overflow-hidden">
                 <span class="absolute -top-4 -right-2 text-[120px] font-extrabold text-surface-container-high leading-none select-none pointer-events-none">{{ $step['no'] }}</span>
@@ -258,13 +259,41 @@
     </div>
 </section>
 
+@if($featured?->hasDemoVideo())
+{{-- ============== Video Demo (dikelola admin) ============== --}}
+<section id="video-demo" class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-20">
+        <div class="max-w-3xl mx-auto text-center mb-8">
+            <span class="text-label-md text-secondary block mb-3">VIDEO DEMO</span>
+            <h2 class="font-heading text-headline-lg text-primary mb-3">Lihat alur lengkap YFD First Aid</h2>
+            @if(filled($featured->demo_video_description))
+                <p class="text-body-md text-on-surface-variant whitespace-pre-line">{{ $featured->demo_video_description }}</p>
+            @else
+                <p class="text-body-md text-on-surface-variant">Dari beli &amp; bayar, aktivasi bot, catat transaksi harian, sampai melihat dashboard finansial &amp; behavioral.</p>
+            @endif
+        </div>
+        <div class="max-w-4xl mx-auto">
+            <div class="relative w-full rounded-2xl overflow-hidden shadow-lift border border-outline-variant bg-black aspect-video">
+                <iframe
+                    src="{{ $featured->demo_video_embed_url }}"
+                    title="Video demo {{ $featured->name }}"
+                    class="absolute inset-0 w-full h-full"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen
+                    loading="lazy"
+                ></iframe>
+            </div>
+        </div>
+</section>
+@endif
+
 {{-- ============== Apa yang dicatat ============== --}}
 <section class="bg-surface-container-low border-y border-outline-variant py-20">
     <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
         <div class="text-center mb-10 max-w-2xl mx-auto">
             <span class="text-label-md text-secondary block mb-3">APA YANG DICATAT</span>
-            <h2 class="font-heading text-headline-lg text-primary mb-3">YFD First Aid otomatis klasifikasikan 7 dimensi finansial</h2>
-            <p class="text-body-md text-on-surface-variant">Sesuai framework <em>Financial Health Check Up</em> YFD — siap analisis lanjut bersama dokter finansial.</p>
+            <h2 class="font-heading text-headline-lg text-primary mb-3">YFD First Aid otomatis klasifikasikan transaksi harian</h2>
+            <p class="text-body-md text-on-surface-variant">Kategori, sifat (Need/Wants), mood, dan deteksi impulsif — siap dianalisis di dashboard behavioral.</p>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             @foreach([

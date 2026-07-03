@@ -6,7 +6,6 @@
 @section('content')
 @php
     $fmt = fn (int $n) => 'Rp ' . number_format($n, 0, ',', '.');
-    $baseline = $summary['baseline'] ?? null;
 @endphp
 
 <div class="bg-gradient-to-r from-navy-800 to-navy-600 rounded-2xl p-5 sm:p-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -36,10 +35,10 @@
     <div class="p-5 sm:p-6">
         <p class="text-sm text-slate-600 mb-4">
             Isi data di Excel/Google Sheets lalu simpan sebagai <strong>CSV UTF-8</strong> (koma atau titik-koma).
-            Kolom: tanggal, <strong>jenis</strong> (Pemasukan / Pengeluaran / Saving/Investment), kategori, sub_kategori, nominal,
+            Kolom: tanggal, <strong>jenis</strong> (Pemasukan / Pengeluaran / Saving/Investment), kategori, nominal,
             <strong>sifat</strong> (Need / Wants), mood, impulsif, keterangan.
             Donasi/ibadah = Pengeluaran + kategori Social. Investasi = jenis Saving/Investment (bukan Pengeluaran).
-            Kategori resmi: Makan, Transport, Listrik, Air, Jajan, Social, Gaji — atau isi <strong>sub_kategori</strong> di kolom kategori (mis. <em>Angkutan Umum</em>).
+            Kategori resmi: Makan, Transport, Listrik, Air, Jajan, Social, Gaji.
             Nominal: angka polos (<code>35000</code>) atau format Indonesia (<code>35.000</code>, <code>35rb</code>).
             Maks. 500 baris per file.
         </p>
@@ -73,96 +72,6 @@
         </form>
     </div>
 </div>
-
-@if($baseline && ($baseline['has_financial_snapshot'] ?? false))
-<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-    <div class="bg-slate-50 px-5 py-4 border-b flex flex-wrap items-center justify-between gap-2">
-        <h3 class="font-bold text-navy-800 flex items-center gap-2">
-            <span class="material-symbols-outlined">inventory_2</span>
-            Baseline Snapshot (Sheet 1A)
-        </h3>
-        <span class="text-xs text-slate-500">Diperbarui: {{ $baseline['assessed_at'] }} · {{ $baseline['stage_label'] }}</span>
-    </div>
-    <div class="p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-        @if($baseline['current_goal'])
-            <div class="sm:col-span-2 lg:col-span-4 rounded-xl bg-gold-50 border border-gold-200 p-3">
-                <div class="text-xs font-bold text-amber-800 uppercase">Current Goal</div>
-                <div class="font-medium text-navy-800 mt-1">{{ $baseline['current_goal'] }}</div>
-            </div>
-        @endif
-        @foreach([
-            'avg_monthly_income' => 'Pendapatan/bulan',
-            'emergency_fund' => 'Dana darurat',
-            'cash_savings' => 'Tabungan',
-            'total_investment' => 'Investasi',
-            'total_asset' => 'Total aset',
-            'total_debt' => 'Total utang',
-        ] as $key => $label)
-            @if($baseline[$key])
-                <div class="rounded-xl bg-slate-50 p-3">
-                    <div class="text-xs text-slate-500">{{ $label }}</div>
-                    <div class="font-bold text-navy-800">{{ $fmt((int) $baseline[$key]) }}</div>
-                </div>
-            @endif
-        @endforeach
-        <div class="rounded-xl bg-slate-50 p-3">
-            <div class="text-xs text-slate-500 mb-1">Proteksi</div>
-            <div class="flex flex-wrap gap-1">
-                @if($baseline['protection']['bpjs'])<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">BPJS</span>@endif
-                @if($baseline['protection']['health'])<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Kesehatan</span>@endif
-                @if($baseline['protection']['income'])<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Income</span>@endif
-                @if($baseline['protection']['life'])<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Jiwa</span>@endif
-            </div>
-        </div>
-        @if($baseline['dominant_archetype_label'])
-            <div class="rounded-xl bg-navy-800 text-white p-3">
-                <div class="text-xs text-white/70">FTSA Archetype</div>
-                <div class="font-bold">{{ $baseline['dominant_archetype_label'] }}</div>
-            </div>
-        @endif
-    </div>
-</div>
-@elseif($baseline || ($portalOnboardingComplete ?? false))
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-                <h3 class="font-bold text-navy-800 flex items-center gap-2">
-                    <span class="material-symbols-outlined">fact_check</span>
-                    Profil Diagnostik & FTSA
-                </h3>
-                <p class="text-sm text-slate-600 mt-2">
-                    Data kuesioner Anda sudah tersimpan.
-                    @if(!($baseline['has_financial_snapshot'] ?? false))
-                        Snapshot angka keuangan (pendapatan, tabungan, dll.) opsional — bisa dilengkapi lewat menu Baseline Data.
-                    @endif
-                </p>
-            </div>
-            <a href="{{ route('portal.emotional') }}"
-               class="inline-flex items-center gap-1 text-sm font-bold text-navy-800 hover:underline shrink-0">
-                Lihat hasil <span class="material-symbols-outlined text-base">arrow_forward</span>
-            </a>
-        </div>
-        <div class="grid sm:grid-cols-2 gap-3 mt-4 text-sm">
-            @if(!empty($baseline['stage_label']))
-                <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
-                    <div class="text-xs text-slate-500">Tahap keuangan</div>
-                    <div class="font-bold text-navy-800 mt-0.5">{{ $baseline['stage_label'] }}</div>
-                </div>
-            @endif
-            @if(!empty($baseline['dominant_archetype_label']))
-                <div class="rounded-xl bg-navy-800 text-white px-4 py-3">
-                    <div class="text-xs text-white/70">Profil FTSA</div>
-                    <div class="font-bold mt-0.5">{{ $baseline['dominant_archetype_label'] }}</div>
-                </div>
-            @endif
-        </div>
-    </div>
-@elseif(($needsFinancialDiagnostic ?? false) || ($needsFtsa ?? false))
-    <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
-        Lengkapi diagnostik & FTSA di portal.
-        <a href="{{ $baselineUrl ?? route('portal.diagnostic') }}" class="font-semibold underline">Mulai sekarang</a>
-    </div>
-@endif
 
 <div class="grid grid-cols-2 sm:grid-cols-5 gap-4" id="tx-summary-cards">
     <div class="bg-white rounded-xl border p-4 text-center">
@@ -205,7 +114,6 @@
                         <th class="px-4 py-3 font-semibold">Tanggal</th>
                         <th class="px-4 py-3 font-semibold">Jenis</th>
                         <th class="px-4 py-3 font-semibold">Kategori</th>
-                        <th class="px-4 py-3 font-semibold hidden md:table-cell">Sub</th>
                         <th class="px-4 py-3 font-semibold text-right">Nominal</th>
                         <th class="px-4 py-3 font-semibold hidden lg:table-cell">Bucket</th>
                         <th class="px-4 py-3 font-semibold hidden sm:table-cell">Sifat</th>
@@ -235,7 +143,6 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 font-medium">{{ $t['category'] }}</td>
-                        <td class="px-4 py-3 hidden md:table-cell text-slate-600">{{ $t['sub_category'] }}</td>
                         <td class="px-4 py-3 text-right font-bold text-navy-800">{{ $fmt($t['amount']) }}</td>
                         <td class="px-4 py-3 hidden lg:table-cell text-xs text-slate-600">{{ $t['bucket'] ?? '—' }}</td>
                         <td class="px-4 py-3 hidden sm:table-cell text-slate-600">{{ $t['nature'] }}</td>

@@ -31,12 +31,16 @@ class CpDigitalProduct extends Model
         'cta_url',
         'meta_title',
         'meta_description',
+        'demo_video_enabled',
+        'demo_video_url',
+        'demo_video_description',
     ];
 
     protected $casts = [
-        'features'       => 'array',
-        'is_active'      => 'boolean',
-        'is_featured'    => 'boolean',
+        'features'             => 'array',
+        'is_active'            => 'boolean',
+        'is_featured'          => 'boolean',
+        'demo_video_enabled'   => 'boolean',
         'price'          => 'integer',
         'discount_price' => 'integer',
         'sort'           => 'integer',
@@ -94,5 +98,42 @@ class CpDigitalProduct extends Model
         return ($this->currency ?? 'IDR') === 'IDR'
             ? 'Rp ' . number_format($value, 0, ',', '.')
             : number_format($value, 0, ',', '.') . ' ' . $this->currency;
+    }
+
+    public function getDemoVideoEmbedUrlAttribute(): ?string
+    {
+        return self::toEmbedUrl($this->demo_video_url);
+    }
+
+    public function hasDemoVideo(): bool
+    {
+        return $this->demo_video_enabled && $this->demo_video_embed_url !== null;
+    }
+
+    public static function toEmbedUrl(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        $url = trim($url);
+
+        if (preg_match('#youtube\.com/embed/([a-zA-Z0-9_-]{11})#', $url, $m)) {
+            return 'https://www.youtube.com/embed/' . $m[1];
+        }
+
+        if (preg_match('#(?:youtube\.com/watch\?(?:.*&)?v=|youtu\.be/)([a-zA-Z0-9_-]{11})#', $url, $m)) {
+            return 'https://www.youtube.com/embed/' . $m[1];
+        }
+
+        if (preg_match('#player\.vimeo\.com/video/(\d+)#', $url, $m)) {
+            return 'https://player.vimeo.com/video/' . $m[1];
+        }
+
+        if (preg_match('#vimeo\.com/(\d+)#', $url, $m)) {
+            return 'https://player.vimeo.com/video/' . $m[1];
+        }
+
+        return filter_var($url, FILTER_VALIDATE_URL) ? $url : null;
     }
 }

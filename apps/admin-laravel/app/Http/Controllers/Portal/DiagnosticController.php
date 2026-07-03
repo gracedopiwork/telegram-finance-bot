@@ -106,8 +106,13 @@ class DiagnosticController extends Controller
         $access = app(PortalAccessService::class);
 
         if ($access->isFtsaOnlyPortalUser($email) && $onboarding->userNeedsFtsa($email, $telegramUserId)) {
-            return redirect()->route('portal.baseline.create')
+            return redirect()->route('portal.ftsa.create')
                 ->with('success', 'Diagnostik tersimpan. Lanjutkan kuesioner FTSA 1–32.');
+        }
+
+        if ($onboarding->userNeedsSnapshotBaseline($email, $telegramUserId)) {
+            return redirect()->route('portal.baseline.create')
+                ->with('success', 'Diagnostik tersimpan. Lanjut isi snapshot keuangan Anda.');
         }
 
         return redirect()->route($onboarding->portalHomeRouteName($email))

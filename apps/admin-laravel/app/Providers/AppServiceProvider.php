@@ -113,7 +113,9 @@ class AppServiceProvider extends ServiceProvider
                 $onboarding = app(PortalOnboardingService::class);
                 $access = app(PortalAccessService::class);
                 $featureService = app(\App\Services\PortalFeatureService::class);
-                $portalOnboardingComplete = $onboarding->hasFtsaPortalOnboardingComplete($email, $telegramUserId);
+                $portalOnboardingComplete = $access->hasBotPortalAccess($email)
+                    ? $onboarding->hasBotPortalOnboardingComplete($email, $telegramUserId)
+                    : $onboarding->hasFtsaPortalOnboardingComplete($email, $telegramUserId);
                 $needsBaseline = $onboarding->userNeedsBotOnboardingBaseline($email, $telegramUserId);
                 $needsFtsa = $onboarding->userNeedsFtsa($email, $telegramUserId);
                 $needsFinancialDiagnostic = $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId);

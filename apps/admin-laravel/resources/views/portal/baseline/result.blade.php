@@ -85,8 +85,25 @@
     <a href="{{ route('portal.baseline.create') }}"
        class="inline-flex items-center gap-2 border border-slate-300 hover:border-navy-600 text-navy-800 font-medium px-5 py-2.5 rounded-xl text-sm">
         <span class="material-symbols-outlined text-lg">refresh</span>
-        Evaluasi Ulang
+        Perbarui Snapshot
     </a>
+    @if(($baseline->dominant_archetype ?? '') !== 'locked')
+    <a href="{{ route('portal.ftsa.create') }}"
+       class="inline-flex items-center gap-2 border border-gold-400 text-navy-800 font-medium px-5 py-2.5 rounded-xl text-sm">
+        <span class="material-symbols-outlined text-lg">psychology</span>
+        Evaluasi FTSA
+    </a>
+    @endif
+</div>
+
+<div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-700">
+    <div class="font-bold text-navy-800 mb-2">Tentang FTSA</div>
+    <p>FTSA (Financial Therapy & Strategic Action) mengukur pola behavioral finansial lewat 32 pertanyaan.
+        Hasilnya menentukan archetype dominan dan membantu interpretasi dashboard behavioral.</p>
+    <p class="mt-2 text-xs text-slate-500">
+        Baseline keuangan &amp; financial stage: evaluasi setiap <strong>6 bulan</strong>.
+        FTSA: evaluasi setiap <strong>12 bulan</strong> setelah unlock premium.
+    </p>
 </div>
 
 <p class="text-xs text-slate-400 mt-4">

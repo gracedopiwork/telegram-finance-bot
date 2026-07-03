@@ -163,6 +163,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::get('/baseline', [PortalBaselineController::class, 'index'])->name('baseline');
         Route::get('/baseline/baru', [PortalBaselineController::class, 'create'])->name('baseline.create');
         Route::post('/baseline', [PortalBaselineController::class, 'store'])->name('baseline.store');
+        Route::get('/ftsa/baru', [PortalBaselineController::class, 'createFtsa'])->name('ftsa.create');
+        Route::post('/ftsa', [PortalBaselineController::class, 'storeFtsa'])->name('ftsa.store');
         Route::get('/diagnostik', [PortalDiagnosticController::class, 'show'])->name('diagnostic');
         Route::post('/diagnostik', [PortalDiagnosticController::class, 'store'])->name('diagnostic.store');
         Route::get('/emotional', [PortalDashboardController::class, 'emotional'])->name('emotional');

@@ -52,7 +52,7 @@ class CategoryBucketMappingService
         $category = mb_strtolower(trim((string) $row->category));
         $sub = mb_strtolower(trim((string) $row->sub_category));
         $nature = trim((string) $row->nature);
-        $combined = mb_strtolower(trim("{$sub} {$row->notes} {$category}"));
+        $combined = mb_strtolower(trim("{$row->notes} {$category}"));
         $txType = TransactionTaxonomy::mappingTransactionType((string) $row->type);
 
         foreach ($this->activeMappings() as $mapping) {
@@ -69,7 +69,7 @@ class CategoryBucketMappingService
             $wildcardCategory = $mapCategory === '*';
 
             $categoryMatch = $wildcardCategory || ($mapCategory !== '' && $mapCategory === $category);
-            $subMatch = $mapSub === '' || $mapSub === $sub;
+            $subMatch = $mapSub === '' || $mapSub === '-' || in_array($sub, ['', '-'], true) || $mapSub === $sub;
 
             $keywordMatch = false;
             foreach ($mapping->keywordsList() as $keyword) {

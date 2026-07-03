@@ -93,8 +93,11 @@ class DigitalProductsController extends Controller
             'billing_mode'     => 'required|in:midtrans,wa,url,soon',
             'cta_label'        => 'nullable|string|max:80',
             'cta_url'          => 'nullable|url|max:255',
-            'meta_title'       => 'nullable|string|max:255',
-            'meta_description' => 'nullable|string|max:500',
+            'meta_title'               => 'nullable|string|max:255',
+            'meta_description'         => 'nullable|string|max:500',
+            'demo_video_enabled'       => 'sometimes|boolean',
+            'demo_video_url'           => 'nullable|string|max:500',
+            'demo_video_description'   => 'nullable|string',
         ]);
 
         $features = collect(preg_split("/\r\n|\n|\r/", $data['features_text'] ?? ''))
@@ -107,10 +110,12 @@ class DigitalProductsController extends Controller
 
         $data['features']    = $features;
         $data['currency']    = strtoupper($data['currency'] ?? 'IDR');
-        $data['is_active']   = (bool) $request->boolean('is_active', true);
-        $data['is_featured'] = (bool) $request->boolean('is_featured');
-        $data['sort']        = (int) ($data['sort'] ?? 0);
-        $data['cta_label']   = $data['cta_label'] ?: 'Beli Sekarang';
+        $data['is_active']            = (bool) $request->boolean('is_active', true);
+        $data['is_featured']          = (bool) $request->boolean('is_featured');
+        $data['demo_video_enabled']   = (bool) $request->boolean('demo_video_enabled');
+        $data['sort']                 = (int) ($data['sort'] ?? 0);
+        $data['cta_label']            = $data['cta_label'] ?: 'Beli Sekarang';
+        $data['demo_video_url']       = filled($data['demo_video_url'] ?? null) ? trim($data['demo_video_url']) : null;
 
         // Discount tidak boleh ada kalau price 0
         if (($data['price'] ?? 0) <= 0) {

@@ -28,9 +28,8 @@ class CategoryBucketService
     {
         $nature = (string) $row->nature;
         $category = mb_strtolower((string) $row->category);
-        $sub = mb_strtolower((string) $row->sub_category);
         $notes = mb_strtolower((string) $row->notes);
-        $combined = "{$sub} {$notes} {$category}";
+        $combined = "{$notes} {$category}";
 
         if ($row->type === TransactionTaxonomy::TYPE_SAVING) {
             return 'Future Building';

@@ -61,7 +61,6 @@ php artisan config:clear</code></pre>
                     <thead class="thead-light">
                         <tr>
                             <th>Kategori</th>
-                            <th>Sub</th>
                             <th>Bucket</th>
                             <th>Tipe</th>
                             <th>Sifat</th>
@@ -79,7 +78,6 @@ php artisan config:clear</code></pre>
                                         <div class="text-muted small">{{ Str::limit($m->reason, 55) }}</div>
                                     @endif
                                 </td>
-                                <td>{{ $m->sub_category ?: '—' }}</td>
                                 <td><span class="badge badge-primary">{{ $m->bucket }}</span></td>
                                 <td>{{ \App\Models\CategoryBucketMapping::TRANSACTION_TYPES[$m->transaction_type] ?? $m->transaction_type }}</td>
                                 <td>{{ $m->nature ?: '—' }}</td>
@@ -98,7 +96,7 @@ php artisan config:clear</code></pre>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
+                                <td colspan="7" class="text-center text-muted py-4">
                                     Belum ada pemetaan. Klik <strong>Sync Default</strong> untuk memuat template resmi YFD.
                                 </td>
                             </tr>

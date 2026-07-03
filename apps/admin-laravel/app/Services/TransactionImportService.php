@@ -81,13 +81,13 @@ class TransactionImportService
 
     public function templateCsv(): string
     {
-        $header = 'tanggal,jenis,kategori,sub_kategori,nominal,sifat,mood,impulsif,keterangan';
+        $header = 'tanggal,jenis,kategori,nominal,sifat,mood,impulsif,keterangan';
         $examples = [
-            '2026-06-15,Pengeluaran,Makan,Jajan / Makan diluar,35000,Need,Neutral,No,Makan siang kantor',
-            '2026-06-14,Pengeluaran,Transport,Angkutan Umum,15000,Need,Neutral,No,Ojek ke kantor',
-            '2026-06-10,Saving/Investment,Jajan,Pengeluaran lain-lain,500000,Need,Neutral,No,Beli saham BBCA',
-            '2026-06-08,Pengeluaran,Social,Hadiah / Amplop sosial,50000,Need,Neutral,No,Persembahan ibadah',
-            '2026-06-01,Pemasukan,Gaji,,5000000,Need,Happy,No,Gaji bulan Juni',
+            '2026-06-15,Pengeluaran,Makan,35000,Need,Neutral,No,Makan siang kantor',
+            '2026-06-14,Pengeluaran,Transport,15000,Need,Neutral,No,Ojek ke kantor',
+            '2026-06-10,Saving/Investment,Jajan,500000,Need,Neutral,No,Beli saham BBCA',
+            '2026-06-08,Pengeluaran,Social,50000,Need,Neutral,No,Persembahan ibadah',
+            '2026-06-01,Pemasukan,Gaji,5000000,Need,Happy,No,Gaji bulan Juni',
         ];
 
         return "\xEF\xBB\xBF".$header."\n".implode("\n", $examples)."\n";
@@ -257,16 +257,15 @@ class TransactionImportService
 
         $rules = $this->rules();
         $categoryInput = $taxonomy['category'] ?? ($data['category'] ?? '');
-        $subCategoryInput = trim($data['sub_category'] ?? '');
 
-        $category = $this->resolveCategory($categoryInput, $subCategoryInput, $type, $rules);
+        $category = $this->resolveCategory($categoryInput, $type, $rules);
         if ($category === null) {
             $allowed = implode(', ', $rules['categories']);
             $hint = $categoryInput !== ''
                 ? "nilai \"{$categoryInput}\" tidak dikenali"
                 : 'kolom kategori kosong';
 
-            return ['error' => "kategori tidak valid — {$hint}. Gunakan: {$allowed} (sub_kategori juga bisa di kolom kategori, mis. Angkutan Umum → Transport)"];
+            return ['error' => "kategori tidak valid — {$hint}. Gunakan: {$allowed}"];
         }
 
         $recordedAt = $this->parseDate($data['recorded_at'] ?? '') ?? now();
@@ -274,8 +273,6 @@ class TransactionImportService
         $nature = $taxonomy['nature'];
         $mood = $this->normalizeMood($data['mood'] ?? '');
         $isImpulsive = $this->parseBool($data['is_impulsive'] ?? '');
-
-        $subCategory = $this->resolveSubCategory($subCategoryInput, $categoryInput, $category, $rules);
 
         $notes = trim($data['notes'] ?? '');
         if ($notes === '') {
@@ -286,7 +283,7 @@ class TransactionImportService
             'recorded_at' => $recordedAt,
             'type' => $type,
             'category' => $category,
-            'sub_category' => mb_substr($subCategory, 0, 128),
+            'sub_category' => '-',
             'amount' => $amount,
             'nature' => $nature,
             'mood' => $mood,
@@ -298,10 +295,9 @@ class TransactionImportService
     /**
      * @param  array<string, mixed>  $rules
      */
-    private function resolveCategory(string $categoryInput, string $subCategoryInput, string $type, array $rules): ?string
+    private function resolveCategory(string $categoryInput, string $type, array $rules): ?string
     {
         $categoryInput = trim($categoryInput);
-        $subCategoryInput = trim($subCategoryInput);
 
         if ($categoryInput === '' && $type === TransactionTaxonomy::TYPE_INCOME) {
             return 'Gaji';
@@ -312,13 +308,6 @@ class TransactionImportService
         }
 
         if ($categoryInput === '' && $type === TransactionTaxonomy::TYPE_EXPENSE) {
-            if ($subCategoryInput !== '') {
-                $fromSub = $this->categoryFromSubCategory($subCategoryInput, $rules);
-                if ($fromSub !== null) {
-                    return $fromSub;
-                }
-            }
-
             return (string) ($rules['fallback_category'] ?? 'Jajan');
         }
 
@@ -327,40 +316,7 @@ class TransactionImportService
             return $canonical;
         }
 
-        return $this->categoryFromSubCategory($categoryInput, $rules);
-    }
-
-    /**
-     * @param  array<string, mixed>  $rules
-     */
-    private function resolveSubCategory(
-        string $subCategoryInput,
-        string $categoryInput,
-        string $resolvedCategory,
-        array $rules,
-    ): string {
-        $subCategoryInput = trim($subCategoryInput);
-        $categoryInput = trim($categoryInput);
-
-        if ($subCategoryInput !== '') {
-            $canonical = $this->matchSubCategoryName($subCategoryInput, $resolvedCategory, $rules);
-            if ($canonical !== null) {
-                return $canonical;
-            }
-
-            return $subCategoryInput;
-        }
-
-        if ($categoryInput !== '' && $this->matchSubCategoryName($categoryInput, $resolvedCategory, $rules) !== null) {
-            return $categoryInput;
-        }
-
-        $subs = $rules['category_sub_map'][$resolvedCategory] ?? [];
-        if (is_array($subs) && $subs !== []) {
-            return (string) $subs[0];
-        }
-
-        return (string) ($rules['fallback_sub'] ?? 'Pengeluaran lain-lain');
+        return $this->categoryFromLegacyLabel($categoryInput, $rules);
     }
 
     /**
@@ -388,9 +344,11 @@ class TransactionImportService
     }
 
     /**
+     * Label lama (mis. Angkutan Umum) → kategori induk.
+     *
      * @param  array<string, mixed>  $rules
      */
-    private function categoryFromSubCategory(string $value, array $rules): ?string
+    private function categoryFromLegacyLabel(string $value, array $rules): ?string
     {
         $needle = $this->normalizeAliasKey($value);
         if ($needle === '') {
@@ -428,25 +386,6 @@ class TransactionImportService
         $v = preg_replace('/\s+/', ' ', $v) ?? $v;
 
         return trim($v);
-    }
-
-    /**
-     * @param  array<string, mixed>  $rules
-     */
-    private function matchSubCategoryName(string $value, string $category, array $rules): ?string
-    {
-        $subs = $rules['category_sub_map'][$category] ?? [];
-        if (! is_array($subs)) {
-            return null;
-        }
-
-        foreach ($subs as $sub) {
-            if (mb_strtolower((string) $sub) === mb_strtolower($value)) {
-                return (string) $sub;
-            }
-        }
-
-        return null;
     }
 
     /**

@@ -43,57 +43,22 @@
 @include('portal.partials.onboarding-banners')
 
 @php
-    $ftsaDomainMeta = config('baseline_assessment.ftsa_domains', []);
-    $showFtsaSummary = ($ftsaSummary['filled'] ?? 0) >= 32;
+    $showFtsaSummary = false;
 @endphp
 
-@if($summary['baseline'] || $showFtsaSummary)
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        @if($summary['baseline'])
-            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-                <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Diagnostik Keuangan</div>
-                <h3 class="text-xl font-extrabold text-navy-800 mt-1">{{ $summary['baseline']['stage_label'] ?? '—' }}</h3>
-                <p class="text-sm text-slate-600 mt-2">
-                    Terakhir diisi: {{ $summary['baseline']['assessed_at'] ?? '—' }}
-                </p>
-                @if(!empty($summary['baseline']['dominant_archetype_label']) && !$showFtsaSummary)
-                    <p class="text-sm text-slate-600 mt-1">Archetype: {{ $summary['baseline']['dominant_archetype_label'] }}</p>
-                @endif
-            </div>
-        @endif
-
-        @if($showFtsaSummary)
-            <div class="bg-white rounded-2xl border border-gold-400/40 shadow-sm p-5 sm:p-6">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Hasil FTSA Premium</div>
-                        <h3 class="text-xl font-extrabold text-navy-800 mt-1">{{ $ftsaSummary['archetype_label'] ?? '—' }}</h3>
-                        <p class="text-sm text-slate-600 mt-2">{{ $ftsaSummary['filled'] }}/32 pertanyaan terisi</p>
-                    </div>
-                    <a href="{{ route('portal.emotional') }}"
-                       class="inline-flex items-center gap-1 text-sm font-bold text-navy-800 hover:underline shrink-0">
-                        Detail <span class="material-symbols-outlined text-base">arrow_forward</span>
-                    </a>
-                </div>
-                <div class="grid grid-cols-2 gap-3 mt-4">
-                    @foreach($ftsaSummary['domains'] ?? [] as $domain)
-                        @php $meta = $ftsaDomainMeta[$domain['key']] ?? []; @endphp
-                        <div class="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2">
-                            <div class="text-[10px] font-bold text-navy-600">{{ $meta['code'] ?? strtoupper($domain['key']) }}</div>
-                            <div class="text-lg font-extrabold text-navy-800">{{ $domain['score'] }}<span class="text-xs text-slate-400">/40</span></div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        @endif
+@if($summary['baseline'])
+    <div class="grid grid-cols-1 mb-6">
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Diagnostik Keuangan</div>
+            <h3 class="text-xl font-extrabold text-navy-800 mt-1">{{ $summary['baseline']['stage_label'] ?? '—' }}</h3>
+            <p class="text-sm text-slate-600 mt-2">
+                Terakhir diisi: {{ $summary['baseline']['assessed_at'] ?? '—' }}
+            </p>
+        </div>
     </div>
 @endif
 
-@if($showFtsaSummary)
-    @include('portal.partials.ftsa-ai-guidance', ['ftsaAiGuidance' => $ftsaAiGuidance ?? []])
-@endif
-
-@php $hasAssessment = ($summary['baseline'] ?? null) || $showFtsaSummary; @endphp
+@php $hasAssessment = ($summary['baseline'] ?? null); @endphp
 @if(!$hasData)
     @include('portal.partials.empty-state', [
         'title' => ($needsFinancialDiagnostic ?? false) && !($isFtsaOnlyPortalUser ?? false)

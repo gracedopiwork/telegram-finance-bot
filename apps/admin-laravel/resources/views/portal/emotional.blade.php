@@ -23,7 +23,7 @@
             'message' => 'Isi semua pertanyaan untuk melihat archetype behavioral finansial dan skor domain CHD, RVD, SSD, ESD.',
         ])
         <div class="mt-4">
-            <a href="{{ $portalFtsaUrl ?? route('portal.baseline.create') }}"
+            <a href="{{ $portalFtsaUrl ?? route('portal.ftsa.create') }}"
                class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-5 py-3 rounded-xl text-sm">
                 <span class="material-symbols-outlined text-lg">edit_note</span>
                 Isi FTSA Sekarang
@@ -49,7 +49,7 @@
                     </p>
                 </div>
                 @if(!($ftsaRetakeLocked ?? false))
-                    <a href="{{ route('portal.baseline.create') }}"
+                    <a href="{{ route('portal.ftsa.create') }}"
                        class="inline-flex items-center gap-2 border border-navy-800 text-navy-800 hover:bg-navy-50 font-bold px-4 py-2 rounded-xl text-sm shrink-0">
                         <span class="material-symbols-outlined text-lg">edit</span>
                         Isi Ulang FTSA
@@ -91,16 +91,16 @@
         </div>
 
         @php
-            $ftsaInsights = $ftsaAiGuidance['insights'] ?? [];
+            $ftsaInsights = [];
         @endphp
 
-        @if(!empty($ftsaInsights))
-            @include('portal.partials.ftsa-ai-guidance', ['ftsaAiGuidance' => $ftsaAiGuidance ?? []])
-        @endif
-
         <div class="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-900">
-            <div class="font-bold">Ingin pantau transaksi harian?</div>
-            <div class="mt-0.5">Upgrade ke <strong>YFD First Aid</strong> untuk pencatatan mood, impulsivitas, dan Financial Health Dashboard.</div>
+            <div class="font-bold">Upgrade ke YFD First Aid</div>
+            <div class="mt-1 leading-relaxed">
+                Pencatatan keuangan harian, mood, impulsivitas, dan dapatkan <strong>Financial Behavioral Dashboard</strong>.
+                YFD First Aid bantu kamu memahami alasan emosional di balik transaksi finansialmu —
+                keuangan lebih sehat lewat regulasi emosi yang lebih baik.
+            </div>
             <a href="{{ route('checkout.show', ['code' => 'yfd-bot-telegram']) }}"
                class="inline-flex items-center gap-2 mt-3 bg-navy-800 hover:bg-navy-700 text-white font-bold px-4 py-2 rounded-xl text-sm">
                 <span class="material-symbols-outlined text-lg">send</span>
@@ -151,11 +151,6 @@
             @endforeach
         </div>
     </div>
-    @endif
-
-    @php $ftsaBotInsights = $ftsaAiGuidance['insights'] ?? []; @endphp
-    @if(!empty($ftsaBotInsights))
-        @include('portal.partials.ftsa-ai-guidance', ['ftsaAiGuidance' => $ftsaAiGuidance ?? []])
     @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">

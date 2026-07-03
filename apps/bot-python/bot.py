@@ -39,7 +39,6 @@ from transaction_categories import (
     is_water_expense,
     normalize_category_fields,
     valid_kategori,
-    valid_sub_kategori,
 )
 from impulsive_rules import (
     PAYDAY_SPLURGE_KEYWORDS,
@@ -465,7 +464,7 @@ def normalize_ai_result(data: Dict[str, Any]) -> Dict[str, Any]:
     if data.get("error") == "invalid_input":
         raise ValueError("invalid_input")
 
-    required_keys = ["keterangan", "nominal", "jenis", "kategori", "sub_kategori", "sifat", "mood", "impulsif"]
+    required_keys = ["keterangan", "nominal", "jenis", "kategori", "sifat", "mood", "impulsif"]
     if any(key not in data for key in required_keys):
         raise ValueError("missing_keys")
 
@@ -480,8 +479,6 @@ def normalize_ai_result(data: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError("invalid_jenis")
     if data["kategori"] not in set(valid_kategori()):
         raise ValueError("invalid_kategori")
-    if data["sub_kategori"] not in set(valid_sub_kategori()):
-        raise ValueError("invalid_sub_kategori")
     if data["sifat"] not in VALID_SIFAT:
         raise ValueError("invalid_sifat")
     mood = normalize_mood(str(data["mood"]))
@@ -590,34 +587,27 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
     lower_text = text.lower()
     jenis = "Pengeluaran"
     kategori = "Jajan"
-    sub_kategori = "Pengeluaran lain-lain"
     sifat = "Wants"
     mood = "Neutral"
 
     if any(keyword in lower_text for keyword in ["gaji", "bonus", "income", "fee", "honor"]):
         jenis = "Pemasukan"
         kategori = "Gaji"
-        sub_kategori = "Pengeluaran lain-lain"
         sifat = "Need"
     elif any(keyword in lower_text for keyword in ["listrik", "pln"]):
         kategori = "Listrik"
-        sub_kategori = "Listrik"
         sifat = "Need"
     elif any(keyword in lower_text for keyword in ["bensin", "transport", "angkot", "ojek", "tol", "parkir", "grab", "gojek"]):
         kategori = "Transport"
-        sub_kategori = "Angkutan Umum"
         sifat = "Need"
     elif any(keyword in lower_text for keyword in ["servis", "bengkel"]):
         kategori = "Transport"
-        sub_kategori = "Servis Kendaraan"
         sifat = "Need"
     elif is_water_expense(lower_text):
         kategori = "Air"
-        sub_kategori = "Pengeluaran lain-lain"
         sifat = "Need"
     elif any(keyword in lower_text for keyword in ["makan", "nasi", "sarapan", "lunch", "dinner", "restaurant", "restoran"]):
         kategori = "Makan"
-        sub_kategori = "Jajan / Makan diluar"
         sifat = (
             "Wants"
             if any(keyword in lower_text for keyword in PAYDAY_SPLURGE_KEYWORDS + REWARD_SPENDING_KEYWORDS)
@@ -626,11 +616,9 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
     elif any(keyword in lower_text for keyword in ["saham", "reksa", "obligasi", "nabung", "tabung", "investasi", "investment", "deposito", "avg down", "dividen reinvest"]):
         jenis = "Saving/Investment"
         kategori = "Jajan"
-        sub_kategori = "Pengeluaran lain-lain"
         sifat = "Need"
     elif any(keyword in lower_text for keyword in ["hadiah", "amplop", "ultah", "ulang tahun", "konser", "sedekah", "persembahan", "ibadah", "donasi"]):
         kategori = "Social"
-        sub_kategori = "Hadiah / Amplop sosial"
         sifat = "Need"
 
     detected_mood = detect_mood_in_text(text)
@@ -655,7 +643,6 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
             "nominal": nominal,
             "jenis": jenis,
             "kategori": kategori,
-            "sub_kategori": sub_kategori,
             "sifat": sifat,
             "mood": mood,
         },
@@ -667,7 +654,6 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
         "nominal": nominal,
         "jenis": jenis,
         "kategori": kategori,
-        "sub_kategori": sub_kategori,
         "sifat": sifat,
         "mood": mood,
         "impulsif": impulsif,
@@ -683,7 +669,7 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
         f"Keterangan: {parsed['keterangan']}\n"
         f"Nominal: Rp{parsed['nominal']:,}\n"
         f"Jenis: {parsed['jenis']}\n"
-        f"Kategori: {parsed['kategori']} / {parsed['sub_kategori']}\n"
+        f"Kategori: {parsed['kategori']}\n"
         f"Sifat: {parsed['sifat']}\n"
         f"Mood: {parsed['mood']}\n"
         f"Impulsif: {parsed['impulsif']}\n\n"
@@ -781,7 +767,7 @@ async def save_transaction(
         f"Keterangan: {parsed['keterangan']}\n"
         f"Nominal: Rp{parsed['nominal']:,}\n"
         f"Jenis: {parsed['jenis']}\n"
-        f"Kategori: {parsed['kategori']} / {parsed['sub_kategori']}\n"
+        f"Kategori: {parsed['kategori']}\n"
         f"Sifat: {parsed['sifat']}\n"
         f"Mood: {parsed['mood']}\n"
         f"Impulsif: {parsed['impulsif']}"

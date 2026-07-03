@@ -123,7 +123,7 @@ class CategoryBucketMappingsController extends Controller
         $data['is_active'] = $request->boolean('is_active', true);
         $data['sort_order'] = (int) ($data['sort_order'] ?? 0);
         $data['nature'] = $data['nature'] !== '' ? ($data['nature'] ?? null) : null;
-        $data['sub_category'] = trim((string) ($data['sub_category'] ?? '')) ?: null;
+        $data['sub_category'] = null;
 
         return $data;
     }

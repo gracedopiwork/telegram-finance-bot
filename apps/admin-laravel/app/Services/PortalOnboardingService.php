@@ -169,6 +169,11 @@ class PortalOnboardingService
 
     public function userNeedsBotOnboardingBaseline(string $email, int $telegramUserId): bool
     {
+        return $this->userNeedsSnapshotBaseline($email, $telegramUserId);
+    }
+
+    public function userNeedsSnapshotBaseline(string $email, int $telegramUserId): bool
+    {
         if (! \App\Support\FinancialBaselineSchema::isReady()) {
             return false;
         }
@@ -183,13 +188,60 @@ class PortalOnboardingService
 
         app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
 
-        if ($this->isBotAfterFtsaBuyer($email)) {
-            return ! $this->hasFtsaPortalOnboardingComplete($email, $telegramUserId);
+        $baseline = $this->resolveBaseline($email, $telegramUserId);
+        if (! $this->hasFinancialDiagnostic($baseline)) {
+            return false;
+        }
+
+        return ! $this->hasFinancialSnapshot($baseline);
+    }
+
+    public function hasFinancialSnapshot(?FinancialBaseline $baseline): bool
+    {
+        if ($baseline === null) {
+            return false;
+        }
+
+        if (trim((string) ($baseline->current_goal ?? '')) !== '') {
+            return true;
+        }
+
+        foreach ([
+            'avg_monthly_income',
+            'emergency_fund',
+            'cash_savings',
+            'total_investment',
+            'total_asset',
+            'total_debt',
+        ] as $field) {
+            if ($baseline->{$field} !== null && (int) $baseline->{$field} > 0) {
+                return true;
+            }
+        }
+
+        return (bool) $baseline->has_bpjs
+            || (bool) $baseline->has_health_insurance
+            || (bool) $baseline->has_income_protection
+            || (bool) $baseline->has_life_insurance;
+    }
+
+    /**
+     * Pembeli YFD First Aid — diagnostik + snapshot selesai (FTSA opsional terpisah).
+     */
+    public function hasBotPortalOnboardingComplete(string $email, int $telegramUserId): bool
+    {
+        if (! \App\Support\FinancialBaselineSchema::isReady()) {
+            return false;
+        }
+
+        if (! $this->hasPaidBotOrder($email)) {
+            return false;
         }
 
         $baseline = $this->resolveBaseline($email, $telegramUserId);
 
-        return ! $this->hasFinancialDiagnostic($baseline);
+        return $this->hasFinancialDiagnostic($baseline)
+            && $this->hasFinancialSnapshot($baseline);
     }
 
     public function resolveBaseline(string $email, int $telegramUserId): ?FinancialBaseline
@@ -288,7 +340,7 @@ class PortalOnboardingService
 
     public function portalFtsaUrl(): string
     {
-        return route('portal.baseline.create');
+        return route('portal.ftsa.create');
     }
 
     public function portalBaselineUrl(string $email, int $telegramUserId): string
@@ -319,8 +371,8 @@ class PortalOnboardingService
             return $this->portalDiagnosticUrl();
         }
 
-        if ($this->userNeedsFtsa($email, $telegramUserId)) {
-            return $this->portalFtsaUrl();
+        if ($this->userNeedsSnapshotBaseline($email, $telegramUserId)) {
+            return route('portal.baseline.create');
         }
 
         return route($this->portalHomeRouteName($email));

@@ -1,18 +1,26 @@
 @extends('portal.layouts.app')
 
-@section('title', $isFtsaOnlyPortalUser ?? false ? 'FTSA Premium — YFD' : 'Baseline Data — YFD')
-@section('heading', ($isFtsaOnlyPortalUser ?? false) ? 'Kuesioner FTSA 1–32' : 'Baseline Data (Wajib Diisi)')
+@section('title', match($formMode ?? 'snapshot') {
+    'ftsa', 'ftsa_only' => 'FTSA Premium — YFD',
+    default => 'Snapshot Baseline — YFD',
+})
+@section('heading', match($formMode ?? 'snapshot') {
+    'ftsa', 'ftsa_only' => 'Kuesioner FTSA 1–32',
+    default => 'Snapshot Keuangan (Baseline Data)',
+})
 
 @section('content')
 @php
+    $formMode = $formMode ?? 'snapshot';
     $fs = $config['financial_stage'] ?? [];
     $likert = $config['likert_labels'] ?? [];
     $ftsaQuestions = $config['ftsa_questions'] ?? [];
-    $currentSection = '';
     $ftsaUnlocked = $ftsaUnlocked ?? true;
     $isFtsaOnlyPortalUser = $isFtsaOnlyPortalUser ?? false;
     $needsFinancialDiagnostic = $needsFinancialDiagnostic ?? false;
-    $showFinancialDiagnosticSection = $showFinancialDiagnosticSection ?? (!$isFtsaOnlyPortalUser && $needsFinancialDiagnostic);
+    $showFtsaSection = in_array($formMode, ['ftsa', 'ftsa_only'], true);
+    $showSnapshotSection = $formMode === 'snapshot';
+    $formAction = $formMode === 'ftsa' ? route('portal.ftsa.store') : route('portal.baseline.store');
 @endphp
 
 <div class="{{ ($isFtsaOnlyPortalUser ?? false) ? 'w-full' : 'w-full max-w-6xl mx-auto' }}">
@@ -43,15 +51,17 @@
 
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 mb-6">
         <p class="text-slate-600 text-sm leading-relaxed">
-            @if($isFtsaOnlyPortalUser)
-                Paket <strong>FTSA Premium</strong> — jawab kuesioner 1–32 untuk melihat profil behavioral finansial Anda.
-                Snapshot keuangan di bawah opsional.
+            @if($showFtsaSection)
+                <strong>FTSA (Financial Therapy & Strategic Action)</strong> mengukur pola behavioral finansial Anda
+                melalui 32 pertanyaan. Hasilnya menentukan archetype dominan (CHD, RVD, SSD, ESD).
+                Evaluasi ulang setiap <strong>12 bulan</strong> — terpisah dari baseline keuangan.
             @else
-                Jawablah sesuai kondisi Anda <strong>saat ini</strong>. Baseline ini menentukan tahap keuangan dan archetype trauma finansial,
-                serta mengatur <em>prescription</em> bucket di dashboard. Diulang setiap <strong>6 bulan</strong>.
+                Isi snapshot keuangan Anda <strong>saat ini</strong> setelah membeli YFD First Aid.
+                Data ini dipakai untuk baseline dashboard dan dievaluasi ulang setiap <strong>6 bulan</strong>.
+                FTSA diisi terpisah di menu yang sama setelah unlock premium.
             @endif
         </p>
-        @if(!$isFtsaOnlyPortalUser)
+        @if($showSnapshotSection)
         <div class="mt-3 grid sm:grid-cols-2 gap-3 text-xs">
             <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">
                 <div class="font-semibold text-slate-700">Last Check-up</div>
@@ -59,16 +69,16 @@
             </div>
             <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">
                 <div class="font-semibold text-slate-700">Next Review</div>
-                <div class="text-slate-500">Otomatis +6 bulan (sesuai template baseline Excel).</div>
+                <div class="text-slate-500">Otomatis +6 bulan.</div>
             </div>
         </div>
         @endif
     </div>
 
-    <form method="post" action="{{ route('portal.baseline.store') }}" class="space-y-8">
+    <form method="post" action="{{ $formAction }}" class="space-y-8">
         @csrf
 
-        @if($showFinancialDiagnosticSection)
+        @if(false)
         {{-- Financial Stage --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
             <div class="bg-navy-800 text-white px-5 py-4">
@@ -133,6 +143,7 @@
         </div>
         @endif
 
+        @if($showFtsaSection)
         {{-- FTSA-32 --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
             <div class="bg-navy-800 text-white px-5 py-4">
@@ -200,7 +211,9 @@
             </div>
             @endif
         </div>
+        @endif
 
+        @if($showSnapshotSection)
         {{-- Snapshot keuangan (Sheet 1A) --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
             <div class="bg-navy-800 text-white px-5 py-4">
@@ -253,12 +266,17 @@
                 </fieldset>
             </div>
         </div>
+        @endif
 
         <div class="flex flex-wrap gap-3 pb-8">
             <button type="submit"
                     class="inline-flex items-center gap-2 bg-navy-800 hover:bg-navy-700 text-white font-semibold px-6 py-3 rounded-xl shadow-sm">
                 <span class="material-symbols-outlined">save</span>
-                {{ ($isFtsaOnlyPortalUser ?? false) ? 'Simpan FTSA' : 'Simpan Baseline' }}
+                @if($showFtsaSection)
+                    Simpan FTSA
+                @else
+                    Simpan Baseline
+                @endif
             </button>
             @if($hasBaseline ?? false)
                 <a href="{{ route(($isFtsaOnlyPortalUser ?? false) ? 'portal.emotional' : 'portal.dashboard') }}" class="inline-flex items-center px-4 py-3 text-sm text-slate-600 hover:text-navy-800">

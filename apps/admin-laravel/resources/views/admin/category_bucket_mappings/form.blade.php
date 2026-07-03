@@ -16,18 +16,12 @@
             <div class="card card-outline card-success mb-3">
                 <div class="card-body">
                     <div class="form-row">
-                        <div class="form-group col-md-6">
+                        <div class="form-group col-md-12">
                             <label>Kategori <span class="text-danger">*</span></label>
                             <input type="text" name="category" class="form-control" required
                                    value="{{ old('category', $mapping->category) }}"
                                    placeholder="Makan, Gaji, Jajan, atau * untuk wildcard sifat">
-                            <small class="text-muted">Harus sudah terdaftar di tabel ini (kolom A). Tambah baris baru di admin dulu sebelum bot/dashboard bisa memakainya.</small>
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label>Sub-kategori</label>
-                            <input type="text" name="sub_category" class="form-control"
-                                   value="{{ old('sub_category', $mapping->sub_category) }}"
-                                   placeholder="Opsional — kosongkan = semua sub">
+                            <small class="text-muted">Harus sudah terdaftar di tabel ini. Sub-kategori tidak dipakai lagi — pemetaan cukup per kategori.</small>
                         </div>
                     </div>
                     <div class="form-row">
@@ -76,7 +70,7 @@
                         <label>Kata kunci tambahan</label>
                         <textarea name="match_keywords" rows="2" class="form-control"
                                   placeholder="Pisahkan dengan koma: kopi, jajan, liburan">{{ old('match_keywords', $mapping->match_keywords) }}</textarea>
-                        <small class="text-muted">Dicocokkan ke sub-kategori + keterangan transaksi.</small>
+                        <small class="text-muted">Dicocokkan ke keterangan transaksi.</small>
                     </div>
                     <div class="form-group mb-0">
                         <label>Alasan / konteks (dokumentasi)</label>

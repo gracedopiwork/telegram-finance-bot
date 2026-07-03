@@ -157,9 +157,8 @@ def fallback_sub() -> str:
 
 
 def apply_admin_nature(parsed: dict[str, Any]) -> dict[str, Any]:
-    """Terapkan sifat dari aturan admin jika kategori/sub cocok."""
+    """Terapkan sifat dari aturan admin jika kategori cocok."""
     kategori = str(parsed.get("kategori", ""))
-    sub = str(parsed.get("sub_kategori", ""))
     rules = get_rules().get("rules") or []
     matched_nature: str | None = None
 
@@ -170,18 +169,14 @@ def apply_admin_nature(parsed: dict[str, Any]) -> dict[str, Any]:
         if not nature:
             continue
         rule_cat = str(rule.get("category") or "")
-        rule_sub = rule.get("sub_category")
         if rule_cat == "*":
             if matched_nature is None:
                 matched_nature = str(nature)
             continue
         if rule_cat != kategori:
             continue
-        if rule_sub and str(rule_sub) != sub:
-            continue
         matched_nature = str(nature)
-        if rule_sub:
-            break
+        break
 
     if matched_nature:
         parsed["sifat"] = matched_nature
