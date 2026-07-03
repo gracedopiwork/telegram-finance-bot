@@ -10,10 +10,10 @@
             <div class="text-[10px] uppercase tracking-widest text-gold-400 font-bold">Mulai di sini</div>
             <h2 class="text-lg font-extrabold mt-0.5">{{ $skipActivation ? 'Langkah Berikutnya' : 'Langkah Awal YFD First Aid' }}</h2>
         </div>
-        <a href="{{ $diagnosticUrl }}"
+        <a href="{{ $baselineUrl }}"
            class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2.5 rounded-xl text-sm shadow">
-            <span class="material-symbols-outlined text-lg">health_and_safety</span>
-            Isi Diagnostik Sekarang
+            <span class="material-symbols-outlined text-lg">fact_check</span>
+            Isi Baseline Data
         </a>
     </div>
     <ol class="p-5 sm:p-6 space-y-4 {{ $compact ? 'text-sm' : '' }}">
@@ -29,13 +29,13 @@
         <li class="flex gap-3">
             <span class="w-7 h-7 shrink-0 rounded-full bg-gold-400 text-navy-900 flex items-center justify-center text-xs font-bold">{{ $skipActivation ? '1' : '2' }}</span>
             <div>
-                <div class="font-semibold text-gold-300">Diagnostik Keuangan — wajib</div>
+                <div class="font-semibold text-gold-300">Baseline Data — wajib</div>
                 <p class="text-white/75 text-sm mt-0.5">
-                    Jawab pertanyaan tahap keuangan & snapshot finansial Anda.
+                    Jawab pertanyaan tahap keuangan & snapshot finansial Anda dalam satu form.
                     Tanpa ini, prescription bucket 4-bucket dan diagnosis personal belum aktif.
                 </p>
-                <a href="{{ $diagnosticUrl }}" class="inline-flex items-center gap-1 text-gold-400 font-semibold text-sm mt-2 hover:underline">
-                    Buka form diagnostik <span class="material-symbols-outlined text-base">arrow_forward</span>
+                <a href="{{ $baselineUrl }}" class="inline-flex items-center gap-1 text-gold-400 font-semibold text-sm mt-2 hover:underline">
+                    Buka form baseline <span class="material-symbols-outlined text-base">arrow_forward</span>
                 </a>
             </div>
         </li>

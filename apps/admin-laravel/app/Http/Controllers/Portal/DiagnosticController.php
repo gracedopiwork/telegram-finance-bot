@@ -30,9 +30,10 @@ class DiagnosticController extends Controller
         $telegramUserId = (int) PortalSession::telegramUserId($request);
         $onboarding = app(PortalOnboardingService::class);
 
-        if (! $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
+        if (! $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)
+            && ! $onboarding->userNeedsSnapshotBaseline($email, $telegramUserId)) {
             return redirect($onboarding->portalHomeRouteName($email))
-                ->with('info', 'Diagnostik keuangan Anda sudah tercatat.');
+                ->with('info', 'Baseline data Anda sudah tercatat.');
         }
 
         $wizardSteps = app(DiagnosticConfigService::class)->wizardSteps();
@@ -112,7 +113,7 @@ class DiagnosticController extends Controller
 
         if ($onboarding->userNeedsSnapshotBaseline($email, $telegramUserId)) {
             return redirect()->route('portal.baseline.create')
-                ->with('success', 'Diagnostik tersimpan. Lanjut isi snapshot keuangan Anda.');
+                ->with('success', 'Diagnostik tersimpan. Lanjut isi snapshot keuangan pada form yang sama.');
         }
 
         return redirect()->route($onboarding->portalHomeRouteName($email))

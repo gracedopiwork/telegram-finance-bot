@@ -367,11 +367,8 @@ class PortalOnboardingService
      */
     public function firstBaselineUrl(string $email, int $telegramUserId): string
     {
-        if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
-            return $this->portalDiagnosticUrl();
-        }
-
-        if ($this->userNeedsSnapshotBaseline($email, $telegramUserId)) {
+        if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)
+            || $this->userNeedsSnapshotBaseline($email, $telegramUserId)) {
             return route('portal.baseline.create');
         }
 

@@ -78,10 +78,10 @@
             : ($hasAssessment
                 ? 'Diagnostik dan FTSA Anda sudah tersimpan. Catat pemasukan & pengeluaran lewat YFD First Aid — metrik harian akan terisi otomatis.'
                 : 'Mulai catat pemasukan & pengeluaran lewat YFD First Aid. Semua metrik di bawah akan terisi otomatis.'),
-        'actionUrl' => (($needsFinancialDiagnostic ?? false) && !($isFtsaOnlyPortalUser ?? false))
-            ? ($portalDiagnosticUrl ?? route('portal.diagnostic'))
+        'actionUrl' => (($needsFinancialDiagnostic ?? false) || ($needsBaseline ?? false)) && !($isFtsaOnlyPortalUser ?? false)
+            ? route('portal.baseline.create')
             : null,
-        'actionLabel' => 'Isi Diagnostik Sekarang',
+        'actionLabel' => 'Isi Baseline Data',
     ])
 @endif
 

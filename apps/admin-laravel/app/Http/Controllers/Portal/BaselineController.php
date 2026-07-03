@@ -86,12 +86,12 @@ class BaselineController extends Controller
         $isFtsaOnly = $access->isFtsaOnlyPortalUser($email);
         $needsFinancialDiagnostic = $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId);
 
-        if (! $isFtsaOnly && $needsFinancialDiagnostic) {
-            return redirect($onboarding->portalDiagnosticUrl())
-                ->with('info', 'Isi diagnostik keuangan terlebih dahulu, lalu lanjut snapshot baseline.');
-        }
-
         app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+
+        $existingBaseline = $onboarding->resolveBaseline($email, $telegramUserId);
+        $existingFs = is_array($existingBaseline?->answers_json['fs'] ?? null)
+            ? $existingBaseline->answers_json['fs']
+            : [];
 
         $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email);
         $ftsaStatus = app(PortalFeatureService::class)->ftsaEntitlementStatus($telegramUserId, $email);
@@ -123,7 +123,9 @@ class BaselineController extends Controller
             'ftsaRetakeLocked' => $ftsaRetakeLocked,
             'isFtsaOnlyPortalUser' => $isFtsaOnly,
             'needsFinancialDiagnostic' => $needsFinancialDiagnostic,
-            'showFinancialDiagnosticSection' => false,
+            'showFinancialDiagnosticSection' => ! $isFtsaOnly,
+            'existingFs' => $existingFs,
+            'existingBaseline' => $existingBaseline,
             'months' => $this->monthOptions(),
         ]);
     }
@@ -214,22 +216,19 @@ class BaselineController extends Controller
             $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email);
             $existing = FinancialBaseline::latestForUser($telegramUserId);
             $baseline = $existing ?? $onboarding->resolveBaseline($email, $telegramUserId);
-            $hasPriorFinancialDiagnostic = $onboarding->hasFinancialDiagnostic($baseline);
 
             if ($isFtsaOnly) {
                 $rules = $service->validationRulesFtsaQuestionnaire();
             } else {
-                if (! $hasPriorFinancialDiagnostic) {
-                    return redirect($onboarding->portalDiagnosticUrl())
-                        ->with('warning', 'Isi diagnostik keuangan dulu sebelum snapshot baseline.');
-                }
-                $rules = $service->validationRulesSnapshotOnly();
+                $rules = $service->validationRulesBaselinePortal();
             }
 
             $validated = $request->validate($rules);
 
-            $priorFs = $baseline?->answers_json['fs'] ?? [];
-            $validated['fs'] = is_array($priorFs) ? $priorFs : [];
+            if ($isFtsaOnly) {
+                $priorFs = $baseline?->answers_json['fs'] ?? [];
+                $validated['fs'] = is_array($priorFs) ? $priorFs : [];
+            }
 
             $priorFtsa = $baseline?->answers_json['ftsa'] ?? [];
             $validated['ftsa'] = is_array($priorFtsa) ? $priorFtsa : [];
@@ -274,7 +273,7 @@ class BaselineController extends Controller
 
         $successMsg = ($isFtsaOnly ?? false)
             ? 'FTSA berhasil disimpan. Behavioral dashboard Anda sudah aktif.'
-            : 'Snapshot baseline tersimpan. Evaluasi ulang setiap 6 bulan.';
+            : 'Baseline data tersimpan (diagnostik + snapshot). Evaluasi ulang setiap 6 bulan.';
 
         return redirect()
             ->route(($isFtsaOnly ?? false) ? 'portal.emotional' : 'portal.baseline')

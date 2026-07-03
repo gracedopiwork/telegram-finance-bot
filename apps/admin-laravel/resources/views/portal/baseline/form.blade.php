@@ -2,11 +2,11 @@
 
 @section('title', match($formMode ?? 'snapshot') {
     'ftsa', 'ftsa_only' => 'FTSA Premium — YFD',
-    default => 'Snapshot Baseline — YFD',
+    default => 'Baseline Data — YFD',
 })
 @section('heading', match($formMode ?? 'snapshot') {
     'ftsa', 'ftsa_only' => 'Kuesioner FTSA 1–32',
-    default => 'Snapshot Keuangan (Baseline Data)',
+    default => 'Baseline Data',
 })
 
 @section('content')
@@ -20,6 +20,11 @@
     $needsFinancialDiagnostic = $needsFinancialDiagnostic ?? false;
     $showFtsaSection = in_array($formMode, ['ftsa', 'ftsa_only'], true);
     $showSnapshotSection = $formMode === 'snapshot';
+    $existingFs = $existingFs ?? [];
+    $existingBaseline = $existingBaseline ?? null;
+    $snapshotValue = fn (string $field) => old("snapshot.{$field}", $existingBaseline?->{$field});
+    $snapshotChecked = fn (string $field) => (bool) old("snapshot.{$field}", $existingBaseline?->{$field});
+    $fsValue = fn (string $key) => old("fs.{$key}", $existingFs[$key] ?? null);
     $formAction = $formMode === 'ftsa' ? route('portal.ftsa.store') : route('portal.baseline.store');
 @endphp
 
@@ -56,9 +61,8 @@
                 melalui 32 pertanyaan. Hasilnya menentukan archetype dominan (CHD, RVD, SSD, ESD).
                 Evaluasi ulang setiap <strong>12 bulan</strong> — terpisah dari baseline keuangan.
             @else
-                Isi snapshot keuangan Anda <strong>saat ini</strong> setelah membeli YFD First Aid.
-                Data ini dipakai untuk baseline dashboard dan dievaluasi ulang setiap <strong>6 bulan</strong>.
-                FTSA diisi terpisah di menu yang sama setelah unlock premium.
+                Isi <strong>diagnostik tahap keuangan</strong> dan <strong>snapshot angka keuangan</strong> Anda saat ini.
+                Evaluasi ulang setiap <strong>6 bulan</strong>. Kuesioner FTSA (behavioral) diisi terpisah setelah unlock premium.
             @endif
         </p>
         @if($showSnapshotSection)
@@ -78,13 +82,14 @@
     <form method="post" action="{{ $formAction }}" class="space-y-8">
         @csrf
 
-        @if(false)
+        @if($showSnapshotSection)
+        @php $currentSection = ''; @endphp
         {{-- Financial Stage --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
             <div class="bg-navy-800 text-white px-5 py-4">
                 <h2 class="font-bold text-lg flex items-center gap-2">
                     <span class="material-symbols-outlined">account_balance</span>
-                    Baseline Data Keuangan
+                    Diagnostik Tahap Keuangan
                 </h2>
                 <p class="text-white/70 text-sm mt-1">Isi sesuai kondisi saat ini (ada catatan di tiap pilihan agar tidak salah pilih)</p>
             </div>
@@ -103,7 +108,7 @@
                             @foreach($q['options'] as $value => $label)
                                 <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2.5 cursor-pointer hover:border-navy-500 has-[:checked]:border-navy-600 has-[:checked]:bg-navy-50">
                                     <input type="radio" name="fs[{{ $q['key'] }}]" value="{{ $value }}"
-                                           class="text-navy-600" @checked(old("fs.{$q['key']}") === $value) required>
+                                           class="text-navy-600" @checked((string) $fsValue($q['key']) === (string) $value) required>
                                     <span class="text-sm">{{ $label }}</span>
                                 </label>
                             @endforeach
@@ -129,7 +134,7 @@
                             @foreach($q['options'] as $value => $opt)
                                 <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2.5 cursor-pointer hover:border-navy-500 has-[:checked]:border-navy-600 has-[:checked]:bg-navy-50">
                                     <input type="radio" name="fs[{{ $q['key'] }}]" value="{{ $value }}"
-                                           class="text-navy-600 shrink-0" @checked(old("fs.{$q['key']}") === $value) required>
+                                           class="text-navy-600 shrink-0" @checked((string) $fsValue($q['key']) === (string) $value) required>
                                     <span class="text-sm">{{ $opt['label'] }}</span>
                                 </label>
                             @endforeach
@@ -226,7 +231,7 @@
             <div class="p-5 sm:p-6 space-y-5">
                 <div>
                     <label class="block text-sm font-semibold text-navy-800 mb-1">Current Goal (tujuan finansial saat ini)</label>
-                    <input type="text" name="snapshot[current_goal]" value="{{ old('snapshot.current_goal') }}"
+                    <input type="text" name="snapshot[current_goal]" value="{{ $snapshotValue('current_goal') }}"
                            class="w-full rounded-lg border-slate-300 text-sm" placeholder="Contoh: Dana darurat 6 bulan + lunasi kartu kredit">
                 </div>
                 <div class="grid sm:grid-cols-2 gap-4">
@@ -241,7 +246,7 @@
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">{{ $label }}</label>
                             <input type="number" name="snapshot[{{ $field }}]" min="0" step="1000"
-                                   value="{{ old("snapshot.{$field}") }}"
+                                   value="{{ $snapshotValue($field) }}"
                                    class="w-full rounded-lg border-slate-300 text-sm" placeholder="0">
                         </div>
                     @endforeach
@@ -258,7 +263,7 @@
                             <label class="inline-flex items-center gap-2 text-sm">
                                 <input type="checkbox" name="snapshot[{{ $field }}]" value="1"
                                        class="rounded border-slate-300 text-navy-600"
-                                       @checked(old("snapshot.{$field}"))>
+                                       @checked($snapshotChecked($field))>
                                 {{ $label }}
                             </label>
                         @endforeach

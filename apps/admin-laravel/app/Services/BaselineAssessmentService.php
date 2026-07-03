@@ -293,6 +293,28 @@ class BaselineAssessmentService
     }
 
     /**
+     * Portal baseline — diagnostik tahap keuangan + snapshot (tanpa FTSA).
+     *
+     * @return array<string, string>
+     */
+    public function validationRulesBaselinePortal(): array
+    {
+        $rules = [];
+
+        foreach ($this->financialStageProfile() as $q) {
+            $options = implode(',', array_keys($q['options']));
+            $rules["fs.{$q['key']}"] = "required|in:{$options}";
+        }
+
+        foreach ($this->financialStageScored() as $q) {
+            $options = implode(',', array_keys($q['options']));
+            $rules["fs.{$q['key']}"] = "required|in:{$options}";
+        }
+
+        return array_merge($rules, $this->validationRulesSnapshotOnly());
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     private function financialStageProfile(): array
