@@ -82,7 +82,7 @@
             ->contains(fn ($f) => $baseline->{$f} !== null && (int) $baseline->{$f} > 0)
         || $baseline->has_bpjs || $baseline->has_health_insurance
         || $baseline->has_income_protection || $baseline->has_life_insurance;
-    $fmt = fn (int $n) => 'Rp ' . number_format($n, 0, ',', '.');
+    $fmt = fn (int $n) => \App\Support\RupiahFormat::format($n);
 @endphp
 
 @if($hasSnapshot)
@@ -97,7 +97,7 @@
         @if($baseline->current_goal)
             <div class="sm:col-span-2 lg:col-span-4 rounded-xl bg-gold-50 border border-gold-200 p-3">
                 <div class="text-xs font-bold text-amber-800 uppercase">Current Goal</div>
-                <div class="font-medium text-navy-800 mt-1">{{ $baseline->current_goal }}</div>
+                <div class="font-medium text-navy-800 mt-1">{{ \App\Support\RupiahFormat::formatText($baseline->current_goal) }}</div>
             </div>
         @endif
         @foreach([
