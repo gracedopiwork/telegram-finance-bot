@@ -99,9 +99,14 @@ class MidtransPaymentSyncService
             $order->payment_reference = $payload['transaction_id'] ?? $order->payment_reference;
 
             if ($isPaid) {
+                $order->loadMissing('digitalProduct');
+                $provisioning = app(LicenseProvisioningService::class);
+
                 $license = $order->license_id ? License::find($order->license_id) : null;
                 if ($license === null) {
-                    $license = $this->resolveLicenseForPaidOrder($order);
+                    $license = $provisioning->resolveLicenseForPaidOrder($order);
+                } else {
+                    $provisioning->syncEntitlementsOntoLicense($order, $license);
                 }
 
                 $order->license_id = $license->id;

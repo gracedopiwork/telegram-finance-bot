@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CpDigitalProduct;
 use App\Models\License;
 use App\Models\Order;
 use Carbon\Carbon;
@@ -138,7 +139,19 @@ class LicenseEntitlementService
             (array) config('portal.bot_only_product_codes', ['yfd-bot-telegram'])
         )));
 
-        return $codes !== [] ? $codes : ['yfd-bot-telegram'];
+        if ($codes === []) {
+            $codes = ['yfd-bot-telegram'];
+        }
+
+        $aliases = ['yfd-first-aid', 'yfd-bot', 'yfd-telegram-bot'];
+        $featured = CpDigitalProduct::query()
+            ->active()
+            ->featured()
+            ->where('billing_mode', 'midtrans')
+            ->pluck('code')
+            ->all();
+
+        return array_values(array_unique(array_merge($codes, $aliases, $featured)));
     }
 
     /**
@@ -160,8 +173,17 @@ class LicenseEntitlementService
             ->where('status', 'paid')
             ->where('license_id', $license->id)
             ->where(function ($q) use ($codes) {
-                $q->whereHas('digitalProduct', fn ($dq) => $dq->whereIn('code', $codes))
-                    ->orWhereIn('plan', $codes);
+                $q->whereIn('plan', $codes)
+                    ->orWhereHas('digitalProduct', function ($dq) use ($codes) {
+                        $dq->where(function ($productQ) use ($codes) {
+                            $productQ->whereIn('code', $codes)
+                                ->orWhere(function ($flagshipQ) {
+                                    $flagshipQ->where('billing_mode', 'midtrans')
+                                        ->where('is_featured', true)
+                                        ->where('is_active', true);
+                                });
+                        });
+                    });
             })
             ->exists();
     }

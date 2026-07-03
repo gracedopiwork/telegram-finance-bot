@@ -86,8 +86,19 @@ class OrdersController extends Controller
     public function syncPayment(Order $order, MidtransPaymentSyncService $sync)
     {
         if ($order->status === 'paid') {
+            $order->loadMissing(['digitalProduct', 'license']);
+            $provisioning = app(LicenseProvisioningService::class);
+
+            if (! $order->license_id) {
+                $license = $provisioning->resolveLicenseForPaidOrder($order);
+                $order->license_id = $license->id;
+                $order->save();
+            } elseif ($order->license) {
+                $provisioning->syncEntitlementsOntoLicense($order, $order->license);
+            }
+
             return redirect()->route('admin.orders.show', $order)
-                ->with('success', 'Order sudah lunas.');
+                ->with('success', 'Order sudah lunas. Lisensi & hak akses disinkronkan ulang.');
         }
 
         $result = $sync->syncOrderFromApi($order);
