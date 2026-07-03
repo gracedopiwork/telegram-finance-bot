@@ -29,6 +29,12 @@ class TransactionsController extends Controller
         ]);
 
         $telegramUserId = (int) PortalSession::telegramUserId($request);
+        if ($telegramUserId <= 0) {
+            return redirect()
+                ->route('portal.login')
+                ->with('warning', 'Sesi portal habis. Silakan login ulang sebelum import.');
+        }
+
         $result = app(TransactionImportService::class)->importFromFile(
             $telegramUserId,
             $request->file('file'),
@@ -45,8 +51,12 @@ class TransactionsController extends Controller
             $message .= " {$result['failed']} baris gagal.";
         }
 
+        $month = $result['focus_month'] ?? null;
         $redirect = redirect()
-            ->route('portal.transactions', $request->only(['month', 'period']))
+            ->route('portal.transactions', [
+                'month' => is_string($month) && $month !== '' ? $month : $request->query('month'),
+                'period' => $request->query('period', 1),
+            ])
             ->with('success', $message);
 
         if (! empty($result['errors'])) {

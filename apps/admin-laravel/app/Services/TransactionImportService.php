@@ -91,7 +91,7 @@ class TransactionImportService
     }
 
     /**
-     * @return array{imported: int, failed: int, errors: list<string>}
+     * @return array{imported: int, failed: int, errors: list<string>, focus_month: ?string}
      */
     public function importFromFile(int $telegramUserId, UploadedFile $file): array
     {
@@ -132,6 +132,8 @@ class TransactionImportService
         $imported = 0;
         $failed = 0;
         $errors = [];
+        /** @var array<string, bool> $months */
+        $months = [];
         $line = 1;
 
         while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
@@ -166,11 +168,29 @@ class TransactionImportService
                 'source' => 'manual',
             ]);
             $imported++;
+            $monthKey = $parsed['recorded_at'] instanceof Carbon
+                ? $parsed['recorded_at']->format('Y-m')
+                : null;
+            if ($monthKey !== null) {
+                $months[$monthKey] = true;
+            }
         }
 
         fclose($handle);
 
-        return compact('imported', 'failed', 'errors');
+        $focusMonth = null;
+        if ($months !== []) {
+            $keys = array_keys($months);
+            rsort($keys);
+            $focusMonth = $keys[0] ?? null;
+        }
+
+        return [
+            'imported' => $imported,
+            'failed' => $failed,
+            'errors' => $errors,
+            'focus_month' => $focusMonth,
+        ];
     }
 
     /**
