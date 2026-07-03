@@ -14,10 +14,12 @@ class PortalOnboardingService
      */
     public function botOnlyProductCodes(): array
     {
-        return array_values(array_filter(array_map(
+        $codes = array_values(array_filter(array_map(
             fn (string $v) => trim($v),
             (array) config('portal.bot_only_product_codes', ['yfd-bot-telegram'])
         )));
+
+        return $codes !== [] ? $codes : ['yfd-bot-telegram'];
     }
 
     /**
@@ -82,14 +84,17 @@ class PortalOnboardingService
     {
         $email = strtolower(trim($email));
         $codes = $this->botOnlyProductCodes();
-        if ($email === '' || $codes === []) {
+        if ($email === '') {
             return false;
         }
 
         return Order::query()
             ->where('status', 'paid')
             ->whereRaw('LOWER(email) = ?', [$email])
-            ->whereHas('digitalProduct', fn ($q) => $q->whereIn('code', $codes))
+            ->where(function ($q) use ($codes) {
+                $q->whereHas('digitalProduct', fn ($dq) => $dq->whereIn('code', $codes))
+                    ->orWhereIn('plan', $codes);
+            })
             ->exists();
     }
 

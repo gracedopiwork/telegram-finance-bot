@@ -133,10 +133,12 @@ class LicenseEntitlementService
      */
     public function botProductCodes(): array
     {
-        return array_values(array_filter(array_map(
+        $codes = array_values(array_filter(array_map(
             fn (string $v) => trim($v),
             (array) config('portal.bot_only_product_codes', ['yfd-bot-telegram'])
         )));
+
+        return $codes !== [] ? $codes : ['yfd-bot-telegram'];
     }
 
     /**
@@ -153,14 +155,14 @@ class LicenseEntitlementService
     public function hasPaidBotOrderOnLicense(License $license): bool
     {
         $codes = $this->botProductCodes();
-        if ($codes === []) {
-            return false;
-        }
 
         return Order::query()
             ->where('status', 'paid')
             ->where('license_id', $license->id)
-            ->whereHas('digitalProduct', fn ($q) => $q->whereIn('code', $codes))
+            ->where(function ($q) use ($codes) {
+                $q->whereHas('digitalProduct', fn ($dq) => $dq->whereIn('code', $codes))
+                    ->orWhereIn('plan', $codes);
+            })
             ->exists();
     }
 
