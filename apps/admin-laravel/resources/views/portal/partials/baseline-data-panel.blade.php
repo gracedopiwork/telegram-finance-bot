@@ -3,6 +3,7 @@
     $fmt = $fmt ?? fn (int $n) => 'Rp ' . number_format($n, 0, ',', '.');
     $editUrl = $editUrl ?? route('portal.baseline.create');
     $hasSnapshot = $baseline && ($baseline['has_financial_snapshot'] ?? false);
+    $embedSnapshotForm = $embedSnapshotForm ?? false;
 @endphp
 
 @if($hasSnapshot)
@@ -50,29 +51,16 @@
         </div>
     </div>
 </div>
+@elseif($baseline && $embedSnapshotForm)
+    @include('portal.partials.baseline-snapshot-form', [
+        'existingBaseline' => $existingBaseline ?? null,
+        'stageLabel' => $baseline['stage_label'] ?? null,
+    ])
 @elseif($baseline)
-<div class="bg-white rounded-2xl border border-amber-300 shadow-sm overflow-hidden">
-    <div class="bg-amber-50 px-5 py-4 border-b border-amber-200">
-        <h3 class="font-bold text-navy-800 flex items-center gap-2">
-            <span class="material-symbols-outlined text-amber-700">edit_note</span>
-            Lengkapi Snapshot Baseline
-        </h3>
-        <p class="text-sm text-amber-900 mt-1">
-            Diagnostik: <strong>{{ $baseline['stage_label'] ?? '—' }}</strong> · Isi angka keuangan di bawah.
-        </p>
-    </div>
-    <div class="p-5 sm:p-6">
-        @if($showInlineForm ?? true)
-            @include('portal.partials.baseline-snapshot-form', [
-                'existingBaseline' => $existingBaseline ?? null,
-                'compact' => true,
-            ])
-        @else
-            <a href="{{ $editUrl }}" class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm">
-                Buka form baseline <span class="material-symbols-outlined text-base">arrow_forward</span>
-            </a>
-        @endif
-    </div>
+<div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-3">
+    <span>Diagnostik: <strong>{{ $baseline['stage_label'] ?? '—' }}</strong> — snapshot belum lengkap.</span>
+    <a href="{{ route('portal.dashboard', request()->only(['month', 'period'])) }}#baseline-snapshot"
+       class="font-semibold whitespace-nowrap hover:underline">Lengkapi di Dashboard →</a>
 </div>
 @elseif(($needsFinancialDiagnostic ?? false) || ($needsBaseline ?? false))
 <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-3">

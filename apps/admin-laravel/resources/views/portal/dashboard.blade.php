@@ -62,7 +62,7 @@
     'baseline' => $summary['baseline'] ?? null,
     'existingBaseline' => $baselineRecord ?? null,
     'editUrl' => route('portal.baseline.create'),
-    'showInlineForm' => ($needsBaseline ?? false) && ($baselineRecord ?? null),
+    'embedSnapshotForm' => ($needsBaseline ?? false),
 ])
 
 @php $hasAssessment = ($summary['baseline'] ?? null); @endphp
@@ -76,10 +76,14 @@
             : ($hasAssessment
                 ? 'Diagnostik dan FTSA Anda sudah tersimpan. Catat pemasukan & pengeluaran lewat YFD First Aid — metrik harian akan terisi otomatis.'
                 : 'Mulai catat pemasukan & pengeluaran lewat YFD First Aid. Semua metrik di bawah akan terisi otomatis.'),
-        'actionUrl' => (($needsFinancialDiagnostic ?? false) || ($needsBaseline ?? false)) && !($isFtsaOnlyPortalUser ?? false)
+        'actionUrl' => ($needsFinancialDiagnostic ?? false) && !($isFtsaOnlyPortalUser ?? false)
             ? route('portal.baseline.create')
-            : null,
-        'actionLabel' => 'Isi Baseline Data',
+            : (($needsBaseline ?? false)
+                ? (route('portal.dashboard', request()->only(['month', 'period'])) . '#baseline-snapshot')
+                : route('portal.transactions')),
+        'actionLabel' => ($needsBaseline ?? false) && !($needsFinancialDiagnostic ?? false)
+            ? 'Isi Snapshot'
+            : 'Isi Baseline Data',
     ])
 @endif
 

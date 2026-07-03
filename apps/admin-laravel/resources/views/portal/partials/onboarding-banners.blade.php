@@ -18,12 +18,20 @@
         <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
             <div class="text-sm text-amber-900">
                 <div class="font-bold">Langkah 1 — Baseline Data</div>
-                <div class="mt-0.5">Isi diagnostik tahap keuangan + snapshot angka (pendapatan, tabungan, utang, proteksi). Evaluasi ulang setiap 6 bulan.</div>
+                <div class="mt-0.5">
+                    @if($needsFinancialDiagnostic ?? false)
+                        Isi diagnostik tahap keuangan + snapshot angka (pendapatan, tabungan, utang, proteksi).
+                    @else
+                        Diagnostik sudah tersimpan — lengkapi snapshot angka langsung di dashboard ini.
+                    @endif
+                </div>
             </div>
-            <a href="{{ route('portal.baseline.create') }}"
+            <a href="{{ ($needsBaseline ?? false) && !($needsFinancialDiagnostic ?? false)
+                    ? (route('portal.dashboard', request()->only(['month', 'period'])) . '#baseline-snapshot')
+                    : route('portal.baseline.create') }}"
                class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm shrink-0">
                 <span class="material-symbols-outlined text-lg">fact_check</span>
-                Isi Baseline Data
+                {{ ($needsBaseline ?? false) && !($needsFinancialDiagnostic ?? false) ? 'Isi Snapshot' : 'Isi Baseline Data' }}
             </a>
         </div>
     @endif

@@ -38,8 +38,9 @@ class BaselineController extends Controller
         }
 
         if (! $onboarding->hasFinancialSnapshot($baseline)) {
-            return redirect()->route('portal.baseline.create')
-                ->with('info', 'Lengkapi snapshot angka keuangan Anda di form di bawah.');
+            return redirect()->to(
+                app(PortalOnboardingService::class)->portalDashboardSnapshotUrl($request->only(['month', 'period']))
+            )->with('info', 'Lengkapi snapshot angka keuangan langsung di dashboard.');
         }
 
         try {
@@ -120,6 +121,12 @@ class BaselineController extends Controller
         if (! isset($baselineConfig['financial_stage'])) {
             return redirect()->route($this->portalHomeRoute($request))
                 ->with('error', 'Konfigurasi baseline tidak terbaca. Admin: php artisan config:clear');
+        }
+
+        if ($showInlineSnapshotForm) {
+            return redirect()->to(
+                $onboarding->portalDashboardSnapshotUrl($request->only(['month', 'period']))
+            )->with('info', 'Lengkapi snapshot angka keuangan di dashboard.');
         }
 
         return view('portal.baseline.form', [
@@ -292,7 +299,9 @@ class BaselineController extends Controller
                 : 'Baseline data tersimpan (diagnostik + snapshot). Evaluasi ulang setiap 6 bulan.');
 
         return redirect()
-            ->route(($isFtsaOnly ?? false) ? 'portal.emotional' : 'portal.baseline')
+            ->to(($snapshotOnlySave ?? false)
+                ? route('portal.dashboard', $request->only(['month', 'period']))
+                : route(($isFtsaOnly ?? false) ? 'portal.emotional' : 'portal.baseline'))
             ->with('success', $successMsg);
     }
 

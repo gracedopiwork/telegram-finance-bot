@@ -23,11 +23,13 @@
     @endif
     @php
         $baselineNavUrl = $baselineUrl ?? route('portal.baseline.create');
+        $needsSnapshotOnly = ($needsBaseline ?? false) && !($needsFinancialDiagnostic ?? false);
         $baselineNavHighlight = !($portalOnboardingComplete ?? false) && (
-            ($needsBaseline ?? false)
+            (($needsBaseline ?? false) && ($needsFinancialDiagnostic ?? false))
             || (($needsFtsa ?? false) && !($ftsaRetakeLocked ?? false))
             || (($isFtsaOnlyPortalUser ?? false) && ($needsFinancialDiagnostic ?? false))
         );
+        $dashboardNavHighlight = $needsSnapshotOnly;
         $baselineNavLabel = ($portalOnboardingComplete ?? false)
             ? 'BASELINE DATA'
             : (($isFtsaOnlyPortalUser ?? false)
@@ -44,9 +46,12 @@
     </a>
     @if($hasBotPortalAccess ?? true)
     <a href="{{ route('portal.dashboard', $query) }}"
-       class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'dashboard' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
+       class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'dashboard' ? 'nav-active font-semibold' : 'hover:bg-white/10' }} {{ $dashboardNavHighlight ? 'ring-2 ring-gold-400/80 bg-gold-400/10' : '' }}">
         <span class="material-symbols-outlined text-lg opacity-80">dashboard</span>
-        FINANCIAL HEALTH DASHBOARD
+        <span class="flex-1">FINANCIAL HEALTH DASHBOARD</span>
+        @if($dashboardNavHighlight)
+            <span class="text-[9px] bg-gold-400 text-navy-900 px-1.5 py-0.5 rounded font-bold animate-pulse">ISI</span>
+        @endif
     </a>
     @endif
     <a href="{{ route('portal.emotional', $query) }}"

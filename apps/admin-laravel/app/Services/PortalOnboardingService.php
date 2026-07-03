@@ -362,13 +362,21 @@ class PortalOnboardingService
             : route('portal.dashboard');
     }
 
+    public function portalDashboardSnapshotUrl(array $query = []): string
+    {
+        return route('portal.dashboard', $query).'#baseline-snapshot';
+    }
+
     /**
      * URL pengisian baseline — selalu di dalam portal, tanpa redirect paksa.
      */
     public function firstBaselineUrl(string $email, int $telegramUserId): string
     {
-        if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)
-            || $this->userNeedsSnapshotBaseline($email, $telegramUserId)) {
+        if ($this->userNeedsSnapshotBaseline($email, $telegramUserId)) {
+            return $this->portalDashboardSnapshotUrl();
+        }
+
+        if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
             return route('portal.baseline.create');
         }
 

@@ -170,11 +170,14 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::get('/emotional', [PortalDashboardController::class, 'emotional'])->name('emotional');
         Route::get('/premium', [PortalDashboardController::class, 'premium'])->name('premium');
 
-        Route::middleware('portal.bot')->middleware('portal.baseline')->group(function () {
+        Route::middleware('portal.bot')->group(function () {
             Route::get('/transaksi', [PortalDashboardController::class, 'transactions'])->name('transactions');
             Route::get('/transaksi/template', [PortalTransactionsController::class, 'importTemplate'])->name('transactions.template');
             Route::post('/transaksi/import', [PortalTransactionsController::class, 'import'])->name('transactions.import');
             Route::delete('/transaksi/{transaction}', [PortalTransactionsController::class, 'destroy'])->name('transactions.destroy');
+        });
+
+        Route::middleware('portal.bot')->middleware('portal.baseline')->group(function () {
             Route::get('/', [PortalDashboardController::class, 'index'])->name('dashboard');
         });
     });

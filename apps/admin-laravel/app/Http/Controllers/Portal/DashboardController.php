@@ -25,16 +25,10 @@ class DashboardController extends Controller
 
     [$month, $period] = $this->filters($request);
     $summary = app(TransactionDashboardService::class)->summary($telegramUserId, $month, $period, $email);
-    $onboarding = app(PortalOnboardingService::class);
-    $baselineRecord = $onboarding->resolveBaseline($email, $telegramUserId);
 
     return view('portal.transactions', [
       'active' => 'transactions',
       'summary' => $summary,
-      'baselineRecord' => $baselineRecord,
-      'needsSnapshotForm' => $baselineRecord !== null
-        && $onboarding->hasFinancialDiagnostic($baselineRecord)
-        && ! $onboarding->hasFinancialSnapshot($baselineRecord),
       'months' => $this->monthOptions(),
       'periods' => $this->periodOptions(),
       'currentPeriod' => $period,

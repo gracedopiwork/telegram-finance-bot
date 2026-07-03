@@ -6,7 +6,6 @@
 @section('content')
 @php
     $fmt = fn (int $n) => 'Rp ' . number_format($n, 0, ',', '.');
-    $baseline = $summary['baseline'] ?? null;
 @endphp
 
 <div class="bg-gradient-to-r from-navy-800 to-navy-600 rounded-2xl p-5 sm:p-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -19,13 +18,6 @@
     </div>
     <div class="text-sm bg-white/10 rounded-xl px-4 py-2 font-mono shrink-0">/catat makan siang 35rb</div>
 </div>
-
-@include('portal.partials.baseline-data-panel', [
-    'baseline' => $baseline,
-    'existingBaseline' => $baselineRecord ?? null,
-    'fmt' => $fmt,
-    'showInlineForm' => $needsSnapshotForm ?? false,
-])
 
 @include('portal.partials.onboarding-banners')
 
