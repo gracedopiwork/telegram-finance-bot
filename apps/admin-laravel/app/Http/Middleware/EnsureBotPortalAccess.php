@@ -13,8 +13,9 @@ class EnsureBotPortalAccess
     public function handle(Request $request, Closure $next): Response
     {
         $email = (string) (PortalSession::email($request) ?? '');
+        $telegramUserId = (int) PortalSession::telegramUserId($request);
 
-        if (app(PortalAccessService::class)->hasBotPortalAccess($email)) {
+        if (app(PortalAccessService::class)->hasBotPortalAccess($email, $telegramUserId)) {
             return $next($request);
         }
 

@@ -68,7 +68,7 @@ class AuthController extends Controller
         $access = app(PortalAccessService::class);
         $isFtsaOnlyOrder = $access->isFtsaOnlyOrder($order);
 
-        if ($access->hasBotPortalAccess($email)
+        if ($access->hasBotPortalAccess($email, (int) ($license->assigned_user_id ?? 0))
             && $license->assigned_user_id
             && $access->isSyntheticPortalUserId((int) $license->assigned_user_id)) {
             return back()->withInput()->withErrors([
@@ -151,7 +151,7 @@ class AuthController extends Controller
             app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
         }
 
-        return redirect()->route($onboarding->portalHomeRouteName($email))
+        return redirect()->route($onboarding->portalHomeRouteName($email, $telegramUserId))
             ->with('success', $this->loginSuccessMessage($email, $telegramUserId));
     }
 
@@ -160,11 +160,11 @@ class AuthController extends Controller
         $onboarding = app(PortalOnboardingService::class);
         $access = app(PortalAccessService::class);
 
-        if ($access->isFtsaOnlyPortalUser($email)) {
+        if ($access->isFtsaOnlyPortalUser($email, $telegramUserId)) {
             return 'Selamat datang di portal YFD.';
         }
 
-        if ($access->hasBotPortalAccess($email) && $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
+        if ($access->hasBotPortalAccess($email, $telegramUserId) && $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
             return 'Selamat datang! Langkah pertama: lengkapi Diagnostik Keuangan agar prescription bucket & insight personal aktif.';
         }
 

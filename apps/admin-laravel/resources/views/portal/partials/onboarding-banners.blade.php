@@ -27,7 +27,7 @@
                 </div>
             </div>
             <a href="{{ ($needsBaseline ?? false) && !($needsFinancialDiagnostic ?? false)
-                    ? (route('portal.dashboard', request()->only(['month', 'period'])) . '#baseline-snapshot')
+                    ? ($baselineUrl ?? route('portal.baseline.create'))
                     : route('portal.baseline.create') }}"
                class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm shrink-0">
                 <span class="material-symbols-outlined text-lg">fact_check</span>

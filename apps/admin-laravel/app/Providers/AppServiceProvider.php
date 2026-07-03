@@ -113,21 +113,22 @@ class AppServiceProvider extends ServiceProvider
                 $onboarding = app(PortalOnboardingService::class);
                 $access = app(PortalAccessService::class);
                 $featureService = app(\App\Services\PortalFeatureService::class);
-                $portalOnboardingComplete = $access->hasBotPortalAccess($email)
+                $portalOnboardingComplete = $access->hasBotPortalAccess($email, $telegramUserId)
                     ? $onboarding->hasBotPortalOnboardingComplete($email, $telegramUserId)
                     : $onboarding->hasFtsaPortalOnboardingComplete($email, $telegramUserId);
                 $needsBaseline = $onboarding->userNeedsBotOnboardingBaseline($email, $telegramUserId);
                 $needsFtsa = $onboarding->userNeedsFtsa($email, $telegramUserId);
                 $needsFinancialDiagnostic = $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId);
                 $ftsaUnlocked = $featureService->canAccessFtsa($telegramUserId, $email);
+                $hasBotPortalAccess = $access->hasBotPortalAccess($email, $telegramUserId);
 
                 $view->with('portalOnboardingComplete', $portalOnboardingComplete);
                 $view->with('needsBaseline', $needsBaseline);
                 $view->with('needsFtsa', $needsFtsa);
                 $view->with('needsFinancialDiagnostic', $needsFinancialDiagnostic);
                 $view->with('ftsaUnlocked', $ftsaUnlocked);
-                $view->with('hasBotPortalAccess', $access->hasBotPortalAccess($email));
-                $view->with('isFtsaOnlyPortalUser', $access->isFtsaOnlyPortalUser($email));
+                $view->with('hasBotPortalAccess', $hasBotPortalAccess);
+                $view->with('isFtsaOnlyPortalUser', $access->isFtsaOnlyPortalUser($email, $telegramUserId));
                 $ftsaEval = app(\App\Services\FtsaEvaluationService::class);
                 $view->with('ftsaRetakeLocked', $ftsaEval->isRetakeLocked($telegramUserId));
                 $view->with('ftsaRetakeAvailableAt', $ftsaEval->retakeAvailableAt($telegramUserId));
@@ -139,7 +140,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('baselineUrl', $portalOnboardingComplete
                     ? route('portal.baseline')
                     : ($needsSnapshotOnly
-                        ? $onboarding->portalDashboardSnapshotUrl()
+                        ? $onboarding->portalSnapshotEntryUrl($email, $telegramUserId)
                         : $onboarding->firstBaselineUrl($email, $telegramUserId)));
                 $view->with('diagnosticCheckupUrl', $onboarding->portalDiagnosticUrl());
             } catch (\Throwable) {

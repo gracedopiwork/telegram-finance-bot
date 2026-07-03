@@ -32,7 +32,7 @@ class DiagnosticController extends Controller
 
         if (! $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)
             && ! $onboarding->userNeedsSnapshotBaseline($email, $telegramUserId)) {
-            return redirect($onboarding->portalHomeRouteName($email))
+            return redirect()->route($onboarding->portalHomeRouteName($email, $telegramUserId))
                 ->with('info', 'Baseline data Anda sudah tercatat.');
         }
 
@@ -106,17 +106,17 @@ class DiagnosticController extends Controller
         $onboarding = app(PortalOnboardingService::class);
         $access = app(PortalAccessService::class);
 
-        if ($access->isFtsaOnlyPortalUser($email) && $onboarding->userNeedsFtsa($email, $telegramUserId)) {
+        if ($access->isFtsaOnlyPortalUser($email, $telegramUserId) && $onboarding->userNeedsFtsa($email, $telegramUserId)) {
             return redirect()->route('portal.ftsa.create')
                 ->with('success', 'Diagnostik tersimpan. Lanjutkan kuesioner FTSA 1–32.');
         }
 
         if ($onboarding->userNeedsSnapshotBaseline($email, $telegramUserId)) {
-            return redirect()->to($onboarding->portalDashboardSnapshotUrl())
-                ->with('success', 'Diagnostik tersimpan. Lengkapi snapshot keuangan di dashboard.');
+            return redirect()->to($onboarding->portalSnapshotEntryUrl($email, $telegramUserId))
+                ->with('success', 'Diagnostik tersimpan. Lengkapi snapshot keuangan selanjutnya.');
         }
 
-        return redirect()->route($onboarding->portalHomeRouteName($email))
+        return redirect()->route($onboarding->portalHomeRouteName($email, $telegramUserId))
             ->with('success', 'Diagnostik keuangan berhasil disimpan.');
     }
 

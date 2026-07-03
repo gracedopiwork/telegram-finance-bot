@@ -188,6 +188,54 @@ class LicenseEntitlementService
             ->exists();
     }
 
+    public function hasPaidBotOrderForEmail(string $email): bool
+    {
+        $email = strtolower(trim($email));
+        if ($email === '') {
+            return false;
+        }
+
+        $codes = $this->botProductCodes();
+
+        return Order::query()
+            ->where('status', 'paid')
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->where(function ($q) use ($codes) {
+                $q->whereIn('plan', $codes)
+                    ->orWhereHas('digitalProduct', function ($dq) use ($codes) {
+                        $dq->where(function ($productQ) use ($codes) {
+                            $productQ->whereIn('code', $codes)
+                                ->orWhere(function ($flagshipQ) {
+                                    $flagshipQ->where('billing_mode', 'midtrans')
+                                        ->where('is_featured', true)
+                                        ->where('is_active', true);
+                                });
+                        });
+                    });
+            })
+            ->exists();
+    }
+
+    public function hasPaidBotOrderForTelegramUser(int $telegramUserId): bool
+    {
+        if ($telegramUserId <= 0) {
+            return false;
+        }
+
+        $licenses = License::query()
+            ->where('assigned_user_id', $telegramUserId)
+            ->where('status', 'active')
+            ->get();
+
+        foreach ($licenses as $license) {
+            if ($this->hasPaidBotOrderOnLicense($license)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function hasPaidFtsaOrderOnLicense(License $license): bool
     {
         $codes = $this->ftsaProductCodes();

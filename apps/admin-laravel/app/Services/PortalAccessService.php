@@ -14,16 +14,20 @@ class PortalAccessService
     /**
      * Akses dashboard bot (transaksi, KPI, input data).
      */
-    public function hasBotPortalAccess(string $email): bool
+    public function hasBotPortalAccess(string $email, int $telegramUserId = 0): bool
     {
-        return $this->onboarding->hasPaidBotOrder($email);
+        return $this->onboarding->hasPaidBotOrderForUser($email, $telegramUserId);
     }
 
     /**
      * Pembeli FTSA saja — portal terbatas (baseline FTSA, behavioral, premium).
      */
-    public function isFtsaOnlyPortalUser(string $email): bool
+    public function isFtsaOnlyPortalUser(string $email, int $telegramUserId = 0): bool
     {
+        if ($this->hasBotPortalAccess($email, $telegramUserId)) {
+            return false;
+        }
+
         return $this->onboarding->isFtsaOnlyBuyer($email);
     }
 
@@ -85,9 +89,9 @@ class PortalAccessService
     /**
      * URL landing portal setelah login.
      */
-    public function defaultPortalHomeRoute(string $email): string
+    public function defaultPortalHomeRoute(string $email, int $telegramUserId = 0): string
     {
-        if ($this->hasBotPortalAccess($email)) {
+        if ($this->hasBotPortalAccess($email, $telegramUserId)) {
             return 'portal.dashboard';
         }
 

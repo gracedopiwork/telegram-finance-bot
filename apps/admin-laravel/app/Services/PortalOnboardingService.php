@@ -82,20 +82,28 @@ class PortalOnboardingService
 
     public function hasPaidBotOrder(string $email): bool
     {
-        $email = strtolower(trim($email));
-        $codes = $this->botOnlyProductCodes();
-        if ($email === '') {
-            return false;
+        return app(LicenseEntitlementService::class)->hasPaidBotOrderForEmail($email);
+    }
+
+    /**
+     * Pembeli / pengguna aktif YFD First Aid (order, lisensi, atau sudah punya transaksi bot).
+     */
+    public function hasPaidBotOrderForUser(string $email, int $telegramUserId): bool
+    {
+        $entitlements = app(LicenseEntitlementService::class);
+        if ($entitlements->hasPaidBotOrderForEmail($email)) {
+            return true;
         }
 
-        return Order::query()
-            ->where('status', 'paid')
-            ->whereRaw('LOWER(email) = ?', [$email])
-            ->where(function ($q) use ($codes) {
-                $q->whereHas('digitalProduct', fn ($dq) => $dq->whereIn('code', $codes))
-                    ->orWhereIn('plan', $codes);
-            })
-            ->exists();
+        if ($entitlements->hasPaidBotOrderForTelegramUser($telegramUserId)) {
+            return true;
+        }
+
+        if ($telegramUserId > 0 && \App\Models\BotTransaction::query()->forUser($telegramUserId)->exists()) {
+            return true;
+        }
+
+        return false;
     }
 
     public function isBotOnlyBuyer(string $email, int $telegramUserId): bool
@@ -178,7 +186,7 @@ class PortalOnboardingService
             return false;
         }
 
-        if (! $this->hasPaidBotOrder($email)) {
+        if (! $this->hasPaidBotOrderForUser($email, $telegramUserId)) {
             return false;
         }
 
@@ -234,7 +242,7 @@ class PortalOnboardingService
             return false;
         }
 
-        if (! $this->hasPaidBotOrder($email)) {
+        if (! $this->hasPaidBotOrderForUser($email, $telegramUserId)) {
             return false;
         }
 
@@ -328,9 +336,9 @@ class PortalOnboardingService
         return ! app(FtsaAnswerSummaryService::class)->hasCompletedFtsa($baseline);
     }
 
-    public function portalHomeRouteName(string $email): string
+    public function portalHomeRouteName(string $email, int $telegramUserId = 0): string
     {
-        return $this->isFtsaOnlyBuyer($email) ? 'portal.emotional' : 'portal.dashboard';
+        return $this->hasPaidBotOrderForUser($email, $telegramUserId) ? 'portal.dashboard' : 'portal.emotional';
     }
 
     public function portalDiagnosticUrl(): string
@@ -372,20 +380,29 @@ class PortalOnboardingService
         return route('portal.transactions', $query).'#input-data';
     }
 
+    public function portalSnapshotEntryUrl(string $email, int $telegramUserId, array $query = []): string
+    {
+        if ($this->hasPaidBotOrderForUser($email, $telegramUserId)) {
+            return $this->portalDashboardSnapshotUrl($query);
+        }
+
+        return route('portal.baseline.create', $query);
+    }
+
     /**
      * URL pengisian baseline — selalu di dalam portal, tanpa redirect paksa.
      */
     public function firstBaselineUrl(string $email, int $telegramUserId): string
     {
         if ($this->userNeedsSnapshotBaseline($email, $telegramUserId)) {
-            return $this->portalDashboardSnapshotUrl();
+            return $this->portalSnapshotEntryUrl($email, $telegramUserId);
         }
 
         if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
             return route('portal.baseline.create');
         }
 
-        return route($this->portalHomeRouteName($email));
+        return route($this->portalHomeRouteName($email, $telegramUserId));
     }
 
     /**

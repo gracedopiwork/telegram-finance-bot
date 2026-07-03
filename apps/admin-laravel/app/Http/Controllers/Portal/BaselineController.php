@@ -39,8 +39,8 @@ class BaselineController extends Controller
 
         if (! $onboarding->hasFinancialSnapshot($baseline)) {
             return redirect()->to(
-                app(PortalOnboardingService::class)->portalDashboardSnapshotUrl($request->only(['month', 'period']))
-            )->with('info', 'Lengkapi snapshot angka keuangan langsung di dashboard.');
+                $onboarding->portalSnapshotEntryUrl($email, $telegramUserId, $request->only(['month', 'period']))
+            )->with('info', 'Lengkapi snapshot angka keuangan Anda.');
         }
 
         try {
@@ -89,7 +89,7 @@ class BaselineController extends Controller
         $email = (string) (PortalSession::email($request) ?? '');
         $onboarding = app(PortalOnboardingService::class);
         $access = app(PortalAccessService::class);
-        $isFtsaOnly = $access->isFtsaOnlyPortalUser($email);
+        $isFtsaOnly = $access->isFtsaOnlyPortalUser($email, $telegramUserId);
         $needsFinancialDiagnostic = $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId);
 
         app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
@@ -125,8 +125,8 @@ class BaselineController extends Controller
 
         if ($showInlineSnapshotForm) {
             return redirect()->to(
-                $onboarding->portalDashboardSnapshotUrl($request->only(['month', 'period']))
-            )->with('info', 'Lengkapi snapshot angka keuangan di dashboard.');
+                $onboarding->portalSnapshotEntryUrl($email, $telegramUserId, $request->only(['month', 'period']))
+            )->with('info', 'Lengkapi snapshot angka keuangan Anda.');
         }
 
         return view('portal.baseline.form', [
@@ -183,7 +183,7 @@ class BaselineController extends Controller
             'ftsaUnlocked' => true,
             'ftsaEndsAt' => app(PortalFeatureService::class)->ftsaEntitlementStatus($telegramUserId, $email)['ends_at'],
             'ftsaRetakeLocked' => false,
-            'isFtsaOnlyPortalUser' => app(PortalAccessService::class)->isFtsaOnlyPortalUser($email),
+            'isFtsaOnlyPortalUser' => app(PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId),
             'needsFinancialDiagnostic' => false,
             'showFinancialDiagnosticSection' => false,
             'months' => $this->monthOptions(),
@@ -213,7 +213,7 @@ class BaselineController extends Controller
         $this->normalizeSnapshotInput($request);
 
         $email = (string) (PortalSession::email($request) ?? '');
-        $isFtsaOnly = app(PortalAccessService::class)->isFtsaOnlyPortalUser($email);
+        $isFtsaOnly = app(PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId);
         $onboarding = app(PortalOnboardingService::class);
         $ftsaEval = app(FtsaEvaluationService::class);
 
@@ -503,8 +503,9 @@ class BaselineController extends Controller
     private function portalHomeRoute(Request $request): string
     {
         $email = (string) (PortalSession::email($request) ?? '');
+        $telegramUserId = (int) PortalSession::telegramUserId($request);
 
-        return app(PortalAccessService::class)->defaultPortalHomeRoute($email);
+        return app(PortalAccessService::class)->defaultPortalHomeRoute($email, $telegramUserId);
     }
 
     private function sessionEmail(Request $request): ?string
