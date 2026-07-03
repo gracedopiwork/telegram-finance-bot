@@ -367,6 +367,11 @@ class PortalOnboardingService
         return route('portal.dashboard', $query).'#baseline-snapshot';
     }
 
+    public function portalTransactionsUrl(array $query = []): string
+    {
+        return route('portal.transactions', $query).'#input-data';
+    }
+
     /**
      * URL pengisian baseline — selalu di dalam portal, tanpa redirect paksa.
      */

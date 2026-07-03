@@ -15,10 +15,10 @@
 </div>
 <nav class="p-3 space-y-0.5 flex-1 text-sm overflow-y-auto">
     @if($hasBotPortalAccess ?? true)
-    <a href="{{ route('portal.transactions', $query) }}"
+    <a href="{{ $portalTransactionsUrl ?? route('portal.transactions', $query) }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'transactions' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">edit_note</span>
-        INPUT DATA
+        <span class="flex-1">INPUT DATA</span>
     </a>
     @endif
     @php

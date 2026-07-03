@@ -134,6 +134,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('portalDiagnosticUrl', $onboarding->portalDiagnosticUrl());
                 $view->with('portalFtsaUrl', $onboarding->portalFtsaUrl());
                 $view->with('portalBaselineUrl', $onboarding->portalBaselineUrl($email, $telegramUserId));
+                $view->with('portalTransactionsUrl', $onboarding->portalTransactionsUrl());
                 $needsSnapshotOnly = $needsBaseline && ! $needsFinancialDiagnostic;
                 $view->with('baselineUrl', $portalOnboardingComplete
                     ? route('portal.baseline')
