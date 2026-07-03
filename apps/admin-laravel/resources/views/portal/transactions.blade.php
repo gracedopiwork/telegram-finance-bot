@@ -204,6 +204,7 @@
                         <th class="px-4 py-3 font-semibold">Mood</th>
                         <th class="px-4 py-3 font-semibold">Impulsif</th>
                         <th class="px-4 py-3 font-semibold hidden lg:table-cell">Keterangan</th>
+                        <th class="px-4 py-3 font-semibold text-right">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -231,6 +232,19 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 hidden lg:table-cell max-w-xs truncate text-slate-600">{{ $t['notes'] }}</td>
+                        <td class="px-4 py-3 text-right">
+                            <form method="post"
+                                  action="{{ route('portal.transactions.destroy', ['transaction' => $t['id'], 'month' => request('month', $summary['month']), 'period' => request('period', $summary['period_months'])]) }}"
+                                  onsubmit="return confirm('Hapus transaksi ini?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1 rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50 px-3 py-1.5 text-xs font-semibold">
+                                    <span class="material-symbols-outlined text-sm">delete</span>
+                                    Hapus
+                                </button>
+                            </form>
+                        </td>
                     </tr>
                 @endforeach
                 </tbody>

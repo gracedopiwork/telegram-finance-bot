@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Models\BotTransaction;
 use App\Services\TransactionImportService;
 use App\Support\PortalSession;
 use Illuminate\Http\RedirectResponse;
@@ -64,5 +65,27 @@ class TransactionsController extends Controller
         }
 
         return $redirect;
+    }
+
+    public function destroy(Request $request, BotTransaction $transaction): RedirectResponse
+    {
+        $telegramUserId = (int) PortalSession::telegramUserId($request);
+        if ($telegramUserId <= 0) {
+            return redirect()
+                ->route('portal.login')
+                ->with('warning', 'Sesi portal habis. Silakan login ulang.');
+        }
+
+        if ((int) $transaction->telegram_user_id !== $telegramUserId) {
+            return redirect()
+                ->route('portal.transactions', $request->only(['month', 'period']))
+                ->with('warning', 'Transaksi tidak ditemukan atau bukan milik akun Anda.');
+        }
+
+        $transaction->delete();
+
+        return redirect()
+            ->route('portal.transactions', $request->only(['month', 'period']))
+            ->with('success', 'Transaksi berhasil dihapus.');
     }
 }
