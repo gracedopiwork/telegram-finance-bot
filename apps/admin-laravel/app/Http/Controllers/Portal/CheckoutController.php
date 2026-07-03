@@ -16,10 +16,6 @@ class CheckoutController extends Controller
 {
     public function ftsaSnap(Request $request, PortalCheckoutService $checkout): JsonResponse
     {
-        $validated = $request->validate([
-            'phone' => ['required', 'string', 'max:32'],
-        ]);
-
         $email = (string) (PortalSession::email($request) ?? '');
         $telegramUserId = (int) PortalSession::telegramUserId($request);
         $fullName = (string) $request->session()->get(PortalSession::DISPLAY_NAME, 'Pengguna');
@@ -33,7 +29,6 @@ class CheckoutController extends Controller
                 $email,
                 $telegramUserId,
                 $fullName,
-                $validated['phone'],
             );
         } catch (ValidationException $e) {
             return response()->json([

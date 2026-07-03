@@ -8,9 +8,6 @@
         $ftsaProduct = null;
     }
     $portalEmail = session(\App\Support\PortalSession::EMAIL, '');
-    $suggestedPhone = is_string($portalEmail) && $portalEmail !== ''
-        ? ($checkoutService->suggestPhone($portalEmail) ?? '')
-        : '';
     $variant = $variant ?? 'banner';
     $formId = 'ftsa-checkout-'.md5($variant.(string) $portalEmail);
     $priceLabel = $ftsaProduct ? \App\Support\RupiahFormat::format($ftsaProduct->effective_price) : null;
@@ -19,28 +16,21 @@
 
 @if($variant === 'inline')
     <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50/80 p-4" data-ftsa-checkout-root>
-        <form id="{{ $formId }}" class="space-y-3" data-ftsa-checkout-form
+        @if($priceLabel)
+            <div class="text-xs text-amber-800 mb-3">Total: <strong>{{ $priceLabel }}</strong> · akses 12 bulan evaluasi</div>
+        @endif
+        <form id="{{ $formId }}" data-ftsa-checkout-form
               action="{{ route('portal.checkout.ftsa') }}" method="post" novalidate>
             @csrf
-            <div>
-                <label for="{{ $formId }}-phone" class="block text-xs font-semibold text-amber-900 mb-1">Nomor WhatsApp</label>
-                <input type="tel" id="{{ $formId }}-phone" name="phone" required
-                       value="{{ old('phone', $suggestedPhone) }}"
-                       placeholder="08xxxxxxxxxx"
-                       class="w-full rounded-lg border-amber-200 text-sm py-2 px-3 focus:border-gold-400 focus:ring-gold-400">
-            </div>
-            @if($priceLabel)
-                <div class="text-xs text-amber-800">Total: <strong>{{ $priceLabel }}</strong> · akses 12 bulan evaluasi</div>
-            @endif
             <button type="submit" data-ftsa-pay-btn
                     @disabled(! $canPay)
                     class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 disabled:opacity-50 disabled:cursor-not-allowed text-navy-900 font-bold px-4 py-2 rounded-xl text-sm">
                 <span class="material-symbols-outlined text-lg">lock_open</span>
                 <span data-ftsa-pay-label>Unlock FTSA Premium</span>
             </button>
-            <p class="text-xs text-amber-800/80 hidden" data-ftsa-checkout-error></p>
+            <p class="text-xs text-amber-800/80 mt-2 hidden" data-ftsa-checkout-error></p>
             @unless($canPay)
-                <p class="text-xs text-amber-800/80">Pembayaran sementara tidak tersedia. Hubungi tim YFD.</p>
+                <p class="text-xs text-amber-800/80 mt-2">Pembayaran sementara tidak tersedia. Hubungi tim YFD.</p>
             @endunless
         </form>
     </div>
@@ -48,31 +38,24 @@
     <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-left" data-ftsa-checkout-root>
         <div class="text-sm text-amber-900 font-bold">FTSA Premium tersedia di dalam dashboard</div>
         <div class="text-sm text-amber-800 mt-1">Bisa dibeli sekarang untuk membuka FTSA 1-32 selama <strong>12 bulan evaluasi</strong>.</div>
-        <form id="{{ $formId }}" class="mt-4 space-y-3 max-w-md" data-ftsa-checkout-form
+        @if($priceLabel)
+            <div class="text-sm text-amber-900 mt-2">Total pembayaran: <strong>{{ $priceLabel }}</strong></div>
+        @endif
+        <form id="{{ $formId }}" class="mt-4" data-ftsa-checkout-form
               action="{{ route('portal.checkout.ftsa') }}" method="post" novalidate>
             @csrf
-            <div>
-                <label for="{{ $formId }}-phone" class="block text-xs font-semibold text-amber-900 mb-1">Nomor WhatsApp</label>
-                <input type="tel" id="{{ $formId }}-phone" name="phone" required
-                       value="{{ old('phone', $suggestedPhone) }}"
-                       placeholder="08xxxxxxxxxx"
-                       class="w-full rounded-lg border-amber-200 text-sm py-2 px-3 focus:border-gold-400 focus:ring-gold-400">
-            </div>
-            @if($priceLabel)
-                <div class="text-sm text-amber-900">Total pembayaran: <strong>{{ $priceLabel }}</strong></div>
-            @endif
             <button type="submit" data-ftsa-pay-btn
                     @disabled(! $canPay)
                     class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 disabled:opacity-50 disabled:cursor-not-allowed text-navy-900 font-bold px-4 py-2 rounded-xl text-sm">
                 <span class="material-symbols-outlined text-lg">shopping_cart</span>
                 <span data-ftsa-pay-label>Beli FTSA Premium</span>
             </button>
-            <p class="text-xs text-amber-800 hidden" data-ftsa-checkout-error></p>
+            <p class="text-xs text-amber-800 mt-2 hidden" data-ftsa-checkout-error></p>
         </form>
     </div>
 @else
     <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4" data-ftsa-checkout-root>
-        <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="text-sm text-amber-900 min-w-0 flex-1">
                 <div class="font-bold">{{ $title ?? 'FTSA Premium belum aktif' }}</div>
                 <div class="mt-0.5">{{ $message ?? 'Unlock kuesioner FTSA 1–32 dan rekomendasi personal selama 12 bulan evaluasi.' }}</div>
@@ -80,16 +63,9 @@
                     <div class="mt-1 text-xs text-amber-800">{{ $priceLabel }}</div>
                 @endif
             </div>
-            <form id="{{ $formId }}" class="flex flex-wrap items-end gap-2 shrink-0" data-ftsa-checkout-form
+            <form id="{{ $formId }}" data-ftsa-checkout-form
                   action="{{ route('portal.checkout.ftsa') }}" method="post" novalidate>
                 @csrf
-                <div class="min-w-[10rem]">
-                    <label for="{{ $formId }}-phone" class="sr-only">Nomor WhatsApp</label>
-                    <input type="tel" id="{{ $formId }}-phone" name="phone" required
-                           value="{{ old('phone', $suggestedPhone) }}"
-                           placeholder="No. WhatsApp"
-                           class="w-full min-w-[10rem] rounded-lg border-amber-200 text-sm py-2 px-3 focus:border-gold-400 focus:ring-gold-400">
-                </div>
                 <button type="submit" data-ftsa-pay-btn
                         @disabled(! $canPay)
                         class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 disabled:opacity-50 disabled:cursor-not-allowed text-navy-900 font-bold px-4 py-2 rounded-xl text-sm whitespace-nowrap">

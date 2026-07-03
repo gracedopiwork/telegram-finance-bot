@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\CpDigitalProduct;
 use App\Models\Order;
-use App\Support\PhoneNumber;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -44,7 +43,7 @@ class PortalCheckoutService
     /**
      * @return array{order: Order, snap_token: string}
      */
-    public function createFtsaSnapCheckout(string $email, int $telegramUserId, string $fullName, string $phone): array
+    public function createFtsaSnapCheckout(string $email, int $telegramUserId, string $fullName): array
     {
         if ($this->entitlements->hasActiveFtsaEntitlement($telegramUserId)
             || $this->entitlements->hasActiveFtsaEntitlementForEmail($email)) {
@@ -59,14 +58,14 @@ class PortalCheckoutService
         $finalAmount = $product->effective_price;
         abort_if($finalAmount <= 0, 422, 'Harga produk belum diatur.');
 
-        $normalizedPhone = $this->normalizePhone($phone);
+        $phone = $this->suggestPhone($email);
         $license = $this->provisioning->findExistingLicenseForEmail($email);
 
         $order = Order::create([
             'order_code' => 'YFD-'.Str::upper(Str::random(10)),
             'full_name' => $fullName,
             'email' => strtolower(trim($email)),
-            'phone' => $normalizedPhone,
+            'phone' => $phone,
             'plan' => $product->code,
             'digital_product_id' => $product->id,
             'product_name' => $product->name,
@@ -85,7 +84,7 @@ class PortalCheckoutService
                 'gross_amount' => $order->amount,
                 'full_name' => $order->full_name,
                 'email' => $order->email,
-                'phone' => $order->phone,
+                'phone' => $order->phone ?? '',
                 'item_details' => [[
                     'id' => $product->code,
                     'price' => $finalAmount,
@@ -122,16 +121,4 @@ class PortalCheckoutService
         return strtolower(trim((string) $order->email)) === strtolower(trim($email));
     }
 
-    private function normalizePhone(string $phone): string
-    {
-        $normalized = PhoneNumber::normalizeIndonesia($phone);
-
-        if (! PhoneNumber::isValidIndonesiaMobile($normalized)) {
-            throw ValidationException::withMessages([
-                'phone' => 'Nomor WhatsApp tidak valid. Gunakan format 08xxxxxxxxxx atau 628xxxxxxxxxx.',
-            ]);
-        }
-
-        return $normalized;
-    }
 }
