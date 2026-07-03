@@ -21,6 +21,7 @@ use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PublicCheckupController;
 use App\Http\Controllers\Portal\AuthController as PortalAuthController;
 use App\Http\Controllers\Portal\BaselineController as PortalBaselineController;
+use App\Http\Controllers\Portal\CheckoutController as PortalCheckoutController;
 use App\Http\Controllers\Portal\DashboardController as PortalDashboardController;
 use App\Http\Controllers\Portal\DiagnosticController as PortalDiagnosticController;
 use App\Http\Controllers\Portal\TransactionsController as PortalTransactionsController;
@@ -169,6 +170,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::post('/diagnostik', [PortalDiagnosticController::class, 'store'])->name('diagnostic.store');
         Route::get('/emotional', [PortalDashboardController::class, 'emotional'])->name('emotional');
         Route::get('/premium', [PortalDashboardController::class, 'premium'])->name('premium');
+        Route::post('/checkout/ftsa', [PortalCheckoutController::class, 'ftsaSnap'])->name('checkout.ftsa');
+        Route::get('/checkout/ftsa/{order}/status', [PortalCheckoutController::class, 'ftsaStatus'])->name('checkout.ftsa.status');
 
         Route::middleware('portal.bot')->group(function () {
             Route::get('/transaksi', [PortalDashboardController::class, 'transactions'])->name('transactions');

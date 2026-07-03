@@ -50,8 +50,16 @@
             <span class="material-symbols-outlined">psychology</span> Dominant Archetype
         </h3>
         <div class="text-2xl font-extrabold text-navy-800">{{ $baseline->dominant_archetype_label ?? 'Belum dinilai' }}</div>
-        @if(($baseline->dominant_archetype ?? '') === 'locked')
+        @if(($baseline->dominant_archetype ?? '') === 'locked' && !($ftsaUnlocked ?? false))
             <p class="text-sm text-amber-700 mt-1">FTSA-32 terkunci — upgrade paket premium untuk melihat archetype lengkap.</p>
+            @include('portal.partials.ftsa-unlock-panel', ['variant' => 'inline'])
+        @elseif(($baseline->dominant_archetype ?? '') === 'locked' && ($ftsaUnlocked ?? false))
+            <p class="text-sm text-slate-600 mt-1">FTSA Premium sudah aktif. Isi kuesioner 1–32 untuk melihat archetype lengkap.</p>
+            <a href="{{ route('portal.ftsa.create') }}"
+               class="inline-flex items-center gap-2 mt-3 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm">
+                <span class="material-symbols-outlined text-lg">edit_note</span>
+                Isi FTSA Sekarang
+            </a>
         @else
             <p class="text-sm text-slate-500 mt-1">Domain dengan skor tertinggi pada FTSA-32</p>
         @endif

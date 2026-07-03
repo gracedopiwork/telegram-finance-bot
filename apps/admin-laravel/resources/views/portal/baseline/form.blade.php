@@ -171,11 +171,7 @@
                         Anda tetap bisa simpan baseline data dulu, lalu isi FTSA setelah unlock.
                     </div>
                     <div class="mt-4">
-                        <a href="{{ route('checkout.show', ['code' => 'yfd-ftsa-premium']) }}"
-                           class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm">
-                            <span class="material-symbols-outlined text-lg">lock_open</span>
-                            Unlock FTSA Sekarang
-                        </a>
+                        @include('portal.partials.ftsa-unlock-panel', ['variant' => 'inline'])
                     </div>
                 </div>
             @else

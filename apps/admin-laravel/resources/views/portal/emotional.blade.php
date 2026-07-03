@@ -111,17 +111,10 @@
 
 @else
     @if(!($ftsaUnlocked ?? false))
-        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
-            <div class="text-sm text-amber-900">
-                <div class="font-bold">FTSA Premium belum aktif</div>
-                <div class="mt-0.5">Behavioral dashboard tetap jalan. Unlock FTSA untuk insight dan rekomendasi yang lebih personal.</div>
-            </div>
-            <a href="{{ route('checkout.show', ['code' => 'yfd-ftsa-premium']) }}"
-               class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm">
-                <span class="material-symbols-outlined text-lg">lock_open</span>
-                Beli FTSA Premium
-            </a>
-        </div>
+        @include('portal.partials.ftsa-unlock-panel', [
+            'variant' => 'banner',
+            'message' => 'Behavioral dashboard tetap jalan. Unlock FTSA untuk insight dan rekomendasi yang lebih personal.',
+        ])
     @endif
 
     @if(!$hasData)

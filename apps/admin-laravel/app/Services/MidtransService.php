@@ -88,6 +88,19 @@ class MidtransService
         ];
     }
 
+    public function snapJsUrl(): string
+    {
+        $isProduction = (bool) config('services.midtrans.is_production', false);
+        $base = $isProduction ? 'https://app.midtrans.com' : 'https://app.sandbox.midtrans.com';
+
+        return $base.'/snap/snap.js';
+    }
+
+    public function clientKey(): string
+    {
+        return trim((string) config('services.midtrans.client_key'));
+    }
+
     /**
      * Cek status transaksi langsung ke Midtrans (fallback jika webhook tidak sampai).
      *

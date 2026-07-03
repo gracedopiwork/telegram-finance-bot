@@ -13,13 +13,7 @@
                 <div class="text-xs text-emerald-700/80 mt-2">Masa evaluasi berlaku hingga <strong>{{ $ftsaEndsAt->format('d M Y') }}</strong> (12 bulan).</div>
             @endif
         @else
-            <div class="text-sm text-amber-900 font-bold">FTSA Premium tersedia di dalam dashboard</div>
-            <div class="text-sm text-amber-800 mt-1">Bisa dibeli sekarang untuk membuka FTSA 1-32 selama <strong>12 bulan evaluasi</strong>.</div>
-            <a href="{{ route('checkout.show', ['code' => 'yfd-ftsa-premium']) }}"
-               class="inline-flex items-center gap-2 mt-3 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm">
-                <span class="material-symbols-outlined text-lg">shopping_cart</span>
-                Beli FTSA Premium
-            </a>
+            @include('portal.partials.ftsa-unlock-panel', ['variant' => 'block'])
         @endif
     </div>
 

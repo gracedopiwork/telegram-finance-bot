@@ -50,6 +50,8 @@ class BaselineController extends Controller
                 $domains = [];
             }
 
+            $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email);
+
             return view('portal.baseline.result', [
                 'active' => 'baseline',
                 'baseline' => $baseline,
@@ -58,6 +60,7 @@ class BaselineController extends Controller
                 'domains' => $domains,
                 'reviewDue' => $baseline->isReviewDue(),
                 'months' => $this->monthOptions(),
+                'ftsaUnlocked' => $ftsaUnlocked,
             ]);
         } catch (\Throwable $e) {
             report($e);
