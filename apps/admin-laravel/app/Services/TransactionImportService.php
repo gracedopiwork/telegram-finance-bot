@@ -51,6 +51,29 @@ class TransactionImportService
     /** @var array<string, mixed>|null */
     private ?array $categoryRules = null;
 
+    /** @var array<string, string> */
+    private const CATEGORY_ALIASES = [
+        'makanan' => 'Makan',
+        'makan' => 'Makan',
+        'muen' => 'Makan',
+        'grab/maxime' => 'Transport',
+        'grab' => 'Transport',
+        'maxime' => 'Transport',
+        'gojek' => 'Transport',
+        'ojek' => 'Transport',
+        'sosial' => 'Social',
+        'hiburan' => 'Social',
+        'networking' => 'Social',
+        'yfd' => 'Social',
+        'admin bank' => 'Jajan',
+        'skin care-beauty' => 'Jajan',
+        'skincare' => 'Jajan',
+        'beauty' => 'Jajan',
+        'lain-lain' => 'Jajan',
+        'lain lain' => 'Jajan',
+        'dipinjam' => 'Social',
+    ];
+
     public function __construct(
         private readonly BotCategoryRulesService $categoryRulesService,
     ) {}
@@ -301,6 +324,16 @@ class TransactionImportService
      */
     private function matchCategoryName(string $value, array $rules): ?string
     {
+        $normalized = $this->normalizeAliasKey($value);
+        if ($normalized !== '' && isset(self::CATEGORY_ALIASES[$normalized])) {
+            $aliasTarget = self::CATEGORY_ALIASES[$normalized];
+            foreach ($rules['categories'] as $cat) {
+                if ((string) $cat === $aliasTarget) {
+                    return $aliasTarget;
+                }
+            }
+        }
+
         foreach ($rules['categories'] as $cat) {
             if (mb_strtolower((string) $cat) === mb_strtolower($value)) {
                 return (string) $cat;
@@ -315,7 +348,7 @@ class TransactionImportService
      */
     private function categoryFromSubCategory(string $value, array $rules): ?string
     {
-        $needle = mb_strtolower(trim($value));
+        $needle = $this->normalizeAliasKey($value);
         if ($needle === '') {
             return null;
         }
@@ -342,6 +375,15 @@ class TransactionImportService
         }
 
         return null;
+    }
+
+    private function normalizeAliasKey(string $value): string
+    {
+        $v = mb_strtolower(trim($value));
+        $v = str_replace(['_', '-'], ' ', $v);
+        $v = preg_replace('/\s+/', ' ', $v) ?? $v;
+
+        return trim($v);
     }
 
     /**
