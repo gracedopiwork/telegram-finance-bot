@@ -149,49 +149,71 @@
                 </div>
             </div>
 
-            {{-- Right: chat mockup --}}
+            {{-- Right: chat mockup — YFD First Aid + AI impulsif detection --}}
             <div class="lg:col-span-5 bg-gradient-to-br from-primary-container to-primary p-6 md:p-10 flex items-center">
                 <div class="w-full max-w-sm mx-auto bg-[#0e1c33] rounded-2xl shadow-2xl overflow-hidden border border-white/10">
                     <div class="bg-[#142841] px-4 py-3 flex items-center gap-3 border-b border-white/5">
                         <div class="w-9 h-9 rounded-full bg-secondary-container grid place-items-center text-on-secondary-container font-bold text-[14px]">YFD</div>
-                        <div>
-                            <div class="text-white font-semibold text-[14px] leading-tight">YFD Finance Bot</div>
-                            <div class="text-emerald-400 text-[11px] leading-tight">● online · Indonesia</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-white font-semibold text-[14px] leading-tight">YFD First Aid</div>
+                            <div class="text-emerald-400 text-[11px] leading-tight">● AI aktif · deteksi impulsif</div>
                         </div>
+                        <span class="shrink-0 text-[9px] font-bold uppercase tracking-wider bg-violet-500/20 text-violet-300 border border-violet-400/30 px-2 py-0.5 rounded-full">Gemini</span>
                     </div>
                     <div class="px-4 py-5 space-y-3 bg-[#0a1626]">
                         <div class="flex justify-end">
-                            <div class="bg-[#2b5278] text-white text-[13.5px] px-3 py-2 rounded-2xl rounded-br-sm max-w-[80%] shadow">
+                            <div class="bg-[#2b5278] text-white text-[13.5px] px-3 py-2 rounded-2xl rounded-br-sm max-w-[85%] shadow">
                                 makan malam 50rb di warung deket kampus
                                 <div class="text-[10px] text-white/50 text-right mt-1">19:24 ✓✓</div>
                             </div>
                         </div>
                         <div class="flex">
-                            <div class="bg-[#1a2c45] text-white/90 text-[13px] px-3 py-2 rounded-2xl rounded-bl-sm max-w-[88%] shadow">
-                                <div class="text-emerald-400 text-[11px] font-bold mb-1">✓ Tercatat</div>
+                            <div class="bg-[#1a2c45] text-white/90 text-[13px] px-3 py-2 rounded-2xl rounded-bl-sm max-w-[92%] shadow">
+                                <div class="flex items-center gap-1.5 text-emerald-400 text-[11px] font-bold mb-1.5">
+                                    <span class="material-symbols-outlined text-[14px]">check_circle</span> Tercatat
+                                </div>
+                                <div class="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2 py-1.5 mb-2 text-[10.5px] text-emerald-200/90 leading-snug">
+                                    <span class="font-bold text-emerald-300">AI:</span> Kebutuhan terencana — tidak terdeteksi pola impulsif.
+                                </div>
                                 <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[12px]">
                                     <span class="text-white/60">Nominal</span><span class="text-amber-300 font-semibold">Rp 50.000</span>
                                     <span class="text-white/60">Kategori</span><span>Makan</span>
                                     <span class="text-white/60">Sifat</span><span>Need</span>
-                                    <span class="text-white/60">Mood</span><span>Biasa Saja</span>
-                                    <span class="text-white/60">Impulsif</span><span>No</span>
+                                    <span class="text-white/60">Impulsif</span><span class="text-emerald-300">No</span>
                                 </div>
                                 <div class="text-[10px] text-white/40 text-right mt-1.5">19:24</div>
                             </div>
                         </div>
                         <div class="flex justify-end">
-                            <div class="bg-[#2b5278] text-white text-[13.5px] px-3 py-2 rounded-2xl rounded-br-sm max-w-[80%] shadow">
-                                beli kopi 18000 karena ngantuk
+                            <div class="bg-[#2b5278] text-white text-[13.5px] px-3 py-2 rounded-2xl rounded-br-sm max-w-[85%] shadow">
+                                beli kopi 18rb karena ngantuk banget
                                 <div class="text-[10px] text-white/50 text-right mt-1">19:25 ✓✓</div>
                             </div>
                         </div>
                         <div class="flex">
-                            <div class="bg-[#1a2c45] text-white/90 text-[13px] px-3 py-2 rounded-2xl rounded-bl-sm max-w-[88%] shadow">
-                                <div class="text-emerald-400 text-[11px] font-bold mb-1">✓ Tercatat</div>
+                            <div class="bg-[#1a2c45] text-white/90 text-[13px] px-3 py-2 rounded-2xl rounded-bl-sm max-w-[92%] shadow ring-1 ring-pink-500/20">
+                                <div class="flex items-center justify-between gap-2 mb-1.5">
+                                    <div class="flex items-center gap-1.5 text-pink-300 text-[11px] font-bold">
+                                        <span class="material-symbols-outlined text-[14px]">psychology</span> AI mendeteksi impulsif
+                                    </div>
+                                    <span class="text-[9px] font-bold bg-pink-500/20 text-pink-200 px-1.5 py-0.5 rounded">⚡ Yes</span>
+                                </div>
+                                <div class="rounded-lg bg-gradient-to-r from-violet-500/15 to-pink-500/15 border border-violet-400/25 px-2.5 py-2 mb-2 space-y-1">
+                                    <div class="text-[10.5px] text-violet-200/95 leading-snug">
+                                        <span class="font-bold text-violet-300">Pemicu emosional:</span> kelelahan («ngantuk»)
+                                    </div>
+                                    <div class="text-[10.5px] text-pink-200/90 leading-snug">
+                                        <span class="font-bold text-pink-300">Pola:</span> regulator mood via belanja kecil (Wants)
+                                    </div>
+                                    <div class="text-[10px] text-white/55 italic border-t border-white/10 pt-1">
+                                        dr. Financial: coba jeda 10 menit sebelum transaksi serupa.
+                                    </div>
+                                </div>
                                 <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[12px]">
                                     <span class="text-white/60">Nominal</span><span class="text-amber-300 font-semibold">Rp 18.000</span>
-                                    <span class="text-white/60">Sifat</span><span class="text-pink-300">Wants</span>
-                                    <span class="text-white/60">Impulsif</span><span class="text-pink-300 font-bold">Yes ⚡</span>
+                                    <span class="text-white/60">Kategori</span><span>Jajan</span>
+                                    <span class="text-white/60">Mood</span><span>Tired</span>
+                                    <span class="text-white/60">Sifat</span><span class="text-pink-300 font-semibold">Wants</span>
                                 </div>
                                 <div class="text-[10px] text-white/40 text-right mt-1.5">19:25</div>
                             </div>
@@ -199,7 +221,7 @@
                     </div>
                     <div class="bg-[#142841] px-3 py-2.5 flex items-center gap-2 border-t border-white/5">
                         <span class="material-symbols-outlined text-white/40 text-[20px]">attach_file</span>
-                        <div class="flex-1 bg-[#0a1626] rounded-full px-3 py-1.5 text-white/40 text-[12px]">Ketik transaksi…</div>
+                        <div class="flex-1 bg-[#0a1626] rounded-full px-3 py-1.5 text-white/40 text-[12px]">Ceritakan transaksi &amp; perasaan Anda…</div>
                         <span class="material-symbols-outlined text-[#3b82f6] text-[22px]">send</span>
                     </div>
                 </div>
