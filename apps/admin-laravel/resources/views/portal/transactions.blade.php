@@ -6,6 +6,7 @@
 @section('content')
 @php
     $fmt = fn (int $n) => 'Rp ' . number_format($n, 0, ',', '.');
+    $baseline = $summary['baseline'] ?? null;
 @endphp
 
 <div class="bg-gradient-to-r from-navy-800 to-navy-600 rounded-2xl p-5 sm:p-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -72,6 +73,34 @@
         </form>
     </div>
 </div>
+
+@include('portal.partials.baseline-snapshot-summary', ['baseline' => $baseline, 'fmt' => $fmt])
+
+@if($baseline && !($baseline['has_financial_snapshot'] ?? false))
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h3 class="font-bold text-navy-800 flex items-center gap-2">
+                    <span class="material-symbols-outlined">fact_check</span>
+                    Baseline Data
+                </h3>
+                <p class="text-sm text-slate-600 mt-2">
+                    Diagnostik keuangan sudah tersimpan ({{ $baseline['stage_label'] ?? '—' }}).
+                    Lengkapi snapshot angka keuangan (pendapatan, tabungan, utang, proteksi) di menu Baseline Data.
+                </p>
+            </div>
+            <a href="{{ route('portal.baseline.create') }}"
+               class="inline-flex items-center gap-1 text-sm font-bold text-navy-800 hover:underline shrink-0">
+                Isi snapshot <span class="material-symbols-outlined text-base">arrow_forward</span>
+            </a>
+        </div>
+    </div>
+@elseif(($needsFinancialDiagnostic ?? false) || ($needsBaseline ?? false))
+    <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
+        Lengkapi diagnostik & snapshot baseline di portal.
+        <a href="{{ $baselineUrl ?? route('portal.baseline.create') }}" class="font-semibold underline">Mulai sekarang</a>
+    </div>
+@endif
 
 <div class="grid grid-cols-2 sm:grid-cols-5 gap-4" id="tx-summary-cards">
     <div class="bg-white rounded-xl border p-4 text-center">

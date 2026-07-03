@@ -58,6 +58,15 @@
     </div>
 @endif
 
+@if($summary['baseline'] && ($summary['baseline']['has_financial_snapshot'] ?? false))
+<div class="mb-6">
+    @include('portal.partials.baseline-snapshot-summary', [
+        'baseline' => $summary['baseline'],
+        'editUrl' => route('portal.baseline.create'),
+    ])
+</div>
+@endif
+
 @php $hasAssessment = ($summary['baseline'] ?? null); @endphp
 @if(!$hasData)
     @include('portal.partials.empty-state', [

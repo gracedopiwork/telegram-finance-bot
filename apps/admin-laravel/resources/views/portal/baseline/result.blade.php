@@ -76,6 +76,58 @@
     </div>
 </div>
 
+@php
+    $hasSnapshot = trim((string) ($baseline->current_goal ?? '')) !== ''
+        || collect(['avg_monthly_income', 'emergency_fund', 'cash_savings', 'total_investment', 'total_asset', 'total_debt'])
+            ->contains(fn ($f) => $baseline->{$f} !== null && (int) $baseline->{$f} > 0)
+        || $baseline->has_bpjs || $baseline->has_health_insurance
+        || $baseline->has_income_protection || $baseline->has_life_insurance;
+    $fmt = fn (int $n) => 'Rp ' . number_format($n, 0, ',', '.');
+@endphp
+
+@if($hasSnapshot)
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden mt-6">
+    <div class="bg-slate-50 px-5 py-4 border-b">
+        <h3 class="font-bold text-navy-800 flex items-center gap-2">
+            <span class="material-symbols-outlined">inventory_2</span>
+            Snapshot Keuangan
+        </h3>
+    </div>
+    <div class="p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+        @if($baseline->current_goal)
+            <div class="sm:col-span-2 lg:col-span-4 rounded-xl bg-gold-50 border border-gold-200 p-3">
+                <div class="text-xs font-bold text-amber-800 uppercase">Current Goal</div>
+                <div class="font-medium text-navy-800 mt-1">{{ $baseline->current_goal }}</div>
+            </div>
+        @endif
+        @foreach([
+            'avg_monthly_income' => 'Pendapatan/bulan',
+            'emergency_fund' => 'Dana darurat',
+            'cash_savings' => 'Tabungan',
+            'total_investment' => 'Investasi',
+            'total_asset' => 'Total aset',
+            'total_debt' => 'Total utang',
+        ] as $field => $label)
+            @if($baseline->{$field})
+                <div class="rounded-xl bg-slate-50 p-3">
+                    <div class="text-xs text-slate-500">{{ $label }}</div>
+                    <div class="font-bold text-navy-800">{{ $fmt((int) $baseline->{$field}) }}</div>
+                </div>
+            @endif
+        @endforeach
+        <div class="rounded-xl bg-slate-50 p-3">
+            <div class="text-xs text-slate-500 mb-1">Proteksi</div>
+            <div class="flex flex-wrap gap-1">
+                @if($baseline->has_bpjs)<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">BPJS</span>@endif
+                @if($baseline->has_health_insurance)<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Kesehatan</span>@endif
+                @if($baseline->has_income_protection)<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Income</span>@endif
+                @if($baseline->has_life_insurance)<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Jiwa</span>@endif
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 <div class="flex flex-wrap gap-3 mt-6">
     <a href="{{ route('portal.dashboard') }}"
        class="inline-flex items-center gap-2 bg-navy-800 hover:bg-navy-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm">
