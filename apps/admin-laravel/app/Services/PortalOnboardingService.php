@@ -86,7 +86,7 @@ class PortalOnboardingService
     }
 
     /**
-     * Pembeli / pengguna aktif YFD First Aid (order, lisensi, atau sudah punya transaksi bot).
+     * Pembeli / pengguna aktif YFD First Aid (order bot lunas, atau transaksi bot jika bukan pembeli FTSA-only).
      */
     public function hasPaidBotOrderForUser(string $email, int $telegramUserId): bool
     {
@@ -97,6 +97,10 @@ class PortalOnboardingService
 
         if ($entitlements->hasPaidBotOrderForTelegramUser($telegramUserId)) {
             return true;
+        }
+
+        if ($this->isFtsaOnlyBuyer($email)) {
+            return false;
         }
 
         if ($telegramUserId > 0 && \App\Models\BotTransaction::query()->forUser($telegramUserId)->exists()) {
@@ -338,7 +342,9 @@ class PortalOnboardingService
 
     public function portalHomeRouteName(string $email, int $telegramUserId = 0): string
     {
-        return $this->hasPaidBotOrderForUser($email, $telegramUserId) ? 'portal.dashboard' : 'portal.emotional';
+        return app(PortalAccessService::class)->hasBotPortalAccess($email, $telegramUserId)
+            ? 'portal.dashboard'
+            : 'portal.emotional';
     }
 
     public function portalDiagnosticUrl(): string
