@@ -20,7 +20,12 @@
     <div class="text-sm bg-white/10 rounded-xl px-4 py-2 font-mono shrink-0">/catat makan siang 35rb</div>
 </div>
 
-@include('portal.partials.baseline-data-panel', ['baseline' => $baseline, 'fmt' => $fmt])
+@include('portal.partials.baseline-data-panel', [
+    'baseline' => $baseline,
+    'existingBaseline' => $baselineRecord ?? null,
+    'fmt' => $fmt,
+    'showInlineForm' => $needsSnapshotForm ?? false,
+])
 
 @include('portal.partials.onboarding-banners')
 

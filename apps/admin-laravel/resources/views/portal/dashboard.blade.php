@@ -60,7 +60,9 @@
 
 @include('portal.partials.baseline-data-panel', [
     'baseline' => $summary['baseline'] ?? null,
+    'existingBaseline' => $baselineRecord ?? null,
     'editUrl' => route('portal.baseline.create'),
+    'showInlineForm' => ($needsBaseline ?? false) && ($baselineRecord ?? null),
 ])
 
 @php $hasAssessment = ($summary['baseline'] ?? null); @endphp

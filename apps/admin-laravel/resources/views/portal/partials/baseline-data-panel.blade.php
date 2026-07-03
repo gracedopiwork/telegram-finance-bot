@@ -51,33 +51,27 @@
     </div>
 </div>
 @elseif($baseline)
-<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-        <div>
-            <h3 class="font-bold text-navy-800 flex items-center gap-2">
-                <span class="material-symbols-outlined">fact_check</span>
-                Baseline Data
-            </h3>
-            <p class="text-sm text-slate-600 mt-2">
-                Diagnostik tersimpan: <strong>{{ $baseline['stage_label'] ?? '—' }}</strong>.
-                Lengkapi snapshot angka keuangan (pendapatan, tabungan, utang, proteksi).
-            </p>
-        </div>
-        <a href="{{ $editUrl }}"
-           class="inline-flex items-center gap-1 text-sm font-bold text-navy-800 hover:underline shrink-0">
-            Lengkapi snapshot <span class="material-symbols-outlined text-base">arrow_forward</span>
-        </a>
+<div class="bg-white rounded-2xl border border-amber-300 shadow-sm overflow-hidden">
+    <div class="bg-amber-50 px-5 py-4 border-b border-amber-200">
+        <h3 class="font-bold text-navy-800 flex items-center gap-2">
+            <span class="material-symbols-outlined text-amber-700">edit_note</span>
+            Lengkapi Snapshot Baseline
+        </h3>
+        <p class="text-sm text-amber-900 mt-1">
+            Diagnostik: <strong>{{ $baseline['stage_label'] ?? '—' }}</strong> · Isi angka keuangan di bawah.
+        </p>
     </div>
-    <div class="grid sm:grid-cols-2 gap-3 mt-4 text-sm">
-        <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
-            <div class="text-xs text-slate-500">Tahap keuangan</div>
-            <div class="font-bold text-navy-800 mt-0.5">{{ $baseline['stage_label'] ?? '—' }}</div>
-            <div class="text-xs text-slate-400 mt-1">Terakhir: {{ $baseline['assessed_at'] ?? '—' }}</div>
-        </div>
-        <div class="rounded-xl bg-gold-50 border border-gold-200 px-4 py-3">
-            <div class="text-xs text-amber-800">Snapshot angka</div>
-            <div class="font-medium text-navy-800 mt-0.5">Belum diisi — klik untuk melengkapi form baseline.</div>
-        </div>
+    <div class="p-5 sm:p-6">
+        @if($showInlineForm ?? true)
+            @include('portal.partials.baseline-snapshot-form', [
+                'existingBaseline' => $existingBaseline ?? null,
+                'compact' => true,
+            ])
+        @else
+            <a href="{{ $editUrl }}" class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm">
+                Buka form baseline <span class="material-symbols-outlined text-base">arrow_forward</span>
+            </a>
+        @endif
     </div>
 </div>
 @elseif(($needsFinancialDiagnostic ?? false) || ($needsBaseline ?? false))

@@ -148,6 +148,24 @@ class DiagnosticController extends Controller
             $payload['esd_level'] = $result['esd_level'];
         }
 
+        foreach ([
+            'current_goal',
+            'avg_monthly_income',
+            'emergency_fund',
+            'cash_savings',
+            'total_investment',
+            'total_asset',
+            'total_debt',
+            'has_bpjs',
+            'has_health_insurance',
+            'has_income_protection',
+            'has_life_insurance',
+        ] as $field) {
+            if ($existing->{$field} !== null && $existing->{$field} !== false && $existing->{$field} !== '') {
+                $payload[$field] = $existing->{$field};
+            }
+        }
+
         return $payload;
     }
 

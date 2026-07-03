@@ -20,6 +20,7 @@
     $needsFinancialDiagnostic = $needsFinancialDiagnostic ?? false;
     $showFtsaSection = in_array($formMode, ['ftsa', 'ftsa_only'], true);
     $showSnapshotSection = $formMode === 'snapshot';
+    $showFinancialStageSection = $showSnapshotSection && ($needsFinancialDiagnostic ?? false);
     $existingFs = $existingFs ?? [];
     $existingBaseline = $existingBaseline ?? null;
     $snapshotValue = fn (string $field) => old("snapshot.{$field}", $existingBaseline?->{$field});
@@ -61,7 +62,11 @@
                 melalui 32 pertanyaan. Hasilnya menentukan archetype dominan (CHD, RVD, SSD, ESD).
                 Evaluasi ulang setiap <strong>12 bulan</strong> — terpisah dari baseline keuangan.
             @else
-                Isi <strong>diagnostik tahap keuangan</strong> dan <strong>snapshot angka keuangan</strong> Anda saat ini.
+                @if($showInlineSnapshotForm ?? false)
+                    Diagnostik tahap keuangan sudah tersimpan. Lengkapi <strong>snapshot angka keuangan</strong> di bawah.
+                @else
+                    Isi <strong>diagnostik tahap keuangan</strong> dan <strong>snapshot angka keuangan</strong> Anda saat ini.
+                @endif
                 Evaluasi ulang setiap <strong>6 bulan</strong>. Kuesioner FTSA (behavioral) diisi terpisah setelah unlock premium.
             @endif
         </p>
@@ -82,7 +87,7 @@
     <form method="post" action="{{ $formAction }}" class="space-y-8">
         @csrf
 
-        @if($showSnapshotSection)
+        @if($showFinancialStageSection)
         @php $currentSection = ''; @endphp
         {{-- Financial Stage --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -219,6 +224,12 @@
         @endif
 
         @if($showSnapshotSection)
+        @if($showInlineSnapshotForm ?? false)
+        <div class="rounded-xl border border-gold-400/50 bg-gold-50 px-4 py-3 mb-4 text-sm text-amber-900">
+            <strong>Diagnostik sudah tersimpan</strong> ({{ $existingBaseline?->stage_label ?? '—' }}).
+            Isi snapshot angka keuangan di bawah lalu klik Simpan.
+        </div>
+        @endif
         {{-- Snapshot keuangan (Sheet 1A) --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
             <div class="bg-navy-800 text-white px-5 py-4">
