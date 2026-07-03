@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BotTransaction;
 use App\Services\TransactionImportService;
 use App\Support\PortalSession;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -67,22 +68,39 @@ class TransactionsController extends Controller
         return $redirect;
     }
 
-    public function destroy(Request $request, BotTransaction $transaction): RedirectResponse
+    public function destroy(Request $request, BotTransaction $transaction): RedirectResponse|JsonResponse
     {
         $telegramUserId = (int) PortalSession::telegramUserId($request);
         if ($telegramUserId <= 0) {
+            if ($request->wantsJson()) {
+                return response()->json(['ok' => false, 'message' => 'Sesi portal habis. Silakan login ulang.'], 401);
+            }
+
             return redirect()
                 ->route('portal.login')
                 ->with('warning', 'Sesi portal habis. Silakan login ulang.');
         }
 
         if ((int) $transaction->telegram_user_id !== $telegramUserId) {
+            if ($request->wantsJson()) {
+                return response()->json(['ok' => false, 'message' => 'Transaksi tidak ditemukan atau bukan milik akun Anda.'], 403);
+            }
+
             return redirect()
                 ->route('portal.transactions', $request->only(['month', 'period']))
                 ->with('warning', 'Transaksi tidak ditemukan atau bukan milik akun Anda.');
         }
 
+        $transactionId = $transaction->id;
         $transaction->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Transaksi berhasil dihapus.',
+                'id' => $transactionId,
+            ]);
+        }
 
         return redirect()
             ->route('portal.transactions', $request->only(['month', 'period']))

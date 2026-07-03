@@ -162,24 +162,26 @@
     </div>
 @endif
 
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="tx-summary-cards">
     <div class="bg-white rounded-xl border p-4 text-center">
-        <div class="text-2xl font-extrabold text-navy-800">{{ $summary['transaction_count'] }}</div>
+        <div class="text-2xl font-extrabold text-navy-800" id="tx-stat-count">{{ $summary['transaction_count'] }}</div>
         <div class="text-xs text-slate-500 mt-1">Total transaksi</div>
     </div>
     <div class="bg-white rounded-xl border p-4 text-center">
-        <div class="text-lg font-extrabold text-emerald-700">{{ $fmt($summary['income']) }}</div>
+        <div class="text-lg font-extrabold text-emerald-700" id="tx-stat-income">{{ $fmt($summary['income']) }}</div>
         <div class="text-xs text-slate-500 mt-1">Pemasukan</div>
     </div>
     <div class="bg-white rounded-xl border p-4 text-center">
-        <div class="text-lg font-extrabold text-rose-600">{{ $fmt($summary['expense']) }}</div>
+        <div class="text-lg font-extrabold text-rose-600" id="tx-stat-expense">{{ $fmt($summary['expense']) }}</div>
         <div class="text-xs text-slate-500 mt-1">Pengeluaran</div>
     </div>
     <div class="bg-white rounded-xl border p-4 text-center">
-        <div class="text-lg font-extrabold text-navy-800">{{ $summary['saving_rate'] }}%</div>
+        <div class="text-lg font-extrabold text-navy-800" id="tx-stat-saving">{{ $summary['saving_rate'] }}%</div>
         <div class="text-xs text-slate-500 mt-1">Saving rate · {{ $summary['period_label'] }}</div>
     </div>
 </div>
+
+<div id="tx-delete-toast" class="hidden fixed bottom-6 right-6 z-50 rounded-xl bg-navy-800 text-white text-sm px-4 py-3 shadow-lg"></div>
 
 <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
     <div class="px-5 py-4 border-b flex items-center justify-between">
@@ -207,9 +209,12 @@
                         <th class="px-4 py-3 font-semibold text-right">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tx-table-body">
                 @foreach($summary['transactions'] as $t)
-                    <tr class="border-t border-slate-100 hover:bg-slate-50/80">
+                    <tr class="border-t border-slate-100 hover:bg-slate-50/80 transition-opacity"
+                        data-tx-row
+                        data-tx-type="{{ $t['type'] }}"
+                        data-tx-amount="{{ $t['amount'] }}">
                         <td class="px-4 py-3 whitespace-nowrap text-slate-600">{{ $t['recorded_at'] }}</td>
                         <td class="px-4 py-3">
                             <span class="inline-flex px-2 py-0.5 rounded text-xs font-semibold {{ $t['type'] === 'Pemasukan' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700' }}">
@@ -233,17 +238,13 @@
                         </td>
                         <td class="px-4 py-3 hidden lg:table-cell max-w-xs truncate text-slate-600">{{ $t['notes'] }}</td>
                         <td class="px-4 py-3 text-right">
-                            <form method="post"
-                                  action="{{ route('portal.transactions.destroy', ['transaction' => $t['id'], 'month' => request('month', $summary['month']), 'period' => request('period', $summary['period_months'])]) }}"
-                                  onsubmit="return confirm('Hapus transaksi ini?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"
-                                        class="inline-flex items-center gap-1 rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50 px-3 py-1.5 text-xs font-semibold">
-                                    <span class="material-symbols-outlined text-sm">delete</span>
-                                    Hapus
-                                </button>
-                            </form>
+                            <button type="button"
+                                    data-delete-tx
+                                    data-url="{{ route('portal.transactions.destroy', ['transaction' => $t['id'], 'month' => request('month', $summary['month']), 'period' => request('period', $summary['period_months'])]) }}"
+                                    class="inline-flex items-center gap-1 rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-wait px-3 py-1.5 text-xs font-semibold">
+                                <span class="material-symbols-outlined text-sm">delete</span>
+                                Hapus
+                            </button>
                         </td>
                     </tr>
                 @endforeach
@@ -253,3 +254,82 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(() => {
+    const csrf = @json(csrf_token());
+    const fmt = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
+    let income = {{ (int) $summary['income'] }};
+    let expense = {{ (int) $summary['expense'] }};
+    let count = {{ (int) $summary['transaction_count'] }};
+    const toast = document.getElementById('tx-delete-toast');
+    let toastTimer = null;
+
+    function showToast(message) {
+        if (!toast) return;
+        toast.textContent = message;
+        toast.classList.remove('hidden');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.add('hidden'), 2200);
+    }
+
+    function updateStats() {
+        const saving = income > 0 ? Math.round(((income - expense) / income) * 1000) / 10 : 0;
+        const countEl = document.getElementById('tx-stat-count');
+        const incomeEl = document.getElementById('tx-stat-income');
+        const expenseEl = document.getElementById('tx-stat-expense');
+        const savingEl = document.getElementById('tx-stat-saving');
+        if (countEl) countEl.textContent = String(count);
+        if (incomeEl) incomeEl.textContent = fmt(income);
+        if (expenseEl) expenseEl.textContent = fmt(expense);
+        if (savingEl) savingEl.textContent = saving + '%';
+    }
+
+    document.querySelectorAll('[data-delete-tx]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+            if (!confirm('Hapus transaksi ini?')) return;
+
+            const row = btn.closest('[data-tx-row]');
+            if (!row) return;
+
+            btn.disabled = true;
+            try {
+                const res = await fetch(btn.dataset.url, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': csrf,
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) {
+                    throw new Error(data.message || 'Gagal menghapus transaksi.');
+                }
+
+                const type = row.dataset.txType;
+                const amount = parseInt(row.dataset.txAmount || '0', 10);
+                if (type === 'Pemasukan') income = Math.max(0, income - amount);
+                if (type === 'Pengeluaran') expense = Math.max(0, expense - amount);
+                count = Math.max(0, count - 1);
+                updateStats();
+
+                row.style.opacity = '0';
+                setTimeout(() => {
+                    row.remove();
+                    if (!document.querySelector('[data-tx-row]')) {
+                        window.location.reload();
+                    }
+                }, 150);
+
+                showToast(data.message || 'Transaksi dihapus.');
+            } catch (err) {
+                btn.disabled = false;
+                alert(err.message || 'Gagal menghapus transaksi.');
+            }
+        });
+    });
+})();
+</script>
+@endpush
