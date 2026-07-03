@@ -94,6 +94,7 @@ class AuthController extends Controller
             $license->assigned_username ?: $order->full_name,
             $email,
             $isFtsaOnlyOrder ? 'ftsa_only' : 'licensed',
+            (int) $license->id,
         );
     }
 
@@ -115,12 +116,27 @@ class AuthController extends Controller
                 ->with('warning', 'Link tidak valid atau lisensi belum aktif. Coba /web lagi di YFD First Aid.');
         }
 
+        $access = app(PortalAccessService::class);
+        $email = $profile['email'];
+        $ftsaOnlyLicense = $access->resolvePortalLicense($email, $telegramUserId);
+        $licenseId = $ftsaOnlyLicense?->id;
+
+        if ($access->isFtsaOnlyPortalUser($email, $telegramUserId)) {
+            return redirect()
+                ->route('portal.login')
+                ->with(
+                    'info',
+                    'Paket FTSA Premium diakses lewat portal web dengan email + kode lisensi (bukan link /web dari bot Telegram).'
+                );
+        }
+
         return $this->establishSession(
             $request,
             $profile['telegram_user_id'],
             $profile['display_name'],
-            $profile['email'],
-            app(PortalAccessService::class)->isFtsaOnlyPortalUser($profile['email']) ? 'ftsa_only' : 'licensed',
+            $email,
+            'licensed',
+            $licenseId,
         );
     }
 
@@ -130,8 +146,9 @@ class AuthController extends Controller
         string $displayName,
         string $email,
         string $userType = 'licensed',
+        ?int $licenseId = null,
     ): RedirectResponse {
-        PortalSession::login($request, $telegramUserId, $displayName, $email, $userType);
+        PortalSession::login($request, $telegramUserId, $displayName, $email, $userType, $licenseId);
         $request->session()->regenerate();
 
         if (FinancialBaselineSchema::isReady()) {

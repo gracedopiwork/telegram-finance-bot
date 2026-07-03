@@ -59,7 +59,10 @@ class PortalCheckoutService
         abort_if($finalAmount <= 0, 422, 'Harga produk belum diatur.');
 
         $phone = $this->suggestPhone($email);
-        $license = $this->provisioning->findExistingLicenseForEmail($email);
+        $existingLicense = $this->provisioning->findExistingLicenseForEmail($email);
+        $licenseId = ($existingLicense !== null && $this->entitlements->hasPaidBotOrderOnLicense($existingLicense))
+            ? $existingLicense->id
+            : null;
 
         $order = Order::create([
             'order_code' => 'YFD-'.Str::upper(Str::random(10)),
@@ -75,7 +78,7 @@ class PortalCheckoutService
             'currency' => $product->currency ?? 'IDR',
             'status' => 'pending',
             'payment_gateway' => 'midtrans',
-            'license_id' => $license?->id,
+            'license_id' => $licenseId,
         ]);
 
         try {

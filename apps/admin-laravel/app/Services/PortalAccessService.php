@@ -16,17 +16,17 @@ class PortalAccessService
     ) {}
 
     /**
-     * Akses dashboard bot (transaksi, KPI, input data) — berdasarkan lisensi portal aktif.
+     * Akses dashboard bot (transaksi, KPI, input data).
      */
     public function hasBotPortalAccess(string $email, int $telegramUserId = 0): bool
     {
+        if ($this->isFtsaOnlyPortalUser($email, $telegramUserId)) {
+            return false;
+        }
+
         $license = $this->resolvePortalLicense($email, $telegramUserId);
         if ($license !== null) {
             return $this->entitlements->hasPaidBotOrderOnLicense($license);
-        }
-
-        if ($this->onboarding->isFtsaOnlyBuyer($email)) {
-            return false;
         }
 
         return $this->onboarding->hasPaidBotOrderForUser($email, $telegramUserId);
@@ -37,16 +37,13 @@ class PortalAccessService
      */
     public function isFtsaOnlyPortalUser(string $email, int $telegramUserId = 0): bool
     {
-        if ($this->hasBotPortalAccess($email, $telegramUserId)) {
-            return false;
-        }
-
         $license = $this->resolvePortalLicense($email, $telegramUserId);
-        if ($license !== null) {
-            return $this->entitlements->hasPaidFtsaOrderOnLicense($license);
+        if ($license === null) {
+            return $this->onboarding->isFtsaOnlyBuyer($email);
         }
 
-        return $this->onboarding->isFtsaOnlyBuyer($email);
+        return $this->entitlements->hasPaidFtsaOrderOnLicense($license)
+            && ! $this->entitlements->hasPaidBotOrderOnLicense($license);
     }
 
     /**
@@ -58,6 +55,11 @@ class PortalAccessService
             return;
         }
 
+        $license = $this->resolvePortalLicense($email, $telegramUserId);
+        if ($license !== null) {
+            $request->session()->put(PortalSession::LICENSE_ID, (int) $license->id);
+        }
+
         $userType = $this->isFtsaOnlyPortalUser($email, $telegramUserId) ? 'ftsa_only' : 'licensed';
         if (PortalSession::userType($request) !== $userType) {
             $request->session()->put(PortalSession::USER_TYPE, $userType);
@@ -66,7 +68,28 @@ class PortalAccessService
 
     public function resolvePortalLicense(string $email, int $telegramUserId = 0): ?License
     {
+        $request = request();
         $email = strtolower(trim($email));
+
+        if ($request !== null) {
+            $sessionLicenseId = PortalSession::licenseId($request);
+            if ($sessionLicenseId !== null) {
+                $sessionLicense = License::query()
+                    ->whereKey($sessionLicenseId)
+                    ->where('status', 'active')
+                    ->first();
+                if ($sessionLicense !== null) {
+                    return $sessionLicense;
+                }
+            }
+        }
+
+        if ($email !== '') {
+            $ftsaOnlyLicense = $this->resolveFtsaOnlyPortalLicense($email);
+            if ($ftsaOnlyLicense !== null) {
+                return $ftsaOnlyLicense;
+            }
+        }
 
         if ($telegramUserId > 0 && $this->isSyntheticPortalUserId($telegramUserId)) {
             $licenseId = $this->licenseIdFromSyntheticUserId($telegramUserId);
@@ -82,9 +105,9 @@ class PortalAccessService
         }
 
         if ($email !== '') {
-            $fromEmail = $this->provisioning->findExistingLicenseForEmail($email);
-            if ($fromEmail !== null) {
-                return $fromEmail;
+            $fromLatestOrder = $this->resolveLicenseFromLatestPaidOrder($email);
+            if ($fromLatestOrder !== null) {
+                return $fromLatestOrder;
             }
         }
 
@@ -97,6 +120,68 @@ class PortalAccessService
         }
 
         return null;
+    }
+
+    /**
+     * Lisensi dari pembelian FTSA pertama (bukan upgrade bot) tanpa order bot pada lisensi yang sama.
+     */
+    private function resolveFtsaOnlyPortalLicense(string $email): ?License
+    {
+        $ftsaCodes = $this->onboarding->ftsaUnlockProductCodes();
+        if ($ftsaCodes === []) {
+            return null;
+        }
+
+        $orders = Order::query()
+            ->where('status', 'paid')
+            ->whereRaw('LOWER(email) = ?', [strtolower(trim($email))])
+            ->whereNotNull('license_id')
+            ->whereHas('digitalProduct', fn ($q) => $q->whereIn('code', $ftsaCodes))
+            ->with('digitalProduct')
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id')
+            ->get();
+
+        foreach ($orders as $order) {
+            if (! $this->isFtsaOnlyOrder($order)) {
+                continue;
+            }
+
+            $license = License::query()
+                ->whereKey($order->license_id)
+                ->where('status', 'active')
+                ->first();
+
+            if ($license === null) {
+                continue;
+            }
+
+            if (! $this->entitlements->hasPaidBotOrderOnLicense($license)) {
+                return $license;
+            }
+        }
+
+        return null;
+    }
+
+    private function resolveLicenseFromLatestPaidOrder(string $email): ?License
+    {
+        $order = Order::query()
+            ->where('status', 'paid')
+            ->whereRaw('LOWER(email) = ?', [strtolower(trim($email))])
+            ->whereNotNull('license_id')
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($order === null) {
+            return null;
+        }
+
+        return License::query()
+            ->whereKey($order->license_id)
+            ->where('status', 'active')
+            ->first();
     }
 
     public function isFtsaOnlyOrder(Order $order): bool

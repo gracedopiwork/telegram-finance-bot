@@ -14,6 +14,8 @@ class PortalSession
 
     public const USER_TYPE = 'portal.user_type';
 
+    public const LICENSE_ID = 'portal.license_id';
+
     public static function telegramUserId(Request $request): ?int
     {
         $id = $request->session()->get(self::TELEGRAM_USER_ID);
@@ -46,16 +48,26 @@ class PortalSession
         string $displayName,
         string $email,
         string $userType = 'licensed',
-    ): void
-    {
+        ?int $licenseId = null,
+    ): void {
         $request->session()->put(self::TELEGRAM_USER_ID, $telegramUserId);
         $request->session()->put(self::DISPLAY_NAME, $displayName);
         $request->session()->put(self::EMAIL, strtolower($email));
         $request->session()->put(self::USER_TYPE, $userType);
+        if ($licenseId !== null && $licenseId > 0) {
+            $request->session()->put(self::LICENSE_ID, $licenseId);
+        }
+    }
+
+    public static function licenseId(Request $request): ?int
+    {
+        $id = $request->session()->get(self::LICENSE_ID);
+
+        return $id ? (int) $id : null;
     }
 
     public static function logout(Request $request): void
     {
-        $request->session()->forget([self::TELEGRAM_USER_ID, self::DISPLAY_NAME, self::EMAIL, self::USER_TYPE]);
+        $request->session()->forget([self::TELEGRAM_USER_ID, self::DISPLAY_NAME, self::EMAIL, self::USER_TYPE, self::LICENSE_ID]);
     }
 }
