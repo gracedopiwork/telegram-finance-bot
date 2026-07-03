@@ -11,6 +11,14 @@
     $noteSummary = is_array($note) ? ($note['summary'] ?? '') : (string) $note;
 @endphp
 
+@if(($hasBotPortalAccess ?? false) && ($needsFinancialDiagnostic ?? false) && !($isFtsaOnlyPortalUser ?? false))
+    @include('portal.partials.onboarding-checklist', [
+        'compact' => true,
+        'skipActivation' => true,
+        'diagnosticUrl' => $portalDiagnosticUrl ?? route('portal.diagnostic'),
+    ])
+@endif
+
 @if(!($ftsaUnlocked ?? false) && ($hasBotPortalAccess ?? false) && !($isFtsaOnlyPortalUser ?? false))
     <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
         <div class="text-sm text-amber-900">
@@ -88,10 +96,18 @@
 @php $hasAssessment = ($summary['baseline'] ?? null) || $showFtsaSummary; @endphp
 @if(!$hasData)
     @include('portal.partials.empty-state', [
-        'title' => $hasAssessment ? 'Belum ada transaksi bot' : 'Dashboard masih kosong',
-        'message' => $hasAssessment
-            ? 'Diagnostik dan FTSA Anda sudah tersimpan. Catat pemasukan & pengeluaran lewat YFD First Aid — metrik harian akan terisi otomatis.'
-            : 'Mulai catat pemasukan & pengeluaran lewat YFD First Aid. Semua metrik di bawah akan terisi otomatis.',
+        'title' => ($needsFinancialDiagnostic ?? false) && !($isFtsaOnlyPortalUser ?? false)
+            ? 'Mulai dari Diagnostik Keuangan'
+            : ($hasAssessment ? 'Belum ada transaksi bot' : 'Dashboard masih kosong'),
+        'message' => ($needsFinancialDiagnostic ?? false) && !($isFtsaOnlyPortalUser ?? false)
+            ? 'Sebelum catat transaksi, isi diagnostik dulu — tahap keuangan & snapshot Anda dipakai untuk prescription bucket dan rekomendasi AI.'
+            : ($hasAssessment
+                ? 'Diagnostik dan FTSA Anda sudah tersimpan. Catat pemasukan & pengeluaran lewat YFD First Aid — metrik harian akan terisi otomatis.'
+                : 'Mulai catat pemasukan & pengeluaran lewat YFD First Aid. Semua metrik di bawah akan terisi otomatis.'),
+        'actionUrl' => (($needsFinancialDiagnostic ?? false) && !($isFtsaOnlyPortalUser ?? false))
+            ? ($portalDiagnosticUrl ?? route('portal.diagnostic'))
+            : null,
+        'actionLabel' => 'Isi Diagnostik Sekarang',
     ])
 @endif
 

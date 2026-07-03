@@ -152,7 +152,23 @@ class AuthController extends Controller
         }
 
         return redirect()->route($onboarding->portalHomeRouteName($email))
-            ->with('success', 'Selamat datang di portal YFD.');
+            ->with('success', $this->loginSuccessMessage($email, $telegramUserId));
+    }
+
+    private function loginSuccessMessage(string $email, int $telegramUserId): string
+    {
+        $onboarding = app(PortalOnboardingService::class);
+        $access = app(PortalAccessService::class);
+
+        if ($access->isFtsaOnlyPortalUser($email)) {
+            return 'Selamat datang di portal YFD.';
+        }
+
+        if ($access->hasBotPortalAccess($email) && $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
+            return 'Selamat datang! Langkah pertama: lengkapi Diagnostik Keuangan agar prescription bucket & insight personal aktif.';
+        }
+
+        return 'Selamat datang di portal YFD.';
     }
 
     public function logout(Request $request): RedirectResponse
