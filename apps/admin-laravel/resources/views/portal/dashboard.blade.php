@@ -32,10 +32,6 @@
 
 @include('portal.partials.onboarding-banners')
 
-@php
-    $showFtsaSummary = false;
-@endphp
-
 @if($summary['baseline'])
     <div class="grid grid-cols-1 mb-6">
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
@@ -63,7 +59,7 @@
         'message' => ($needsFinancialDiagnostic ?? false) && !($isFtsaOnlyPortalUser ?? false)
             ? 'Sebelum catat transaksi, isi diagnostik dulu — tahap keuangan & snapshot Anda dipakai untuk prescription bucket dan rekomendasi AI.'
             : ($hasAssessment
-                ? 'Diagnostik dan FTSA Anda sudah tersimpan. Catat pemasukan & pengeluaran lewat YFD First Aid — metrik harian akan terisi otomatis.'
+                ? 'Diagnostik Anda sudah tersimpan. Catat pemasukan & pengeluaran lewat YFD First Aid — metrik harian akan terisi otomatis.'
                 : 'Mulai catat pemasukan & pengeluaran lewat YFD First Aid. Semua metrik di bawah akan terisi otomatis.'),
         'actionUrl' => ($needsFinancialDiagnostic ?? false) && !($isFtsaOnlyPortalUser ?? false)
             ? route('portal.baseline.create')

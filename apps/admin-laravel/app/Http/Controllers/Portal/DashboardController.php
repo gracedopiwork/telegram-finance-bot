@@ -47,16 +47,12 @@ class DashboardController extends Controller
     $impulsivity = app(ImpulsivityAssessmentService::class)->assess($telegramUserId, $month, $period, $email);
     $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email);
     $baseline = app(PortalOnboardingService::class)->resolveBaseline($email, $telegramUserId);
-    $ftsaSummary = $baseline ? app(FtsaAnswerSummaryService::class)->scoreSummary($baseline) : null;
-    $ftsaAiGuidance = app(FtsaAiGuidanceService::class)->forBaseline($baseline);
 
     return view('portal.dashboard', [
       'active' => 'dashboard',
       'summary' => $summary,
       'ftsaUnlocked' => $ftsaUnlocked,
       'baselineRecord' => $baseline,
-      'ftsaSummary' => $ftsaSummary,
-      'ftsaAiGuidance' => $ftsaAiGuidance,
       'impulsivity' => [
         'score' => $impulsivity['score'],
         'grade' => $impulsivity['grade'],

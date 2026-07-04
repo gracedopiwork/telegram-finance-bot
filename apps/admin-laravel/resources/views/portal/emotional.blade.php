@@ -45,56 +45,25 @@
             </div>
         @endif
 
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-8 mb-6">
-            <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
-                <div>
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Dominant Archetype</p>
-                    <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-800 mt-1">{{ $ftsaProfile['archetype'] }}</h2>
-                    <p class="text-sm text-slate-600 mt-2 max-w-2xl">
-                        Profil ini dihitung dari kuesioner FTSA 1–32 berdasarkan domain dengan skor tertinggi.
-                    </p>
+        <div class="flex flex-wrap items-center justify-end gap-3 mb-4">
+            @if(!($ftsaRetakeLocked ?? false))
+                <a href="{{ route('portal.ftsa.create') }}"
+                   class="inline-flex items-center gap-2 border border-navy-800 text-navy-800 hover:bg-navy-50 font-bold px-4 py-2 rounded-xl text-sm shrink-0">
+                    <span class="material-symbols-outlined text-lg">edit</span>
+                    Isi Ulang FTSA
+                </a>
+            @else
+                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-600">
+                    <span class="font-semibold text-navy-800">Terkunci</span> — evaluasi ulang setelah {{ $ftsaEndsAt?->format('d M Y') ?? 'masa berlaku habis' }}.
                 </div>
-                @if(!($ftsaRetakeLocked ?? false))
-                    <a href="{{ route('portal.ftsa.create') }}"
-                       class="inline-flex items-center gap-2 border border-navy-800 text-navy-800 hover:bg-navy-50 font-bold px-4 py-2 rounded-xl text-sm shrink-0">
-                        <span class="material-symbols-outlined text-lg">edit</span>
-                        Isi Ulang FTSA
-                    </a>
-                @else
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-600 max-w-xs">
-                        <span class="font-semibold text-navy-800">Terkunci</span> — evaluasi ulang setelah {{ $ftsaEndsAt?->format('d M Y') ?? 'masa berlaku habis' }}.
-                    </div>
-                @endif
-            </div>
-
-            <div class="space-y-5">
-                @foreach($ftsaProfile['domains'] as $domain)
-                    @php
-                        $metaKey = strtolower((string) ($domain['key'] ?? $domain['label'] ?? ''));
-                        $meta = $ftsaDomainMeta[$metaKey] ?? [];
-                        $pct = round(((int) $domain['score'] / 40) * 100);
-                        $isDominant = ($meta['archetype_label'] ?? '') === ($ftsaProfile['archetype'] ?? '');
-                    @endphp
-                    <div class="rounded-xl border p-4 sm:p-5 {{ $isDominant ? 'border-gold-400 bg-gold-400/5 ring-1 ring-gold-400/40' : 'border-slate-100 bg-slate-50/50' }}">
-                        <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
-                            <div>
-                                <div class="text-xs font-bold text-navy-600">{{ $meta['code'] ?? $domain['label'] }}</div>
-                                <div class="text-sm font-semibold text-slate-800">{{ $meta['label'] ?? $domain['label'] }}</div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-2xl font-extrabold text-navy-800">{{ $domain['score'] }}<span class="text-sm text-slate-400">/40</span></div>
-                                @if($domain['level'])
-                                    <div class="text-xs font-semibold text-slate-600">{{ $domain['level'] }}</div>
-                                @endif
-                            </div>
-                        </div>
-                        <div class="h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                            <div class="h-full bg-navy-600 rounded-full transition-all" style="width: {{ $pct }}%"></div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
+            @endif
         </div>
+
+        @include('portal.partials.ftsa-compact-summary', [
+            'ftsaProfile' => $ftsaProfile,
+            'baseline' => $baseline ?? null,
+            'class' => 'mb-6',
+        ])
 
         @include('portal.partials.ftsa-ai-guidance', ['ftsaAiGuidance' => $ftsaAiGuidance ?? []])
 
@@ -129,25 +98,11 @@
     @endif
 
     @if($ftsaProfile)
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h3 class="font-bold text-navy-800 text-lg flex items-center gap-2">
-                <span class="material-symbols-outlined">person_search</span> Profil FTSA-32
-            </h3>
-            <span class="text-sm font-bold bg-navy-800 text-white px-3 py-1 rounded-full">
-                {{ $ftsaProfile['archetype'] }}
-            </span>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            @foreach($ftsaProfile['domains'] as $domain)
-                <div class="rounded-xl bg-slate-50 p-3 text-center">
-                    <div class="text-xs font-bold text-slate-500">{{ $domain['label'] }}</div>
-                    <div class="text-xl font-extrabold text-navy-800">{{ $domain['score'] }}</div>
-                    <div class="text-[10px] text-slate-600 mt-1">{{ $domain['level'] }}</div>
-                </div>
-            @endforeach
-        </div>
-    </div>
+        @include('portal.partials.ftsa-compact-summary', [
+            'ftsaProfile' => $ftsaProfile,
+            'baseline' => $baseline ?? null,
+            'class' => 'mb-6',
+        ])
     @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
