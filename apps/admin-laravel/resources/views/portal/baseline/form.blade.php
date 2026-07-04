@@ -34,10 +34,12 @@
 <div class="{{ ($isFtsaOnlyPortalUser ?? false) ? 'w-full' : 'w-full max-w-6xl mx-auto' }}">
     @if($hasBaseline ?? false)
         <div class="bg-sky-50 border border-sky-200 rounded-2xl px-5 py-4 mb-6 text-sm text-sky-900">
-            @if($ftsaRetakeLocked ?? false)
-                Masa evaluasi FTSA masih berjalan. Bagian FTSA terkunci — Anda hanya dapat memperbarui data diagnostik lainnya.
+            @if(($ftsaRetakeLocked ?? false) && ($showFtsaSection ?? false))
+                Masa evaluasi FTSA masih berjalan. Bagian FTSA terkunci — Anda hanya dapat memperbarui snapshot keuangan.
+            @elseif($ftsaRetakeLocked ?? false)
+                Masa evaluasi FTSA masih berjalan. Snapshot keuangan tetap bisa diperbarui; pengisian ulang FTSA tersedia setelah masa evaluasi berakhir.
             @else
-                Anda mengisi ulang {{ $isFtsaOnlyPortalUser ? 'FTSA' : 'diagnostik' }}. Data sebelumnya akan digantikan setelah disimpan.
+                Anda mengisi ulang {{ $isFtsaOnlyPortalUser ? 'data baseline' : 'diagnostik' }}. Data sebelumnya akan digantikan setelah disimpan.
             @endif
         </div>
     @elseif(!$isFtsaOnlyPortalUser)

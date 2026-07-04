@@ -230,15 +230,13 @@ class BaselineController extends Controller
         $onboarding = app(PortalOnboardingService::class);
         $ftsaEval = app(FtsaEvaluationService::class);
 
-        if ($ftsaEval->isRetakeLocked($telegramUserId)) {
-            if ($isFtsaOnly) {
-                $endsAt = app(PortalFeatureService::class)->ftsaEntitlementStatus($telegramUserId, $email)['ends_at'];
+        if ($ftsaEval->isRetakeLocked($telegramUserId) && $isFtsaOnly && $request->has('ftsa')) {
+            $endsAt = app(PortalFeatureService::class)->ftsaEntitlementStatus($telegramUserId, $email)['ends_at'];
 
-                return back()->withInput()->with(
-                    'error',
-                    'FTSA tidak dapat diisi ulang sebelum masa evaluasi berakhir pada '.$endsAt?->format('d M Y').'.'
-                );
-            }
+            return back()->withInput()->with(
+                'error',
+                'FTSA tidak dapat diisi ulang sebelum masa evaluasi berakhir pada '.$endsAt?->format('d M Y').'.'
+            );
         }
 
         $snapshotOnlySave = false;
