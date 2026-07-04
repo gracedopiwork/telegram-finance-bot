@@ -242,6 +242,33 @@ class PortalOnboardingService
         return false;
     }
 
+    /**
+     * @param  array<string, mixed>  $snapshot
+     */
+    public function ftsaSnapshotInputHasValue(array $snapshot): bool
+    {
+        foreach (['avg_monthly_income', 'emergency_fund', 'cash_savings', 'total_debt'] as $field) {
+            if (isset($snapshot[$field]) && $snapshot[$field] !== '' && (int) $snapshot[$field] > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function snapshotReadyForFtsaQuestionnaire(string $email, int $telegramUserId, ?FinancialBaseline $baseline): bool
+    {
+        if ($baseline === null) {
+            return false;
+        }
+
+        if (app(PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId)) {
+            return $this->hasFtsaSnapshotComplete($baseline);
+        }
+
+        return $this->hasFinancialSnapshot($baseline) || $this->hasFtsaSnapshotComplete($baseline);
+    }
+
     public function hasFinancialSnapshot(?FinancialBaseline $baseline): bool
     {
         if ($baseline === null) {

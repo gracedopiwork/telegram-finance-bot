@@ -265,6 +265,12 @@ class BaselineController extends Controller
                 $snapshotOnlySave = true;
                 $rules = $service->validationRulesFtsaSnapshotOnly();
                 $validated = $request->validate($rules);
+                if (! $onboarding->ftsaSnapshotInputHasValue($validated['snapshot'] ?? [])) {
+                    return back()->withInput()->with(
+                        'error',
+                        'Isi minimal satu angka: pendapatan, tabungan, utang, atau dana darurat.'
+                    );
+                }
                 $priorFs = $baseline?->answers_json['fs'] ?? [];
                 $validated['fs'] = is_array($priorFs) ? $priorFs : [];
                 $validated['ftsa'] = is_array($baseline?->answers_json['ftsa'] ?? null)
@@ -385,11 +391,9 @@ class BaselineController extends Controller
             $existing = FinancialBaseline::latestForUser($telegramUserId)
                 ?? $onboarding->resolveBaseline($email, $telegramUserId);
 
-            if ($existing === null || ! app(PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId)
-                ? ! $onboarding->hasFinancialSnapshot($existing)
-                : ! $onboarding->hasFtsaSnapshotComplete($existing)) {
+            if (! $onboarding->snapshotReadyForFtsaQuestionnaire($email, $telegramUserId, $existing)) {
                 return redirect()->route('portal.baseline.create')
-                    ->with('warning', 'Lengkapi snapshot angka keuangan terlebih dahulu.');
+                    ->with('warning', 'Lengkapi snapshot angka keuangan (pendapatan, tabungan, utang) terlebih dahulu.');
             }
 
             $validated['fs'] = $existing->answers_json['fs'] ?? [];

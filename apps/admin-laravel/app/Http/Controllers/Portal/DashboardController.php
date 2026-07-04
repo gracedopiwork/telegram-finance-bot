@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Services\BaselineClaimService;
-use App\Services\FtsaAiGuidanceService;
 use App\Services\FtsaAnswerSummaryService;
+use App\Services\FtsaAiGuidanceService;
 use App\Services\ImpulsivityAssessmentService;
+use App\Services\PortalAccessService;
 use App\Services\PortalFeatureService;
 use App\Services\PortalOnboardingService;
 use App\Services\TransactionDashboardService;
@@ -74,12 +75,26 @@ class DashboardController extends Controller
     app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
 
     [$month, $period] = $this->filters($request);
-    $assessment = app(ImpulsivityAssessmentService::class)->assess($telegramUserId, $month, $period, $email);
+    $access = app(PortalAccessService::class);
+    $isFtsaOnly = $access->isFtsaOnlyPortalUser($email, $telegramUserId);
+
+    if ($isFtsaOnly) {
+      $assessment = $this->ftsaOnlyAssessment($telegramUserId, $email, $month, $period);
+    } else {
+      $assessment = app(ImpulsivityAssessmentService::class)->assess($telegramUserId, $month, $period, $email);
+    }
+
     $featureService = app(PortalFeatureService::class);
     $ftsaUnlocked = $featureService->canAccessFtsa($telegramUserId, $email);
     $ftsaStatus = $featureService->ftsaEntitlementStatus($telegramUserId, $email);
     $baseline = app(PortalOnboardingService::class)->resolveBaseline($email, $telegramUserId);
-    $ftsaAiGuidance = app(FtsaAiGuidanceService::class)->forBaseline($baseline);
+
+    try {
+      $ftsaAiGuidance = app(FtsaAiGuidanceService::class)->forBaseline($baseline);
+    } catch (\Throwable $e) {
+      report($e);
+      $ftsaAiGuidance = ['insights' => [], 'recommendations' => [], 'source' => 'none', 'generated_at' => null];
+    }
 
     return view('portal.emotional', [
       'active' => 'emotional',
@@ -93,6 +108,54 @@ class DashboardController extends Controller
       'periods' => $this->periodOptions(),
       'currentPeriod' => $period,
     ]);
+  }
+
+  /**
+   * Ringkasan behavioral minimal untuk pembeli FTSA-only (tanpa data transaksi bot).
+   *
+   * @return array<string, mixed>
+   */
+  private function ftsaOnlyAssessment(int $telegramUserId, string $email, string $month, int $period): array
+  {
+    $baseline = app(PortalOnboardingService::class)->resolveBaseline($email, $telegramUserId);
+    $ftsaSummary = app(FtsaAnswerSummaryService::class);
+    $ftsaProfile = null;
+
+    if ($baseline !== null && $ftsaSummary->hasCompletedFtsa($baseline)) {
+      $ftsaProfile = [
+        'archetype' => $baseline->dominant_archetype_label ?? $baseline->dominant_archetype,
+        'domains' => [
+          ['key' => 'chd', 'label' => 'CHD', 'score' => (int) $baseline->ftsa_chd, 'level' => $baseline->chd_level],
+          ['key' => 'rvd', 'label' => 'RVD', 'score' => (int) $baseline->ftsa_rvd, 'level' => $baseline->rvd_level],
+          ['key' => 'ssd', 'label' => 'SSD', 'score' => (int) $baseline->ftsa_ssd, 'level' => $baseline->ssd_level],
+          ['key' => 'esd', 'label' => 'ESD', 'score' => (int) $baseline->ftsa_esd, 'level' => $baseline->esd_level],
+        ],
+      ];
+    }
+
+    return [
+      'month' => $month,
+      'period_months' => $period,
+      'period_label' => Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y'),
+      'expense_count' => 0,
+      'ftsa_profile' => $ftsaProfile,
+      'doctors_note' => '',
+      'score' => 0,
+      'grade' => '—',
+      'impulsive_rate' => 0,
+      'impulsive_amount_share' => 0,
+      'impulsive_amount' => 0,
+      'risk_label' => '—',
+      'emotional_balance' => ['score' => 0, 'label' => '—'],
+      'mood_groups' => [
+        'positive' => ['share' => 0],
+        'neutral' => ['share' => 0],
+        'negative' => ['share' => 0],
+      ],
+      'insights' => [],
+      'recommendations' => ['personalized' => [], 'general' => []],
+      'ai_source' => 'none',
+    ];
   }
 
   public function premium(): View
