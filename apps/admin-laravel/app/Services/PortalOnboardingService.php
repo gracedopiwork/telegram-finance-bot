@@ -435,7 +435,8 @@ class PortalOnboardingService
 
     public function portalBaselineUrl(string $email, int $telegramUserId): string
     {
-        if (app(PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId)) {
+        $access = app(PortalAccessService::class);
+        if ($access->isFtsaOnlyPortalUser($email, $telegramUserId)) {
             if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
                 return route('portal.diagnostic');
             }
@@ -445,6 +446,11 @@ class PortalOnboardingService
             }
 
             return route('portal.emotional');
+        }
+
+        if ($access->hasBotPortalAccess($email, $telegramUserId)
+            && $this->hasBotPortalOnboardingComplete($email, $telegramUserId)) {
+            return route('portal.baseline');
         }
 
         if ($this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {

@@ -56,7 +56,10 @@ class BaselineController extends Controller
                 $domains = [];
             }
 
-            $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email);
+            $features = app(PortalFeatureService::class);
+            $ftsaUnlocked = $features->canAccessFtsa($telegramUserId, $email);
+            $ftsaStatus = $features->ftsaEntitlementStatus($telegramUserId, $email);
+            $ftsaEval = app(FtsaEvaluationService::class);
 
             return view('portal.baseline.result', [
                 'active' => 'baseline',
@@ -67,6 +70,9 @@ class BaselineController extends Controller
                 'reviewDue' => $baseline->isReviewDue(),
                 'months' => $this->monthOptions(),
                 'ftsaUnlocked' => $ftsaUnlocked,
+                'ftsaEndsAt' => $ftsaStatus['ends_at'],
+                'ftsaRetakeLocked' => $ftsaEval->isRetakeLocked($telegramUserId),
+                'ftsaRetakeAvailableAt' => $ftsaEval->retakeAvailableAt($telegramUserId),
                 'isFtsaOnlyPortalUser' => $isFtsaOnly,
             ]);
         } catch (\Throwable $e) {

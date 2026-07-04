@@ -1,7 +1,7 @@
 @extends('portal.layouts.app')
 
-@section('title', 'Hasil Baseline — YFD')
-@section('heading', 'Hasil Baseline Data')
+@section('title', 'Baseline Data — YFD')
+@section('heading', 'Baseline Data')
 
 @section('content')
 @php
@@ -12,6 +12,11 @@
         'esd' => ['score' => (int) ($baseline->ftsa_esd ?? 0), 'level' => $baseline->esd_level, 'meta' => is_array($domains['esd'] ?? null) ? $domains['esd'] : []],
     ];
     $prescriptionRows = is_array($prescription ?? null) ? $prescription : [];
+    $dominantArchetype = (string) ($baseline->dominant_archetype ?? '');
+    $dominantMeta = collect($domainScores)->first(
+        fn ($d) => $dominantArchetype !== '' && $dominantArchetype !== 'locked' && $dominantArchetype === ($d['meta']['archetype'] ?? '')
+    );
+    $dominantSummary = $dominantMeta['meta']['archetype_summary'] ?? null;
 @endphp
 
 @if($reviewDue)
@@ -62,6 +67,9 @@
             </a>
         @else
             <p class="text-sm text-slate-500 mt-1">Domain dengan skor tertinggi pada FTSA-32</p>
+            @if($dominantSummary)
+                <p class="text-sm text-slate-600 mt-3 leading-relaxed">{{ $dominantSummary }}</p>
+            @endif
         @endif
         <div class="mt-5 space-y-3">
             @foreach($domainScores as $key => $d)
@@ -71,10 +79,13 @@
                     $pct = round(((int) $d['score'] / 40) * 100);
                 @endphp
                 <div class="{{ $isDominant ? 'ring-2 ring-gold-400 rounded-lg p-2 -mx-2' : '' }}">
-                    <div class="flex justify-between text-sm mb-1">
+                    <div class="flex justify-between text-sm mb-0.5">
                         <span class="font-medium text-navy-800">{{ $d['meta']['code'] ?? strtoupper($key) }}</span>
                         <span class="text-slate-500">{{ $d['score'] }}/40{{ $d['level'] ? ' · '.$d['level'] : '' }}</span>
                     </div>
+                    @if(!empty($d['meta']['label']))
+                        <div class="text-[11px] text-slate-500 mb-1">{{ $d['meta']['label'] }}</div>
+                    @endif
                     <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
                         <div class="h-full bg-navy-500 rounded-full" style="width: {{ $pct }}%"></div>
                     </div>
@@ -95,11 +106,13 @@
 
 @if($hasSnapshot)
 <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden mt-6">
-    <div class="bg-slate-50 px-5 py-4 border-b">
+    <div class="bg-slate-50 px-5 py-4 border-b flex flex-wrap items-center justify-between gap-3">
         <h3 class="font-bold text-navy-800 flex items-center gap-2">
             <span class="material-symbols-outlined">inventory_2</span>
             Snapshot Keuangan
         </h3>
+        <a href="{{ route('portal.baseline.create') }}"
+           class="text-xs font-semibold text-navy-800 hover:underline">Perbarui snapshot</a>
     </div>
     <div class="p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
         @if($baseline->current_goal)
@@ -142,32 +155,57 @@
         <span class="material-symbols-outlined text-lg">{{ ($isFtsaOnlyPortalUser ?? false) ? 'psychology' : 'dashboard' }}</span>
         {{ ($isFtsaOnlyPortalUser ?? false) ? 'Lihat Hasil FTSA' : 'Buka Dashboard' }}
     </a>
-    <a href="{{ route('portal.baseline.create', ['section' => 'snapshot']) }}"
+    <a href="{{ route('portal.baseline.create') }}"
        class="inline-flex items-center gap-2 border border-slate-300 hover:border-navy-600 text-navy-800 font-medium px-5 py-2.5 rounded-xl text-sm">
         <span class="material-symbols-outlined text-lg">refresh</span>
-        Perbarui Snapshot
+        Evaluasi Ulang
     </a>
-    @if(($baseline->dominant_archetype ?? '') !== 'locked')
-    <a href="{{ route('portal.ftsa.create') }}"
-       class="inline-flex items-center gap-2 border border-gold-400 text-navy-800 font-medium px-5 py-2.5 rounded-xl text-sm">
-        <span class="material-symbols-outlined text-lg">psychology</span>
-        Evaluasi FTSA
-    </a>
+    @if(($baseline->dominant_archetype ?? '') !== 'locked' && ($ftsaUnlocked ?? false))
+        @if($ftsaRetakeLocked ?? false)
+            <span class="inline-flex items-center gap-2 border border-slate-200 bg-slate-50 text-slate-500 font-medium px-5 py-2.5 rounded-xl text-sm cursor-not-allowed"
+                  title="Evaluasi FTSA tersedia setelah {{ $ftsaRetakeAvailableAt?->format('d M Y') ?? 'masa evaluasi berakhir' }}">
+                <span class="material-symbols-outlined text-lg">lock</span>
+                FTSA terkunci hingga {{ $ftsaRetakeAvailableAt?->format('d M Y') ?? '—' }}
+            </span>
+        @else
+            <a href="{{ route('portal.ftsa.create') }}"
+               class="inline-flex items-center gap-2 border border-gold-400 text-navy-800 font-medium px-5 py-2.5 rounded-xl text-sm">
+                <span class="material-symbols-outlined text-lg">psychology</span>
+                Evaluasi FTSA
+            </a>
+        @endif
     @endif
 </div>
 
 <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-700">
     <div class="font-bold text-navy-800 mb-2">Tentang FTSA</div>
-    <p>FTSA (Financial Therapy & Strategic Action) mengukur pola behavioral finansial lewat 32 pertanyaan.
-        Hasilnya menentukan archetype dominan dan membantu interpretasi dashboard behavioral.</p>
-    <p class="mt-2 text-xs text-slate-500">
-        Baseline keuangan &amp; financial stage: evaluasi setiap <strong>6 bulan</strong>.
-        FTSA: evaluasi setiap <strong>12 bulan</strong> setelah unlock premium.
+    <p>FTSA (Financial Therapy &amp; Strategic Action) mengukur pola behavioral finansial lewat 32 pertanyaan
+        dalam empat domain: CHD, RVD, SSD, dan ESD. Domain dengan skor tertinggi menentukan archetype dominan
+        dan membantu interpretasi dashboard behavioral.</p>
+    <div class="mt-4 grid sm:grid-cols-2 gap-3">
+        @foreach($domainScores as $key => $d)
+            <div class="rounded-xl bg-white border border-slate-200 px-3 py-2.5">
+                <div class="font-semibold text-navy-800 text-xs">{{ $d['meta']['code'] ?? strtoupper($key) }} · {{ $d['meta']['archetype_label'] ?? '' }}</div>
+                <p class="text-xs text-slate-600 mt-1 leading-relaxed">{{ $d['meta']['summary'] ?? $d['meta']['label'] ?? '' }}</p>
+            </div>
+        @endforeach
+    </div>
+    <p class="mt-4 text-xs text-slate-500">
+        <strong>Financial stage &amp; baseline keuangan:</strong> evaluasi setiap <strong>6 bulan</strong> (tombol Evaluasi Ulang).
+        <strong>FTSA:</strong> evaluasi setiap <strong>12 bulan</strong> setelah unlock premium
+        @if(!empty($ftsaEndsAt))
+            — masa evaluasi saat ini hingga <strong>{{ $ftsaEndsAt->format('d M Y') }}</strong>.
+        @else
+            .
+        @endif
     </p>
 </div>
 
 <p class="text-xs text-slate-400 mt-4">
-    Diisi: {{ $baseline->formatDate() }} ·
-    Evaluasi berikutnya: {{ $baseline->formatNextReview() }}
+    Baseline diisi: {{ $baseline->formatDate() }} ·
+    Evaluasi baseline berikutnya: {{ $baseline->formatNextReview() }}
+    @if(!empty($ftsaEndsAt) && ($ftsaUnlocked ?? false))
+        · Evaluasi FTSA berikutnya: {{ $ftsaEndsAt->format('d M Y') }}
+    @endif
 </p>
 @endsection

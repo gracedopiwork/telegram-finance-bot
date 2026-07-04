@@ -58,6 +58,8 @@ return [
             'label' => 'Control & Hypervigilance Dysregulation',
             'archetype' => 'controller',
             'archetype_label' => 'The Controller',
+            'summary' => 'Pola regulasi terkait kebutuhan kontrol berlebihan dan kewaspadaan berlebihan terhadap kondisi finansial.',
+            'archetype_summary' => 'Cenderung merasa aman hanya saat memiliki kontrol penuh atas angka, rencana, dan keputusan keuangan.',
             'questions' => [1, 2, 3, 4, 5, 6, 7, 8],
         ],
         'rvd' => [
@@ -65,6 +67,8 @@ return [
             'label' => 'Risk & Volatility Avoidance Dysregulation',
             'archetype' => 'avoider',
             'archetype_label' => 'The Avoider',
+            'summary' => 'Pola regulasi terkait penghindaran risiko, ketidakpastian, dan paparan informasi keuangan.',
+            'archetype_summary' => 'Cenderung menunda atau menghindari keputusan dan informasi keuangan untuk mengurangi ketidaknyamanan emosional.',
             'questions' => [9, 10, 11, 12, 13, 14, 15, 16],
         ],
         'ssd' => [
@@ -72,6 +76,8 @@ return [
             'label' => 'Scarcity-Driven Safety Dysregulation',
             'archetype' => 'overworker',
             'archetype_label' => 'The Overworker',
+            'summary' => 'Pola regulasi terkait rasa kelangkaan, overwork, dan kebutuhan terus-menerus membangun keamanan finansial.',
+            'archetype_summary' => 'Cenderung mengaitkan nilai diri dan rasa aman dengan produktivitas serta kerja berkelanjutan.',
             'questions' => [17, 18, 19, 20, 21, 22, 23, 24],
         ],
         'esd' => [
@@ -79,6 +85,8 @@ return [
             'label' => 'Emotional Spending Dysregulation',
             'archetype' => 'impulsive',
             'archetype_label' => 'The Impulsive',
+            'summary' => 'Pola regulasi terkait belanja impulsif dan penggunaan uang sebagai regulator emosi jangka pendek.',
+            'archetype_summary' => 'Cenderung menggunakan belanja untuk meredakan emosi, stres, atau kebutuhan validasi jangka pendek.',
             'questions' => [25, 26, 27, 28, 29, 30, 31, 32],
         ],
     ],
