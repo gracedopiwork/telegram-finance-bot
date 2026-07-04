@@ -2,10 +2,12 @@
 
 @section('title', match($formMode ?? 'snapshot') {
     'ftsa', 'ftsa_only' => 'FTSA Premium — YFD',
+    'ftsa_snapshot' => 'Snapshot Keuangan — YFD',
     default => 'Baseline Data — YFD',
 })
 @section('heading', match($formMode ?? 'snapshot') {
     'ftsa', 'ftsa_only' => 'Kuesioner FTSA 1–32',
+    'ftsa_snapshot' => 'Snapshot Keuangan',
     default => 'Baseline Data',
 })
 
@@ -19,7 +21,7 @@
     $isFtsaOnlyPortalUser = $isFtsaOnlyPortalUser ?? false;
     $needsFinancialDiagnostic = $needsFinancialDiagnostic ?? false;
     $showFtsaSection = in_array($formMode, ['ftsa', 'ftsa_only'], true);
-    $showSnapshotSection = $formMode === 'snapshot';
+    $showSnapshotSection = in_array($formMode, ['snapshot', 'ftsa_snapshot'], true) || ($showInlineSnapshotForm ?? false);
     $showFinancialStageSection = $showSnapshotSection && ($needsFinancialDiagnostic ?? false);
     $existingFs = $existingFs ?? [];
     $existingBaseline = $existingBaseline ?? null;
@@ -60,7 +62,10 @@
             @if($showFtsaSection)
                 <strong>FTSA (Financial Therapy & Strategic Action)</strong> mengukur pola behavioral finansial Anda
                 melalui 32 pertanyaan. Hasilnya menentukan archetype dominan (CHD, RVD, SSD, ESD).
-                Evaluasi ulang setiap <strong>12 bulan</strong> — terpisah dari baseline keuangan.
+                Evaluasi ulang setiap <strong>12 bulan</strong> — terpisah dari snapshot keuangan.
+            @elseif($formMode === 'ftsa_snapshot')
+                Isi <strong>snapshot angka keuangan</strong> Anda: pendapatan, tabungan, utang, aset, dan proteksi.
+                Langkah ini wajib sebelum kuesioner FTSA 1–32.
             @else
                 @if($showInlineSnapshotForm ?? false)
                     Diagnostik tahap keuangan sudah tersimpan. Lengkapi <strong>snapshot angka keuangan</strong> di bawah.
@@ -233,7 +238,13 @@
                     <span class="material-symbols-outlined">inventory_2</span>
                     Snapshot Keuangan (Baseline Data)
                 </h2>
-                <p class="text-white/70 text-sm mt-1">Opsional — isi perkiraan terbaik Anda saat ini</p>
+                <p class="text-white/70 text-sm mt-1">
+                    @if(($formMode ?? '') === 'ftsa_snapshot')
+                        Pendapatan, tabungan, utang, aset, dan proteksi Anda saat ini
+                    @else
+                        Opsional — isi perkiraan terbaik Anda saat ini
+                    @endif
+                </p>
             </div>
             <div class="p-5 sm:p-6 space-y-5">
                 <div>
@@ -286,6 +297,8 @@
                 <span class="material-symbols-outlined">save</span>
                 @if($showFtsaSection)
                     Simpan FTSA
+                @elseif($formMode === 'ftsa_snapshot')
+                    Simpan Snapshot
                 @else
                     Simpan Baseline
                 @endif

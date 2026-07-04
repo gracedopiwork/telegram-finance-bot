@@ -209,6 +209,27 @@ class PortalOnboardingService
         return ! $this->hasFinancialSnapshot($baseline);
     }
 
+    /**
+     * Pembeli FTSA-only — diagnostik sudah ada, snapshot angka belum diisi.
+     */
+    public function userNeedsFtsaSnapshotBaseline(string $email, int $telegramUserId): bool
+    {
+        if (! \App\Support\FinancialBaselineSchema::isReady()) {
+            return false;
+        }
+
+        if (! app(PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId)) {
+            return false;
+        }
+
+        $baseline = $this->resolveBaseline($email, $telegramUserId);
+        if (! $this->hasFinancialDiagnostic($baseline)) {
+            return false;
+        }
+
+        return ! $this->hasFinancialSnapshot($baseline);
+    }
+
     public function hasFinancialSnapshot(?FinancialBaseline $baseline): bool
     {
         if ($baseline === null) {
@@ -285,6 +306,7 @@ class PortalOnboardingService
         }
 
         return $this->hasFinancialDiagnostic($baseline)
+            && $this->hasFinancialSnapshot($baseline)
             && app(FtsaAnswerSummaryService::class)->hasCompletedFtsa($baseline);
     }
 
@@ -421,12 +443,13 @@ class PortalOnboardingService
         }
 
         if ($isFtsaOnly) {
+            if ($this->userNeedsFtsaSnapshotBaseline($email, $telegramUserId)) {
+                return route('portal.baseline.create');
+            }
             if ($this->userNeedsFtsa($email, $telegramUserId)) {
                 return route('portal.ftsa.create');
             }
-
-            $baseline = $this->resolveBaseline($email, $telegramUserId);
-            if ($baseline !== null && $this->hasFinancialDiagnostic($baseline)) {
+            if ($this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
                 return route('portal.baseline');
             }
         }

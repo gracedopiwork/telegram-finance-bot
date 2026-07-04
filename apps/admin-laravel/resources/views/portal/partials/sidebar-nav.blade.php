@@ -27,6 +27,7 @@
             ($needsBaseline ?? false)
             || (($needsFtsa ?? false) && !($ftsaRetakeLocked ?? false))
             || (($isFtsaOnlyPortalUser ?? false) && ($needsFinancialDiagnostic ?? false))
+            || (($isFtsaOnlyPortalUser ?? false) && ($needsFtsaSnapshot ?? false))
         );
         $dashboardNavHighlight = false;
         $baselineNavLabel = ($portalOnboardingComplete ?? false)
@@ -34,7 +35,9 @@
             : (($isFtsaOnlyPortalUser ?? false)
                 ? (($needsFinancialDiagnostic ?? false)
                     ? 'DIAGNOSTIK KEUANGAN'
-                    : (($needsFtsa ?? false) ? 'FTSA 1–32' : 'BASELINE DATA'))
+                    : (($needsFtsaSnapshot ?? false)
+                        ? 'SNAPSHOT KEUANGAN'
+                        : (($needsFtsa ?? false) ? 'FTSA 1–32' : 'BASELINE DATA')))
                 : 'BASELINE DATA (WAJIB DI ISI)');
     @endphp
     <a href="{{ $baselineNavUrl }}"

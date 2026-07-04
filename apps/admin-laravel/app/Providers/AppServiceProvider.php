@@ -119,6 +119,7 @@ class AppServiceProvider extends ServiceProvider
                     : $onboarding->hasFtsaPortalOnboardingComplete($email, $telegramUserId);
                 $needsBaseline = $onboarding->userNeedsBotOnboardingBaseline($email, $telegramUserId);
                 $needsFtsa = $onboarding->userNeedsFtsa($email, $telegramUserId);
+                $needsFtsaSnapshot = $onboarding->userNeedsFtsaSnapshotBaseline($email, $telegramUserId);
                 $needsFinancialDiagnostic = $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId);
                 $ftsaUnlocked = $featureService->canAccessFtsa($telegramUserId, $email);
                 $hasBotPortalAccess = $access->hasBotPortalAccess($email, $telegramUserId);
@@ -126,6 +127,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('portalOnboardingComplete', $portalOnboardingComplete);
                 $view->with('needsBaseline', $needsBaseline);
                 $view->with('needsFtsa', $needsFtsa);
+                $view->with('needsFtsaSnapshot', $needsFtsaSnapshot);
                 $view->with('needsFinancialDiagnostic', $needsFinancialDiagnostic);
                 $view->with('ftsaUnlocked', $ftsaUnlocked);
                 $view->with('hasBotPortalAccess', $hasBotPortalAccess);
