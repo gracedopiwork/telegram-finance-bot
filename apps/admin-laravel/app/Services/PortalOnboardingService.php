@@ -336,7 +336,8 @@ class PortalOnboardingService
 
         $access = app(PortalAccessService::class);
         if ($access->isFtsaOnlyPortalUser($email, $telegramUserId)) {
-            return app(FtsaAnswerSummaryService::class)->hasCompletedFtsa($baseline);
+            return $this->hasFinancialDiagnostic($baseline)
+                && app(FtsaAnswerSummaryService::class)->hasCompletedFtsa($baseline);
         }
 
         return $this->hasFinancialSnapshot($baseline)
@@ -365,10 +366,6 @@ class PortalOnboardingService
             return false;
         }
 
-        if (app(PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId)) {
-            return false;
-        }
-
         if ($this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
             return false;
         }
@@ -385,6 +382,11 @@ class PortalOnboardingService
         }
 
         if ($this->hasFtsaPortalOnboardingComplete($email, $telegramUserId)) {
+            return false;
+        }
+
+        if (app(PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId)
+            && $this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
             return false;
         }
 
@@ -405,6 +407,10 @@ class PortalOnboardingService
         $access = app(PortalAccessService::class);
 
         if ($access->isFtsaOnlyPortalUser($email, $telegramUserId)) {
+            if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
+                return 'portal.diagnostic';
+            }
+
             if ($this->userNeedsFtsa($email, $telegramUserId)) {
                 return 'portal.ftsa.create';
             }
@@ -430,6 +436,10 @@ class PortalOnboardingService
     public function portalBaselineUrl(string $email, int $telegramUserId): string
     {
         if (app(PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId)) {
+            if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
+                return route('portal.diagnostic');
+            }
+
             if ($this->userNeedsFtsa($email, $telegramUserId)) {
                 return route('portal.ftsa.create');
             }
@@ -480,7 +490,9 @@ class PortalOnboardingService
         }
 
         if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
-            return route('portal.baseline.create');
+            return $isFtsaOnly
+                ? route('portal.diagnostic')
+                : route('portal.baseline.create');
         }
 
         if ($isFtsaOnly) {

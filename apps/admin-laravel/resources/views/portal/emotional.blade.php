@@ -17,6 +17,12 @@
 @if($isFtsaOnly)
     @include('portal.partials.onboarding-banners')
 
+    @include('portal.partials.ftsa-baseline-overview', [
+        'baseline' => $baseline ?? null,
+        'stageMeta' => $stageMeta ?? [],
+        'showSnapshot' => false,
+    ])
+
     @if($needsFtsa ?? false)
         @include('portal.partials.empty-state', [
             'title' => 'Lengkapi kuesioner FTSA 1–32',

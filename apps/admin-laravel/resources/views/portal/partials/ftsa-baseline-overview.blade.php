@@ -1,5 +1,6 @@
 @php
     $baseline = $baseline ?? null;
+    $showSnapshot = $showSnapshot ?? false;
     if ($baseline === null) {
         return;
     }
@@ -12,7 +13,7 @@
         || $baseline->has_income_protection || $baseline->has_life_insurance;
 @endphp
 
-@if($hasSnapshot)
+@if($showSnapshot && $hasSnapshot)
 <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden mb-6">
     <div class="bg-slate-50 px-5 py-4 border-b flex flex-wrap items-center justify-between gap-3">
         <h3 class="font-bold text-navy-800 flex items-center gap-2">
@@ -85,7 +86,7 @@
         </div>
     </div>
 </div>
-@elseif(!$hasSnapshot)
+@elseif($showSnapshot && ! $hasSnapshot)
     @include('portal.partials.empty-state', [
         'title' => 'Baseline data belum lengkap',
         'message' => 'Lengkapi snapshot keuangan: target, pendapatan, tabungan, utang, investasi, aset, dan proteksi.',
@@ -95,6 +96,18 @@
            class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-5 py-3 rounded-xl text-sm">
             <span class="material-symbols-outlined text-lg">inventory_2</span>
             Isi Snapshot Keuangan
+        </a>
+    </div>
+@elseif(! $hasDiagnostic)
+    @include('portal.partials.empty-state', [
+        'title' => 'Diagnostik belum diisi',
+        'message' => 'Lengkapi diagnostik tahap keuangan untuk memahami posisi finansial Anda sebelum FTSA.',
+    ])
+    <div class="mt-4 mb-6">
+        <a href="{{ route('portal.diagnostic') }}"
+           class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-5 py-3 rounded-xl text-sm">
+            <span class="material-symbols-outlined text-lg">stairs</span>
+            Isi Diagnostik
         </a>
     </div>
 @endif

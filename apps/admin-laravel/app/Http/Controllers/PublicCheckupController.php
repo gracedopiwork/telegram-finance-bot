@@ -136,7 +136,9 @@ class PublicCheckupController extends Controller
             $portalUserId = (int) PortalSession::telegramUserId($request);
             $portalNextUrl = $onboarding->nextFtsaOnlyOnboardingUrl($portalEmail, $portalUserId);
 
-            if ($onboarding->userNeedsFtsa($portalEmail, $portalUserId)) {
+            if ($onboarding->userNeedsFinancialDiagnostic($portalEmail, $portalUserId)) {
+                $portalNextLabel = 'Lengkapi Diagnostik Tahap Keuangan';
+            } elseif ($onboarding->userNeedsFtsa($portalEmail, $portalUserId)) {
                 $portalNextLabel = 'Lengkapi FTSA 1–32';
             } else {
                 $portalNextLabel = 'Buka Dashboard FTSA';

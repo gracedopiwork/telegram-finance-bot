@@ -186,7 +186,7 @@ class AuthController extends Controller
         $access = app(PortalAccessService::class);
 
         if ($access->isFtsaOnlyPortalUser($email, $telegramUserId)) {
-            return 'Selamat datang di portal FTSA Premium. Isi kuesioner FTSA 1–32 untuk melihat hasil behavioral Anda.';
+            return 'Selamat datang di portal FTSA Premium. Isi diagnostik tahap keuangan lalu kuesioner FTSA 1–32.';
         }
 
         if ($access->hasBotPortalAccess($email, $telegramUserId) && $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {

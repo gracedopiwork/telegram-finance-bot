@@ -1,17 +1,25 @@
 @php
-    $baselineNavUrl = $baselineUrl ?? route('portal.baseline.create');
     $ftsaOnly = $isFtsaOnlyPortalUser ?? false;
-    $showBaselineNav = ! $ftsaOnly || ($needsFtsa ?? false);
+    $showBaselineNav = ! $ftsaOnly
+        || ($needsFinancialDiagnostic ?? false)
+        || ($needsFtsa ?? false);
     $baselineNavHighlight = !($portalOnboardingComplete ?? false) && (
         ($needsBaseline ?? false)
+        || ($ftsaOnly && ($needsFinancialDiagnostic ?? false))
         || ($ftsaOnly && ($needsFtsa ?? false) && !($ftsaRetakeLocked ?? false))
         || (! $ftsaOnly && ($needsFtsa ?? false) && !($ftsaRetakeLocked ?? false))
     );
-    $baselineNavLabel = $ftsaOnly
-        ? 'FTSA 1–32'
-        : (($portalOnboardingComplete ?? false)
+    if ($ftsaOnly) {
+        $baselineNavUrl = ($needsFinancialDiagnostic ?? false)
+            ? route('portal.diagnostic')
+            : ($portalFtsaUrl ?? route('portal.ftsa.create'));
+        $baselineNavLabel = ($needsFinancialDiagnostic ?? false) ? 'DIAGNOSTIK' : 'FTSA 1–32';
+    } else {
+        $baselineNavUrl = $baselineUrl ?? route('portal.baseline.create');
+        $baselineNavLabel = ($portalOnboardingComplete ?? false)
             ? 'BASELINE DATA'
-            : 'BASELINE DATA (WAJIB DI ISI)');
+            : 'BASELINE DATA (WAJIB DI ISI)';
+    }
 @endphp
 @if($showBaselineNav)
     <a href="{{ $baselineNavUrl }}"

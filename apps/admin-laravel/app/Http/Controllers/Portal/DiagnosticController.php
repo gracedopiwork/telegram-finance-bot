@@ -31,11 +31,6 @@ class DiagnosticController extends Controller
         $onboarding = app(PortalOnboardingService::class);
         $access = app(PortalAccessService::class);
 
-        if ($access->isFtsaOnlyPortalUser($email, $telegramUserId)) {
-            return redirect()->route('portal.emotional')
-                ->with('info', 'Diagnostik tahap keuangan hanya untuk paket YFD First Aid.');
-        }
-
         if (! $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)
             && ! $onboarding->userNeedsSnapshotBaseline($email, $telegramUserId)) {
             return redirect()->route($onboarding->portalHomeRouteName($email, $telegramUserId))
@@ -114,7 +109,7 @@ class DiagnosticController extends Controller
 
         if ($access->isFtsaOnlyPortalUser($email, $telegramUserId)) {
             return redirect()->route('portal.emotional')
-                ->with('info', 'Diagnostik tahap keuangan hanya untuk paket YFD First Aid.');
+                ->with('success', 'Diagnostik tahap keuangan tersimpan. Lanjutkan dengan FTSA 1–32.');
         }
 
         if ($onboarding->userNeedsSnapshotBaseline($email, $telegramUserId)) {
