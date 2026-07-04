@@ -64,16 +64,25 @@ class PortalIntegrationsTestCommand extends Command
             $this->line('Pastikan key ada di apps/admin-laravel/.env lalu jalankan: php artisan config:clear');
             $ok = false;
         } else {
-            $parsed = $claude->generate(
-                'Balas JSON: {"insights":["tes ok"],"recommendations":["tes ok"]}',
-                0.0,
-            );
-
-            if ($parsed !== null && is_array($parsed['insights'] ?? null)) {
-                $this->info('✓ Claude API merespons dan JSON valid');
+            $probe = $claude->probe();
+            if ($probe['ok'] ?? false) {
+                $model = $probe['model'] ?? '?';
+                $this->info("✓ Claude API merespons (model: {$model})");
             } else {
-                $this->error('✗ Claude API gagal — cek storage/logs/laravel.log untuk "Claude API error"');
-                $this->line('Penyebab umum: API key salah/expired, model tidak tersedia, atau server tidak bisa outbound ke api.anthropic.com');
+                $this->error('✗ Claude API gagal');
+                if (isset($probe['model'])) {
+                    $this->line('  model: '.$probe['model']);
+                }
+                if (isset($probe['status'])) {
+                    $this->line('  HTTP: '.$probe['status']);
+                }
+                $this->line('  detail: '.($probe['error'] ?? 'tidak diketahui'));
+                if (($probe['status'] ?? 0) === 401) {
+                    $this->line('  → API key tidak valid atau kedaluwarsa');
+                } elseif (($probe['status'] ?? 0) === 404) {
+                    $this->line('  → Model tidak ditemukan — cek PORTAL_AI_MODELS di .env');
+                }
+                $this->line('  log: storage/logs/laravel.log (cari "Claude API error")');
                 $ok = false;
             }
         }
@@ -82,9 +91,14 @@ class PortalIntegrationsTestCommand extends Command
         if ($email !== '') {
             $this->line('');
             $this->line("=== Upgrade bot untuk {$email} ===");
-            $status = $checkout->botUpgradeEligibility($email);
-            foreach ($status as $key => $value) {
-                $this->line("  {$key}: ".($value ? 'yes' : 'no'));
+            try {
+                $status = $checkout->botUpgradeEligibility($email);
+                foreach ($status as $key => $value) {
+                    $this->line("  {$key}: ".($value ? 'yes' : 'no'));
+                }
+            } catch (\Throwable $e) {
+                $this->error('  Gagal cek eligibility: '.$e->getMessage());
+                $ok = false;
             }
         }
 

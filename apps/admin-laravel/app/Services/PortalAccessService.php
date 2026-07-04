@@ -154,7 +154,7 @@ class PortalAccessService
     private function resolveSessionLicense(): ?License
     {
         $request = request();
-        if ($request === null || ! PortalSession::isAuthenticated($request)) {
+        if ($request === null || ! $request->hasSession() || ! PortalSession::isAuthenticated($request)) {
             return null;
         }
 

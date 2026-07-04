@@ -83,6 +83,86 @@ class ClaudeJsonService
     }
 
     /**
+     * Tes koneksi Claude — untuk diagnosa di artisan / health-check.
+     *
+     * @return array{ok: bool, model?: string, status?: int, error?: string}
+     */
+    public function probe(): array
+    {
+        if (! $this->isConfigured()) {
+            return ['ok' => false, 'error' => 'ANTHROPIC_API_KEY tidak terbaca oleh Laravel'];
+        }
+
+        $apiKey = (string) config('portal_ai.api_key', '');
+        $models = (array) config('portal_ai.models', ['claude-sonnet-4-20250514']);
+        $timeout = max(10, (int) config('portal_ai.timeout_seconds', 45));
+
+        $lastFailure = ['ok' => false, 'error' => 'Semua model gagal'];
+
+        foreach ($models as $model) {
+            if (! is_string($model) || trim($model) === '') {
+                continue;
+            }
+
+            $model = trim($model);
+
+            try {
+                $response = Http::timeout($timeout)
+                    ->withHeaders([
+                        'x-api-key' => $apiKey,
+                        'anthropic-version' => (string) config('portal_ai.api_version', '2023-06-01'),
+                        'content-type' => 'application/json',
+                    ])
+                    ->post('https://api.anthropic.com/v1/messages', [
+                        'model' => $model,
+                        'max_tokens' => 64,
+                        'temperature' => 0,
+                        'messages' => [
+                            ['role' => 'user', 'content' => 'Balas hanya JSON: {"insights":["ok"],"recommendations":["ok"]}'],
+                        ],
+                    ]);
+            } catch (\Throwable $e) {
+                $lastFailure = [
+                    'ok' => false,
+                    'model' => $model,
+                    'error' => 'Request gagal: '.$e->getMessage(),
+                ];
+
+                continue;
+            }
+
+            if (! $response->successful()) {
+                $body = trim($response->body());
+                $snippet = strlen($body) > 240 ? substr($body, 0, 240).'…' : $body;
+                $lastFailure = [
+                    'ok' => false,
+                    'model' => $model,
+                    'status' => $response->status(),
+                    'error' => $snippet !== '' ? $snippet : 'HTTP '.$response->status(),
+                ];
+
+                continue;
+            }
+
+            $text = $this->extractText($response->json());
+            $parsed = $text !== null ? $this->parseJsonResponse($text) : null;
+
+            if ($parsed !== null) {
+                return ['ok' => true, 'model' => $model, 'status' => $response->status()];
+            }
+
+            $lastFailure = [
+                'ok' => false,
+                'model' => $model,
+                'status' => $response->status(),
+                'error' => 'Respons OK tapi JSON tidak valid: '.($text ?? '(kosong)'),
+            ];
+        }
+
+        return $lastFailure;
+    }
+
+    /**
      * @param  array<string, mixed>|null  $payload
      */
     private function extractText(?array $payload): ?string
