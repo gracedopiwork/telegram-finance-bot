@@ -10,7 +10,5 @@
             <span class="material-symbols-outlined text-lg">arrow_forward</span>
             {{ $actionLabel ?? 'Lanjutkan' }}
         </a>
-    @else
-        <p class="text-xs text-slate-500 mt-4">Contoh: <code class="bg-slate-100 px-2 py-1 rounded">/catat makan siang 35rb</code></p>
     @endif
 </div>

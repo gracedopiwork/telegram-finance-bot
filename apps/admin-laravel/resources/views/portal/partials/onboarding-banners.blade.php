@@ -5,7 +5,7 @@
             <div class="text-sm text-amber-900">
                 @if($isFtsaOnlyPortalUser ?? false)
                     <div class="font-bold">Langkah 1 — Diagnostik Tahap Keuangan</div>
-                    <div class="mt-0.5">Jawab pertanyaan tahap keuangan Anda (tanpa angka snapshot).</div>
+                    <div class="mt-0.5">Jawab pertanyaan tahap keuangan Anda.</div>
                 @else
                     <div class="font-bold">Langkah 1 — Baseline Data</div>
                     <div class="mt-0.5">Isi diagnostik tahap keuangan + snapshot angka (pendapatan, tabungan, utang, proteksi).</div>
