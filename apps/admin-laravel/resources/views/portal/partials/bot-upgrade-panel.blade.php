@@ -16,9 +16,14 @@
 @endphp
 
 <div class="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-900" data-portal-snap-root>
-    <div class="font-bold">{{ $title ?? 'Upgrade ke YFD First Aid' }}</div>
-    <div class="mt-1 leading-relaxed">
-        {{ $message ?? 'Pencatatan keuangan harian, mood, impulsivitas, dan Financial Behavioral Dashboard — tanpa keluar dari portal.' }}
+    <div class="font-bold">{{ $title ?? 'Upgrade YFD First Aid' }}</div>
+    <div class="mt-1 leading-relaxed space-y-2">
+        @if(isset($message))
+            <p>{{ $message }}</p>
+        @else
+            <p>Upgrade YFD First Aid untuk pencatatan keuangan harian, mood, impulsivitas, dan dapatkan Financial Behavioral Dashboard.</p>
+            <p>YFD First Aid bantu kamu memahami alasan emosional di balik transaksi finansial kamu. Bantu kamu punya keuangan yang lebih sehat dengan regulasi emosi yang lebih baik.</p>
+        @endif
     </div>
     @if($priceLabel)
         <div class="mt-2">Total: <strong>{{ $priceLabel }}</strong> · lisensi yang sama dengan FTSA Anda</div>
