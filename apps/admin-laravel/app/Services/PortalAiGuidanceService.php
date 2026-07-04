@@ -75,7 +75,7 @@ class PortalAiGuidanceService
                     'reason' => 'claude_parse_failed',
                 ]);
 
-                return $fallback;
+                return array_merge($fallback, ['claude_configured' => true]);
             }
 
             $insights = $this->claude->normalizeLines($parsed['insights'] ?? [], (int) config('portal_ai.max_insights', 3));
@@ -87,7 +87,7 @@ class PortalAiGuidanceService
                     'reason' => 'empty_ai_lines',
                 ]);
 
-                return $fallback;
+                return array_merge($fallback, ['claude_configured' => true]);
             }
 
             return [
@@ -102,7 +102,7 @@ class PortalAiGuidanceService
                 'message' => $e->getMessage(),
             ]);
 
-            return $fallback;
+            return array_merge($fallback, ['claude_configured' => true]);
         }
     }
 
@@ -573,6 +573,7 @@ PROMPT;
             'recommendations' => [$recommendation],
             'source' => 'rules',
             'generated_at' => null,
+            'claude_configured' => $this->claude->isConfigured(),
         ];
     }
 

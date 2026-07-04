@@ -202,8 +202,17 @@ class ClaudeJsonService
         }
 
         $parsed = json_decode($text, true);
+        if (is_array($parsed)) {
+            return $parsed;
+        }
 
-        return is_array($parsed) ? $parsed : null;
+        if (preg_match('/\{[\s\S]*\}/', $text, $matches)) {
+            $parsed = json_decode($matches[0], true);
+
+            return is_array($parsed) ? $parsed : null;
+        }
+
+        return null;
     }
 
     /**
