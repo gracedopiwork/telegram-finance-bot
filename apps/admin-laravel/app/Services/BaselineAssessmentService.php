@@ -226,6 +226,21 @@ class BaselineAssessmentService
     }
 
     /**
+     * Snapshot ringkas untuk pembeli FTSA-only (bukan baseline bot penuh).
+     *
+     * @return array<string, string>
+     */
+    public function validationRulesFtsaSnapshotOnly(): array
+    {
+        return [
+            'snapshot.avg_monthly_income' => 'nullable|integer|min:0',
+            'snapshot.emergency_fund' => 'nullable|integer|min:0',
+            'snapshot.cash_savings' => 'nullable|integer|min:0',
+            'snapshot.total_debt' => 'nullable|integer|min:0',
+        ];
+    }
+
+    /**
      * Kuesioner FTSA 1–32 saja.
      *
      * @return array<string, string>

@@ -92,9 +92,7 @@
             </div>
         </div>
 
-        @php
-            $ftsaInsights = [];
-        @endphp
+        @include('portal.partials.ftsa-ai-guidance', ['ftsaAiGuidance' => $ftsaAiGuidance ?? []])
 
         @include('portal.partials.bot-upgrade-panel')
     @endif
