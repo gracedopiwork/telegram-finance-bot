@@ -28,7 +28,7 @@ class PortalAiGuidanceService
         }
 
         $cacheKey = sprintf(
-            'portal_ai:ftsa:%d:%s:%s',
+            'portal_ai:ftsa:v2:%d:%s:%s',
             (int) $baseline->id,
             $baseline->assessed_at?->timestamp ?? '0',
             $this->claude->isConfigured() ? 'claude' : 'off',
@@ -36,42 +36,74 @@ class PortalAiGuidanceService
 
         $ttl = now()->addDays(max(1, (int) config('portal_ai.cache_ttl_days_ftsa', 30)));
 
-        return Cache::remember($cacheKey, $ttl, function () use ($baseline) {
-            $fallback = $this->ftsaFallback($baseline);
+        $cached = Cache::get($cacheKey);
+        if (is_array($cached) && ($cached['source'] ?? '') === 'ai') {
+            return $cached;
+        }
 
-            if (! $this->claude->isConfigured()) {
-                return $fallback;
-            }
+        $result = $this->generateFtsaGuidance($baseline);
 
-            try {
-                $summary = $this->ftsaSummary->scoreSummary($baseline);
-                $parsed = $this->claude->generate($this->ftsaPrompt($baseline, $summary));
-                if ($parsed === null) {
-                    return $fallback;
-                }
+        if (($result['source'] ?? '') === 'ai') {
+            Cache::put($cacheKey, $result, $ttl);
+        }
 
-                $insights = $this->claude->normalizeLines($parsed['insights'] ?? [], (int) config('portal_ai.max_insights', 3));
-                $recommendations = $this->claude->normalizeLines($parsed['recommendations'] ?? [], (int) config('portal_ai.max_recommendations', 3));
+        return $result;
+    }
 
-                if ($insights === [] && $recommendations === []) {
-                    return $fallback;
-                }
+    /**
+     * @return array{
+     *     insights: list<string>,
+     *     recommendations: list<string>,
+     *     source: string,
+     *     generated_at: ?string
+     * }
+     */
+    private function generateFtsaGuidance(FinancialBaseline $baseline): array
+    {
+        $fallback = $this->ftsaFallback($baseline);
 
-                return [
-                    'insights' => $insights !== [] ? $insights : $fallback['insights'],
-                    'recommendations' => $recommendations !== [] ? $recommendations : $fallback['recommendations'],
-                    'source' => 'ai',
-                    'generated_at' => now()->toIso8601String(),
-                ];
-            } catch (\Throwable $e) {
-                Log::warning('Portal AI FTSa guidance failed', [
+        if (! $this->claude->isConfigured()) {
+            return $fallback;
+        }
+
+        try {
+            $summary = $this->ftsaSummary->scoreSummary($baseline);
+            $parsed = $this->claude->generate($this->ftsaPrompt($baseline, $summary));
+            if ($parsed === null) {
+                Log::warning('Portal AI FTSa guidance fell back to rules', [
                     'baseline_id' => $baseline->id,
-                    'message' => $e->getMessage(),
+                    'reason' => 'claude_parse_failed',
                 ]);
 
                 return $fallback;
             }
-        });
+
+            $insights = $this->claude->normalizeLines($parsed['insights'] ?? [], (int) config('portal_ai.max_insights', 3));
+            $recommendations = $this->claude->normalizeLines($parsed['recommendations'] ?? [], (int) config('portal_ai.max_recommendations', 3));
+
+            if ($insights === [] && $recommendations === []) {
+                Log::warning('Portal AI FTSa guidance fell back to rules', [
+                    'baseline_id' => $baseline->id,
+                    'reason' => 'empty_ai_lines',
+                ]);
+
+                return $fallback;
+            }
+
+            return [
+                'insights' => $insights !== [] ? $insights : $fallback['insights'],
+                'recommendations' => $recommendations !== [] ? $recommendations : $fallback['recommendations'],
+                'source' => 'ai',
+                'generated_at' => now()->toIso8601String(),
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('Portal AI FTSa guidance failed', [
+                'baseline_id' => $baseline->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return $fallback;
+        }
     }
 
     /**

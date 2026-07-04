@@ -1,19 +1,18 @@
 @if(($isFtsaOnlyPortalUser ?? false) && !($hasBotPortalAccess ?? false))
 @php
     $checkoutService = app(\App\Services\PortalCheckoutService::class);
-    $midtrans = app(\App\Services\MidtransService::class);
     try {
         $botProduct = $checkoutService->botProduct();
     } catch (\Throwable $e) {
         $botProduct = null;
     }
     $portalEmail = session(\App\Support\PortalSession::EMAIL, '');
+    $portalTelegramUserId = (int) session(\App\Support\PortalSession::TELEGRAM_USER_ID, 0);
     $variant = $variant ?? 'block';
     $formId = 'bot-checkout-'.md5($variant.(string) $portalEmail);
     $priceLabel = $botProduct ? \App\Support\RupiahFormat::format($botProduct->effective_price) : null;
-    $canPay = $botProduct !== null
-        && $midtrans->clientKey() !== ''
-        && $checkoutService->canUpgradeBotInPortal($portalEmail);
+    $upgradeStatus = $checkoutService->botUpgradeEligibility($portalEmail, $portalTelegramUserId);
+    $canPay = $upgradeStatus['can_pay'];
 @endphp
 
 <div class="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-900" data-portal-snap-root>
@@ -36,7 +35,17 @@
         </button>
         <p class="text-xs text-sky-800 mt-2 hidden" data-portal-snap-error></p>
         @unless($canPay)
-            <p class="text-xs text-sky-800/80 mt-2">Pembayaran sementara tidak tersedia. Hubungi tim YFD.</p>
+            <p class="text-xs text-sky-800/80 mt-2">
+                @if($upgradeStatus['product_missing'])
+                    Produk YFD First Aid belum aktif di katalog. Hubungi tim YFD.
+                @elseif(! $upgradeStatus['midtrans_ready'])
+                    Pembayaran belum siap — pastikan <code class="text-[11px]">MIDTRANS_CLIENT_KEY</code> dan <code class="text-[11px]">MIDTRANS_SERVER_KEY</code> aktif di server, lalu jalankan <code class="text-[11px]">php artisan config:clear</code>.
+                @elseif(! $upgradeStatus['eligible'])
+                    Upgrade tidak tersedia untuk lisensi ini (FTSA belum aktif atau bot sudah dibeli).
+                @else
+                    Pembayaran sementara tidak tersedia. Hubungi tim YFD.
+                @endif
+            </p>
         @endunless
     </form>
 </div>

@@ -19,6 +19,7 @@ class PortalCheckoutService
         private readonly LicenseEntitlementService $entitlements,
         private readonly LicenseProvisioningService $provisioning,
         private readonly PortalOnboardingService $onboarding,
+        private readonly PortalAccessService $access,
     ) {}
 
     public function product(): CpDigitalProduct
@@ -28,10 +29,14 @@ class PortalCheckoutService
 
     public function botProduct(): CpDigitalProduct
     {
-        $codes = $this->onboarding->botOnlyProductCodes();
-        $code = $codes[0] ?? self::BOT_PRODUCT_CODE;
+        foreach ($this->entitlements->botProductCodes() as $code) {
+            $product = CpDigitalProduct::active()->where('code', $code)->first();
+            if ($product !== null) {
+                return $product;
+            }
+        }
 
-        return CpDigitalProduct::active()->where('code', $code)->firstOrFail();
+        return CpDigitalProduct::active()->where('code', self::BOT_PRODUCT_CODE)->firstOrFail();
     }
 
     public function suggestPhone(string $email): ?string
@@ -135,9 +140,15 @@ class PortalCheckoutService
      */
     public function createBotSnapCheckout(string $email, int $telegramUserId, string $fullName): array
     {
-        if (! $this->canUpgradeBotInPortal($email)) {
+        if (! $this->canUpgradeBotInPortal($email, $telegramUserId)) {
             throw ValidationException::withMessages([
                 'product' => 'YFD First Aid sudah aktif atau upgrade tidak tersedia untuk akun ini.',
+            ]);
+        }
+
+        if (! $this->midtrans->isSnapReady()) {
+            throw ValidationException::withMessages([
+                'payment' => 'Midtrans belum dikonfigurasi di server. Hubungi tim YFD.',
             ]);
         }
 
@@ -148,8 +159,9 @@ class PortalCheckoutService
         abort_if($finalAmount <= 0, 422, 'Harga produk belum diatur.');
 
         $phone = $this->suggestPhone($email);
-        $existingLicense = $this->provisioning->findExistingLicenseForEmail($email);
-        $licenseId = $existingLicense?->id;
+        $license = $this->access->resolvePortalLicense($email, $telegramUserId)
+            ?? $this->provisioning->findExistingLicenseForEmail($email);
+        $licenseId = $license?->id;
 
         $order = Order::create([
             'order_code' => 'YFD-'.Str::upper(Str::random(10)),
@@ -206,20 +218,56 @@ class PortalCheckoutService
         return ['order' => $order, 'snap_token' => $token];
     }
 
-    public function canUpgradeBotInPortal(string $email): bool
+    public function canUpgradeBotInPortal(string $email, int $telegramUserId = 0): bool
+    {
+        return $this->botUpgradeEligibility($email, $telegramUserId)['eligible'];
+    }
+
+    /**
+     * @return array{
+     *     can_pay: bool,
+     *     product_missing: bool,
+     *     midtrans_ready: bool,
+     *     eligible: bool
+     * }
+     */
+    public function botUpgradeEligibility(string $email, int $telegramUserId = 0): array
     {
         $email = strtolower(trim($email));
-        if ($email === '' || $this->entitlements->hasPaidBotOrderForEmail($email)) {
-            return false;
+        $midtransReady = $this->midtrans->isSnapReady();
+
+        $productMissing = false;
+        try {
+            $this->botProduct();
+        } catch (\Throwable) {
+            $productMissing = true;
         }
 
-        $license = $this->provisioning->findExistingLicenseForEmail($email);
+        if ($email === '') {
+            return [
+                'can_pay' => false,
+                'product_missing' => $productMissing,
+                'midtrans_ready' => $midtransReady,
+                'eligible' => false,
+            ];
+        }
+
+        $license = $this->access->resolvePortalLicense($email, $telegramUserId);
         if ($license !== null) {
-            return $this->entitlements->hasPaidFtsaOrderOnLicense($license)
+            $eligible = $this->entitlements->hasPaidFtsaOrderOnLicense($license)
                 && ! $this->entitlements->hasPaidBotOrderOnLicense($license);
+        } elseif ($this->entitlements->hasPaidBotOrderForEmail($email)) {
+            $eligible = false;
+        } else {
+            $eligible = $this->onboarding->isFtsaOnlyBuyer($email);
         }
 
-        return $this->onboarding->isFtsaOnlyBuyer($email);
+        return [
+            'can_pay' => ! $productMissing && $midtransReady && $eligible,
+            'product_missing' => $productMissing,
+            'midtrans_ready' => $midtransReady,
+            'eligible' => $eligible,
+        ];
     }
 
     public function orderBelongsToSession(Order $order, string $email): bool

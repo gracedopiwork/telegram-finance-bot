@@ -101,6 +101,12 @@ class MidtransService
         return trim((string) config('services.midtrans.client_key'));
     }
 
+    public function isSnapReady(): bool
+    {
+        return $this->clientKey() !== ''
+            && $this->normalizeServerKey((string) config('services.midtrans.server_key')) !== '';
+    }
+
     /**
      * Cek status transaksi langsung ke Midtrans (fallback jika webhook tidak sampai).
      *
