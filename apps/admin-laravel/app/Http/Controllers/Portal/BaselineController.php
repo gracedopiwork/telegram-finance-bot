@@ -99,17 +99,16 @@ class BaselineController extends Controller
         $onboarding = app(PortalOnboardingService::class);
         $access = app(PortalAccessService::class);
         $isFtsaOnly = $access->isFtsaOnlyPortalUser($email, $telegramUserId);
-        if ($isFtsaOnly && $request->query('section') !== 'snapshot') {
+        if ($isFtsaOnly) {
             if ($onboarding->userNeedsFtsa($email, $telegramUserId)) {
                 return redirect()->route('portal.ftsa.create');
             }
 
-            return redirect()->route('portal.emotional');
+            return redirect()->route('portal.emotional')
+                ->with('info', 'Baseline data hanya untuk paket YFD First Aid.');
         }
 
-        $needsFinancialDiagnostic = $isFtsaOnly
-            ? false
-            : $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId);
+        $needsFinancialDiagnostic = $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId);
 
         app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
 
@@ -121,13 +120,7 @@ class BaselineController extends Controller
             && $onboarding->hasFinancialDiagnostic($existingBaseline)
             && ! $onboarding->hasFinancialSnapshot($existingBaseline);
 
-        $needsFtsaSnapshot = $isFtsaOnly
-            && $onboarding->userNeedsFtsaSnapshotBaseline($email, $telegramUserId);
-
         $formMode = 'snapshot';
-        if ($isFtsaOnly) {
-            $formMode = 'ftsa_snapshot';
-        }
 
         $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email);
         $ftsaStatus = app(PortalFeatureService::class)->ftsaEntitlementStatus($telegramUserId, $email);
@@ -227,6 +220,11 @@ class BaselineController extends Controller
 
         $email = (string) (PortalSession::email($request) ?? '');
         $isFtsaOnly = app(PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId);
+        if ($isFtsaOnly && ! $request->has('ftsa')) {
+            return redirect()->route('portal.emotional')
+                ->with('info', 'Baseline data hanya untuk paket YFD First Aid.');
+        }
+
         $onboarding = app(PortalOnboardingService::class);
         $ftsaEval = app(FtsaEvaluationService::class);
 
@@ -246,22 +244,7 @@ class BaselineController extends Controller
             $existing = FinancialBaseline::latestForUser($telegramUserId);
             $baseline = $existing ?? $onboarding->resolveBaseline($email, $telegramUserId);
 
-            if ($isFtsaOnly && ! $request->has('ftsa')) {
-                $snapshotOnlySave = true;
-                $rules = $service->validationRulesFtsaSnapshotOnly();
-                $validated = $request->validate($rules);
-                if (! $onboarding->ftsaSnapshotInputHasValue($validated['snapshot'] ?? [])) {
-                    return back()->withInput()->with(
-                        'error',
-                        'Isi minimal satu field snapshot: target, angka keuangan, atau proteksi.'
-                    );
-                }
-                $priorFs = $baseline?->answers_json['fs'] ?? [];
-                $validated['fs'] = is_array($priorFs) ? $priorFs : [];
-                $validated['ftsa'] = is_array($baseline?->answers_json['ftsa'] ?? null)
-                    ? $baseline->answers_json['ftsa']
-                    : [];
-            } elseif ($isFtsaOnly) {
+            if ($isFtsaOnly) {
                 $rules = $service->validationRulesFtsaQuestionnaire();
                 $validated = $request->validate($rules);
                 $priorFs = $baseline?->answers_json['fs'] ?? [];
@@ -320,13 +303,11 @@ class BaselineController extends Controller
             );
         }
 
-        $successMsg = ($isFtsaOnly ?? false) && ($snapshotOnlySave ?? false)
-            ? 'Snapshot keuangan tersimpan.'
-            : (($isFtsaOnly ?? false)
-                ? 'FTSA berhasil disimpan.'
-                : (($snapshotOnlySave ?? false)
-                    ? 'Snapshot baseline tersimpan. Dashboard keuangan Anda sudah lengkap.'
-                    : 'Baseline data tersimpan (diagnostik + snapshot). Evaluasi ulang setiap 6 bulan.'));
+        $successMsg = ($isFtsaOnly ?? false)
+            ? 'FTSA berhasil disimpan.'
+            : (($snapshotOnlySave ?? false)
+                ? 'Snapshot baseline tersimpan. Dashboard keuangan Anda sudah lengkap.'
+                : 'Baseline data tersimpan (diagnostik + snapshot). Evaluasi ulang setiap 6 bulan.');
 
         return redirect()
             ->route(($isFtsaOnly ?? false) ? 'portal.emotional' : 'portal.baseline')
@@ -365,11 +346,6 @@ class BaselineController extends Controller
 
             $existing = FinancialBaseline::latestForUser($telegramUserId)
                 ?? $onboarding->resolveBaseline($email, $telegramUserId);
-
-            if (! $onboarding->snapshotReadyForFtsaQuestionnaire($email, $telegramUserId, $existing)) {
-                return redirect()->route('portal.baseline.create')
-                    ->with('warning', 'Lengkapi snapshot baseline terlebih dahulu.');
-            }
 
             $validated['fs'] = is_array($existing?->answers_json['fs'] ?? null)
                 ? $existing->answers_json['fs']

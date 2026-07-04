@@ -210,21 +210,11 @@ class PortalOnboardingService
     }
 
     /**
-     * Pembeli FTSA-only — snapshot angka inti belum diisi.
+     * Snapshot baseline hanya untuk paket bot — bukan FTSA-only.
      */
     public function userNeedsFtsaSnapshotBaseline(string $email, int $telegramUserId): bool
     {
-        if (! \App\Support\FinancialBaselineSchema::isReady()) {
-            return false;
-        }
-
-        if (! app(PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId)) {
-            return false;
-        }
-
-        $baseline = $this->resolveBaseline($email, $telegramUserId);
-
-        return ! $this->hasFtsaSnapshotComplete($baseline);
+        return false;
     }
 
     public function hasFtsaSnapshotComplete(?FinancialBaseline $baseline): bool

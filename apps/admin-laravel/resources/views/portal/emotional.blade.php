@@ -17,11 +17,6 @@
 @if($isFtsaOnly)
     @include('portal.partials.onboarding-banners')
 
-    @include('portal.partials.ftsa-baseline-overview', [
-        'baseline' => $baseline ?? null,
-        'stageMeta' => $stageMeta ?? [],
-    ])
-
     @if($needsFtsa ?? false)
         @include('portal.partials.empty-state', [
             'title' => 'Lengkapi kuesioner FTSA 1–32',
@@ -101,7 +96,7 @@
     @elseif(!($needsFtsa ?? false) && !($ftsaProfile ?? null))
         @include('portal.partials.empty-state', [
             'title' => 'FTSA belum diisi',
-            'message' => 'Setelah baseline dan diagnostik terbaca, lengkapi kuesioner FTSA 1–32 untuk melihat archetype dan insight AI.',
+            'message' => 'Lengkapi kuesioner FTSA 1–32 untuk melihat archetype behavioral finansial dan insight AI.',
         ])
         <div class="mt-4">
             <a href="{{ $portalFtsaUrl ?? route('portal.ftsa.create') }}"

@@ -1,19 +1,14 @@
 @php
     $baselineNavUrl = $baselineUrl ?? route('portal.baseline.create');
     $ftsaOnly = $isFtsaOnlyPortalUser ?? false;
-    $showBaselineNav = ! $ftsaOnly
-        || ($needsFtsaSnapshot ?? false)
-        || ($needsFtsa ?? false);
+    $showBaselineNav = ! $ftsaOnly || ($needsFtsa ?? false);
     $baselineNavHighlight = !($portalOnboardingComplete ?? false) && (
         ($needsBaseline ?? false)
-        || ($ftsaOnly && ($needsFtsaSnapshot ?? false))
         || ($ftsaOnly && ($needsFtsa ?? false) && !($ftsaRetakeLocked ?? false))
         || (! $ftsaOnly && ($needsFtsa ?? false) && !($ftsaRetakeLocked ?? false))
     );
     $baselineNavLabel = $ftsaOnly
-        ? (($needsFtsaSnapshot ?? false)
-            ? 'SNAPSHOT KEUANGAN'
-            : (($needsFtsa ?? false) ? 'FTSA 1–32' : 'SNAPSHOT KEUANGAN'))
+        ? 'FTSA 1–32'
         : (($portalOnboardingComplete ?? false)
             ? 'BASELINE DATA'
             : 'BASELINE DATA (WAJIB DI ISI)');
