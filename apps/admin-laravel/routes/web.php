@@ -172,15 +172,13 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::get('/premium', [PortalDashboardController::class, 'premium'])->name('premium');
         Route::post('/checkout/ftsa', [PortalCheckoutController::class, 'ftsaSnap'])->name('checkout.ftsa');
         Route::get('/checkout/ftsa/{order}/status', [PortalCheckoutController::class, 'ftsaStatus'])->name('checkout.ftsa.status');
+        Route::post('/checkout/bot', [PortalCheckoutController::class, 'botSnap'])->name('checkout.bot');
+        Route::get('/checkout/bot/{order}/status', [PortalCheckoutController::class, 'botStatus'])->name('checkout.bot.status');
 
         Route::get('/', function () {
             $request = request();
             $email = (string) (\App\Support\PortalSession::email($request) ?? '');
             $telegramUserId = (int) \App\Support\PortalSession::telegramUserId($request);
-
-            if (\App\Support\PortalSession::userType($request) === 'ftsa_only') {
-                return redirect()->route('portal.emotional');
-            }
 
             if (app(\App\Services\PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId)) {
                 return redirect()->route('portal.emotional');

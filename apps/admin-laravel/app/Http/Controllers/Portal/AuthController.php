@@ -171,12 +171,6 @@ class AuthController extends Controller
     {
         $telegramUserId = (int) PortalSession::telegramUserId($request);
         $email = (string) (PortalSession::email($request) ?? '');
-
-        if (PortalSession::userType($request) === 'ftsa_only') {
-            return redirect()->route('portal.emotional')
-                ->with('success', $this->loginSuccessMessage($email, $telegramUserId));
-        }
-
         $onboarding = app(PortalOnboardingService::class);
 
         if (FinancialBaselineSchema::isReady()) {

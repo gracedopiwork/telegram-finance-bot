@@ -343,8 +343,9 @@ class PortalOnboardingService
 
     public function portalHomeRouteName(string $email, int $telegramUserId = 0): string
     {
-        $request = request();
-        if ($request !== null && PortalSession::userType($request) === 'ftsa_only') {
+        $access = app(PortalAccessService::class);
+
+        if ($access->isFtsaOnlyPortalUser($email, $telegramUserId)) {
             if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
                 return 'portal.diagnostic';
             }
@@ -352,7 +353,7 @@ class PortalOnboardingService
             return 'portal.emotional';
         }
 
-        return app(PortalAccessService::class)->hasBotPortalAccess($email, $telegramUserId)
+        return $access->hasBotPortalAccess($email, $telegramUserId)
             ? 'portal.dashboard'
             : 'portal.emotional';
     }

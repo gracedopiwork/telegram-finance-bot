@@ -94,19 +94,7 @@
             $ftsaInsights = [];
         @endphp
 
-        <div class="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-900">
-            <div class="font-bold">Upgrade ke YFD First Aid</div>
-            <div class="mt-1 leading-relaxed">
-                Pencatatan keuangan harian, mood, impulsivitas, dan dapatkan <strong>Financial Behavioral Dashboard</strong>.
-                YFD First Aid bantu kamu memahami alasan emosional di balik transaksi finansialmu —
-                keuangan lebih sehat lewat regulasi emosi yang lebih baik.
-            </div>
-            <a href="{{ route('checkout.show', ['code' => 'yfd-bot-telegram']) }}"
-               class="inline-flex items-center gap-2 mt-3 bg-navy-800 hover:bg-navy-700 text-white font-bold px-4 py-2 rounded-xl text-sm">
-                <span class="material-symbols-outlined text-lg">send</span>
-                Beli YFD First Aid
-            </a>
-        </div>
+        @include('portal.partials.bot-upgrade-panel')
     @endif
 
 @else

@@ -20,18 +20,13 @@ class PortalAccessService
      */
     public function hasBotPortalAccess(string $email, int $telegramUserId = 0): bool
     {
-        $request = request();
-        if ($request !== null && PortalSession::userType($request) === 'ftsa_only') {
-            return false;
+        $license = $this->resolvePortalLicense($email, $telegramUserId);
+        if ($license !== null && $this->entitlements->hasPaidBotOrderOnLicense($license)) {
+            return true;
         }
 
         if ($this->isFtsaOnlyPortalUser($email, $telegramUserId)) {
             return false;
-        }
-
-        $license = $this->resolvePortalLicense($email, $telegramUserId);
-        if ($license !== null) {
-            return $this->entitlements->hasPaidBotOrderOnLicense($license);
         }
 
         return $this->onboarding->hasPaidBotOrderForUser($email, $telegramUserId);
@@ -42,18 +37,13 @@ class PortalAccessService
      */
     public function isFtsaOnlyPortalUser(string $email, int $telegramUserId = 0): bool
     {
-        $request = request();
-        if ($request !== null && PortalSession::userType($request) === 'ftsa_only') {
-            return true;
-        }
-
         $license = $this->resolvePortalLicense($email, $telegramUserId);
-        if ($license === null) {
-            return $this->onboarding->isFtsaOnlyBuyer($email);
+        if ($license !== null) {
+            return $this->entitlements->hasPaidFtsaOrderOnLicense($license)
+                && ! $this->entitlements->hasPaidBotOrderOnLicense($license);
         }
 
-        return $this->entitlements->hasPaidFtsaOrderOnLicense($license)
-            && ! $this->entitlements->hasPaidBotOrderOnLicense($license);
+        return $this->onboarding->isFtsaOnlyBuyer($email);
     }
 
     /**
@@ -62,10 +52,6 @@ class PortalAccessService
     public function syncSessionUserType(Request $request, string $email, int $telegramUserId): void
     {
         if (! PortalSession::isAuthenticated($request)) {
-            return;
-        }
-
-        if (PortalSession::userType($request) === 'ftsa_only') {
             return;
         }
 

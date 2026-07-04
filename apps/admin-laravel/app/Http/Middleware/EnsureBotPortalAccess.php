@@ -12,16 +12,11 @@ class EnsureBotPortalAccess
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (PortalSession::userType($request) === 'ftsa_only') {
-            return redirect()
-                ->route('portal.emotional')
-                ->with('info', 'Dashboard FTSA Premium ada di menu Hasil FTSA.');
-        }
-
         $email = (string) (PortalSession::email($request) ?? '');
         $telegramUserId = (int) PortalSession::telegramUserId($request);
+        $access = app(PortalAccessService::class);
 
-        if (app(PortalAccessService::class)->hasBotPortalAccess($email, $telegramUserId)) {
+        if ($access->hasBotPortalAccess($email, $telegramUserId)) {
             return $next($request);
         }
 

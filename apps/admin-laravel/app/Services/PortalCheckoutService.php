@@ -12,15 +12,26 @@ class PortalCheckoutService
 {
     public const FTSA_PRODUCT_CODE = 'yfd-ftsa-premium';
 
+    public const BOT_PRODUCT_CODE = 'yfd-bot-telegram';
+
     public function __construct(
         private readonly MidtransService $midtrans,
         private readonly LicenseEntitlementService $entitlements,
         private readonly LicenseProvisioningService $provisioning,
+        private readonly PortalOnboardingService $onboarding,
     ) {}
 
     public function product(): CpDigitalProduct
     {
         return CpDigitalProduct::active()->where('code', self::FTSA_PRODUCT_CODE)->firstOrFail();
+    }
+
+    public function botProduct(): CpDigitalProduct
+    {
+        $codes = $this->onboarding->botOnlyProductCodes();
+        $code = $codes[0] ?? self::BOT_PRODUCT_CODE;
+
+        return CpDigitalProduct::active()->where('code', $code)->firstOrFail();
     }
 
     public function suggestPhone(string $email): ?string
@@ -117,6 +128,98 @@ class PortalCheckoutService
         }
 
         return ['order' => $order, 'snap_token' => $token];
+    }
+
+    /**
+     * @return array{order: Order, snap_token: string}
+     */
+    public function createBotSnapCheckout(string $email, int $telegramUserId, string $fullName): array
+    {
+        if (! $this->canUpgradeBotInPortal($email)) {
+            throw ValidationException::withMessages([
+                'product' => 'YFD First Aid sudah aktif atau upgrade tidak tersedia untuk akun ini.',
+            ]);
+        }
+
+        $product = $this->botProduct();
+        abort_if($product->billing_mode !== 'midtrans', 422, 'Produk ini belum dapat dibeli.');
+
+        $finalAmount = $product->effective_price;
+        abort_if($finalAmount <= 0, 422, 'Harga produk belum diatur.');
+
+        $phone = $this->suggestPhone($email);
+        $existingLicense = $this->provisioning->findExistingLicenseForEmail($email);
+        $licenseId = $existingLicense?->id;
+
+        $order = Order::create([
+            'order_code' => 'YFD-'.Str::upper(Str::random(10)),
+            'full_name' => $fullName,
+            'email' => strtolower(trim($email)),
+            'phone' => $phone,
+            'plan' => $product->code,
+            'digital_product_id' => $product->id,
+            'product_name' => $product->name,
+            'amount' => $finalAmount,
+            'original_price' => (int) $product->price,
+            'discount_amount' => max(0, (int) $product->price - $finalAmount),
+            'currency' => $product->currency ?? 'IDR',
+            'status' => 'pending',
+            'payment_gateway' => 'midtrans',
+            'license_id' => $licenseId,
+        ]);
+
+        try {
+            $payment = $this->midtrans->createSnapTransaction([
+                'order_id' => $order->order_code,
+                'gross_amount' => $order->amount,
+                'full_name' => $order->full_name,
+                'email' => $order->email,
+                'phone' => $order->phone ?? '',
+                'item_details' => [[
+                    'id' => $product->code,
+                    'price' => $finalAmount,
+                    'quantity' => 1,
+                    'name' => Str::limit($product->name, 50),
+                ]],
+            ]);
+            $order->payment_token = $payment['token'] ?? null;
+            $order->payment_url = $payment['redirect_url'] ?? null;
+            $order->save();
+        } catch (\Throwable $e) {
+            Log::warning('Portal bot Snap gagal', [
+                'order_code' => $order->order_code,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw ValidationException::withMessages([
+                'payment' => 'Gagal membuat pembayaran. Silakan coba lagi atau hubungi tim YFD.',
+            ]);
+        }
+
+        $token = (string) ($order->payment_token ?? '');
+        if ($token === '') {
+            throw ValidationException::withMessages([
+                'payment' => 'Token pembayaran tidak tersedia. Cek konfigurasi Midtrans.',
+            ]);
+        }
+
+        return ['order' => $order, 'snap_token' => $token];
+    }
+
+    public function canUpgradeBotInPortal(string $email): bool
+    {
+        $email = strtolower(trim($email));
+        if ($email === '' || $this->entitlements->hasPaidBotOrderForEmail($email)) {
+            return false;
+        }
+
+        $license = $this->provisioning->findExistingLicenseForEmail($email);
+        if ($license !== null) {
+            return $this->entitlements->hasPaidFtsaOrderOnLicense($license)
+                && ! $this->entitlements->hasPaidBotOrderOnLicense($license);
+        }
+
+        return $this->onboarding->isFtsaOnlyBuyer($email);
     }
 
     public function orderBelongsToSession(Order $order, string $email): bool

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Portal;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\MidtransPaymentSyncService;
+use App\Services\PortalAccessService;
 use App\Services\PortalCheckoutService;
 use App\Services\PortalFeatureService;
 use App\Support\PortalSession;
@@ -72,6 +73,71 @@ class CheckoutController extends Controller
         return response()->json([
             'status' => $orderModel->status,
             'ftsa_unlocked' => $features->canAccessFtsa($telegramUserId, $email),
+        ]);
+    }
+
+    public function botSnap(Request $request, PortalCheckoutService $checkout): JsonResponse
+    {
+        $email = (string) (PortalSession::email($request) ?? '');
+        $telegramUserId = (int) PortalSession::telegramUserId($request);
+        $fullName = (string) $request->session()->get(PortalSession::DISPLAY_NAME, 'Pengguna');
+
+        if ($email === '' || $telegramUserId <= 0) {
+            return response()->json(['message' => 'Sesi tidak valid. Silakan login ulang.'], 401);
+        }
+
+        try {
+            $result = $checkout->createBotSnapCheckout(
+                $email,
+                $telegramUserId,
+                $fullName,
+            );
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => collect($e->errors())->flatten()->first() ?? 'Validasi gagal.',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        return response()->json([
+            'snap_token' => $result['snap_token'],
+            'order_code' => $result['order']->order_code,
+            'status_url' => route('portal.checkout.bot.status', ['order' => $result['order']->order_code]),
+        ]);
+    }
+
+    public function botStatus(
+        Request $request,
+        string $order,
+        MidtransPaymentSyncService $paymentSync,
+        PortalCheckoutService $checkout,
+        PortalAccessService $access,
+    ): JsonResponse {
+        $email = (string) (PortalSession::email($request) ?? '');
+        $telegramUserId = (int) PortalSession::telegramUserId($request);
+
+        if ($email === '' || $telegramUserId <= 0) {
+            return response()->json(['message' => 'Sesi tidak valid.'], 401);
+        }
+
+        $orderModel = Order::query()->where('order_code', $order)->firstOrFail();
+
+        if (! $checkout->orderBelongsToSession($orderModel, $email)) {
+            return response()->json(['message' => 'Tidak diizinkan.'], 403);
+        }
+
+        if ($orderModel->status === 'pending') {
+            $paymentSync->syncOrderFromApi($orderModel);
+            $orderModel->refresh();
+        }
+
+        if ($orderModel->status === 'paid') {
+            $access->syncSessionUserType($request, $email, $telegramUserId);
+        }
+
+        return response()->json([
+            'status' => $orderModel->status,
+            'bot_unlocked' => $access->hasBotPortalAccess($email, $telegramUserId),
         ]);
     }
 }
