@@ -177,17 +177,18 @@ class DashboardController extends Controller
   }
 
   /**
-   * @return array{0: string|null, 1: int}
+   * @return array{0: string, 1: int}
    */
   private function filters(Request $request): array
   {
     $month = $request->query('month');
-    $period = (int) $request->query('period', 1);
+    $period = max(1, (int) $request->query('period', 1));
 
-    return [
-      is_string($month) ? $month : null,
-      $period,
-    ];
+    if (! is_string($month) || ! preg_match('/^\d{4}-\d{2}$/', $month)) {
+      $month = Carbon::now()->format('Y-m');
+    }
+
+    return [$month, $period];
   }
 
   /**
