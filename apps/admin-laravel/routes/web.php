@@ -169,7 +169,6 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::get('/diagnostik', [PortalDiagnosticController::class, 'show'])->name('diagnostic');
         Route::post('/diagnostik', [PortalDiagnosticController::class, 'store'])->name('diagnostic.store');
         Route::get('/emotional', [PortalDashboardController::class, 'emotional'])->name('emotional');
-        Route::get('/premium', [PortalDashboardController::class, 'premium'])->name('premium');
         Route::post('/checkout/ftsa', [PortalCheckoutController::class, 'ftsaSnap'])->name('checkout.ftsa');
         Route::get('/checkout/ftsa/{order}/status', [PortalCheckoutController::class, 'ftsaStatus'])->name('checkout.ftsa.status');
         Route::post('/checkout/bot', [PortalCheckoutController::class, 'botSnap'])->name('checkout.bot');
@@ -181,13 +180,16 @@ Route::prefix('portal')->name('portal.')->group(function () {
             $telegramUserId = (int) \App\Support\PortalSession::telegramUserId($request);
 
             if (app(\App\Services\PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId)) {
-                return redirect()->route('portal.emotional');
+                $onboarding = app(\App\Services\PortalOnboardingService::class);
+
+                return redirect()->route($onboarding->portalHomeRouteName($email, $telegramUserId));
             }
 
             return redirect()->route('portal.dashboard');
         })->name('home');
 
         Route::middleware('portal.bot')->group(function () {
+            Route::get('/premium', [PortalDashboardController::class, 'premium'])->name('premium');
             Route::get('/transaksi', [PortalDashboardController::class, 'transactions'])->name('transactions');
             Route::get('/transaksi/template', [PortalTransactionsController::class, 'importTemplate'])->name('transactions.template');
             Route::post('/transaksi/import', [PortalTransactionsController::class, 'import'])->name('transactions.import');

@@ -50,7 +50,7 @@
             @if($showFtsaSection)
                 <strong>FTSA (Financial Therapy & Strategic Action)</strong> mengukur pola behavioral finansial Anda
                 melalui 32 pertanyaan. Hasilnya menentukan archetype dominan (CHD, RVD, SSD, ESD).
-                Evaluasi ulang setiap <strong>12 bulan</strong> — terpisah dari snapshot keuangan.
+                Evaluasi ulang setiap <strong>12 bulan</strong>.
             @elseif($formMode === 'ftsa_snapshot')
                 Isi <strong>perkiraan angka keuangan</strong> Anda: pendapatan, tabungan, utang, dan dana darurat.
                 Langkah ini wajib sebelum kuesioner FTSA 1–32.

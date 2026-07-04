@@ -67,12 +67,11 @@ class AuthController extends Controller
 
         $access = app(PortalAccessService::class);
         $entitlements = app(\App\Services\LicenseEntitlementService::class);
-        $isFtsaOnlyOrder = $access->isFtsaOnlyOrder($order);
-        $isFtsaOnlyLicense = $entitlements->hasPaidFtsaOrderOnLicense($license)
-            && ! $entitlements->hasPaidBotOrderOnLicense($license);
-        $ftsaOnlyLogin = $isFtsaOnlyOrder || $isFtsaOnlyLicense;
 
-        if ($ftsaOnlyLogin) {
+        $hasFtsaOnLicense = $entitlements->hasPaidFtsaOrderOnLicense($license);
+        $hasBotOnLicense = $entitlements->hasPaidBotOrderOnLicense($license);
+
+        if ($hasFtsaOnLicense && ! $hasBotOnLicense) {
             if (! $license->assigned_user_id) {
                 $portalUserId = $access->ensureLicensePortalActivation($license->fresh());
             } else {
@@ -187,7 +186,7 @@ class AuthController extends Controller
         $access = app(PortalAccessService::class);
 
         if ($access->isFtsaOnlyPortalUser($email, $telegramUserId)) {
-            return 'Selamat datang di portal YFD.';
+            return 'Selamat datang di portal FTSA Premium. Isi kuesioner FTSA 1–32 untuk melihat hasil behavioral Anda.';
         }
 
         if ($access->hasBotPortalAccess($email, $telegramUserId) && $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {

@@ -20,23 +20,52 @@ class PortalAccessService
      */
     public function hasBotPortalAccess(string $email, int $telegramUserId = 0): bool
     {
-        $license = $this->resolvePortalLicense($email, $telegramUserId);
-        if ($license !== null && $this->entitlements->hasPaidBotOrderOnLicense($license)) {
-            return true;
+        $request = request();
+        if ($request !== null
+            && PortalSession::isAuthenticated($request)
+            && PortalSession::userType($request) === 'ftsa_only') {
+            $sessionLicense = $this->resolveSessionLicense();
+            if ($sessionLicense === null
+                || ! $this->entitlements->hasPaidBotOrderOnLicense($sessionLicense)) {
+                return false;
+            }
         }
 
         if ($this->isFtsaOnlyPortalUser($email, $telegramUserId)) {
             return false;
         }
 
+        $sessionLicense = $this->resolveSessionLicense();
+        if ($sessionLicense !== null) {
+            return $this->entitlements->hasPaidBotOrderOnLicense($sessionLicense);
+        }
+
+        $license = $this->resolvePortalLicense($email, $telegramUserId);
+        if ($license !== null) {
+            return $this->entitlements->hasPaidBotOrderOnLicense($license);
+        }
+
         return $this->onboarding->hasPaidBotOrderForUser($email, $telegramUserId);
     }
 
     /**
-     * Pembeli FTSA saja — portal terbatas (diagnostik, FTSA, hasil behavioral).
+     * Pembeli FTSA saja — portal terbatas (FTSA 1–32 + hasil behavioral).
      */
     public function isFtsaOnlyPortalUser(string $email, int $telegramUserId = 0): bool
     {
+        $sessionLicense = $this->resolveSessionLicense();
+        if ($sessionLicense !== null) {
+            return $this->entitlements->hasPaidFtsaOrderOnLicense($sessionLicense)
+                && ! $this->entitlements->hasPaidBotOrderOnLicense($sessionLicense);
+        }
+
+        $request = request();
+        if ($request !== null
+            && PortalSession::isAuthenticated($request)
+            && PortalSession::userType($request) === 'ftsa_only') {
+            return true;
+        }
+
         $license = $this->resolvePortalLicense($email, $telegramUserId);
         if ($license !== null) {
             return $this->entitlements->hasPaidFtsaOrderOnLicense($license)
@@ -55,7 +84,16 @@ class PortalAccessService
             return;
         }
 
-        $license = $this->resolvePortalLicense($email, $telegramUserId);
+        $sessionLicense = $this->resolveSessionLicense();
+        if ($sessionLicense !== null && PortalSession::userType($request) === 'ftsa_only') {
+            $stillFtsaOnly = $this->entitlements->hasPaidFtsaOrderOnLicense($sessionLicense)
+                && ! $this->entitlements->hasPaidBotOrderOnLicense($sessionLicense);
+            if ($stillFtsaOnly) {
+                return;
+            }
+        }
+
+        $license = $sessionLicense ?? $this->resolvePortalLicense($email, $telegramUserId);
         if ($license !== null && PortalSession::licenseId($request) === null) {
             $request->session()->put(PortalSession::LICENSE_ID, (int) $license->id);
         }
@@ -68,21 +106,12 @@ class PortalAccessService
 
     public function resolvePortalLicense(string $email, int $telegramUserId = 0): ?License
     {
-        $request = request();
-        $email = strtolower(trim($email));
-
-        if ($request !== null) {
-            $sessionLicenseId = PortalSession::licenseId($request);
-            if ($sessionLicenseId !== null) {
-                $sessionLicense = License::query()
-                    ->whereKey($sessionLicenseId)
-                    ->where('status', 'active')
-                    ->first();
-                if ($sessionLicense !== null) {
-                    return $sessionLicense;
-                }
-            }
+        $sessionLicense = $this->resolveSessionLicense();
+        if ($sessionLicense !== null) {
+            return $sessionLicense;
         }
+
+        $email = strtolower(trim($email));
 
         if ($email !== '') {
             $ftsaOnlyLicense = $this->resolveFtsaOnlyPortalLicense($email);
@@ -120,6 +149,24 @@ class PortalAccessService
         }
 
         return null;
+    }
+
+    private function resolveSessionLicense(): ?License
+    {
+        $request = request();
+        if ($request === null || ! PortalSession::isAuthenticated($request)) {
+            return null;
+        }
+
+        $sessionLicenseId = PortalSession::licenseId($request);
+        if ($sessionLicenseId === null) {
+            return null;
+        }
+
+        return License::query()
+            ->whereKey($sessionLicenseId)
+            ->where('status', 'active')
+            ->first();
     }
 
     /**

@@ -74,7 +74,7 @@
                 Hasil disimpan untuk <strong>{{ $baseline->email }}</strong>.
                 @if($fromPortal)
                     @if($isFtsaOnlyPortal ?? false)
-                        Data diagnostik terhubung ke dashboard FTSA Anda. Lanjutkan ke FTSA 1–32 jika belum diisi.
+                        Data check-up terhubung ke akun FTSA Anda. Lanjutkan ke kuesioner FTSA 1–32 jika belum diisi.
                     @else
                         Dashboard Anda sudah bisa dipakai — lanjutkan ke menu transaksi dan pantau kesehatan finansial.
                     @endif
@@ -95,7 +95,7 @@
                         {{ ($isFtsaOnlyPortal ?? false) ? 'Buka Dashboard FTSA' : 'Buka Dashboard' }}
                     </a>
                     @if($isFtsaOnlyPortal ?? false)
-                        <a href="{{ route('portal.baseline.create') }}" class="btn btn-ghost btn-lg">
+                        <a href="{{ route('portal.ftsa.create') }}" class="btn btn-ghost btn-lg">
                             <span class="material-symbols-outlined text-[20px]">psychology</span>
                             Lengkapi FTSA 1–32
                         </a>

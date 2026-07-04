@@ -39,8 +39,6 @@
             </div>
         @endif
 
-        @include('portal.partials.ftsa-snapshot-card', ['baseline' => $baseline ?? null])
-
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-8 mb-6">
             <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
                 <div>

@@ -143,15 +143,19 @@ class LicenseEntitlementService
             $codes = ['yfd-bot-telegram'];
         }
 
+        $ftsaCodes = $this->ftsaProductCodes();
         $aliases = ['yfd-first-aid', 'yfd-bot', 'yfd-telegram-bot'];
         $featured = CpDigitalProduct::query()
             ->active()
             ->featured()
             ->where('billing_mode', 'midtrans')
+            ->whereNotIn('code', $ftsaCodes)
             ->pluck('code')
             ->all();
 
-        return array_values(array_unique(array_merge($codes, $aliases, $featured)));
+        $merged = array_values(array_unique(array_merge($codes, $aliases, $featured)));
+
+        return array_values(array_diff($merged, $ftsaCodes));
     }
 
     /**
@@ -167,7 +171,10 @@ class LicenseEntitlementService
 
     public function hasPaidBotOrderOnLicense(License $license): bool
     {
-        $codes = $this->botProductCodes();
+        $codes = array_values(array_diff($this->botProductCodes(), $this->ftsaProductCodes()));
+        if ($codes === []) {
+            return false;
+        }
 
         return Order::query()
             ->where('status', 'paid')
@@ -186,7 +193,10 @@ class LicenseEntitlementService
             return false;
         }
 
-        $codes = $this->botProductCodes();
+        $codes = array_values(array_diff($this->botProductCodes(), $this->ftsaProductCodes()));
+        if ($codes === []) {
+            return false;
+        }
 
         return Order::query()
             ->where('status', 'paid')

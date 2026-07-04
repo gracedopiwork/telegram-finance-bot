@@ -1,13 +1,15 @@
 @php
     $active = $active ?? 'dashboard';
-    $currentMonth = $summary['month'] ?? ($assessment['month'] ?? now()->format('Y-m'));
-    $currentPeriod = $currentPeriod ?? ($summary['period_months'] ?? ($assessment['period_months'] ?? 1));
+    $summary = $summary ?? [];
+    $assessment = $assessment ?? [];
+    $currentMonth = $summary['month'] ?? $assessment['month'] ?? now()->format('Y-m');
+    $currentPeriod = $currentPeriod ?? $summary['period_months'] ?? $assessment['period_months'] ?? 1;
     $query = ['month' => $currentMonth, 'period' => $currentPeriod];
-    $dashboardNavHighlight = $dashboardNavHighlight ?? (
+    $dashboardNavHighlight = (bool) ($dashboardNavHighlight ?? (
         !($portalOnboardingComplete ?? false)
         && ($needsBaseline ?? false)
         && ($hasBotPortalAccess ?? false)
-    );
+    ));
 @endphp
 <div class="p-5 border-b border-white/10">
     <div class="flex items-center gap-3">

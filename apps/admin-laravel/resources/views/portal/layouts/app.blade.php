@@ -1,8 +1,10 @@
 @php
     $active = $active ?? 'dashboard';
     $displayName = session(\App\Support\PortalSession::DISPLAY_NAME, 'Pengguna');
-    $currentMonth = $summary['month'] ?? ($assessment['month'] ?? now()->format('Y-m'));
-    $currentPeriod = $currentPeriod ?? ($summary['period_months'] ?? ($assessment['period_months'] ?? 1));
+    $summary = $summary ?? [];
+    $assessment = $assessment ?? [];
+    $currentMonth = $summary['month'] ?? $assessment['month'] ?? now()->format('Y-m');
+    $currentPeriod = $currentPeriod ?? $summary['period_months'] ?? $assessment['period_months'] ?? 1;
 @endphp
 <!DOCTYPE html>
 <html lang="id">

@@ -97,14 +97,27 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer('portal.*', function ($view): void {
+            $portalDefaults = [
+                'portalOnboardingComplete' => false,
+                'needsBaseline' => false,
+                'needsFtsa' => false,
+                'needsFtsaSnapshot' => false,
+                'needsFinancialDiagnostic' => false,
+                'ftsaUnlocked' => false,
+                'hasBotPortalAccess' => false,
+                'isFtsaOnlyPortalUser' => false,
+                'ftsaRetakeLocked' => false,
+                'ftsaRetakeAvailableAt' => null,
+                'dashboardNavHighlight' => false,
+            ];
+            $view->with($portalDefaults);
+
             try {
                 $request = request();
                 if ($request === null || ! PortalSession::isAuthenticated($request)) {
                     return;
                 }
                 if (! FinancialBaselineSchema::isReady()) {
-                    $view->with('needsBaseline', false);
-
                     return;
                 }
                 $telegramUserId = (int) PortalSession::telegramUserId($request);
@@ -143,6 +156,7 @@ class AppServiceProvider extends ServiceProvider
                     ? route('portal.baseline')
                     : $onboarding->firstBaselineUrl($email, $telegramUserId));
                 $view->with('diagnosticCheckupUrl', $onboarding->portalDiagnosticUrl());
+                $view->with('dashboardNavHighlight', ! $portalOnboardingComplete && $needsBaseline && $hasBotPortalAccess);
             } catch (\Throwable) {
                 // Portal routes may not be registered during early boot.
             }
