@@ -50,28 +50,6 @@
     'editUrl' => route('portal.baseline.create'),
 ])
 
-@php $hasAssessment = ($summary['baseline'] ?? null); @endphp
-@if(!$hasData)
-    @include('portal.partials.empty-state', [
-        'title' => ($needsFinancialDiagnostic ?? false) && !($isFtsaOnlyPortalUser ?? false)
-            ? 'Mulai dari Diagnostik Keuangan'
-            : ($hasAssessment ? 'Belum ada transaksi bot' : 'Dashboard masih kosong'),
-        'message' => ($needsFinancialDiagnostic ?? false) && !($isFtsaOnlyPortalUser ?? false)
-            ? 'Sebelum catat transaksi, isi diagnostik dulu — tahap keuangan & snapshot Anda dipakai untuk prescription bucket dan rekomendasi AI.'
-            : ($hasAssessment
-                ? 'Diagnostik Anda sudah tersimpan. Catat pemasukan & pengeluaran lewat YFD First Aid — metrik harian akan terisi otomatis.'
-                : 'Mulai catat pemasukan & pengeluaran lewat YFD First Aid. Semua metrik di bawah akan terisi otomatis.'),
-        'actionUrl' => ($needsFinancialDiagnostic ?? false) && !($isFtsaOnlyPortalUser ?? false)
-            ? route('portal.baseline.create')
-            : (($needsBaseline ?? false)
-                ? route('portal.baseline.create')
-                : route('portal.transactions')),
-        'actionLabel' => ($needsBaseline ?? false) && !($needsFinancialDiagnostic ?? false)
-            ? 'Isi Snapshot'
-            : (($needsFinancialDiagnostic ?? false) ? 'Isi Baseline Data' : 'Buka Input Data'),
-    ])
-@endif
-
 {{-- Clinical Summary --}}
 @if($hasData)
 <div class="rounded-2xl border p-5 sm:p-6
