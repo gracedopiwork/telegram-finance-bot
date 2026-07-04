@@ -35,6 +35,17 @@ class CategoryBucketService
             return 'Future Building';
         }
 
+        if ($this->containsAny($combined, config('category_buckets.future_building_context_keywords', []))) {
+            return 'Future Building';
+        }
+        if ($this->containsAny($combined, config('category_buckets.essential_context_keywords', []))) {
+            return 'Essential Living';
+        }
+        if ($this->matchesCategory($category, ['makan'])
+            && $this->containsAny($combined, config('category_buckets.essential_meeting_keywords', []))) {
+            return 'Essential Living';
+        }
+
         if ($category === 'social') {
             return 'Flexible + Social';
         }

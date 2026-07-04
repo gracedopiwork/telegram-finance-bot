@@ -8,6 +8,12 @@ return [
     // Income
     ['category' => 'Gaji', 'sub_category' => 'Pengeluaran lain-lain', 'bucket' => 'Income', 'transaction_type' => 'income', 'reason' => 'Pemasukan gaji/bonus/honor', 'sort_order' => 10],
 
+    // Essential Living — konteks (prioritas tinggi, sebelum aturan generik)
+    ['category' => 'Makan', 'sub_category' => 'Jajan / Makan diluar', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'starbucks,meeting,kerja,rapat,klien,ngopi meeting', 'reason' => 'Kopi/pertemuan kerja — esensial', 'sort_order' => 15],
+    ['category' => 'Jajan', 'sub_category' => 'Pengeluaran lain-lain', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'hp rusak,handphone rusak,ganti hp,hp pecah,layar pecah,hp mati', 'reason' => 'Penggantian HP utama rusak', 'sort_order' => 16],
+    ['category' => 'Jajan', 'sub_category' => 'Pengeluaran lain-lain', 'bucket' => 'Future Building', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'laptop kerja,laptop produktif,alat kerja,untuk kerja,modal kerja', 'reason' => 'Alat produktif / laptop kerja', 'sort_order' => 17],
+    ['category' => 'Jajan', 'sub_category' => 'Pengeluaran lain-lain', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'fomo,healing,upgrade karena', 'reason' => 'Belanja impulsif / FOMO', 'sort_order' => 18],
+
     // Essential Living
     ['category' => 'Makan', 'sub_category' => 'Jajan / Makan diluar', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'makan,restoran,nasi,sarapan', 'reason' => 'Kebutuhan makan harian', 'sort_order' => 20],
     ['category' => 'Transport', 'sub_category' => 'Angkutan Umum', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'ojek,grab,gojek,angkot,bensin,tol', 'reason' => 'Transportasi harian', 'sort_order' => 21],
@@ -25,7 +31,7 @@ return [
     ['category' => 'Jajan', 'sub_category' => 'Mainan Anak', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'mainan', 'reason' => 'Mainan anak', 'sort_order' => 44],
     ['category' => 'Jajan', 'sub_category' => 'Vitamin', 'bucket' => 'Protection', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'vitamin,suplemen', 'reason' => 'Kesehatan preventif', 'sort_order' => 45],
     ['category' => 'Jajan', 'sub_category' => 'Alat Kesehatan', 'bucket' => 'Protection', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'masker,termometer,alat kesehatan', 'reason' => 'Alat kesehatan', 'sort_order' => 46],
-    ['category' => 'Jajan', 'sub_category' => 'Pengeluaran lain-lain', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'hp,laptop,gadget,elektronik', 'reason' => 'Belanja lain / gadget', 'sort_order' => 47],
+    ['category' => 'Jajan', 'sub_category' => 'Pengeluaran lain-lain', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'hp,laptop,gadget,elektronik,upgrade', 'reason' => 'Gadget / upgrade impulsif (fallback Wants)', 'sort_order' => 47],
 
     // Social
     ['category' => 'Social', 'sub_category' => 'Hadiah / Amplop sosial', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'hadiah,amplop,sedekah,persembahan,ibadah,donasi', 'reason' => 'Sosial & donasi', 'sort_order' => 50],

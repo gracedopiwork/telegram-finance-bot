@@ -21,6 +21,17 @@ return [
         'persembahan', 'perpuluhan', 'streaming', 'gaming', 'fashion', 'skincare', 'make up',
         'gadget', 'fomo',
     ],
+    'essential_context_keywords' => [
+        'hp rusak', 'handphone rusak', 'ganti hp', 'hp pecah', 'layar pecah', 'hp mati',
+        'smartphone rusak', 'ganti handphone',
+    ],
+    'future_building_context_keywords' => [
+        'laptop kerja', 'laptop produktif', 'alat kerja', 'untuk kerja', 'modal kerja',
+        'laptop kantor', 'komputer kerja',
+    ],
+    'essential_meeting_keywords' => [
+        'starbucks', 'meeting kerja', 'rapat kerja', 'meeting klien', 'ngopi meeting', 'kopi meeting',
+    ],
     'essential_categories' => ['makan', 'transport', 'listrik', 'air', 'gaji'],
     'bot_fallback_category' => 'Jajan',
     'bot_fallback_sub' => 'Pengeluaran lain-lain',

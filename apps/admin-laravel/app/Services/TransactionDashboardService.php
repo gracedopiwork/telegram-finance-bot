@@ -240,21 +240,45 @@ class TransactionDashboardService
    */
   private function bucketStatus(string $bucket, float $share, float $ideal): array
   {
-    $delta = $share - $ideal;
-
     return match ($bucket) {
-      'Flexible + Social' => $share > $ideal + 5
-        ? ['key' => 'over_max', 'label' => 'Melebihi batas fleksibel']
-        : ($share <= $ideal ? ['key' => 'within', 'label' => 'Dalam batas'] : ['key' => 'near_max', 'label' => 'Mendekati batas']),
-      'Protection', 'Future Building' => $share < $ideal - 5
+      'Essential Living', 'Protection', 'Flexible + Social' => $this->maxBucketStatus($bucket, $share, $ideal),
+      'Future Building' => $share < $ideal - 5
         ? ['key' => 'under_min', 'label' => 'Di bawah minimum ideal']
         : ($share >= $ideal ? ['key' => 'met', 'label' => 'Memenuhi minimum'] : ['key' => 'near_min', 'label' => 'Mendekati minimum']),
-      default => abs($delta) <= 5
+      default => abs($share - $ideal) <= 5
         ? ['key' => 'on_target', 'label' => 'Sesuai target']
-        : ($delta > 0
+        : ($share > $ideal
           ? ['key' => 'over', 'label' => 'Di atas target']
           : ['key' => 'under', 'label' => 'Di bawah target']),
     };
+  }
+
+  /**
+   * Bucket dengan target maksimum — semakin rendah % aktual, semakin sehat.
+   *
+   * @return array{key: string, label: string}
+   */
+  private function maxBucketStatus(string $bucket, float $share, float $ideal): array
+  {
+    $overLabel = match ($bucket) {
+      'Essential Living' => 'Melebihi batas esensial',
+      'Protection' => 'Melebihi batas proteksi',
+      default => 'Melebihi batas fleksibel',
+    };
+    $withinLabel = match ($bucket) {
+      'Essential Living', 'Protection' => 'Di bawah maksimum — sehat',
+      default => 'Dalam batas',
+    };
+
+    if ($share > $ideal + 5) {
+      return ['key' => 'over_max', 'label' => $overLabel];
+    }
+
+    if ($share <= $ideal) {
+      return ['key' => 'within', 'label' => $withinLabel];
+    }
+
+    return ['key' => 'near_max', 'label' => 'Mendekati batas maksimum'];
   }
 
   /**
@@ -303,8 +327,12 @@ class TransactionDashboardService
       $score += ($expense + $savingInvestment) <= $income ? 10 : -15;
     }
     foreach ($buckets as $bucket) {
-      $delta = abs($bucket['share'] - $bucket['ideal']);
-      $score -= (int) min(8, $delta / 5);
+      $penalty = $this->bucketDeviationPenalty(
+        (string) $bucket['bucket'],
+        (float) $bucket['share'],
+        (float) $bucket['ideal'],
+      );
+      $score -= (int) min(8, $penalty / 5);
     }
     $score = max(0, min(100, $score));
 
@@ -316,6 +344,20 @@ class TransactionDashboardService
     };
 
     return ['score' => $score, 'label' => $label];
+  }
+
+  /**
+   * Penalti skor pulse: bucket min hanya jika di bawah ideal; bucket max hanya jika di atas ideal.
+   */
+  private function bucketDeviationPenalty(string $bucket, float $share, float $ideal): float
+  {
+    $delta = $share - $ideal;
+
+    return match ($bucket) {
+      'Future Building' => $delta < 0 ? abs($delta) : 0.0,
+      'Essential Living', 'Protection', 'Flexible + Social' => $delta > 0 ? $delta : 0.0,
+      default => abs($delta),
+    };
   }
 
   /**

@@ -172,12 +172,12 @@ Aturan:
    Petunjuk admin (bucket):
 {hints_block}
    Jika tidak yakin kategori → {fb_cat} (bukan kategori baru).
-6) Konteks bucket (contoh):
-   - Starbucks untuk meeting kerja → kategori Makan, sifat Need
-   - Starbucks healing/jajan → kategori Jajan, sifat Wants
-   - Laptop untuk kerja → jenis Saving/Investment atau Pengeluaran Jajan + sifat Need (alat produktif)
-   - Laptop upgrade FOMO → kategori Jajan, sifat Wants
-   - HP utama rusak → kategori Jajan, sifat Need
+6) Konteks bucket (contoh — WAJIB ikuti niat transaksi):
+   - Starbucks untuk meeting kerja → kategori Makan, sifat Need → bucket Essential Living
+   - Starbucks healing/jajan → kategori Jajan, sifat Wants → bucket Flexible + Social
+   - Laptop untuk kerja / alat produktif → jenis Saving/Investment ATAU Pengeluaran Jajan + Need → bucket Future Building
+   - Laptop upgrade FOMO → kategori Jajan, sifat Wants → bucket Flexible + Social
+   - HP utama rusak / wajib ganti → kategori Jajan, sifat Need → bucket Essential Living
 7) impulsif — WAJIB pertimbangkan konteks & niat, bukan hanya nominal besar:
    "Yes" jika spontan / fomo / euforia gajian / mood negatif + wants.
    "No" jika terencana, tagihan wajib, atau perayaan keluarga.
