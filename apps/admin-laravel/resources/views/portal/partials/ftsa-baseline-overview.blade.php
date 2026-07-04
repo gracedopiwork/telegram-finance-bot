@@ -6,10 +6,10 @@
     $fmt = fn (int $n) => \App\Support\RupiahFormat::format($n);
     $onboarding = app(\App\Services\PortalOnboardingService::class);
     $hasDiagnostic = $onboarding->hasFinancialDiagnostic($baseline);
-    $hasSnapshot = trim((string) ($baseline->current_goal ?? '')) !== ''
-        || collect(['avg_monthly_income', 'emergency_fund', 'cash_savings', 'total_debt'])
-            ->contains(fn ($f) => $baseline->{$f} !== null && (int) $baseline->{$f} > 0);
+    $hasSnapshot = $onboarding->hasFinancialSnapshot($baseline);
     $stageMeta = $stageMeta ?? [];
+    $hasProtection = $baseline->has_bpjs || $baseline->has_health_insurance
+        || $baseline->has_income_protection || $baseline->has_life_insurance;
 @endphp
 
 @if($hasSnapshot)
@@ -29,12 +29,14 @@
                 <div class="font-medium text-navy-800 mt-1">{{ \App\Support\RupiahFormat::formatText($baseline->current_goal) }}</div>
             </div>
         @endif
-        <div class="grid sm:grid-cols-2 gap-3">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             @foreach([
                 'avg_monthly_income' => 'Pendapatan/bulan',
-                'cash_savings' => 'Tabungan',
-                'total_debt' => 'Total utang',
                 'emergency_fund' => 'Dana darurat',
+                'cash_savings' => 'Tabungan',
+                'total_investment' => 'Investasi',
+                'total_asset' => 'Total aset',
+                'total_debt' => 'Total utang',
             ] as $field => $label)
                 @if($baseline->{$field})
                     <div class="rounded-xl bg-slate-50 p-3">
@@ -43,6 +45,17 @@
                     </div>
                 @endif
             @endforeach
+            @if($hasProtection)
+                <div class="rounded-xl bg-slate-50 p-3 sm:col-span-2 lg:col-span-3">
+                    <div class="text-xs text-slate-500 mb-1">Proteksi</div>
+                    <div class="flex flex-wrap gap-1">
+                        @if($baseline->has_bpjs)<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">BPJS</span>@endif
+                        @if($baseline->has_health_insurance)<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">Asuransi kesehatan</span>@endif
+                        @if($baseline->has_income_protection)<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">Income protection</span>@endif
+                        @if($baseline->has_life_insurance)<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">Asuransi jiwa</span>@endif
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -75,7 +88,7 @@
 @elseif(!$hasSnapshot)
     @include('portal.partials.empty-state', [
         'title' => 'Baseline data belum lengkap',
-        'message' => 'Lengkapi snapshot keuangan (target, pendapatan, utang, tabungan) agar insight AI lebih personal.',
+        'message' => 'Lengkapi snapshot keuangan: target, pendapatan, tabungan, utang, investasi, aset, dan proteksi.',
     ])
     <div class="mt-4 mb-6">
         <a href="{{ route('portal.baseline.create', ['section' => 'snapshot']) }}"

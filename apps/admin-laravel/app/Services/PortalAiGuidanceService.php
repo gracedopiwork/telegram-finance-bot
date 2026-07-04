@@ -489,6 +489,8 @@ PROMPT;
         foreach ([
             'avg_monthly_income' => 'Pendapatan/bulan',
             'cash_savings' => 'Tabungan',
+            'total_investment' => 'Investasi',
+            'total_asset' => 'Total aset',
             'total_debt' => 'Utang',
             'emergency_fund' => 'Dana darurat',
         ] as $field => $label) {

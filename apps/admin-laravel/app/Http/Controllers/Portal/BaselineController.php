@@ -255,7 +255,7 @@ class BaselineController extends Controller
                 if (! $onboarding->ftsaSnapshotInputHasValue($validated['snapshot'] ?? [])) {
                     return back()->withInput()->with(
                         'error',
-                        'Isi minimal satu angka: pendapatan, tabungan, utang, dana darurat, atau target.'
+                        'Isi minimal satu field snapshot: target, angka keuangan, atau proteksi.'
                     );
                 }
                 $priorFs = $baseline?->answers_json['fs'] ?? [];

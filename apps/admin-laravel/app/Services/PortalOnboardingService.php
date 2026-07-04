@@ -229,21 +229,7 @@ class PortalOnboardingService
 
     public function hasFtsaSnapshotComplete(?FinancialBaseline $baseline): bool
     {
-        if ($baseline === null) {
-            return false;
-        }
-
-        if (trim((string) ($baseline->current_goal ?? '')) !== '') {
-            return true;
-        }
-
-        foreach (['avg_monthly_income', 'emergency_fund', 'cash_savings', 'total_debt'] as $field) {
-            if ($baseline->{$field} !== null && (int) $baseline->{$field} > 0) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->hasFinancialSnapshot($baseline);
     }
 
     /**
@@ -255,8 +241,14 @@ class PortalOnboardingService
             return true;
         }
 
-        foreach (['avg_monthly_income', 'emergency_fund', 'cash_savings', 'total_debt'] as $field) {
+        foreach (['avg_monthly_income', 'emergency_fund', 'cash_savings', 'total_investment', 'total_asset', 'total_debt'] as $field) {
             if (isset($snapshot[$field]) && $snapshot[$field] !== '' && (int) $snapshot[$field] > 0) {
+                return true;
+            }
+        }
+
+        foreach (['has_bpjs', 'has_health_insurance', 'has_income_protection', 'has_life_insurance'] as $field) {
+            if (! empty($snapshot[$field])) {
                 return true;
             }
         }

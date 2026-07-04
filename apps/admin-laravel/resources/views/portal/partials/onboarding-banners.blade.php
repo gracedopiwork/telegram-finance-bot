@@ -5,7 +5,7 @@
         <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
             <div class="text-sm text-amber-900">
                 <div class="font-bold">Langkah 1 — Snapshot keuangan</div>
-                <div class="mt-0.5">Target, pendapatan, tabungan, utang, dan dana darurat.</div>
+                <div class="mt-0.5">Target, pendapatan, tabungan, utang, investasi, aset, dan proteksi.</div>
             </div>
             <a href="{{ route('portal.baseline.create', ['section' => 'snapshot']) }}"
                class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-sm shrink-0">

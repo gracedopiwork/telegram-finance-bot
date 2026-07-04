@@ -237,7 +237,13 @@ class BaselineAssessmentService
             'snapshot.avg_monthly_income' => 'nullable|integer|min:0',
             'snapshot.emergency_fund' => 'nullable|integer|min:0',
             'snapshot.cash_savings' => 'nullable|integer|min:0',
+            'snapshot.total_investment' => 'nullable|integer|min:0',
+            'snapshot.total_asset' => 'nullable|integer|min:0',
             'snapshot.total_debt' => 'nullable|integer|min:0',
+            'snapshot.has_bpjs' => 'sometimes|boolean',
+            'snapshot.has_health_insurance' => 'sometimes|boolean',
+            'snapshot.has_income_protection' => 'sometimes|boolean',
+            'snapshot.has_life_insurance' => 'sometimes|boolean',
         ];
     }
 

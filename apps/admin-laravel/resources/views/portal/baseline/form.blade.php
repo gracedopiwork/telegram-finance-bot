@@ -52,8 +52,7 @@
                 melalui 32 pertanyaan. Hasilnya menentukan archetype dominan (CHD, RVD, SSD, ESD).
                 Evaluasi ulang setiap <strong>12 bulan</strong>.
             @elseif($formMode === 'ftsa_snapshot')
-                Isi <strong>perkiraan angka keuangan</strong> Anda: pendapatan, tabungan, utang, dan dana darurat.
-                Langkah ini wajib sebelum kuesioner FTSA 1–32.
+                Isi <strong>snapshot keuangan</strong> Anda: target, pendapatan, tabungan, utang, investasi, aset, dan proteksi.
             @else
                 @if($showInlineSnapshotForm ?? false)
                     Diagnostik tahap keuangan sudah tersimpan. Lengkapi <strong>snapshot angka keuangan</strong> di bawah.
@@ -220,21 +219,14 @@
         </div>
         @endif
         @php
-            $snapshotFields = ($formMode ?? '') === 'ftsa_snapshot'
-                ? [
-                    'avg_monthly_income' => 'Rata-rata pendapatan bulanan (Rp)',
-                    'cash_savings' => 'Cash / tabungan (Rp)',
-                    'total_debt' => 'Total utang (Rp)',
-                    'emergency_fund' => 'Dana darurat (Rp)',
-                ]
-                : [
-                    'avg_monthly_income' => 'Rata-rata pendapatan bulanan (Rp)',
-                    'emergency_fund' => 'Dana darurat (Rp)',
-                    'cash_savings' => 'Cash / tabungan (Rp)',
-                    'total_investment' => 'Total investasi (Rp)',
-                    'total_asset' => 'Total aset (Rp)',
-                    'total_debt' => 'Total utang (Rp)',
-                ];
+            $snapshotFields = [
+                'avg_monthly_income' => 'Rata-rata pendapatan bulanan (Rp)',
+                'emergency_fund' => 'Dana darurat (Rp)',
+                'cash_savings' => 'Cash / tabungan (Rp)',
+                'total_investment' => 'Total investasi (Rp)',
+                'total_asset' => 'Total aset (Rp)',
+                'total_debt' => 'Total utang (Rp)',
+            ];
         @endphp
         {{-- Snapshot keuangan --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -245,20 +237,18 @@
                 </h2>
                 <p class="text-white/70 text-sm mt-1">
                     @if(($formMode ?? '') === 'ftsa_snapshot')
-                        Perkiraan terbaik Anda saat ini — cukup 4 angka utama
+                        Perkiraan terbaik Anda saat ini — target, angka keuangan, dan proteksi
                     @else
                         Opsional — isi perkiraan terbaik Anda saat ini
                     @endif
                 </p>
             </div>
             <div class="p-5 sm:p-6 space-y-5">
-                @if(($formMode ?? '') !== 'ftsa_snapshot')
                 <div>
                     <label class="block text-sm font-semibold text-navy-800 mb-1">Current Goal (tujuan finansial saat ini)</label>
                     <input type="text" name="snapshot[current_goal]" value="{{ $snapshotValue('current_goal') }}"
                            class="w-full rounded-lg border-slate-300 text-sm" placeholder="Contoh: Dana darurat 6 bulan + lunasi kartu kredit">
                 </div>
-                @endif
                 <div class="grid sm:grid-cols-2 gap-4">
                     @foreach($snapshotFields as $field => $label)
                         <div>
@@ -269,7 +259,6 @@
                         </div>
                     @endforeach
                 </div>
-                @if(($formMode ?? '') !== 'ftsa_snapshot')
                 <fieldset>
                     <legend class="text-sm font-semibold text-navy-800 mb-2">Proteksi yang dimiliki</legend>
                     <div class="flex flex-wrap gap-4">
@@ -288,7 +277,6 @@
                         @endforeach
                     </div>
                 </fieldset>
-                @endif
             </div>
         </div>
         @endif
