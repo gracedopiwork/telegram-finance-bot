@@ -1,7 +1,7 @@
 @extends('portal.layouts.app')
 
 @section('title', 'Hasil Baseline — YFD')
-@section('heading', 'Hasil Baseline Data')
+@section('heading', ($isFtsaOnlyPortalUser ?? false) ? 'Hasil Baseline FTSA' : 'Hasil Baseline Data')
 
 @section('content')
 @php
@@ -137,16 +137,18 @@
 @endif
 
 <div class="flex flex-wrap gap-3 mt-6">
-    <a href="{{ route('portal.dashboard') }}"
+    <a href="{{ ($isFtsaOnlyPortalUser ?? false) ? route('portal.emotional') : route('portal.dashboard') }}"
        class="inline-flex items-center gap-2 bg-navy-800 hover:bg-navy-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm">
-        <span class="material-symbols-outlined text-lg">dashboard</span>
-        Buka Dashboard
+        <span class="material-symbols-outlined text-lg">{{ ($isFtsaOnlyPortalUser ?? false) ? 'psychology' : 'dashboard' }}</span>
+        {{ ($isFtsaOnlyPortalUser ?? false) ? 'Lihat Hasil FTSA' : 'Buka Dashboard' }}
     </a>
+    @unless($isFtsaOnlyPortalUser ?? false)
     <a href="{{ route('portal.baseline.create') }}"
        class="inline-flex items-center gap-2 border border-slate-300 hover:border-navy-600 text-navy-800 font-medium px-5 py-2.5 rounded-xl text-sm">
         <span class="material-symbols-outlined text-lg">refresh</span>
         Perbarui Snapshot
     </a>
+    @endunless
     @if(($baseline->dominant_archetype ?? '') !== 'locked')
     <a href="{{ route('portal.ftsa.create') }}"
        class="inline-flex items-center gap-2 border border-gold-400 text-navy-800 font-medium px-5 py-2.5 rounded-xl text-sm">

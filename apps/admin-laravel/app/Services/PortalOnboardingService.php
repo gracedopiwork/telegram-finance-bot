@@ -407,12 +407,28 @@ class PortalOnboardingService
      */
     public function firstBaselineUrl(string $email, int $telegramUserId): string
     {
+        $access = app(PortalAccessService::class);
+        $isFtsaOnly = $access->isFtsaOnlyPortalUser($email, $telegramUserId);
+
         if ($this->userNeedsSnapshotBaseline($email, $telegramUserId)) {
             return $this->portalSnapshotEntryUrl($email, $telegramUserId);
         }
 
         if ($this->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
-            return route('portal.baseline.create');
+            return $isFtsaOnly
+                ? route('portal.diagnostic')
+                : route('portal.baseline.create');
+        }
+
+        if ($isFtsaOnly) {
+            if ($this->userNeedsFtsa($email, $telegramUserId)) {
+                return route('portal.ftsa.create');
+            }
+
+            $baseline = $this->resolveBaseline($email, $telegramUserId);
+            if ($baseline !== null && $this->hasFinancialDiagnostic($baseline)) {
+                return route('portal.baseline');
+            }
         }
 
         return route($this->portalHomeRouteName($email, $telegramUserId));

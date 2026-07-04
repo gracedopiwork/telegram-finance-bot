@@ -31,15 +31,19 @@ class BaselineController extends Controller
 
         $email = (string) (PortalSession::email($request) ?? '');
         $onboarding = app(PortalOnboardingService::class);
+        $access = app(PortalAccessService::class);
+        $isFtsaOnly = $access->isFtsaOnlyPortalUser($email, $telegramUserId);
         $baseline = $onboarding->resolveBaseline($email, $telegramUserId);
 
         if ($baseline === null) {
             return redirect($onboarding->firstBaselineUrl($email, $telegramUserId));
         }
 
-        if (! $onboarding->hasFinancialSnapshot($baseline)) {
-            return redirect()->route('portal.baseline.create')
-                ->with('info', 'Lengkapi snapshot angka keuangan di halaman Baseline Data.');
+        $canViewWithoutSnapshot = $isFtsaOnly && $onboarding->hasFinancialDiagnostic($baseline);
+
+        if (! $onboarding->hasFinancialSnapshot($baseline) && ! $canViewWithoutSnapshot) {
+            return redirect($onboarding->firstBaselineUrl($email, $telegramUserId))
+                ->with('info', 'Lengkapi baseline data terlebih dahulu.');
         }
 
         try {
@@ -61,6 +65,7 @@ class BaselineController extends Controller
                 'reviewDue' => $baseline->isReviewDue(),
                 'months' => $this->monthOptions(),
                 'ftsaUnlocked' => $ftsaUnlocked,
+                'isFtsaOnlyPortalUser' => $isFtsaOnly,
             ]);
         } catch (\Throwable $e) {
             report($e);
@@ -93,6 +98,11 @@ class BaselineController extends Controller
         $access = app(PortalAccessService::class);
         $isFtsaOnly = $access->isFtsaOnlyPortalUser($email, $telegramUserId);
         $needsFinancialDiagnostic = $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId);
+
+        if ($isFtsaOnly && $needsFinancialDiagnostic) {
+            return redirect()->route('portal.diagnostic')
+                ->with('info', 'Lengkapi diagnostik keuangan terlebih dahulu sebelum FTSA.');
+        }
 
         app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
 
@@ -157,9 +167,15 @@ class BaselineController extends Controller
         }
 
         $email = (string) (PortalSession::email($request) ?? '');
+        $onboarding = app(PortalOnboardingService::class);
+        if ($onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
+            return redirect()->route('portal.diagnostic')
+                ->with('info', 'Lengkapi diagnostik keuangan terlebih dahulu sebelum FTSA.');
+        }
+
         $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email);
         if (! $ftsaUnlocked) {
-            return redirect()->route('checkout.show', ['code' => 'yfd-ftsa-premium'])
+            return redirect()->route('portal.emotional')
                 ->with('info', 'Unlock FTSA Premium untuk mengisi kuesioner behavioral 1–32.');
         }
 
@@ -289,13 +305,13 @@ class BaselineController extends Controller
         }
 
         $successMsg = ($isFtsaOnly ?? false)
-            ? 'FTSA berhasil disimpan. Behavioral dashboard Anda sudah aktif.'
+            ? 'FTSA berhasil disimpan. Lihat hasil baseline di menu Baseline Data.'
             : (($snapshotOnlySave ?? false)
                 ? 'Snapshot baseline tersimpan. Dashboard keuangan Anda sudah lengkap.'
                 : 'Baseline data tersimpan (diagnostik + snapshot). Evaluasi ulang setiap 6 bulan.');
 
         return redirect()
-            ->route(($snapshotOnlySave ?? false) ? 'portal.baseline' : (($isFtsaOnly ?? false) ? 'portal.emotional' : 'portal.baseline'))
+            ->route('portal.baseline')
             ->with('success', $successMsg);
     }
 
@@ -314,7 +330,8 @@ class BaselineController extends Controller
         $email = (string) (PortalSession::email($request) ?? '');
         $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email);
         if (! $ftsaUnlocked) {
-            return redirect()->route('checkout.show', ['code' => 'yfd-ftsa-premium']);
+            return redirect()->route('portal.emotional')
+                ->with('info', 'Unlock FTSA Premium untuk mengisi kuesioner behavioral 1–32.');
         }
 
         $ftsaEval = app(FtsaEvaluationService::class);

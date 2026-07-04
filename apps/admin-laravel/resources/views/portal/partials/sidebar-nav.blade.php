@@ -32,7 +32,9 @@
         $baselineNavLabel = ($portalOnboardingComplete ?? false)
             ? 'BASELINE DATA'
             : (($isFtsaOnlyPortalUser ?? false)
-                ? (($needsFinancialDiagnostic ?? false) ? 'DIAGNOSTIK KEUANGAN' : 'FTSA 1–32')
+                ? (($needsFinancialDiagnostic ?? false)
+                    ? 'DIAGNOSTIK KEUANGAN'
+                    : (($needsFtsa ?? false) ? 'FTSA 1–32' : 'BASELINE DATA'))
                 : 'BASELINE DATA (WAJIB DI ISI)');
     @endphp
     <a href="{{ $baselineNavUrl }}"
