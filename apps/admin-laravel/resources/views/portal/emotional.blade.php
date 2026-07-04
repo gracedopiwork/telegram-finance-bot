@@ -1,7 +1,7 @@
 @extends('portal.layouts.app')
 
-@section('title', ($isFtsaOnlyPortalUser ?? false) ? 'Hasil FTSA — YFD' : 'Emotional Scan — YFD')
-@section('heading', ($isFtsaOnlyPortalUser ?? false) ? 'Hasil FTSA Premium' : 'Behavioral Financial Dashboard')
+@section('title', ($isFtsaOnlyPortalUser ?? false) ? 'Ringkasan FTSA — YFD' : 'Emotional Scan — YFD')
+@section('heading', ($isFtsaOnlyPortalUser ?? false) ? 'Ringkasan FTSA Premium' : 'Behavioral Financial Dashboard')
 
 @section('content')
 @php
@@ -16,6 +16,11 @@
 
 @if($isFtsaOnly)
     @include('portal.partials.onboarding-banners')
+
+    @include('portal.partials.ftsa-baseline-overview', [
+        'baseline' => $baseline ?? null,
+        'stageMeta' => $stageMeta ?? [],
+    ])
 
     @if($needsFtsa ?? false)
         @include('portal.partials.empty-state', [
@@ -93,6 +98,18 @@
         @include('portal.partials.ftsa-ai-guidance', ['ftsaAiGuidance' => $ftsaAiGuidance ?? []])
 
         @include('portal.partials.bot-upgrade-panel')
+    @elseif(!($needsFtsa ?? false) && !($ftsaProfile ?? null))
+        @include('portal.partials.empty-state', [
+            'title' => 'FTSA belum diisi',
+            'message' => 'Setelah baseline dan diagnostik terbaca, lengkapi kuesioner FTSA 1–32 untuk melihat archetype dan insight AI.',
+        ])
+        <div class="mt-4">
+            <a href="{{ $portalFtsaUrl ?? route('portal.ftsa.create') }}"
+               class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-5 py-3 rounded-xl text-sm">
+                <span class="material-symbols-outlined text-lg">edit_note</span>
+                Isi FTSA Sekarang
+            </a>
+        </div>
     @endif
 
 @else

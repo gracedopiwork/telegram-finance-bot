@@ -28,9 +28,10 @@ class PortalAiGuidanceService
         }
 
         $cacheKey = sprintf(
-            'portal_ai:ftsa:%d:%s',
+            'portal_ai:ftsa:%d:%s:%s',
             (int) $baseline->id,
-            $baseline->assessed_at?->timestamp ?? '0'
+            $baseline->assessed_at?->timestamp ?? '0',
+            $this->claude->isConfigured() ? 'claude' : 'off',
         );
 
         $ttl = now()->addDays(max(1, (int) config('portal_ai.cache_ttl_days_ftsa', 30)));
@@ -231,14 +232,16 @@ class PortalAiGuidanceService
 
         $maxInsights = (int) config('portal_ai.max_insights', 3);
         $maxRecs = (int) config('portal_ai.max_recommendations', 3);
+        $baselineContext = $this->ftsaBaselineContext($baseline);
 
         return <<<PROMPT
-Anda adalah dr. Financial dari Your Financial Doctor (YFD). Berikan insight dan rekomendasi behavioral finansial berdasarkan hasil FTSA-32 berikut.
+Anda adalah dr. Financial dari Your Financial Doctor (YFD). Berikan insight dan rekomendasi behavioral finansial berdasarkan hasil FTSA-32 dan baseline keuangan berikut.
 
 DATA HASIL:
 - Dominant archetype: {$summary['archetype_label']}
 - Domain scores:
 {$this->linesBlock($domainLines)}
+{$baselineContext}
 
 ATURAN WAJIB:
 {$rules}
@@ -471,6 +474,34 @@ PROMPT;
         }
 
         return $note;
+    }
+
+    private function ftsaBaselineContext(FinancialBaseline $baseline): string
+    {
+        $lines = [];
+        if (trim((string) ($baseline->stage_label ?? '')) !== '') {
+            $lines[] = '- Tahap keuangan (diagnostik): '.$baseline->stage_label
+                .($baseline->financial_stage_score ? " (skor {$baseline->financial_stage_score}/39)" : '');
+        }
+        if (trim((string) ($baseline->current_goal ?? '')) !== '') {
+            $lines[] = '- Target saat ini: '.$baseline->current_goal;
+        }
+        foreach ([
+            'avg_monthly_income' => 'Pendapatan/bulan',
+            'cash_savings' => 'Tabungan',
+            'total_debt' => 'Utang',
+            'emergency_fund' => 'Dana darurat',
+        ] as $field => $label) {
+            if ($baseline->{$field} !== null && (int) $baseline->{$field} > 0) {
+                $lines[] = sprintf('- %s: Rp %s', $label, number_format((int) $baseline->{$field}, 0, ',', '.'));
+            }
+        }
+
+        if ($lines === []) {
+            return '';
+        }
+
+        return "- Baseline keuangan:\n".$this->linesBlock($lines);
     }
 
     /**

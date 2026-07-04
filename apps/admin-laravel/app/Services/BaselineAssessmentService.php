@@ -233,6 +233,7 @@ class BaselineAssessmentService
     public function validationRulesFtsaSnapshotOnly(): array
     {
         return [
+            'snapshot.current_goal' => 'nullable|string|max:512',
             'snapshot.avg_monthly_income' => 'nullable|integer|min:0',
             'snapshot.emergency_fund' => 'nullable|integer|min:0',
             'snapshot.cash_savings' => 'nullable|integer|min:0',

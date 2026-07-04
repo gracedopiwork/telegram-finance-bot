@@ -10,9 +10,9 @@
             <span class="material-symbols-outlined text-gold-400">lightbulb</span> Insight FTSA
         </h3>
         @if($ftsaAiSource === 'ai')
-            <p class="text-[11px] text-white/60 mb-3">Dipersonalisasi oleh dr. Financial (AI) berdasarkan hasil kuesioner Anda.</p>
+            <p class="text-[11px] text-white/60 mb-3">Dipersonalisasi oleh dr. Financial (Claude AI) berdasarkan FTSA dan baseline Anda.</p>
         @elseif($ftsaAiSource === 'rules')
-            <p class="text-[11px] text-white/50 mb-3">Insight berbasis aturan (AI belum aktif — set ANTHROPIC_API_KEY).</p>
+            <p class="text-[11px] text-white/50 mb-3">Insight sementara dari aturan internal — hubungkan Claude di server untuk personalisasi penuh.</p>
         @endif
         <ul class="space-y-2 text-sm text-white/90">
             @foreach($ftsaInsights as $insight)
