@@ -32,18 +32,6 @@
 @endphp
 
 <div class="{{ ($isFtsaOnlyPortalUser ?? false) ? 'w-full' : 'w-full max-w-6xl mx-auto' }}">
-    @if($isFtsaOnlyPortalUser && $needsFinancialDiagnostic)
-        <div class="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 mb-6 text-sm text-sky-900">
-            <div class="font-bold">Langkah 1 — Diagnostik keuangan</div>
-            <p class="mt-1">Isi tahap kesehatan finansial Anda di portal sebelum atau bersamaan dengan FTSA.</p>
-            <a href="{{ $portalDiagnosticUrl ?? route('portal.diagnostic') }}"
-               class="inline-flex items-center gap-2 mt-3 bg-navy-800 hover:bg-navy-700 text-white font-bold px-4 py-2 rounded-xl text-sm">
-                <span class="material-symbols-outlined text-lg">health_and_safety</span>
-                Isi Diagnostik di Portal
-            </a>
-        </div>
-    @endif
-
     @if($hasBaseline ?? false)
         <div class="bg-sky-50 border border-sky-200 rounded-2xl px-5 py-4 mb-6 text-sm text-sky-900">
             @if($ftsaRetakeLocked ?? false)

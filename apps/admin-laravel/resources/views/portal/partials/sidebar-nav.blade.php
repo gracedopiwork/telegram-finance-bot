@@ -21,33 +21,7 @@
         <span class="flex-1">INPUT DATA</span>
     </a>
     @endif
-    @php
-        $baselineNavUrl = $baselineUrl ?? route('portal.baseline.create');
-        $baselineNavHighlight = !($portalOnboardingComplete ?? false) && (
-            ($needsBaseline ?? false)
-            || (($needsFtsa ?? false) && !($ftsaRetakeLocked ?? false))
-            || (($isFtsaOnlyPortalUser ?? false) && ($needsFinancialDiagnostic ?? false))
-            || (($isFtsaOnlyPortalUser ?? false) && ($needsFtsaSnapshot ?? false))
-        );
-        $dashboardNavHighlight = false;
-        $baselineNavLabel = ($portalOnboardingComplete ?? false)
-            ? 'BASELINE DATA'
-            : (($isFtsaOnlyPortalUser ?? false)
-                ? (($needsFinancialDiagnostic ?? false)
-                    ? 'DIAGNOSTIK KEUANGAN'
-                    : (($needsFtsaSnapshot ?? false)
-                        ? 'SNAPSHOT KEUANGAN'
-                        : (($needsFtsa ?? false) ? 'FTSA 1–32' : 'BASELINE DATA')))
-                : 'BASELINE DATA (WAJIB DI ISI)');
-    @endphp
-    <a href="{{ $baselineNavUrl }}"
-       class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'baseline' ? 'nav-active font-semibold' : 'hover:bg-white/10' }} {{ $baselineNavHighlight ? 'ring-2 ring-gold-400/80 bg-gold-400/10' : '' }}">
-        <span class="material-symbols-outlined text-lg opacity-80">fact_check</span>
-        <span class="flex-1">{{ $baselineNavLabel }}</span>
-        @if($baselineNavHighlight)
-            <span class="text-[9px] bg-gold-400 text-navy-900 px-1.5 py-0.5 rounded font-bold animate-pulse">ISI</span>
-        @endif
-    </a>
+    @include('portal.partials.sidebar-baseline-nav')
     @if($hasBotPortalAccess ?? false)
     <a href="{{ route('portal.dashboard', $query) }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'dashboard' ? 'nav-active font-semibold' : 'hover:bg-white/10' }} {{ $dashboardNavHighlight ? 'ring-2 ring-gold-400/80 bg-gold-400/10' : '' }}">
@@ -71,11 +45,13 @@
         <span class="text-[9px] bg-gold-400/20 text-gold-400 px-1.5 py-0.5 rounded font-bold">PREMIUM</span>
     </a>
     @endif
+    @if(!($isFtsaOnlyPortalUser ?? false))
     <div class="flex items-center gap-2 rounded-lg px-3 py-3 text-white/35 cursor-not-allowed">
         <span class="material-symbols-outlined text-lg">flag</span>
         <span class="flex-1">YOUR FINANCIAL GOAL PLANNING</span>
         <span class="text-[9px] bg-white/10 text-gold-400 px-1.5 py-0.5 rounded font-bold">PREMIUM</span>
     </div>
+    @endif
 </nav>
 <div class="p-4 m-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white/75 italic leading-relaxed">
     "Kesehatan finansial yang baik dimulai dari kesadaran hari ini."

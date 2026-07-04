@@ -84,6 +84,7 @@ class DashboardController extends Controller
     return view('portal.emotional', [
       'active' => 'emotional',
       'assessment' => $assessment,
+      'baseline' => $baseline,
       'ftsaUnlocked' => $ftsaUnlocked,
       'ftsaEndsAt' => $ftsaStatus['ends_at'],
       'ftsaRetakeLocked' => app(\App\Services\FtsaEvaluationService::class)->isRetakeLocked($telegramUserId),
