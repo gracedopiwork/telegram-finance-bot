@@ -11,7 +11,7 @@ return [
 
     'models' => array_values(array_filter(array_map(
         fn (string $v) => trim($v),
-        explode(',', (string) env('PORTAL_AI_MODELS', env('FTSA_AI_MODELS', 'claude-3-5-haiku-20241022,claude-sonnet-4-20250514')))
+        explode(',', (string) env('PORTAL_AI_MODELS', env('FTSA_AI_MODELS', 'claude-haiku-4-5,claude-sonnet-4-6')))
     ))),
 
     'system_prompt' => 'Balas hanya dengan JSON valid tanpa markdown atau penjelasan tambahan.',

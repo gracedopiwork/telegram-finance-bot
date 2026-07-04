@@ -23,7 +23,7 @@ class ClaudeJsonService
         }
 
         $apiKey = (string) config('portal_ai.api_key', '');
-        $models = (array) config('portal_ai.models', ['claude-sonnet-4-20250514']);
+        $models = (array) config('portal_ai.models', ['claude-haiku-4-5', 'claude-sonnet-4-6']);
         $timeout = max(10, (int) config('portal_ai.timeout_seconds', 45));
         $temperature ??= (float) config('portal_ai.temperature', 0.3);
         $maxTokens = max(256, (int) config('portal_ai.max_tokens', 2048));
@@ -94,7 +94,7 @@ class ClaudeJsonService
         }
 
         $apiKey = (string) config('portal_ai.api_key', '');
-        $models = (array) config('portal_ai.models', ['claude-sonnet-4-20250514']);
+        $models = (array) config('portal_ai.models', ['claude-haiku-4-5', 'claude-sonnet-4-6']);
         $timeout = max(10, (int) config('portal_ai.timeout_seconds', 45));
 
         $lastFailure = ['ok' => false, 'error' => 'Semua model gagal'];
