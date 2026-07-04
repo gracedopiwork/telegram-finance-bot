@@ -3,12 +3,20 @@
 return [
     'enabled' => (bool) env('PORTAL_AI_ENABLED', env('FTSA_AI_ENABLED', true)),
 
-    'api_key' => env('GEMINI_API_KEY'),
+    'provider' => env('PORTAL_AI_PROVIDER', 'claude'),
+
+    'api_key' => env('ANTHROPIC_API_KEY', env('GEMINI_API_KEY')),
+
+    'api_version' => env('ANTHROPIC_API_VERSION', '2023-06-01'),
 
     'models' => array_values(array_filter(array_map(
         fn (string $v) => trim($v),
-        explode(',', (string) env('PORTAL_AI_MODELS', env('FTSA_AI_MODELS', 'gemini-2.5-flash,gemini-2.0-flash,gemini-2.0-flash-lite')))
+        explode(',', (string) env('PORTAL_AI_MODELS', env('FTSA_AI_MODELS', 'claude-sonnet-4-20250514,claude-3-5-haiku-20241022')))
     ))),
+
+    'system_prompt' => 'Balas hanya dengan JSON valid tanpa markdown atau penjelasan tambahan.',
+
+    'max_tokens' => (int) env('PORTAL_AI_MAX_TOKENS', 2048),
 
     'temperature' => (float) env('PORTAL_AI_TEMPERATURE', env('FTSA_AI_TEMPERATURE', 0.3)),
     'timeout_seconds' => (int) env('PORTAL_AI_TIMEOUT', env('FTSA_AI_TIMEOUT', 45)),

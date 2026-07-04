@@ -1,4 +1,4 @@
-"""Laporkan kesehatan pemakaian Gemini ke admin Laravel (fire-and-forget)."""
+"""Laporkan kesehatan pemakaian Claude ke admin Laravel (fire-and-forget)."""
 
 from __future__ import annotations
 
@@ -14,9 +14,17 @@ logger = logging.getLogger(__name__)
 _warned_missing_config = False
 
 
-def _classify_gemini_error(exc: Exception) -> str:
+def _classify_ai_error(exc: Exception) -> str:
     text = f"{type(exc).__name__}: {exc}".lower()
-    if "429" in text or "too many requests" in text or "resource exhausted" in text or "quota" in text:
+    if (
+        "429" in text
+        or "529" in text
+        or "too many requests" in text
+        or "rate_limit" in text
+        or "overloaded" in text
+        or "resource exhausted" in text
+        or "quota" in text
+    ):
         return "rate_limit"
     return "error"
 
@@ -67,7 +75,12 @@ def report_ai_event(event: str, detail: str = "") -> None:
     threading.Thread(target=_send, daemon=True).start()
 
 
-def report_gemini_failure(exc: Exception, context: str = "") -> None:
-    event = _classify_gemini_error(exc)
+def report_ai_failure(exc: Exception, context: str = "") -> None:
+    event = _classify_ai_error(exc)
     detail = context or str(exc)[:500]
     report_ai_event(event, detail)
+
+
+def report_gemini_failure(exc: Exception, context: str = "") -> None:
+    """Alias lama — tetap ada agar import lama tidak pecah."""
+    report_ai_failure(exc, context)

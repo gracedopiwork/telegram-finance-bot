@@ -87,20 +87,20 @@ class AiHealthService
 
         if ($rateLimit >= 10 || ($total >= 30 && $fallbackRate >= 40)) {
             $status = 'critical';
-            $label = 'Perlu upgrade billing';
-            $message = 'Gemini free tier sering kena limit (429). Aktifkan billing di Google AI Studio.';
+            $label = 'Perlu naikkan limit API';
+            $message = 'Claude API sering kena rate limit. Cek kuota/billing di Anthropic Console.';
         } elseif ($shouldUpgrade) {
             $status = 'warning';
             $label = 'Hampir perlu upgrade';
-            $message = 'Mulai muncul error rate limit atau parser fallback. Pertimbangkan upgrade ke Tier 1.';
+            $message = 'Mulai muncul error rate limit atau parser fallback. Pertimbangkan naikkan limit API Claude.';
         } elseif ($total === 0) {
             $status = 'unknown';
             $label = 'Belum ada data';
             $message = $this->noDataMessage();
         } else {
             $status = 'ok';
-            $label = 'Free tier masih cukup';
-            $message = 'Tidak ada sinyal kuat untuk upgrade billing saat ini.';
+            $label = 'API masih cukup';
+            $message = 'Tidak ada sinyal kuat untuk menaikkan limit API saat ini.';
         }
 
         return [

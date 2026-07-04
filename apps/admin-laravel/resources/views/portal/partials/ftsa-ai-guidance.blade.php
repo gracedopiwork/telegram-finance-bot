@@ -12,7 +12,7 @@
         @if($ftsaAiSource === 'ai')
             <p class="text-[11px] text-white/60 mb-3">Dipersonalisasi oleh dr. Financial (AI) berdasarkan hasil kuesioner Anda.</p>
         @elseif($ftsaAiSource === 'rules')
-            <p class="text-[11px] text-white/50 mb-3">Insight berbasis aturan (AI belum aktif — set GEMINI_API_KEY).</p>
+            <p class="text-[11px] text-white/50 mb-3">Insight berbasis aturan (AI belum aktif — set ANTHROPIC_API_KEY).</p>
         @endif
         <ul class="space-y-2 text-sm text-white/90">
             @foreach($ftsaInsights as $insight)

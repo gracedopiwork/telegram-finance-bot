@@ -6,7 +6,6 @@ import tempfile
 from datetime import datetime
 from typing import Any, Dict
 
-import google.generativeai as genai
 import mysql.connector
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -19,7 +18,9 @@ from telegram.ext import (
     filters,
 )
 
-from ai_health import log_ai_health_config, report_ai_event, report_gemini_failure
+from ai_health import log_ai_health_config, report_ai_event, report_ai_failure
+from claude_ai import analyze_with_claude as claude_parse_json
+from claude_ai import extract_transaction_text_from_image as claude_extract_image_text
 from laravel_api import log_laravel_api_config
 from license_activate import activate_license_via_api
 from ai_quota import (
@@ -491,73 +492,37 @@ def normalize_ai_result(data: Dict[str, Any]) -> Dict[str, Any]:
     return data
 
 
-def analyze_with_gemini(user_text: str) -> Dict[str, Any]:
-    api_key = get_env("GEMINI_API_KEY")
-    genai.configure(api_key=api_key)
-    candidate_models = [
-        "gemini-2.5-flash",
-        "gemini-2.5-flash-lite",
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite",
-    ]
+def analyze_with_claude(user_text: str) -> Dict[str, Any]:
+    candidate_models = os.getenv("CLAUDE_MODELS", "claude-3-5-haiku-20241022,claude-sonnet-4-20250514")
     last_error: Exception | None = None
 
-    for model_name in candidate_models:
-        try:
-            model = genai.GenerativeModel(model_name)
-            response = model.generate_content(
-                [get_system_prompt(), f"Input user: {user_text}"],
-                generation_config={"temperature": 0},
-            )
-            raw_text = response.text if hasattr(response, "text") else ""
-            parsed = extract_json(raw_text)
-            result = normalize_ai_result(parsed)
-            report_ai_event("success")
-            return result
-        except Exception as exc:  # pragma: no cover - external provider fallback
-            last_error = exc
-            report_gemini_failure(exc, model_name)
-            logger.warning("Model %s gagal dipakai (%s).", model_name, type(exc).__name__)
+    try:
+        parsed = claude_parse_json(f"Input user: {user_text}", get_system_prompt())
+        result = normalize_ai_result(parsed)
+        report_ai_event("success")
+        return result
+    except Exception as exc:  # pragma: no cover - external provider fallback
+        last_error = exc
+        report_ai_failure(exc, candidate_models)
+        logger.warning("Claude gagal dipakai (%s).", type(exc).__name__)
 
     report_ai_event("error", str(last_error)[:500] if last_error else "all_models_failed")
-    raise RuntimeError(f"Semua model Gemini gagal dipakai: {last_error}")
+    raise RuntimeError(f"Semua model Claude gagal dipakai: {last_error}")
 
 
 def extract_transaction_text_from_image(image_path: str) -> str:
-    api_key = get_env("GEMINI_API_KEY")
-    genai.configure(api_key=api_key)
-    candidate_models = [
-        "gemini-2.5-flash",
-        "gemini-2.5-flash-lite",
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite",
-    ]
     prompt = (
         "Ekstrak isi transaksi dari gambar struk/foto jadi satu kalimat singkat bahasa Indonesia "
         "yang berisi keterangan dan nominal. Jangan isi mood. Jika tidak terbaca, balas INVALID_IMAGE."
     )
-    last_error: Exception | None = None
+    with open(image_path, "rb") as image_file:
+        image_bytes = image_file.read()
 
-    for model_name in candidate_models:
-        try:
-            model = genai.GenerativeModel(model_name)
-            with open(image_path, "rb") as image_file:
-                image_bytes = image_file.read()
-            response = model.generate_content(
-                [
-                    prompt,
-                    {"mime_type": "image/jpeg", "data": image_bytes},
-                ],
-                generation_config={"temperature": 0},
-            )
-            text = (response.text if hasattr(response, "text") else "").strip()
-            if text and text.upper() != "INVALID_IMAGE":
-                return text
-        except Exception as exc:  # pragma: no cover - external provider fallback
-            last_error = exc
-            logger.warning("Model vision %s gagal dipakai (%s).", model_name, type(exc).__name__)
+    text = claude_extract_image_text(image_bytes, "image/jpeg", prompt).strip()
+    if text and text.upper() != "INVALID_IMAGE":
+        return text
 
-    raise RuntimeError(f"Gagal ekstrak transaksi dari gambar: {last_error}")
+    raise RuntimeError("Gagal ekstrak transaksi dari gambar")
 
 
 def parse_nominal_fallback(text: str) -> int:
@@ -703,13 +668,13 @@ def parse_user_transaction(text: str, user_id: int) -> tuple[Dict[str, Any], boo
         return parsed, True
 
     try:
-        parsed = analyze_with_gemini(text)
+        parsed = analyze_with_claude(text)
         if user_id:
             record_ai_usage(user_id, "text")
         return parsed, False
     except Exception as exc:  # pragma: no cover - defensive guard for external services
         logger.warning("Gagal analisis input AI, fallback parser dipakai: %s", exc)
-        report_gemini_failure(exc, "analyze_with_gemini")
+        report_ai_failure(exc, "analyze_with_claude")
         parsed = analyze_without_gemini(text)
         report_ai_event("fallback", str(exc)[:500])
         return parsed, False

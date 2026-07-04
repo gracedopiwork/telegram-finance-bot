@@ -158,7 +158,7 @@
                             <div class="text-white font-semibold text-[14px] leading-tight">YFD First Aid</div>
                             <div class="text-emerald-400 text-[11px] leading-tight">● AI aktif · deteksi impulsif</div>
                         </div>
-                        <span class="shrink-0 text-[9px] font-bold uppercase tracking-wider bg-violet-500/20 text-violet-300 border border-violet-400/30 px-2 py-0.5 rounded-full">Gemini</span>
+                        <span class="shrink-0 text-[9px] font-bold uppercase tracking-wider bg-violet-500/20 text-violet-300 border border-violet-400/30 px-2 py-0.5 rounded-full">Claude</span>
                     </div>
                     <div class="px-4 py-5 space-y-3 bg-[#0a1626]">
                         <div class="flex justify-end">

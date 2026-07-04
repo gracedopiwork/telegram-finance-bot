@@ -35,7 +35,7 @@
 
 <div class="card card-outline {{ $aiCardClass }} mb-4">
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-robot mr-2"></i>Status AI Gemini (7 hari terakhir)</h3>
+        <h3 class="card-title"><i class="fas fa-robot mr-2"></i>Status AI Claude (7 hari terakhir)</h3>
         <span class="badge {{ $aiBadgeClass }} ml-2">{{ $ai['label'] ?? '—' }}</span>
     </div>
     <div class="card-body">
@@ -57,9 +57,8 @@
         @endif
         @if(!empty($ai['should_upgrade']))
             <div class="alert alert-warning mb-2 py-2">
-                <strong>Saran:</strong> aktifkan billing di
-                <a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio</a>
-                → <em>Set up billing</em> (Tier 1, minimal ~$10 kredit).
+                <strong>Saran:</strong> cek kuota dan billing di
+                <a href="https://console.anthropic.com/settings/billing" target="_blank" rel="noopener">Anthropic Console</a>.
             </div>
         @endif
         @if(($totals['total'] ?? 0) === 0)

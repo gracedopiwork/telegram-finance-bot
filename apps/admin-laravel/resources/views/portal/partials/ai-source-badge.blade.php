@@ -8,5 +8,5 @@
 @if($aiSource === 'ai')
     <p class="{{ $class }}">Dipersonalisasi oleh dr. Financial (AI) berdasarkan data Anda.</p>
 @elseif($aiSource === 'rules')
-    <p class="{{ $class }}">Insight berbasis aturan (set <code class="text-[10px]">GEMINI_API_KEY</code> untuk AI penuh).</p>
+    <p class="{{ $class }}">Insight berbasis aturan (set <code class="text-[10px]">ANTHROPIC_API_KEY</code> untuk AI penuh).</p>
 @endif

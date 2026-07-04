@@ -56,7 +56,7 @@ python bot.py
 ```
 
 Isi `.env` bot:
-- Telegram + Gemini key
+- Telegram + Anthropic (Claude) API key
 - MySQL credentials
 - `LICENSE_REQUIRED=true`
 - Dashboard master config untuk sync script

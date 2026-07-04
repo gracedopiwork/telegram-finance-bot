@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 class PortalAiGuidanceService
 {
     public function __construct(
-        private readonly GeminiJsonService $gemini,
+        private readonly ClaudeJsonService $claude,
         private readonly FtsaAnswerSummaryService $ftsaSummary,
     ) {}
 
@@ -38,19 +38,19 @@ class PortalAiGuidanceService
         return Cache::remember($cacheKey, $ttl, function () use ($baseline) {
             $fallback = $this->ftsaFallback($baseline);
 
-            if (! $this->gemini->isConfigured()) {
+            if (! $this->claude->isConfigured()) {
                 return $fallback;
             }
 
             try {
                 $summary = $this->ftsaSummary->scoreSummary($baseline);
-                $parsed = $this->gemini->generate($this->ftsaPrompt($baseline, $summary));
+                $parsed = $this->claude->generate($this->ftsaPrompt($baseline, $summary));
                 if ($parsed === null) {
                     return $fallback;
                 }
 
-                $insights = $this->gemini->normalizeLines($parsed['insights'] ?? [], (int) config('portal_ai.max_insights', 3));
-                $recommendations = $this->gemini->normalizeLines($parsed['recommendations'] ?? [], (int) config('portal_ai.max_recommendations', 3));
+                $insights = $this->claude->normalizeLines($parsed['insights'] ?? [], (int) config('portal_ai.max_insights', 3));
+                $recommendations = $this->claude->normalizeLines($parsed['recommendations'] ?? [], (int) config('portal_ai.max_recommendations', 3));
 
                 if ($insights === [] && $recommendations === []) {
                     return $fallback;
@@ -108,7 +108,7 @@ class PortalAiGuidanceService
         $ttl = now()->addHours(max(1, (int) config('portal_ai.cache_ttl_hours_dashboard', 24)));
 
         return Cache::remember($cacheKey, $ttl, function () use ($metrics, $baseline, $fallback) {
-            if (! $this->gemini->isConfigured()) {
+            if (! $this->claude->isConfigured()) {
                 return array_merge($fallback, [
                     'ai_source' => 'rules',
                     'generated_at' => null,
@@ -116,7 +116,7 @@ class PortalAiGuidanceService
             }
 
             try {
-                $parsed = $this->gemini->generate($this->behavioralPrompt($metrics, $baseline));
+                $parsed = $this->claude->generate($this->behavioralPrompt($metrics, $baseline));
                 if ($parsed === null) {
                     return array_merge($fallback, [
                         'ai_source' => 'rules',
@@ -176,7 +176,7 @@ class PortalAiGuidanceService
         $ttl = now()->addHours(max(1, (int) config('portal_ai.cache_ttl_hours_dashboard', 24)));
 
         return Cache::remember($cacheKey, $ttl, function () use ($metrics, $baseline, $fallback) {
-            if (! $this->gemini->isConfigured()) {
+            if (! $this->claude->isConfigured()) {
                 return array_merge($fallback, [
                     'ai_source' => 'rules',
                     'generated_at' => null,
@@ -184,7 +184,7 @@ class PortalAiGuidanceService
             }
 
             try {
-                $parsed = $this->gemini->generate($this->financialPrompt($metrics, $baseline));
+                $parsed = $this->claude->generate($this->financialPrompt($metrics, $baseline));
                 if ($parsed === null) {
                     return array_merge($fallback, [
                         'ai_source' => 'rules',
@@ -216,7 +216,7 @@ class PortalAiGuidanceService
      */
     private function ftsaPrompt(FinancialBaseline $baseline, array $summary): string
     {
-        $rules = $this->gemini->rulesBlock(['shared_rules', 'ftsa_rules']);
+        $rules = $this->claude->rulesBlock(['shared_rules', 'ftsa_rules']);
         $domainLines = [];
         foreach ($summary['domains'] as $domain) {
             $level = $domain['level'] ?? '—';
@@ -258,7 +258,7 @@ PROMPT;
      */
     private function behavioralPrompt(array $metrics, ?FinancialBaseline $baseline): string
     {
-        $rules = $this->gemini->rulesBlock(['shared_rules', 'behavioral_rules']);
+        $rules = $this->claude->rulesBlock(['shared_rules', 'behavioral_rules']);
         $ftsa = $metrics['ftsa_profile'] ?? null;
         $leakage = $metrics['highest_leakage'] ?? null;
         $moodGroups = $metrics['mood_groups'] ?? [];
@@ -319,7 +319,7 @@ PROMPT;
      */
     private function financialPrompt(array $metrics, ?FinancialBaseline $baseline): string
     {
-        $rules = $this->gemini->rulesBlock(['shared_rules', 'financial_rules']);
+        $rules = $this->claude->rulesBlock(['shared_rules', 'financial_rules']);
         $bucketLines = [];
         foreach ((array) ($metrics['buckets'] ?? []) as $bucket) {
             if (! is_array($bucket)) {
@@ -395,9 +395,9 @@ PROMPT;
      */
     private function normalizeBehavioralResponse(array $parsed, array $fallback): array
     {
-        $insights = $this->gemini->normalizeLines($parsed['insights'] ?? [], (int) config('portal_ai.max_insights', 3));
-        $personal = $this->gemini->normalizeLines($parsed['recommendations_personalized'] ?? [], (int) config('portal_ai.max_recommendations', 3));
-        $general = $this->gemini->normalizeLines($parsed['recommendations_general'] ?? [], (int) config('portal_ai.max_general_recommendations', 3));
+        $insights = $this->claude->normalizeLines($parsed['insights'] ?? [], (int) config('portal_ai.max_insights', 3));
+        $personal = $this->claude->normalizeLines($parsed['recommendations_personalized'] ?? [], (int) config('portal_ai.max_recommendations', 3));
+        $general = $this->claude->normalizeLines($parsed['recommendations_general'] ?? [], (int) config('portal_ai.max_general_recommendations', 3));
         $note = $this->normalizeDoctorsNote($parsed['doctors_note'] ?? null, $fallback['doctors_note'], false);
 
         return [
@@ -425,7 +425,7 @@ PROMPT;
     {
         $clinical = is_array($parsed['clinical_summary'] ?? null) ? $parsed['clinical_summary'] : [];
         $headline = trim((string) ($clinical['headline'] ?? ''));
-        $findings = $this->gemini->normalizeLines($clinical['findings'] ?? [], (int) config('portal_ai.max_findings', 5));
+        $findings = $this->claude->normalizeLines($clinical['findings'] ?? [], (int) config('portal_ai.max_findings', 5));
         $status = trim((string) ($clinical['status'] ?? ''));
         $allowedStatuses = ['healthy', 'fair', 'attention', 'critical', 'no_data'];
 
@@ -454,7 +454,7 @@ PROMPT;
         }
 
         $summary = trim((string) ($raw['summary'] ?? ''));
-        $findings = $this->gemini->normalizeLines($raw['findings'] ?? [], (int) config('portal_ai.max_findings', 5));
+        $findings = $this->claude->normalizeLines($raw['findings'] ?? [], (int) config('portal_ai.max_findings', 5));
         $interpretation = trim((string) ($raw['interpretation'] ?? ''));
         $priority = trim((string) ($raw['priority'] ?? ''));
 
