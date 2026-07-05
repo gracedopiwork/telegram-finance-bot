@@ -75,6 +75,46 @@
     </div>
 </div>
 
+@php
+    $sh = $serverHealth ?? [];
+    $sc = $serverCosts ?? [];
+    $shStatus = $sh['status'] ?? 'unknown';
+    $shCardClass = match ($shStatus) {
+        'ok' => 'card-success',
+        'warning' => 'card-warning',
+        'critical' => 'card-danger',
+        default => 'card-secondary',
+    };
+    $shUsage = $sh['usage'] ?? [];
+    $shTier = $sh['tier'] ?? [];
+@endphp
+
+<div class="card card-outline {{ $shCardClass }} mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0"><i class="fas fa-server mr-2"></i>Server &amp; Biaya</h3>
+        <a href="{{ route('admin.server-health.index') }}" class="btn btn-sm btn-outline-secondary">Detail</a>
+    </div>
+    <div class="card-body">
+        <div class="row text-center mb-2">
+            <div class="col-4">
+                <strong>{{ number_format($shUsage['active_users_30d'] ?? 0) }}</strong>
+                <div class="small text-muted">User aktif 30h</div>
+            </div>
+            <div class="col-4">
+                <strong>{{ $shTier['label'] ?? '—' }}</strong>
+                <div class="small text-muted">Tier VPS</div>
+            </div>
+            <div class="col-4">
+                <strong>Rp {{ number_format($sc['total_monthly_idr'] ?? 0, 0, ',', '.') }}</strong>
+                <div class="small text-muted">Estimasi/bulan</div>
+            </div>
+        </div>
+        @if(!empty($sh['alerts'][0]['message']))
+            <p class="small mb-0">{{ $sh['alerts'][0]['message'] }}</p>
+        @endif
+    </div>
+</div>
+
 {{-- Kartu sinkronisasi lama sudah dihapus: platform sekarang full web dashboard. --}}
 
 <div class="row">

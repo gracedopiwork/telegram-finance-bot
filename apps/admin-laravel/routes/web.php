@@ -106,6 +106,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
 
     // Dashboard
     Route::get('/', [AdminController::class, 'index'])->name('index');
+    Route::get('/server-health', [\App\Http\Controllers\Admin\ServerHealthController::class, 'index'])->name('server-health.index');
 
     // Settings (key/value)
     Route::get('/settings',  [SettingsController::class, 'index'])->name('settings.index');

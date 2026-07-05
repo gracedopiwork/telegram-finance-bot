@@ -309,6 +309,11 @@ return [
             'route' => 'admin.index',
             'icon' => 'fas fa-fw fa-tachometer-alt',
         ],
+        [
+            'text' => 'Server & Biaya',
+            'route' => 'admin.server-health.index',
+            'icon' => 'fas fa-fw fa-server',
+        ],
 
         ['header' => 'Pengaturan Situs'],
 
