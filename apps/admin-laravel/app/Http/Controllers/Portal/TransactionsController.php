@@ -27,7 +27,14 @@ class TransactionsController extends Controller
     public function import(Request $request): RedirectResponse
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
+            // Excel/Google Sheets CSV often reports as application/vnd.ms-excel or text/plain, not text/csv.
+            'file' => [
+                'required',
+                'file',
+                'extensions:csv,txt',
+                'mimetypes:text/csv,text/plain,application/csv,application/vnd.ms-excel,text/x-csv,application/octet-stream',
+                'max:2048',
+            ],
         ]);
 
         $telegramUserId = (int) PortalSession::telegramUserId($request);
