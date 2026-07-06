@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BotTransaction;
 use App\Models\FinancialBaseline;
+use App\Services\FtsaAiGuidanceService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -100,7 +101,102 @@ class ImpulsivityAssessmentService
       'ftsa_profile' => $ftsaProfile,
     ];
 
-    $fallbackGuidance = [
+    $guidanceContext = $this->monthlyGuidanceContext($telegramUserId, $month, $email);
+
+    $aiGuidance = app(PortalAiGuidanceService::class)->behavioral(
+      $telegramUserId,
+      $month,
+      1,
+      $guidanceContext['metrics'],
+      $guidanceContext['baseline'],
+      $guidanceContext['fallback'],
+    );
+
+    $ftsaGuidance = ($guidanceContext['metrics']['ftsa_profile'] ?? null) !== null && $guidanceContext['baseline'] !== null
+      ? app(FtsaAiGuidanceService::class)->forBaseline($guidanceContext['baseline'])
+      : ['recommendations' => []];
+
+    return array_merge($core, [
+      'insights' => $aiGuidance['insights'],
+      'recommendations' => $aiGuidance['recommendations'],
+      'behavioral_recommendations' => $this->behavioralRecommendationItems(
+        $aiGuidance,
+        $guidanceContext['metrics']['ftsa_profile'] ?? null,
+        $ftsaGuidance,
+      ),
+      'doctors_note' => $aiGuidance['doctors_note'],
+      'ai_source' => $aiGuidance['ai_source'],
+      'ai_generated_at' => $aiGuidance['generated_at'],
+      'monthly_guidance_stored' => $aiGuidance['monthly_stored'] ?? false,
+      'monthly_guidance_pending' => $aiGuidance['monthly_pending'] ?? false,
+    ]);
+  }
+
+  /**
+   * Konteks bulanan untuk generate snapshot behavioral (tanpa baca snapshot).
+   *
+   * @return array{
+   *   metrics: array<string, mixed>,
+   *   fallback: array{insights: list<string>, recommendations: array{personalized: list<string>, general: list<string>}, doctors_note: array{summary: string, findings: list<string>, interpretation: string, priority: string}},
+   *   baseline: ?FinancialBaseline,
+   *   expense_count: int
+   * }
+   */
+  public function monthlyGuidanceContext(int $telegramUserId, string $monthKey, ?string $email = null): array
+  {
+    $dashboard = app(TransactionDashboardService::class);
+    $month = $dashboard->monthKey($monthKey);
+    $range = $this->periodRange($month, 1);
+
+    $rows = BotTransaction::query()
+      ->forUser($telegramUserId)
+      ->whereBetween('recorded_at', [$range['start'], $range['end']])
+      ->get();
+
+    $expenses = $rows->where('type', 'Pengeluaran');
+    $expenseCount = $expenses->count();
+    $impulsiveRows = $expenses->where('is_impulsive', true);
+    $impulsiveCount = $impulsiveRows->count();
+    $totalExpense = (int) $expenses->sum('amount');
+    $impulsiveAmount = (int) $impulsiveRows->sum('amount');
+
+    $impulsiveRate = $expenseCount > 0
+      ? round(($impulsiveCount / $expenseCount) * 100, 1)
+      : 0.0;
+
+    $impulsiveAmountShare = $totalExpense > 0
+      ? round(($impulsiveAmount / $totalExpense) * 100, 1)
+      : 0.0;
+
+    $matrix = $this->needImpulsiveMatrix($expenses);
+    $moodGroups = $this->moodGroups($expenses);
+    $highestLeakage = $this->highestLeakage($impulsiveRows);
+    $dominantPattern = $this->dominantPattern($matrix);
+    $dominantMood = $this->dominantMood($expenses);
+    $baseline = FinancialBaseline::latestForUser($telegramUserId);
+    if ($baseline === null && is_string($email) && trim($email) !== '') {
+      $baseline = FinancialBaseline::latestForEmail($email);
+    }
+    $ftsaProfile = $this->ftsaProfile($baseline);
+    $score = $this->impulsivityScore($impulsiveRate, $impulsiveAmountShare, $impulsiveRows);
+
+    $metrics = [
+      'month' => $month,
+      'period_label' => Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y'),
+      'expense_count' => $expenseCount,
+      'impulsive_rate' => $impulsiveRate,
+      'impulsive_amount_share' => $impulsiveAmountShare,
+      'score' => $score,
+      'grade' => $this->grade($score),
+      'dominant_mood' => $dominantMood,
+      'dominant_pattern' => $dominantPattern,
+      'highest_leakage' => $highestLeakage,
+      'mood_groups' => $moodGroups,
+      'emotional_balance' => $this->emotionalBalanceScore($expenses),
+      'ftsa_profile' => $ftsaProfile,
+    ];
+
+    $fallback = [
       'insights' => $this->autoInsights($impulsiveRate, $dominantMood, $dominantPattern, $moodGroups, $highestLeakage, $ftsaProfile),
       'recommendations' => $this->recommendations($impulsiveRate, $dominantMood, $ftsaProfile, $moodGroups),
       'doctors_note' => $this->doctorsNote(
@@ -112,22 +208,37 @@ class ImpulsivityAssessmentService
       ),
     ];
 
-    $aiGuidance = app(PortalAiGuidanceService::class)->behavioral(
-      $telegramUserId,
-      $month,
-      $periodMonths,
-      $core,
-      $baseline,
-      $fallbackGuidance,
-    );
+    return [
+      'metrics' => $metrics,
+      'fallback' => $fallback,
+      'baseline' => $baseline,
+      'expense_count' => $expenseCount,
+    ];
+  }
 
-    return array_merge($core, [
-      'insights' => $aiGuidance['insights'],
-      'recommendations' => $aiGuidance['recommendations'],
-      'doctors_note' => $aiGuidance['doctors_note'],
-      'ai_source' => $aiGuidance['ai_source'],
-      'ai_generated_at' => $aiGuidance['generated_at'],
-    ]);
+  /**
+   * @param  array<string, mixed>  $aiGuidance
+   * @param  array<string, mixed>|null  $ftsaProfile
+   * @param  array{recommendations?: list<string>}  $ftsaGuidance
+   * @return list<string>
+   */
+  private function behavioralRecommendationItems(array $aiGuidance, ?array $ftsaProfile, array $ftsaGuidance): array
+  {
+    if (! ($aiGuidance['monthly_stored'] ?? false)) {
+      return $aiGuidance['recommendations']['general'] ?? [];
+    }
+
+    $personal = $aiGuidance['recommendations']['personalized'] ?? [];
+    $general = $aiGuidance['recommendations']['general'] ?? [];
+
+    if ($ftsaProfile !== null) {
+      return array_values(array_unique(array_merge(
+        $ftsaGuidance['recommendations'] ?? [],
+        $personal,
+      )));
+    }
+
+    return array_values(array_unique(array_merge($personal, $general)));
   }
 
   /**

@@ -11,6 +11,8 @@ class PortalGuidanceSnapshot extends Model
 
     public const TYPE_DOCTORS_NOTE_MONTHLY = 'doctors_note_monthly';
 
+    public const TYPE_BEHAVIORAL_MONTHLY = 'behavioral_monthly';
+
     protected $fillable = [
         'telegram_user_id',
         'guidance_type',

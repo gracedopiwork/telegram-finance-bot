@@ -23,7 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             ->withoutOverlapping()
             ->onOneServer();
 
-        $schedule->command('portal:generate-guidance monthly')
+        $schedule->command('portal:generate-guidance monthly --force')
             ->dailyAt($monthlyTime)
             ->timezone($tz)
             ->when(fn () => now($tz)->isLastOfMonth())

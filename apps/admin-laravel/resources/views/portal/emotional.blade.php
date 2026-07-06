@@ -18,12 +18,6 @@
     $matrixOrder = ['need_impulsive', 'want_impulsive', 'need_planned', 'want_planned'];
     $matrixByKey = collect($assessment['matrix'] ?? [])->keyBy('key');
     $ftsaDoctorsNote = collect($ftsaAiGuidance['insights'] ?? [])->filter()->implode(' ');
-    $behavioralRecommendations = $ftsaProfile
-        ? array_values(array_unique(array_merge(
-            $ftsaAiGuidance['recommendations'] ?? [],
-            $assessment['recommendations']['personalized'] ?? [],
-        )))
-        : ($assessment['recommendations']['general'] ?? []);
 @endphp
 
 @if($isFtsaOnly)
@@ -143,12 +137,12 @@
         </div>
     </div>
 
-    {{-- 2. Insight kelakuan behavioral --}}
+    {{-- 2. Behavioral Recommendation --}}
     <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <div class="text-sm font-semibold text-navy-800 mb-3">Insight kelakuan behavioral</div>
-        @if(!empty($behavioralRecommendations))
+        <div class="text-sm font-semibold text-navy-800 mb-3">Behavioral Recommendation</div>
+        @if(!empty($assessment['behavioral_recommendations']))
             <ul class="space-y-1 text-sm text-slate-700">
-                @foreach($behavioralRecommendations as $rec)
+                @foreach($assessment['behavioral_recommendations'] as $rec)
                     <li class="flex gap-2"><span>–</span><span>{{ $rec }}</span></li>
                 @endforeach
             </ul>
@@ -160,7 +154,7 @@
     {{-- 3. Insight bulanan --}}
     <div class="bg-white rounded-xl border border-slate-200 p-5">
         <div class="text-sm font-semibold text-navy-800 mb-3">Insight bulanan</div>
-        <p class="text-xs text-slate-500 mb-2">{{ $assessment['period_label'] }}</p>
+        <p class="text-xs text-slate-500 mb-2">{{ $assessment['month_label'] ?? $assessment['period_label'] }}</p>
         @if(!empty($assessment['insights']))
             <ul class="space-y-1 text-sm text-slate-700">
                 @foreach($assessment['insights'] as $insight)

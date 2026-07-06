@@ -12,7 +12,7 @@ class PortalGuidanceGenerateCommand extends Command
         {--period= : Y-m untuk monthly atau anchor week (opsional)}
         {--force : Generate ulang meski snapshot sudah ada}';
 
-    protected $description = 'Generate clinical summary mingguan & doctor\'s note bulanan (simpan ke database)';
+    protected $description = 'Generate clinical summary mingguan, doctor\'s note & behavioral guidance bulanan';
 
     public function handle(PortalGuidanceBatchService $batch): int
     {
@@ -42,6 +42,13 @@ class PortalGuidanceGenerateCommand extends Command
             $this->table(
                 ['Metric', 'Count'],
                 collect($monthly)->map(fn ($v, $k) => [$k, $v])->values()->all(),
+            );
+
+            $this->info('Generating monthly behavioral guidance…');
+            $behavioral = $batch->generateMonthlyBehavioralGuidance($monthKey, $force);
+            $this->table(
+                ['Metric', 'Count'],
+                collect($behavioral)->map(fn ($v, $k) => [$k, $v])->values()->all(),
             );
         }
 

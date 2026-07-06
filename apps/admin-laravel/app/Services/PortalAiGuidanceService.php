@@ -123,59 +123,134 @@ class PortalAiGuidanceService
      *     generated_at: ?string
      * }
      */
-    public function behavioral(int $telegramUserId, string $month, int $periodMonths, array $metrics, ?FinancialBaseline $baseline, array $fallback): array
+  public function behavioral(int $telegramUserId, string $month, int $periodMonths, array $metrics, ?FinancialBaseline $baseline, array $fallback): array
     {
+        unset($periodMonths);
+
         if ((int) ($metrics['expense_count'] ?? 0) === 0) {
             return array_merge($fallback, [
                 'ai_source' => 'none',
                 'generated_at' => null,
+                'monthly_stored' => false,
+                'monthly_pending' => false,
             ]);
         }
 
-        $cacheKey = sprintf(
-            'portal_ai:behavioral:%d:%s:%d:%s',
+        $stored = $this->guidanceSnapshots->get(
             $telegramUserId,
+            PortalGuidanceSnapshot::TYPE_BEHAVIORAL_MONTHLY,
             $month,
-            $periodMonths,
-            md5(json_encode($this->behavioralFingerprint($metrics)))
         );
 
-        $ttl = now()->addHours(max(1, (int) config('portal_ai.cache_ttl_hours_dashboard', 24)));
+        if ($stored !== null) {
+            $payload = is_array($stored['payload']) ? $stored['payload'] : [];
 
-        return Cache::remember($cacheKey, $ttl, function () use ($metrics, $baseline, $fallback) {
-            if (! $this->claude->isConfigured()) {
-                return array_merge($fallback, [
-                    'ai_source' => 'rules',
-                    'generated_at' => null,
-                ]);
-            }
+            return [
+                'insights' => $payload['insights'] ?? $fallback['insights'],
+                'recommendations' => $payload['recommendations'] ?? $fallback['recommendations'],
+                'doctors_note' => $payload['doctors_note'] ?? $fallback['doctors_note'],
+                'ai_source' => ($stored['ai_source'] ?? '') === 'ai' ? 'ai' : 'rules',
+                'generated_at' => $stored['generated_at'] ?? null,
+                'monthly_stored' => true,
+                'monthly_pending' => false,
+            ];
+        }
 
+        return array_merge($this->genericBehavioralGuidance($month, $fallback), [
+            'ai_source' => 'rules',
+            'generated_at' => null,
+            'monthly_stored' => false,
+            'monthly_pending' => true,
+        ]);
+    }
+
+    /**
+     * Generate & simpan behavioral guidance bulanan (recommendation, insight, doctor's note transaksi).
+     *
+     * @param  array<string, mixed>  $metrics
+     * @param  array{
+     *     insights: list<string>,
+     *     recommendations: array{personalized: list<string>, general: list<string>},
+     *     doctors_note: array{summary: string, findings: list<string>, interpretation: string, priority: string}
+     * }  $fallback
+     */
+    public function generateAndStoreMonthlyBehavioralGuidance(
+        int $telegramUserId,
+        string $monthKey,
+        array $metrics,
+        ?FinancialBaseline $baseline,
+        array $fallback,
+    ): bool {
+        if ((int) ($metrics['expense_count'] ?? 0) === 0) {
+            return false;
+        }
+
+        $guidance = $fallback;
+        $provider = 'rules';
+
+        if ($this->claude->isConfigured()) {
             try {
                 $parsed = $this->claude->generate($this->behavioralPrompt($metrics, $baseline));
-                if ($parsed === null) {
-                    return array_merge($fallback, [
-                        'ai_source' => 'rules',
-                        'generated_at' => null,
-                    ]);
+                if (is_array($parsed)) {
+                    $guidance = $this->normalizeBehavioralResponse($parsed, $fallback);
+                    $provider = 'claude';
                 }
-
-                $result = $this->normalizeBehavioralResponse($parsed, $fallback);
-
-                return array_merge($result, [
-                    'ai_source' => 'ai',
-                    'generated_at' => now()->toIso8601String(),
-                ]);
             } catch (\Throwable $e) {
-                Log::warning('Portal AI behavioral guidance failed', [
+                Log::warning('Portal monthly behavioral guidance failed', [
+                    'telegram_user_id' => $telegramUserId,
                     'message' => $e->getMessage(),
                 ]);
-
-                return array_merge($fallback, [
-                    'ai_source' => 'rules',
-                    'generated_at' => null,
-                ]);
             }
-        });
+        }
+
+        $this->guidanceSnapshots->store(
+            $telegramUserId,
+            PortalGuidanceSnapshot::TYPE_BEHAVIORAL_MONTHLY,
+            $monthKey,
+            [
+                'insights' => $guidance['insights'],
+                'recommendations' => $guidance['recommendations'],
+                'doctors_note' => $guidance['doctors_note'],
+            ],
+            $provider,
+        );
+
+        return true;
+    }
+
+    /**
+     * @param  array{
+     *     insights: list<string>,
+     *     recommendations: array{personalized: list<string>, general: list<string>},
+     *     doctors_note: array{summary: string, findings: list<string>, interpretation: string, priority: string}
+     * }  $fallback
+     * @return array{
+     *     insights: list<string>,
+     *     recommendations: array{personalized: list<string>, general: list<string>},
+     *     doctors_note: array{summary: string, findings: list<string>, interpretation: string, priority: string}
+     * }
+     */
+    private function genericBehavioralGuidance(string $monthKey, array $fallback): array
+    {
+        try {
+            $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $monthKey)->endOfMonth();
+            $release = $monthEnd->format('d/m/Y');
+        } catch (\Throwable) {
+            $release = 'akhir bulan';
+        }
+
+        return [
+            'insights' => [
+                "Insight bulanan akan dirilis pada tgl {$release} pukul 22.00, bersamaan dengan Doctor's Note dan Behavioral Recommendation.",
+            ],
+            'recommendations' => [
+                'personalized' => [],
+                'general' => $fallback['recommendations']['general'],
+            ],
+            'doctors_note' => array_merge($fallback['doctors_note'], [
+                'summary' => "Rekomendasi dokter behavioral bulan ini akan dirilis pada tgl {$release} pukul 22.00.",
+            ]),
+        ];
     }
 
     /**
