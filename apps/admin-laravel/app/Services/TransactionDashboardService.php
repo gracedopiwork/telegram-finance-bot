@@ -73,6 +73,8 @@ class TransactionDashboardService
       $baseline = FinancialBaseline::latestForEmail($email);
     }
     $incomeAnalysis = $this->incomeAnalysis($rows, $income);
+    $savingAnalysis = $this->savingAnalysis($rows);
+    $dailyExpenses = $this->dailyExpenseTrend($telegramUserId, $month);
     $fallbackClinical = $this->clinicalSummary($income, $expense, $cashflow, $savingRate, $buckets, $baseline, $periodMonths);
     $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $pulse['score'], $buckets, $baseline);
 
@@ -121,6 +123,8 @@ class TransactionDashboardService
       'trend' => $trend,
       'pulse' => $pulse,
       'income_analysis' => $incomeAnalysis,
+      'saving_analysis' => $savingAnalysis,
+      'daily_expenses' => $dailyExpenses,
       'clinical_summary' => $aiGuidance['clinical_summary'],
       'doctors_note' => $aiGuidance['doctors_note'],
       'ai_source' => $aiGuidance['ai_source'],
@@ -426,6 +430,64 @@ class TransactionDashboardService
       'Essential Living', 'Protection', 'Flexible + Social' => $delta > 0 ? $delta : 0.0,
       default => abs($delta),
     };
+  }
+
+  /**
+   * @return list<array{label: string, amount: int, share: float}>
+   */
+  private function savingAnalysis(Collection $rows): array
+  {
+    $savingRows = $rows->where('type', TransactionTaxonomy::TYPE_SAVING);
+    $total = (int) $savingRows->sum('amount');
+    if ($total === 0) {
+      return [];
+    }
+
+    return $savingRows
+      ->groupBy('category')
+      ->map(function (Collection $items, string $category) use ($total) {
+        $amount = (int) $items->sum('amount');
+
+        return [
+          'label' => $category,
+          'amount' => $amount,
+          'share' => round(($amount / $total) * 100, 1),
+        ];
+      })
+      ->sortByDesc('amount')
+      ->values()
+      ->all();
+  }
+
+  /**
+   * Pengeluaran harian dalam bulan terpilih (untuk grafik).
+   *
+   * @return list<array{label: string, day: int, amount: int}>
+   */
+  private function dailyExpenseTrend(int $telegramUserId, string $month): array
+  {
+    $start = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+    $end = $start->copy()->endOfMonth();
+
+    $rows = BotTransaction::query()
+      ->forUser($telegramUserId)
+      ->where('type', TransactionTaxonomy::TYPE_EXPENSE)
+      ->whereBetween('recorded_at', [$start, $end])
+      ->get();
+
+    $points = [];
+    for ($day = 1; $day <= $end->day; $day++) {
+      $points[] = ['label' => (string) $day, 'day' => $day, 'amount' => 0];
+    }
+
+    foreach ($rows as $row) {
+      $dayIndex = (int) $row->recorded_at->format('j') - 1;
+      if (isset($points[$dayIndex])) {
+        $points[$dayIndex]['amount'] += (int) $row->amount;
+      }
+    }
+
+    return $points;
   }
 
   /**
