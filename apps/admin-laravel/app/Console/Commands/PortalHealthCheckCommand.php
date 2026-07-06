@@ -22,7 +22,7 @@ class PortalHealthCheckCommand extends Command
     ): int {
         $ok = true;
 
-        foreach (['financial_baselines', 'bot_transactions', 'licenses', 'orders'] as $table) {
+        foreach (['financial_baselines', 'bot_transactions', 'licenses', 'orders', 'portal_guidance_snapshots'] as $table) {
             $exists = Schema::hasTable($table);
             $this->line(($exists ? '✓' : '✗')." {$table}");
             if (! $exists) {

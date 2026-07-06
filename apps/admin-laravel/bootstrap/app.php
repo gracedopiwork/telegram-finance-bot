@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Console\Scheduling\Schedule;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -11,6 +12,24 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withSchedule(function (Schedule $schedule): void {
+        $tz = config('portal_ai.guidance_timezone', 'Asia/Jakarta');
+        $weeklyTime = (string) config('portal_ai.guidance_weekly_time', '22:00');
+        $monthlyTime = (string) config('portal_ai.guidance_monthly_time', '22:00');
+
+        $schedule->command('portal:generate-guidance weekly')
+            ->weeklyOn(0, $weeklyTime)
+            ->timezone($tz)
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        $schedule->command('portal:generate-guidance monthly')
+            ->dailyAt($monthlyTime)
+            ->timezone($tz)
+            ->when(fn () => now($tz)->isLastOfMonth())
+            ->withoutOverlapping()
+            ->onOneServer();
+    })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             \App\Http\Middleware\RedirectLegacyHosts::class,

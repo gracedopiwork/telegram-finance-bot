@@ -9,6 +9,9 @@
     $hasData = $summary['transaction_count'] > 0;
     $note = $summary['doctors_note'];
     $noteSummary = is_array($note) ? ($note['summary'] ?? '') : (string) $note;
+    $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $summary['month'])->endOfMonth();
+    $clinicalPending = $summary['clinical_pending'] ?? false;
+    $doctorsPending = $summary['doctors_pending'] ?? false;
 @endphp
 
 @if(($hasBotPortalAccess ?? false) && ($needsFinancialDiagnostic ?? false) && !($isFtsaOnlyPortalUser ?? false))
@@ -50,6 +53,44 @@
     'editUrl' => route('portal.baseline.create'),
 ])
 
+@if($hasData)
+<div class="space-y-6">
+{{-- Doctor's Note — paling atas sebelum ringkasan angka --}}
+<div class="rounded-2xl border border-navy-200 bg-gradient-to-br from-navy-50 to-white p-5 sm:p-6">
+    <div class="flex items-start gap-3">
+        <span class="material-symbols-outlined text-2xl text-navy-800">medical_information</span>
+        <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="text-xs uppercase tracking-wider font-bold text-slate-500">Doctor's Note · {{ $summary['period_label'] }}</div>
+                @include('portal.partials.ai-source-badge', ['aiSource' => $summary['ai_source'] ?? null])
+            </div>
+            <p class="font-semibold text-navy-800 text-base mt-2 leading-relaxed">{{ $noteSummary !== '' ? $noteSummary : 'Ringkasan kesehatan finansial untuk periode ini akan tampil setelah data cukup terkumpul.' }}</p>
+            @if(is_array($note))
+                @if(!empty($note['interpretation']))
+                    <p class="text-sm text-slate-600 mt-2"><span class="font-semibold text-navy-800">Interpretasi:</span> {{ $note['interpretation'] }}</p>
+                @endif
+                @if(!empty($note['priority']))
+                    <p class="text-sm text-navy-800 mt-1"><span class="font-semibold">Prioritas:</span> {{ $note['priority'] }}</p>
+                @endif
+            @endif
+            <p class="text-xs text-slate-500 mt-4 border-t border-slate-200/80 pt-3">
+                @if($doctorsPending)
+                    Doctor's note bulanan di-generate otomatis agar hemat kuota AI.
+                @endif
+                Rekomendasi dokter diperbarui pada akhir bulan
+                <strong>{{ $monthEnd->translatedFormat('d F Y') }}</strong> pukul <strong>22.00 WIB</strong>.
+                @if(!empty($summary['doctors_generated_at']))
+                    <span class="block mt-1">Terakhir dirilis: {{ \Carbon\Carbon::parse($summary['doctors_generated_at'])->timezone(config('portal_ai.guidance_timezone', 'Asia/Jakarta'))->format('d M Y H:i') }} WIB.</span>
+                @endif
+            </p>
+        </div>
+    </div>
+</div>
+
+@include('portal.partials.transactions-summary-cards', ['summary' => $summary, 'fmt' => $fmt])
+</div>
+@endif
+
 {{-- Clinical Summary --}}
 @if($hasData)
 <div class="rounded-2xl border p-5 sm:p-6
@@ -59,7 +100,7 @@
     <div class="flex items-start gap-3">
         <span class="material-symbols-outlined text-2xl text-navy-800">clinical_notes</span>
         <div class="flex-1 min-w-0">
-            <div class="text-xs uppercase tracking-wider font-bold text-slate-500">Clinical Summary · {{ $summary['period_label'] }}</div>
+            <div class="text-xs uppercase tracking-wider font-bold text-slate-500">Clinical Summary · Minggu ini</div>
             @include('portal.partials.ai-source-badge', ['aiSource' => $summary['ai_source'] ?? null])
             <h3 class="font-extrabold text-navy-800 text-lg mt-1">{{ $summary['clinical_summary']['headline'] }}</h3>
             <ul class="mt-2 space-y-1 text-sm text-slate-700">
@@ -67,19 +108,18 @@
                     <li class="flex gap-2"><span class="text-navy-600">•</span>{{ $finding }}</li>
                 @endforeach
             </ul>
+            <p class="text-xs text-slate-500 mt-3 border-t border-slate-200/60 pt-2">
+                Insight mingguan diperbarui setiap <strong>Minggu pukul 22.00 WIB</strong>.
+                @if($clinicalPending)
+                    <span class="block mt-1">Belum ada insight AI untuk minggu ini — jadwal generate berikutnya sesuai waktu di atas.</span>
+                @elseif(!empty($summary['clinical_generated_at']))
+                    <span class="block mt-1">Terakhir dirilis: {{ \Carbon\Carbon::parse($summary['clinical_generated_at'])->timezone(config('portal_ai.guidance_timezone', 'Asia/Jakarta'))->format('d M Y H:i') }} WIB.</span>
+                @endif
+            </p>
         </div>
     </div>
 </div>
 @endif
-
-{{-- KPI cards --}}
-<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-    <x-portal.stat-card label="Total Pendapatan" :value="$fmt($summary['income'])" :hint="$summary['income_share'].'% dari total cash in'" icon="trending_up" tone="emerald" />
-    <x-portal.stat-card label="Total Pengeluaran" :value="$fmt($summary['expense'])" :hint="$summary['expense_share'].'% dari pendapatan'" icon="shopping_cart" tone="rose" />
-    <x-portal.stat-card label="Saving/Investment" :value="$fmt($summary['saving_investment'] ?? 0)" :hint="$summary['saving_rate'].'% dari pendapatan'" icon="savings" tone="navy" />
-    <x-portal.stat-card label="Cashflow (Sisa)" :value="$fmt($summary['cashflow'])" :hint="$summary['cashflow_share'].'% dari pendapatan'" icon="account_balance" :tone="$summary['cashflow'] >= 0 ? 'emerald' : 'rose'" />
-    <x-portal.stat-card label="Transaksi" :value="(string) $summary['transaction_count']" :hint="$summary['period_label']" icon="receipt_long" tone="navy" />
-</div>
 
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
     {{-- 4 Bucket --}}
@@ -132,7 +172,7 @@
         </div>
     </div>
 
-    {{-- Financial Pulse + Impulsivity teaser --}}
+    {{-- Financial Pulse --}}
     <div class="space-y-4">
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 text-center">
             <h3 class="font-bold text-navy-800 mb-4 flex items-center justify-center gap-2">
@@ -149,35 +189,11 @@
                 {{ $summary['pulse']['score'] >= 65 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">
                 {{ $summary['pulse']['label'] }}
             </div>
-            <div class="text-sm text-slate-600 mt-4 text-left border-t pt-4 leading-relaxed space-y-2">
-                @include('portal.partials.ai-source-badge', ['aiSource' => $summary['ai_source'] ?? null])
-                <p><span class="font-semibold text-navy-800">Doctor's Note:</span> {{ $noteSummary }}</p>
-                @if(is_array($note))
-                    @if(!empty($note['interpretation']))
-                        <p class="text-xs"><span class="font-semibold">Interpretasi:</span> {{ $note['interpretation'] }}</p>
-                    @endif
-                    @if(!empty($note['priority']))
-                        <p class="text-xs text-navy-800"><span class="font-semibold">Prioritas:</span> {{ $note['priority'] }}</p>
-                    @endif
-                @endif
-            </div>
+            <p class="text-sm text-slate-600 mt-4 text-left border-t pt-4 leading-relaxed">
+                Cashflow periode ini: <span class="font-semibold {{ $summary['cashflow'] >= 0 ? 'text-emerald-700' : 'text-rose-600' }}">{{ $fmt($summary['cashflow']) }}</span>
+                <span class="text-slate-400">({{ $summary['cashflow_share'] }}% dari pendapatan)</span>
+            </p>
         </div>
-
-        <a href="{{ route('portal.emotional', ['month' => $summary['month'], 'period' => $summary['period_months']]) }}"
-           class="block bg-gradient-to-br from-navy-800 to-navy-600 rounded-2xl p-5 text-white shadow-sm hover:shadow-lg transition-shadow">
-            <div class="flex items-center justify-between">
-                <div>
-                    <div class="text-xs uppercase tracking-wider text-gold-400 font-bold">Impulsivitas</div>
-                    <div class="text-2xl font-extrabold mt-1">{{ $impulsivity['score'] }}/100</div>
-                    <div class="text-sm text-white/80 mt-1">{{ $impulsivity['grade'] }}</div>
-                </div>
-                <span class="material-symbols-outlined text-4xl text-white/30">psychology</span>
-            </div>
-            <div class="mt-3 text-xs text-white/70 flex items-center gap-1">
-                Lihat Emotional Scan
-                <span class="material-symbols-outlined text-sm">arrow_forward</span>
-            </div>
-        </a>
     </div>
 </div>
 

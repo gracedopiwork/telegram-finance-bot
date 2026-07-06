@@ -125,7 +125,75 @@ class TransactionDashboardService
       'doctors_note' => $aiGuidance['doctors_note'],
       'ai_source' => $aiGuidance['ai_source'],
       'ai_generated_at' => $aiGuidance['generated_at'],
+      'clinical_pending' => $aiGuidance['clinical_pending'] ?? false,
+      'doctors_pending' => $aiGuidance['doctors_pending'] ?? false,
+      'clinical_generated_at' => $aiGuidance['clinical_generated_at'] ?? null,
+      'doctors_generated_at' => $aiGuidance['doctors_generated_at'] ?? null,
       'transactions' => $rows->take(50)->map(fn (BotTransaction $t) => $this->serializeTransaction($t))->all(),
+    ];
+  }
+
+  /**
+   * Metrik + fallback untuk generate / tampilkan guidance AI (rentang tanggal bebas).
+   *
+   * @return array{
+   *   metrics: array<string, mixed>,
+   *   fallback_clinical: array{headline: string, findings: list<string>, status: string},
+   *   fallback_doctors_note: array{summary: string, findings: list<string>, interpretation: string, priority: string, education: string},
+   *   transaction_count: int
+   * }
+   */
+  public function financialGuidanceContext(
+    int $telegramUserId,
+    Carbon $start,
+    Carbon $end,
+    string $periodLabel,
+    int $periodMonthsForClinical = 1,
+  ): array {
+    $rows = BotTransaction::query()
+      ->forUser($telegramUserId)
+      ->whereBetween('recorded_at', [$start, $end])
+      ->orderByDesc('recorded_at')
+      ->get();
+
+    $income = (int) $rows->where('type', TransactionTaxonomy::TYPE_INCOME)->sum('amount');
+    $expense = (int) $rows->where('type', TransactionTaxonomy::TYPE_EXPENSE)->sum('amount');
+    $savingInvestment = (int) $rows->where('type', TransactionTaxonomy::TYPE_SAVING)->sum('amount');
+    $cashflow = $income - $expense - $savingInvestment;
+    $savingRate = $income > 0 ? round(($savingInvestment / $income) * 100, 1) : 0.0;
+    $transactionCount = $rows->count();
+
+    $idealShares = $this->prescription->idealsForUser($telegramUserId);
+    $buckets = $this->budgetBuckets($rows, $expense, $savingInvestment, $idealShares);
+    $pulse = $this->financialPulse($income, $expense, $savingInvestment, $savingRate, $buckets);
+    $baseline = FinancialBaseline::latestForUser($telegramUserId);
+
+    $fallbackClinical = $this->clinicalSummary(
+      $income,
+      $expense,
+      $cashflow,
+      $savingRate,
+      $buckets,
+      $baseline,
+      $periodMonthsForClinical,
+    );
+    $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $pulse['score'], $buckets, $baseline);
+
+    return [
+      'metrics' => [
+        'period_label' => $periodLabel,
+        'income' => $income,
+        'expense' => $expense,
+        'saving_investment' => $savingInvestment,
+        'cashflow' => $cashflow,
+        'saving_rate' => $savingRate,
+        'pulse_score' => $pulse['score'],
+        'transaction_count' => $transactionCount,
+        'buckets' => $buckets,
+      ],
+      'fallback_clinical' => $fallbackClinical,
+      'fallback_doctors_note' => $fallbackDoctorsNote,
+      'transaction_count' => $transactionCount,
     ];
   }
 

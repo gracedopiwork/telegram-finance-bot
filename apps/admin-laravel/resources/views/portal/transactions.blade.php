@@ -1,7 +1,7 @@
 @extends('portal.layouts.app')
 
 @section('title', 'Data Transaksi — YFD')
-@section('heading', 'Input Data — Riwayat Transaksi')
+@section('heading', 'Input Data')
 
 @section('content')
 @php

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\FinancialBaseline;
+use App\Models\PortalGuidanceSnapshot;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -11,6 +12,7 @@ class PortalAiGuidanceService
     public function __construct(
         private readonly ClaudeJsonService $claude,
         private readonly FtsaAnswerSummaryService $ftsaSummary,
+        private readonly PortalGuidanceSnapshotService $guidanceSnapshots,
     ) {}
 
     /**
@@ -195,53 +197,195 @@ class PortalAiGuidanceService
             return array_merge($fallback, [
                 'ai_source' => 'none',
                 'generated_at' => null,
+                'clinical_pending' => false,
+                'doctors_pending' => false,
+                'clinical_generated_at' => null,
+                'doctors_generated_at' => null,
             ]);
         }
 
-        $cacheKey = sprintf(
-            'portal_ai:financial:%d:%s:%d:%s',
+        $weekKey = PortalGuidanceSnapshot::weekPeriodKey();
+        $monthKey = $month;
+
+        $weeklyStored = $this->guidanceSnapshots->get(
             $telegramUserId,
-            $month,
-            $periodMonths,
-            md5(json_encode($this->financialFingerprint($metrics)))
+            PortalGuidanceSnapshot::TYPE_CLINICAL_SUMMARY_WEEKLY,
+            $weekKey,
+        );
+        $monthlyStored = $this->guidanceSnapshots->get(
+            $telegramUserId,
+            PortalGuidanceSnapshot::TYPE_DOCTORS_NOTE_MONTHLY,
+            $monthKey,
         );
 
-        $ttl = now()->addHours(max(1, (int) config('portal_ai.cache_ttl_hours_dashboard', 24)));
+        $clinical = $weeklyStored !== null
+            ? ($weeklyStored['payload']['clinical_summary'] ?? $fallback['clinical_summary'])
+            : $this->pendingClinicalSummary($fallback['clinical_summary']);
 
-        return Cache::remember($cacheKey, $ttl, function () use ($metrics, $baseline, $fallback) {
-            if (! $this->claude->isConfigured()) {
-                return array_merge($fallback, [
-                    'ai_source' => 'rules',
-                    'generated_at' => null,
-                ]);
-            }
+        $doctors = $monthlyStored !== null
+            ? ($monthlyStored['payload']['doctors_note'] ?? $fallback['doctors_note'])
+            : $this->pendingDoctorsNote($month, $fallback['doctors_note']);
 
+        $clinicalPending = $weeklyStored === null;
+        $doctorsPending = $monthlyStored === null;
+
+        $aiSource = 'rules';
+        $weeklyAi = ($weeklyStored['ai_source'] ?? '') === 'ai';
+        $monthlyAi = ($monthlyStored['ai_source'] ?? '') === 'ai';
+        if ($weeklyAi && $monthlyAi) {
+            $aiSource = 'ai';
+        } elseif ($weeklyAi || $monthlyAi) {
+            $aiSource = 'partial';
+        }
+
+        return [
+            'clinical_summary' => $clinical,
+            'doctors_note' => $doctors,
+            'ai_source' => $aiSource,
+            'generated_at' => $monthlyStored['generated_at'] ?? $weeklyStored['generated_at'] ?? null,
+            'clinical_pending' => $clinicalPending,
+            'doctors_pending' => $doctorsPending,
+            'clinical_generated_at' => $weeklyStored['generated_at'] ?? null,
+            'doctors_generated_at' => $monthlyStored['generated_at'] ?? null,
+        ];
+    }
+
+    /**
+     * Generate & simpan clinical summary mingguan (dipanggil scheduler).
+     *
+     * @param  array<string, mixed>  $metrics
+     * @param  array{headline: string, findings: list<string>, status: string}  $fallbackClinical
+     */
+    public function generateAndStoreWeeklyClinicalSummary(
+        int $telegramUserId,
+        string $weekKey,
+        array $metrics,
+        ?FinancialBaseline $baseline,
+        array $fallbackClinical,
+    ): bool {
+        if ((int) ($metrics['transaction_count'] ?? 0) === 0) {
+            return false;
+        }
+
+        $clinical = $fallbackClinical;
+        $provider = 'rules';
+
+        if ($this->claude->isConfigured()) {
             try {
-                $parsed = $this->claude->generate($this->financialPrompt($metrics, $baseline));
-                if ($parsed === null) {
-                    return array_merge($fallback, [
-                        'ai_source' => 'rules',
-                        'generated_at' => null,
-                    ]);
+                $parsed = $this->claude->generate($this->weeklyClinicalPrompt($metrics, $baseline));
+                if (is_array($parsed)) {
+                    $normalized = $this->normalizeFinancialResponse(
+                        ['clinical_summary' => $parsed['clinical_summary'] ?? $parsed],
+                        ['clinical_summary' => $fallbackClinical, 'doctors_note' => ['summary' => '', 'findings' => [], 'interpretation' => '', 'priority' => '', 'education' => '']],
+                    );
+                    $clinical = $normalized['clinical_summary'];
+                    $provider = 'claude';
                 }
-
-                $result = $this->normalizeFinancialResponse($parsed, $fallback);
-
-                return array_merge($result, [
-                    'ai_source' => 'ai',
-                    'generated_at' => now()->toIso8601String(),
-                ]);
             } catch (\Throwable $e) {
-                Log::warning('Portal AI financial guidance failed', [
+                Log::warning('Portal weekly clinical summary failed', [
+                    'telegram_user_id' => $telegramUserId,
                     'message' => $e->getMessage(),
                 ]);
+            }
+        }
 
-                return array_merge($fallback, [
-                    'ai_source' => 'rules',
-                    'generated_at' => null,
+        $this->guidanceSnapshots->store(
+            $telegramUserId,
+            PortalGuidanceSnapshot::TYPE_CLINICAL_SUMMARY_WEEKLY,
+            $weekKey,
+            ['clinical_summary' => $clinical],
+            $provider,
+        );
+
+        return true;
+    }
+
+    /**
+     * Generate & simpan doctor's note bulanan (dipanggil scheduler akhir bulan).
+     *
+     * @param  array<string, mixed>  $metrics
+     * @param  array{summary: string, findings: list<string>, interpretation: string, priority: string, education: string}  $fallbackDoctorsNote
+     */
+    public function generateAndStoreMonthlyDoctorsNote(
+        int $telegramUserId,
+        string $monthKey,
+        array $metrics,
+        ?FinancialBaseline $baseline,
+        array $fallbackDoctorsNote,
+    ): bool {
+        if ((int) ($metrics['transaction_count'] ?? 0) === 0) {
+            return false;
+        }
+
+        $note = $fallbackDoctorsNote;
+        $provider = 'rules';
+
+        if ($this->claude->isConfigured()) {
+            try {
+                $parsed = $this->claude->generate($this->monthlyDoctorsNotePrompt($metrics, $baseline));
+                if (is_array($parsed)) {
+                    $normalized = $this->normalizeFinancialResponse(
+                        ['doctors_note' => $parsed['doctors_note'] ?? $parsed],
+                        ['clinical_summary' => ['headline' => '', 'findings' => [], 'status' => 'fair'], 'doctors_note' => $fallbackDoctorsNote],
+                    );
+                    $note = $normalized['doctors_note'];
+                    $provider = 'claude';
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Portal monthly doctors note failed', [
+                    'telegram_user_id' => $telegramUserId,
+                    'message' => $e->getMessage(),
                 ]);
             }
-        });
+        }
+
+        $this->guidanceSnapshots->store(
+            $telegramUserId,
+            PortalGuidanceSnapshot::TYPE_DOCTORS_NOTE_MONTHLY,
+            $monthKey,
+            ['doctors_note' => $note],
+            $provider,
+        );
+
+        return true;
+    }
+
+    /**
+     * @param  array{headline: string, findings: list<string>, status: string}  $fallback
+     * @return array{headline: string, findings: list<string>, status: string}
+     */
+    private function pendingClinicalSummary(array $fallback): array
+    {
+        $weeklyAt = (string) config('portal_ai.guidance_weekly_label', 'Minggu pukul 22.00 WIB');
+
+        return [
+            'headline' => 'Insight mingguan menunggu jadwal generate',
+            'findings' => array_merge(
+                ["Insight AI diperbarui setiap {$weeklyAt}. Sementara ini, gunakan ringkasan angka dan grafik di bawah."],
+                array_slice($fallback['findings'] ?? [], 0, 3),
+            ),
+            'status' => $fallback['status'] ?? 'fair',
+        ];
+    }
+
+    /**
+     * @param  array{summary: string, findings: list<string>, interpretation: string, priority: string, education: string}  $fallback
+     * @return array{summary: string, findings: list<string>, interpretation: string, priority: string, education: string}
+     */
+    private function pendingDoctorsNote(string $monthKey, array $fallback): array
+    {
+        try {
+            $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $monthKey)->endOfMonth();
+            $release = $monthEnd->translatedFormat('d F Y');
+        } catch (\Throwable) {
+            $release = 'akhir bulan';
+        }
+
+        return array_merge($fallback, [
+            'summary' => "Rekomendasi dokter untuk periode ini akan dirilis pada {$release} pukul 22.00 WIB.",
+            'interpretation' => 'Doctor\'s note bulanan di-generate otomatis agar konsisten dan hemat kuota AI.',
+            'priority' => 'Lanjutkan pencatatan transaksi hingga akhir bulan untuk analisis yang lebih akurat.',
+        ]);
     }
 
     /**
@@ -412,6 +556,121 @@ OUTPUT: JSON valid saja, tanpa markdown, format:
 }
 
 Maksimal {$maxFindings} findings. Status harus salah satu: healthy, fair, attention, critical.
+PROMPT;
+    }
+
+    /**
+     * @param  array<string, mixed>  $metrics
+     */
+    private function weeklyClinicalPrompt(array $metrics, ?FinancialBaseline $baseline): string
+    {
+        $rules = $this->claude->rulesBlock(['shared_rules', 'financial_rules']);
+        $bucketLines = [];
+        foreach ((array) ($metrics['buckets'] ?? []) as $bucket) {
+            if (! is_array($bucket)) {
+                continue;
+            }
+            $bucketLines[] = sprintf(
+                '- %s: aktual %s%% (ideal %s%%) — %s',
+                $bucket['bucket'] ?? '—',
+                $bucket['share'] ?? '0',
+                $bucket['ideal'] ?? '0',
+                $bucket['status_label'] ?? '—'
+            );
+        }
+
+        $stage = $baseline?->stage_label ? "Tahap finansial: {$baseline->stage_label}" : 'Tahap finansial: belum diisi';
+        $maxFindings = (int) config('portal_ai.max_findings', 5);
+
+        return <<<PROMPT
+Anda adalah dr. Financial dari Your Financial Doctor (YFD). Berikan clinical summary mingguan keuangan berdasarkan data berikut.
+
+PERIODE MINGGUAN: {$metrics['period_label']}
+{$stage}
+
+METRIK:
+- Pendapatan: Rp {$this->formatIdr((int) $metrics['income'])}
+- Pengeluaran: Rp {$this->formatIdr((int) $metrics['expense'])}
+- Cashflow: Rp {$this->formatIdr((int) $metrics['cashflow'])}
+- Saving rate: {$metrics['saving_rate']}%
+- Financial pulse: {$metrics['pulse_score']}/100
+- Jumlah transaksi: {$metrics['transaction_count']}
+
+BUCKET PRESCRIPTION:
+{$this->linesBlock($bucketLines)}
+
+ATURAN WAJIB:
+{$rules}
+
+OUTPUT: JSON valid saja, tanpa markdown, format:
+{
+  "clinical_summary": {
+    "headline": "...",
+    "findings": ["..."],
+    "status": "healthy|fair|attention|critical"
+  }
+}
+
+Maksimal {$maxFindings} findings. Fokus pola minggu ini, bukan archetype FTSA.
+PROMPT;
+    }
+
+    /**
+     * @param  array<string, mixed>  $metrics
+     */
+    private function monthlyDoctorsNotePrompt(array $metrics, ?FinancialBaseline $baseline): string
+    {
+        $rules = $this->claude->rulesBlock(['shared_rules', 'financial_rules']);
+        $bucketLines = [];
+        foreach ((array) ($metrics['buckets'] ?? []) as $bucket) {
+            if (! is_array($bucket)) {
+                continue;
+            }
+            $bucketLines[] = sprintf(
+                '- %s: aktual %s%% (ideal %s%%) — %s',
+                $bucket['bucket'] ?? '—',
+                $bucket['share'] ?? '0',
+                $bucket['ideal'] ?? '0',
+                $bucket['status_label'] ?? '—'
+            );
+        }
+
+        $stage = $baseline?->stage_label ? "Tahap finansial: {$baseline->stage_label}" : 'Tahap finansial: belum diisi';
+        $maxFindings = (int) config('portal_ai.max_findings', 5);
+
+        return <<<PROMPT
+Anda adalah dr. Financial dari Your Financial Doctor (YFD). Berikan doctor's note bulanan keuangan berdasarkan data berikut.
+
+PERIODE BULANAN: {$metrics['period_label']}
+{$stage}
+
+METRIK:
+- Pendapatan: Rp {$this->formatIdr((int) $metrics['income'])}
+- Pengeluaran: Rp {$this->formatIdr((int) $metrics['expense'])}
+- Cashflow: Rp {$this->formatIdr((int) $metrics['cashflow'])}
+- Saving rate: {$metrics['saving_rate']}%
+- Financial pulse: {$metrics['pulse_score']}/100
+- Jumlah transaksi: {$metrics['transaction_count']}
+
+BUCKET PRESCRIPTION:
+{$this->linesBlock($bucketLines)}
+
+ATURAN WAJIB:
+{$rules}
+Jangan menyebut archetype FTSA — itu ada di dashboard behavioral.
+
+OUTPUT: JSON valid saja, tanpa markdown, format:
+{
+  "doctors_note": {
+    "summary": "...",
+    "findings": ["..."],
+    "interpretation": "...",
+    "priority": "...",
+    "education": "..."
+  }
+}
+
+Maksimal {$maxFindings} findings.
 PROMPT;
     }
 

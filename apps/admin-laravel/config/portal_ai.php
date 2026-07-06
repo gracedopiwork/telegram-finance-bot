@@ -24,6 +24,11 @@ return [
     'cache_ttl_days_ftsa' => (int) env('PORTAL_AI_CACHE_DAYS_FTSA', 30),
     'cache_ttl_hours_dashboard' => (int) env('PORTAL_AI_CACHE_HOURS_DASHBOARD', 24),
 
+    'guidance_timezone' => env('PORTAL_AI_GUIDANCE_TZ', 'Asia/Jakarta'),
+    'guidance_weekly_time' => env('PORTAL_AI_GUIDANCE_WEEKLY_TIME', '22:00'),
+    'guidance_monthly_time' => env('PORTAL_AI_GUIDANCE_MONTHLY_TIME', '22:00'),
+    'guidance_weekly_label' => 'Minggu pukul 22.00 WIB',
+
     'max_insights' => 3,
     'max_recommendations' => 3,
     'max_general_recommendations' => 3,

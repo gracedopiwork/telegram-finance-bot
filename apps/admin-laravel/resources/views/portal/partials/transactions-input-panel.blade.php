@@ -11,7 +11,7 @@
         <span class="material-symbols-outlined text-3xl text-gold-400">send</span>
         <div>
             <h3 class="font-bold text-lg">Catat via YFD First Aid</h3>
-            <p class="text-sm text-white/80 mt-1">Kirim teks atau foto struk. AI akan parse kategori, mood, dan impulsifitas — lalu simpan ke dashboard ini.</p>
+            <p class="text-sm text-white/80 mt-1">Kirim teks atau foto struk. Dokter Finansial akan merapikan pencatatan kamu.</p>
         </div>
     </div>
     <div class="text-sm bg-white/10 rounded-xl px-4 py-2 font-mono shrink-0">/catat makan siang 35rb</div>
@@ -71,29 +71,6 @@
     </div>
 </div>
 
-<div class="grid grid-cols-2 sm:grid-cols-5 gap-4" id="tx-summary-cards">
-    <div class="bg-white rounded-xl border p-4 text-center">
-        <div class="text-2xl font-extrabold text-navy-800" id="tx-stat-count">{{ $summary['transaction_count'] ?? 0 }}</div>
-        <div class="text-xs text-slate-500 mt-1">Total transaksi</div>
-    </div>
-    <div class="bg-white rounded-xl border p-4 text-center">
-        <div class="text-lg font-extrabold text-emerald-700" id="tx-stat-income">{{ $fmt((int) ($summary['income'] ?? 0)) }}</div>
-        <div class="text-xs text-slate-500 mt-1">Pemasukan</div>
-    </div>
-    <div class="bg-white rounded-xl border p-4 text-center">
-        <div class="text-lg font-extrabold text-rose-600" id="tx-stat-expense">{{ $fmt((int) ($summary['expense'] ?? 0)) }}</div>
-        <div class="text-xs text-slate-500 mt-1">Pengeluaran</div>
-    </div>
-    <div class="bg-white rounded-xl border p-4 text-center">
-        <div class="text-lg font-extrabold text-navy-600" id="tx-stat-saving-amt">{{ $fmt((int) ($summary['saving_investment'] ?? 0)) }}</div>
-        <div class="text-xs text-slate-500 mt-1">Saving/Investment</div>
-    </div>
-    <div class="bg-white rounded-xl border p-4 text-center">
-        <div class="text-lg font-extrabold text-navy-800" id="tx-stat-saving">{{ $summary['saving_rate'] ?? 0 }}%</div>
-        <div class="text-xs text-slate-500 mt-1">Alokasi saving · {{ $summary['period_label'] ?? '—' }}</div>
-    </div>
-</div>
-
 <div id="tx-delete-toast" class="hidden fixed bottom-6 right-6 z-50 rounded-xl bg-navy-800 text-white text-sm px-4 py-3 shadow-lg"></div>
 
 <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -111,7 +88,7 @@
     @if(empty($summary['transactions']))
         @include('portal.partials.empty-state', [
             'title' => 'Belum ada transaksi',
-            'message' => 'Catat via bot atau import CSV di atas. Data akan muncul di tabel ini.',
+            'message' => 'Catat via bot di atas atau import CSV. Lihat ringkasan di Financial Health Dashboard.',
         ])
     @else
         <div class="overflow-x-auto">

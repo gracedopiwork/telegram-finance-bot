@@ -1,0 +1,72 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\PortalGuidanceSnapshot;
+use Carbon\Carbon;
+
+class PortalGuidanceSnapshotService
+{
+    /**
+     * @return array{payload: array<string, mixed>, ai_source: string, generated_at: string}|null
+     */
+    public function get(int $telegramUserId, string $guidanceType, string $periodKey): ?array
+    {
+        $row = PortalGuidanceSnapshot::findForUser($telegramUserId, $guidanceType, $periodKey);
+        if ($row === null) {
+            return null;
+        }
+
+        return [
+            'payload' => is_array($row->payload) ? $row->payload : [],
+            'ai_source' => $row->ai_provider === 'claude' ? 'ai' : (string) $row->ai_provider,
+            'generated_at' => $row->generated_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    public function store(
+        int $telegramUserId,
+        string $guidanceType,
+        string $periodKey,
+        array $payload,
+        string $aiProvider = 'claude',
+    ): PortalGuidanceSnapshot {
+        return PortalGuidanceSnapshot::query()->updateOrCreate(
+            [
+                'telegram_user_id' => $telegramUserId,
+                'guidance_type' => $guidanceType,
+                'period_key' => $periodKey,
+            ],
+            [
+                'ai_provider' => $aiProvider,
+                'payload' => $payload,
+                'generated_at' => now(),
+            ],
+        );
+    }
+
+    public function weekRange(?Carbon $anchor = null): array
+    {
+        $anchor ??= now();
+
+        return [
+            'start' => $anchor->copy()->startOfWeek(Carbon::MONDAY)->startOfDay(),
+            'end' => $anchor->copy()->endOfWeek(Carbon::SUNDAY)->endOfDay(),
+            'key' => PortalGuidanceSnapshot::weekPeriodKey($anchor),
+        ];
+    }
+
+    public function monthRange(?Carbon $anchor = null): array
+    {
+        $anchor ??= now();
+
+        return [
+            'start' => $anchor->copy()->startOfMonth()->startOfDay(),
+            'end' => $anchor->copy()->endOfMonth()->endOfDay(),
+            'key' => PortalGuidanceSnapshot::monthPeriodKey($anchor),
+        ];
+    }
+}
