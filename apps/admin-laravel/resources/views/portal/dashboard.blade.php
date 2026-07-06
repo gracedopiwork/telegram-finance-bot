@@ -37,6 +37,9 @@
     {{-- Clinical Summary / Minggu --}}
     <div class="bg-white rounded-xl border border-slate-200 p-5">
         <div class="text-sm font-semibold text-navy-800 mb-3">Clinical Summary / Minggu ini</div>
+        @if(!empty($summary['clinical_summary']['headline']))
+            <p class="text-base font-semibold text-navy-800 mb-2">{{ $summary['clinical_summary']['headline'] }}</p>
+        @endif
         @if(!empty($summary['clinical_summary']['findings']))
             <ul class="space-y-1 text-sm text-slate-700">
                 @foreach($summary['clinical_summary']['findings'] as $finding)

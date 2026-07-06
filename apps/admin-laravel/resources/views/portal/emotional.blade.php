@@ -1,7 +1,7 @@
 @extends('portal.layouts.app')
 
-@section('title', ($isFtsaOnlyPortalUser ?? false) ? 'Ringkasan FTSA — YFD' : 'Emotional Scan — YFD')
-@section('heading', ($isFtsaOnlyPortalUser ?? false) ? 'Ringkasan FTSA Premium' : 'Behavioral Financial Dashboard')
+@section('title', ($isFtsaOnlyPortalUser ?? false) ? 'Ringkasan FTSA — YFD' : 'Dashboard Behaviour — YFD')
+@section('heading', ($isFtsaOnlyPortalUser ?? false) ? 'Ringkasan FTSA Premium' : 'Dashboard')
 
 @section('content')
 @php
@@ -11,7 +11,14 @@
     $note = $assessment['doctors_note'];
     $noteSummary = is_array($note) ? ($note['summary'] ?? '') : (string) $note;
     $ftsaProfile = $assessment['ftsa_profile'] ?? null;
-    $ftsaDomainMeta = config('baseline_assessment.ftsa_domains', []);
+    $moodLabel = fn (string $m) => match ($m) {
+        'Neutral' => 'Netral',
+        'Stressed' => 'Stres',
+        'Angry' => 'Ang',
+        default => $m,
+    };
+    $matrixOrder = ['need_impulsive', 'want_impulsive', 'need_planned', 'want_planned'];
+    $matrixByKey = collect($assessment['matrix'] ?? [])->keyBy('key');
 @endphp
 
 @if($isFtsaOnly)
@@ -31,7 +38,6 @@
         <div class="mt-4">
             <a href="{{ $portalFtsaUrl ?? route('portal.ftsa.create') }}"
                class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-5 py-3 rounded-xl text-sm">
-                <span class="material-symbols-outlined text-lg">edit_note</span>
                 Isi FTSA Sekarang
             </a>
         </div>
@@ -49,13 +55,8 @@
             @if(!($ftsaRetakeLocked ?? false))
                 <a href="{{ route('portal.ftsa.create') }}"
                    class="inline-flex items-center gap-2 border border-navy-800 text-navy-800 hover:bg-navy-50 font-bold px-4 py-2 rounded-xl text-sm shrink-0">
-                    <span class="material-symbols-outlined text-lg">edit</span>
                     Isi Ulang FTSA
                 </a>
-            @else
-                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-600">
-                    <span class="font-semibold text-navy-800">Terkunci</span> — evaluasi ulang setelah {{ $ftsaEndsAt?->format('d M Y') ?? 'masa berlaku habis' }}.
-                </div>
             @endif
         </div>
 
@@ -68,277 +69,324 @@
         @include('portal.partials.ftsa-ai-guidance', ['ftsaAiGuidance' => $ftsaAiGuidance ?? []])
 
         @include('portal.partials.bot-upgrade-panel')
-    @elseif(!($needsFtsa ?? false) && !($ftsaProfile ?? null))
+    @else
         @include('portal.partials.empty-state', [
             'title' => 'FTSA belum diisi',
-            'message' => 'Lengkapi kuesioner FTSA 1–32 untuk melihat archetype behavioral finansial dan insight AI.',
+            'message' => 'Lengkapi kuesioner FTSA 1–32 untuk melihat archetype behavioral finansial.',
         ])
         <div class="mt-4">
             <a href="{{ $portalFtsaUrl ?? route('portal.ftsa.create') }}"
                class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-5 py-3 rounded-xl text-sm">
-                <span class="material-symbols-outlined text-lg">edit_note</span>
                 Isi FTSA Sekarang
             </a>
         </div>
     @endif
 
 @else
-    @if(!($ftsaUnlocked ?? false))
-        @include('portal.partials.ftsa-unlock-panel', [
-            'variant' => 'banner',
-            'message' => 'Behavioral dashboard tetap jalan. Unlock FTSA untuk insight dan rekomendasi yang lebih personal.',
-        ])
-    @endif
+<div class="space-y-5">
+    {{-- 1. Doctor's Note --}}
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm font-semibold text-navy-800 mb-3">Doctor's Note</div>
+        @if($noteSummary !== '')
+            <p class="text-sm text-slate-700 leading-relaxed">{{ $noteSummary }}</p>
+        @else
+            <p class="text-sm text-slate-500">–</p>
+        @endif
+    </div>
 
-    @if(!$hasData)
-        @include('portal.partials.empty-state', [
-            'title' => 'Belum ada data emosi',
-            'message' => 'Emotional scan terisi setelah ada transaksi pengeluaran dengan mood & flag impulsif dari YFD First Aid.',
-        ])
-    @endif
+    {{-- 2. Insight kelakuan behavioral --}}
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm font-semibold text-navy-800 mb-3">Insight kelakuan behavioral</div>
+        @if($ftsaProfile)
+            <p class="text-xs text-slate-500 mb-2">Rekomendasi (FTSA sudah diisi — {{ $ftsaProfile['archetype'] ?? '—' }})</p>
+        @else
+            <p class="text-xs text-slate-500 mb-2">Rekomendasi: gabungkan hasil FTSA setelah tes untuk insight yang lebih personal.</p>
+        @endif
+        @if(!empty($assessment['recommendations']['personalized']))
+            <ul class="space-y-1 text-sm text-slate-700">
+                @foreach($assessment['recommendations']['personalized'] as $rec)
+                    <li class="flex gap-2"><span>–</span><span>{{ $rec }}</span></li>
+                @endforeach
+            </ul>
+        @else
+            <p class="text-sm text-slate-500">–</p>
+        @endif
+    </div>
 
-    @if($ftsaProfile)
-        @include('portal.partials.ftsa-compact-summary', [
-            'ftsaProfile' => $ftsaProfile,
-            'baseline' => $baseline ?? null,
-            'class' => 'mb-6',
-        ])
-    @endif
+    {{-- 3. Insight bulanan --}}
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm font-semibold text-navy-800 mb-3">Insight bulanan</div>
+        <p class="text-xs text-slate-500 mb-2">{{ $assessment['period_label'] }}</p>
+        @if(!empty($assessment['insights']))
+            <ul class="space-y-1 text-sm text-slate-700">
+                @foreach($assessment['insights'] as $insight)
+                    <li class="flex gap-2"><span>–</span><span>{{ $insight }}</span></li>
+                @endforeach
+            </ul>
+        @else
+            <p class="text-sm text-slate-500">–</p>
+        @endif
+    </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-            <div class="flex items-center gap-2 mb-4">
-                <span class="material-symbols-outlined text-rose-600">bolt</span>
-                <h3 class="font-bold text-navy-800 text-lg">Penilaian Impulsifitas · {{ $assessment['period_label'] }}</h3>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="rounded-xl bg-slate-50 p-4 text-center">
-                    <div class="text-4xl font-extrabold text-navy-800">{{ $assessment['score'] }}<span class="text-base text-slate-400">/100</span></div>
-                    <div class="text-sm font-bold text-emerald-700 mt-1">{{ $assessment['grade'] }}</div>
-                    <div class="text-xs text-slate-500 mt-1">Skor kontrol diri</div>
-                </div>
-                <div class="rounded-xl bg-rose-50 p-4 text-center">
-                    <div class="text-3xl font-extrabold text-rose-600">{{ $assessment['impulsive_rate'] }}%</div>
-                    <div class="text-xs text-slate-600 mt-1">Impulsive Rate</div>
-                    <div class="text-xs font-semibold text-rose-700 mt-1">Risiko: {{ $assessment['risk_label'] }}</div>
-                </div>
-                <div class="rounded-xl bg-amber-50 p-4 text-center">
-                    <div class="text-3xl font-extrabold text-amber-700">{{ $assessment['impulsive_amount_share'] }}%</div>
-                    <div class="text-xs text-slate-600 mt-1">Nominal impulsif</div>
-                    <div class="text-xs text-slate-500 mt-1">{{ $fmt($assessment['impulsive_amount']) }} dari pengeluaran</div>
-                </div>
-            </div>
-            <div class="mt-4 h-3 bg-slate-100 rounded-full overflow-hidden">
-                <div class="h-full rounded-full {{ $assessment['impulsive_rate'] >= 30 ? 'bg-rose-500' : 'bg-emerald-500' }}"
-                     style="width: {{ min(100, $assessment['impulsive_rate']) }}%"></div>
-            </div>
-            <div class="text-sm text-slate-600 mt-4 border-t pt-4 leading-relaxed space-y-2">
-                @include('portal.partials.ai-source-badge', ['aiSource' => $assessment['ai_source'] ?? null])
-                <p><span class="font-semibold text-navy-800">Doctor's Note:</span> {{ $noteSummary }}</p>
-                @if(is_array($note) && !empty($note['priority']))
-                    <p class="text-xs text-navy-800"><span class="font-semibold">Prioritas:</span> {{ $note['priority'] }}</p>
+    {{-- 4. KPI --}}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl border border-slate-200 p-4 text-center">
+            <div class="text-lg font-extrabold text-rose-600">{{ $assessment['impulsive_rate'] }}%</div>
+            <div class="text-xs text-slate-500 mt-1">Rate impulsif</div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4 text-center">
+            <div class="text-lg font-extrabold text-navy-800">{{ $moodLabel($assessment['dominant_mood']) }}</div>
+            <div class="text-xs text-slate-500 mt-1">Mood dominan</div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4 text-center">
+            <div class="text-lg font-extrabold text-amber-700">{{ $fmt($assessment['impulsive_amount']) }}</div>
+            <div class="text-xs text-slate-500 mt-1">Nominal impulsif</div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4 text-center">
+            <div class="text-lg font-extrabold text-navy-800">{{ $assessment['dominant_pattern'] }}</div>
+            <div class="text-xs text-slate-500 mt-1">Dominan pattern</div>
+        </div>
+    </div>
+
+    {{-- 5. Mood distribusi --}}
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm font-semibold text-navy-800 mb-4">Mood distribusi</div>
+        <div class="h-52 flex items-center justify-center">
+            @if($hasData)
+                <canvas id="moodDistribusiChart"></canvas>
+            @endif
+        </div>
+        <div class="flex justify-center gap-4 mt-3 text-xs text-slate-600">
+            <span>Positif {{ $assessment['mood_groups']['positive']['share'] }}%</span>
+            <span>Netral {{ $assessment['mood_groups']['neutral']['share'] }}%</span>
+            <span>Negatif {{ $assessment['mood_groups']['negative']['share'] }}%</span>
+        </div>
+    </div>
+
+    {{-- 6. Mood berdasarkan pengeluaran --}}
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm font-semibold text-navy-800 mb-4">Mood berdasarkan pengeluaran</div>
+        <div class="h-52">
+            @if(!empty($assessment['by_mood']))
+                <canvas id="moodPengeluaranChart"></canvas>
+            @endif
+        </div>
+    </div>
+
+    {{-- 7. Mood vs jumlah transaksi --}}
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm font-semibold text-navy-800 mb-4">Mood vs jumlah transaksi</div>
+        <div class="h-52">
+            @if(!empty($assessment['by_mood']))
+                <canvas id="moodTransaksiChart"></canvas>
+            @endif
+        </div>
+    </div>
+
+    {{-- 8. Need vs Want impulsivitas --}}
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm font-semibold text-navy-800 mb-4">Need vs Want impulsivitas</div>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            @foreach($matrixOrder as $key)
+                @php $cell = $matrixByKey->get($key); @endphp
+                @if($cell)
+                    <div class="rounded-xl border border-slate-200 p-3 text-center">
+                        <div class="text-xs text-slate-500">{{ $cell['label'] }}</div>
+                        <div class="text-xl font-extrabold text-navy-800 mt-1">{{ $cell['count'] }}</div>
+                        <div class="text-xs text-slate-500">{{ $cell['share'] }}%</div>
+                    </div>
+                @endif
+            @endforeach
+        </div>
+        <div class="h-48 flex items-center justify-center">
+            @if($hasData)
+                <canvas id="needWantChart"></canvas>
+            @endif
+        </div>
+    </div>
+
+    {{-- 9. Impulsive spending --}}
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm font-semibold text-navy-800 mb-4">Impulsive spending</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="h-48 flex items-center justify-center">
+                @if(!empty($assessment['impulsive_categories']))
+                    <canvas id="impulsiveSpendingChart"></canvas>
                 @endif
             </div>
-        </div>
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 text-center">
-            <h3 class="font-bold text-navy-800 mb-4">Emotional Balance</h3>
-            <div class="relative w-32 h-32 mx-auto rounded-full pulse-ring flex items-center justify-center"
-                 style="--score: {{ $assessment['emotional_balance']['score'] }}">
-                <div class="w-24 h-24 rounded-full bg-white flex flex-col items-center justify-center shadow-inner">
-                    <span class="text-2xl font-extrabold">{{ $assessment['emotional_balance']['score'] }}</span>
-                    <span class="text-[10px] text-slate-400">/100</span>
-                </div>
-            </div>
-            <div class="mt-3 text-sm font-semibold text-navy-800">{{ $assessment['emotional_balance']['label'] }}</div>
-            <div class="grid grid-cols-3 gap-2 mt-4 text-xs">
-                <div class="rounded-lg bg-emerald-50 p-2">
-                    <div class="font-bold text-emerald-700">Positif</div>
-                    <div>{{ $assessment['mood_groups']['positive']['share'] }}%</div>
-                </div>
-                <div class="rounded-lg bg-slate-50 p-2">
-                    <div class="font-bold text-slate-600">Netral</div>
-                    <div>{{ $assessment['mood_groups']['neutral']['share'] }}%</div>
-                </div>
-                <div class="rounded-lg bg-rose-50 p-2">
-                    <div class="font-bold text-rose-700">Negatif</div>
-                    <div>{{ $assessment['mood_groups']['negative']['share'] }}%</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    @if(!empty($assessment['insights']))
-    <div class="bg-gradient-to-r from-navy-800 to-navy-600 rounded-2xl p-5 text-white">
-        <h3 class="font-bold mb-1 flex items-center gap-2">
-            <span class="material-symbols-outlined text-gold-400">lightbulb</span> Insight Behavioral
-        </h3>
-        @include('portal.partials.ai-source-badge', ['aiSource' => $assessment['ai_source'] ?? null, 'tone' => 'dark'])
-        <ul class="space-y-2 text-sm text-white/90 mt-2">
-            @foreach($assessment['insights'] as $insight)
-                <li class="flex gap-2"><span class="text-gold-400">→</span>{{ $insight }}</li>
-            @endforeach
-        </ul>
-    </div>
-    @endif
-
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-            <h3 class="font-bold text-navy-800 mb-4">Mood Timeline</h3>
-            <div class="h-64"><canvas id="moodTimelineChart"></canvas></div>
-        </div>
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-            <h3 class="font-bold text-navy-800 mb-4">Mood Calendar</h3>
-            <div class="grid grid-cols-7 gap-1 text-center text-xs mb-2 text-slate-400 font-semibold">
-                @foreach(['Min','Sen','Sel','Rab','Kam','Jum','Sab'] as $d)<div>{{ $d }}</div>@endforeach
-            </div>
-            @php $pad = \Carbon\Carbon::createFromFormat('Y-m', $assessment['month'])->dayOfWeek; @endphp
-            <div class="grid grid-cols-7 gap-1 text-center text-xs">
-                @for($i = 0; $i < $pad; $i++)<div></div>@endfor
-                @foreach($assessment['mood_calendar'] as $day)
-                    <div class="rounded-lg border py-1.5 {{ $day['mood'] ? 'bg-navy-800/5 border-navy-800/10' : 'border-transparent' }}">
-                        <div class="text-slate-400 text-[10px]">{{ $day['day'] }}</div>
-                        <div class="text-base leading-none">{{ $day['emoji'] ?: '·' }}</div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-            <h3 class="font-bold text-navy-800 mb-4">Mood Spending Matrix</h3>
-            <div class="h-64"><canvas id="moodSpendMatrixChart"></canvas></div>
-        </div>
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-            <h3 class="font-bold text-navy-800 mb-4">Mood vs Impulsive (%)</h3>
-            <div class="h-64"><canvas id="moodImpulsiveChart"></canvas></div>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-            <h3 class="font-bold text-navy-800 mb-4">Need vs Want</h3>
-            <div class="h-56 flex items-center justify-center">
-                <canvas id="needWantChart"></canvas>
-            </div>
-        </div>
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-            <h3 class="font-bold text-navy-800 mb-4">Need × Impulsive Matrix</h3>
-            <div class="grid grid-cols-2 gap-3">
-                @foreach($assessment['matrix'] as $cell)
-                    <div class="rounded-xl border p-4 {{ str_contains($cell['key'], 'impulsive') ? 'bg-rose-50/80 border-rose-200' : 'bg-emerald-50/80 border-emerald-200' }}">
-                        <div class="text-xs font-bold text-slate-600">{{ $cell['label'] }}</div>
-                        <div class="text-2xl font-extrabold text-navy-800 mt-1">{{ $cell['count'] }}</div>
-                        <div class="text-xs text-slate-500">{{ $cell['share'] }}% transaksi</div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-            <h3 class="font-bold text-navy-800 mb-1">Rekomendasi Personal</h3>
-            @include('portal.partials.ai-source-badge', ['aiSource' => $assessment['ai_source'] ?? null])
-            <ul class="space-y-2 text-sm text-slate-700 mt-2">
-                @foreach($assessment['recommendations']['personalized'] as $rec)
-                    <li class="flex gap-2"><span class="text-navy-600 font-bold shrink-0">•</span>{{ $rec }}</li>
-                @endforeach
-            </ul>
-        </div>
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-            <h3 class="font-bold text-navy-800 mb-1">Rekomendasi Umum</h3>
-            @include('portal.partials.ai-source-badge', ['aiSource' => $assessment['ai_source'] ?? null])
-            <ul class="space-y-2 text-sm text-slate-600 mt-2">
-                @foreach($assessment['recommendations']['general'] as $rec)
-                    <li class="flex gap-2"><span class="text-slate-400">•</span>{{ $rec }}</li>
-                @endforeach
+            <ul class="space-y-2 text-sm text-slate-700">
+                <li><span class="text-slate-500">Jumlah transaksi:</span> <strong>{{ $assessment['impulsive_count'] }}</strong></li>
+                <li><span class="text-slate-500">Total nominal:</span> <strong>{{ $fmt($assessment['impulsive_amount']) }}</strong></li>
+                <li><span class="text-slate-500">% total transaksi:</span> <strong>{{ $assessment['impulsive_rate'] }}%</strong></li>
+                <li>
+                    <span class="text-slate-500">Top kategori impulsif:</span>
+                    @if(!empty($assessment['impulsive_categories']))
+                        <ul class="mt-1 space-y-0.5">
+                            @foreach($assessment['impulsive_categories'] as $cat)
+                                <li>– {{ $cat['category'] }} ({{ $fmt($cat['amount']) }})</li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <strong> –</strong>
+                    @endif
+                </li>
             </ul>
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-        <h3 class="font-bold text-navy-800 mb-4 flex items-center gap-2">
-            <span class="material-symbols-outlined">diagnosis</span> Behavioral Diagnosis
-        </h3>
-        <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="rounded-xl bg-slate-50 p-4">
-                <dt class="text-xs uppercase tracking-wider text-slate-500 font-bold">Dominant Mood</dt>
-                <dd class="font-bold text-navy-800 mt-1">{{ $assessment['dominant_mood'] }}</dd>
+    {{-- 10. Mood spending matrix --}}
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm font-semibold text-navy-800 mb-4">Mood spending matrix</div>
+        @if(!empty($assessment['mood_table']))
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-slate-500 border-b">
+                            <th class="pb-2 font-medium">Mood</th>
+                            <th class="pb-2 font-medium text-right">Transaksi</th>
+                            <th class="pb-2 font-medium text-right">Total spending</th>
+                            <th class="pb-2 font-medium text-right">Average / transaksi</th>
+                            <th class="pb-2 font-medium text-right">% impulsif</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($assessment['mood_table'] as $row)
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 text-navy-800">{{ $moodLabel($row['mood']) }}</td>
+                                <td class="py-2 text-right">{{ $row['count'] }}</td>
+                                <td class="py-2 text-right">{{ $fmt($row['amount']) }}</td>
+                                <td class="py-2 text-right">{{ $fmt($row['average']) }}</td>
+                                <td class="py-2 text-right">{{ $row['impulsive_rate'] }}%</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
-            <div class="rounded-xl bg-slate-50 p-4">
-                <dt class="text-xs uppercase tracking-wider text-slate-500 font-bold">Dominant Pattern</dt>
-                <dd class="font-bold text-navy-800 mt-1">{{ $assessment['dominant_pattern'] }}</dd>
-            </div>
-            <div class="rounded-xl bg-slate-50 p-4">
-                <dt class="text-xs uppercase tracking-wider text-slate-500 font-bold">Highest Leakage</dt>
-                <dd class="font-bold text-navy-800 mt-1">
-                    @if($assessment['highest_leakage'])
-                        {{ $assessment['highest_leakage']['category'] }}
-                        <span class="block text-sm font-normal text-rose-600">{{ $fmt($assessment['highest_leakage']['amount']) }}</span>
-                    @else — @endif
-                </dd>
-            </div>
-            <div class="rounded-xl bg-slate-50 p-4">
-                <dt class="text-xs uppercase tracking-wider text-slate-500 font-bold">Impulsive Rate</dt>
-                <dd class="font-bold text-rose-600 mt-1 text-xl">{{ $assessment['impulsive_rate'] }}%</dd>
-            </div>
-        </dl>
+        @else
+            <p class="text-sm text-slate-500">–</p>
+        @endif
     </div>
+</div>
 @endif
 @endsection
 
 @if(!($isFtsaOnlyPortalUser ?? false))
 @push('scripts')
 <script>
-const moodTimeline = @json($assessment['mood_timeline']);
-const moodMatrix = @json($assessment['mood_spending_matrix']);
-const moodImpulsive = @json($assessment['mood_vs_impulsive']);
+Chart.defaults.font.family = 'Manrope';
+const chartColors = ['#0c2240','#26528b','#4d7ec0','#dca115','#059669','#e11d48','#7c3aed'];
+const moodGroups = @json($assessment['mood_groups']);
+const byMood = @json($assessment['by_mood']);
 const needWant = @json($assessment['need_vs_want']);
+const impulsiveCategories = @json($assessment['impulsive_categories'] ?? []);
 
-if (moodTimeline.length) {
-    const labels = moodTimeline.map(p => p.label);
-    new Chart(document.getElementById('moodTimelineChart'), {
-        type: 'line',
+const moodDisplay = (m) => ({ Neutral: 'Netral', Stressed: 'Stres', Angry: 'Ang' }[m] || m);
+
+if (document.getElementById('moodDistribusiChart')) {
+    new Chart(document.getElementById('moodDistribusiChart'), {
+        type: 'doughnut',
         data: {
-            labels,
-            datasets: [
-                { label: 'Mood Score', data: moodTimeline.map(p => p.mood_score), borderColor: '#26528b', tension: 0.3, spanGaps: true },
-                { label: 'Pengeluaran', data: moodTimeline.map(p => p.expense), borderColor: '#e11d48', borderDash: [3,3], yAxisID: 'y1', tension: 0.3 },
-            ]
+            labels: ['Positif', 'Netral', 'Negatif'],
+            datasets: [{
+                data: [
+                    moodGroups.positive.share,
+                    moodGroups.neutral.share,
+                    moodGroups.negative.share,
+                ],
+                backgroundColor: ['#059669', '#94a3b8', '#e11d48'],
+                borderWidth: 2,
+                borderColor: '#fff',
+            }],
         },
         options: {
-            responsive: true, maintainAspectRatio: false,
-            scales: { y: { min: 0, max: 5 }, y1: { position: 'right', grid: { drawOnChartArea: false } } },
-            plugins: { legend: { position: 'bottom' } }
-        }
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } },
+        },
     });
 }
-if (moodMatrix.length) {
-    new Chart(document.getElementById('moodSpendMatrixChart'), {
+
+if (byMood.length && document.getElementById('moodPengeluaranChart')) {
+    new Chart(document.getElementById('moodPengeluaranChart'), {
         type: 'bar',
         data: {
-            labels: moodMatrix.map(m => m.mood),
-            datasets: [
-                { label: 'Total', data: moodMatrix.map(m => m.amount), backgroundColor: '#26528b', borderRadius: 6 },
-                { label: 'Impulsif', data: moodMatrix.map(m => m.impulsive_amount), backgroundColor: '#e11d48', borderRadius: 6 },
-            ]
+            labels: byMood.map(m => moodDisplay(m.mood)),
+            datasets: [{
+                label: 'Pengeluaran',
+                data: byMood.map(m => m.amount),
+                backgroundColor: '#26528b',
+                borderRadius: 4,
+            }],
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } },
+        },
     });
 }
-if (moodImpulsive.length) {
-    new Chart(document.getElementById('moodImpulsiveChart'), {
+
+if (byMood.length && document.getElementById('moodTransaksiChart')) {
+    new Chart(document.getElementById('moodTransaksiChart'), {
         type: 'bar',
-        data: { labels: moodImpulsive.map(m => m.mood), datasets: [{ data: moodImpulsive.map(m => m.impulsive_rate), backgroundColor: '#e11d48', borderRadius: 6 }] },
-        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { max: 100 } } }
+        data: {
+            labels: byMood.map(m => moodDisplay(m.mood)),
+            datasets: [{
+                label: 'Transaksi',
+                data: byMood.map(m => m.count),
+                backgroundColor: '#dca115',
+                borderRadius: 4,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+        },
     });
 }
-new Chart(document.getElementById('needWantChart'), {
-    type: 'doughnut',
-    data: { labels: ['Need', 'Want'], datasets: [{ data: [needWant.need.count, needWant.want.count], backgroundColor: ['#059669', '#dca115'] }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-});
+
+if (document.getElementById('needWantChart')) {
+    new Chart(document.getElementById('needWantChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Need', 'Want'],
+            datasets: [{
+                data: [needWant.need.count, needWant.want.count],
+                backgroundColor: ['#059669', '#dca115'],
+                borderWidth: 2,
+                borderColor: '#fff',
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } },
+        },
+    });
+}
+
+if (impulsiveCategories.length && document.getElementById('impulsiveSpendingChart')) {
+    new Chart(document.getElementById('impulsiveSpendingChart'), {
+        type: 'doughnut',
+        data: {
+            labels: impulsiveCategories.map(c => c.category),
+            datasets: [{
+                data: impulsiveCategories.map(c => c.amount),
+                backgroundColor: chartColors,
+                borderWidth: 2,
+                borderColor: '#fff',
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } },
+        },
+    });
+}
 </script>
 @endpush
 @endif

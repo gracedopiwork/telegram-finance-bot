@@ -56,6 +56,8 @@ class ImpulsivityAssessmentService
     $moodSpendingMatrix = $this->moodSpendingMatrix($expenses);
     $moodTimeline = $this->moodTimeline($rows, $month, $periodMonths);
     $highestLeakage = $this->highestLeakage($impulsiveRows);
+    $impulsiveCategories = $this->topImpulsiveCategories($impulsiveRows);
+    $moodTable = $this->moodTableRows($expenses);
     $dominantPattern = $this->dominantPattern($matrix);
     $dominantMood = $this->dominantMood($expenses);
     $moodCalendar = $this->moodCalendar($rows, $month);
@@ -92,6 +94,8 @@ class ImpulsivityAssessmentService
       'dominant_mood' => $dominantMood,
       'dominant_pattern' => $dominantPattern,
       'highest_leakage' => $highestLeakage,
+      'impulsive_categories' => $impulsiveCategories,
+      'mood_table' => $moodTable,
       'emotional_balance' => $emotionalBalance,
       'ftsa_profile' => $ftsaProfile,
     ];
@@ -353,6 +357,58 @@ class ImpulsivityAssessmentService
     $amount = $top->first();
 
     return $category ? ['category' => (string) $category, 'amount' => (int) $amount] : null;
+  }
+
+  /**
+   * @return list<array{category: string, amount: int, count: int}>
+   */
+  private function topImpulsiveCategories(Collection $impulsiveRows): array
+  {
+    if ($impulsiveRows->isEmpty()) {
+      return [];
+    }
+
+    return $impulsiveRows
+      ->groupBy('category')
+      ->map(function (Collection $items, string $category) {
+        return [
+          'category' => $category,
+          'amount' => (int) $items->sum('amount'),
+          'count' => $items->count(),
+        ];
+      })
+      ->sortByDesc('amount')
+      ->take(5)
+      ->values()
+      ->all();
+  }
+
+  /**
+   * @return list<array{mood: string, count: int, amount: int, average: int, impulsive_rate: float}>
+   */
+  private function moodTableRows(Collection $expenses): array
+  {
+    return collect(self::MOOD_ORDER)
+      ->map(function (string $mood) use ($expenses) {
+        $items = $expenses->where('mood', $mood);
+        $count = $items->count();
+        if ($count === 0) {
+          return null;
+        }
+        $amount = (int) $items->sum('amount');
+        $impulsiveCount = $items->where('is_impulsive', true)->count();
+
+        return [
+          'mood' => $mood,
+          'count' => $count,
+          'amount' => $amount,
+          'average' => (int) round($amount / $count),
+          'impulsive_rate' => round(($impulsiveCount / $count) * 100, 1),
+        ];
+      })
+      ->filter()
+      ->values()
+      ->all();
   }
 
   /**

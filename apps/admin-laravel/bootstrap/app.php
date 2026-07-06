@@ -17,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $weeklyTime = (string) config('portal_ai.guidance_weekly_time', '22:00');
         $monthlyTime = (string) config('portal_ai.guidance_monthly_time', '22:00');
 
-        $schedule->command('portal:generate-guidance weekly')
+        $schedule->command('portal:generate-guidance weekly --force')
             ->weeklyOn(0, $weeklyTime)
             ->timezone($tz)
             ->withoutOverlapping()

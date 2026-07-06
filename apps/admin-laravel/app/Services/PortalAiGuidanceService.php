@@ -218,9 +218,17 @@ class PortalAiGuidanceService
             $monthKey,
         );
 
+        if ($weeklyStored === null) {
+            $weeklyStored = $this->ensureWeeklyClinicalSummary(
+                $telegramUserId,
+                $weekKey,
+                $baseline,
+            );
+        }
+
         $clinical = $weeklyStored !== null
             ? ($weeklyStored['payload']['clinical_summary'] ?? $fallback['clinical_summary'])
-            : $this->pendingClinicalSummary($fallback['clinical_summary']);
+            : $fallback['clinical_summary'];
 
         $doctors = $monthlyStored !== null
             ? ($monthlyStored['payload']['doctors_note'] ?? $fallback['doctors_note'])
@@ -230,7 +238,7 @@ class PortalAiGuidanceService
         $doctorsPending = $monthlyStored === null;
 
         $aiSource = 'rules';
-        $weeklyAi = ($weeklyStored['ai_source'] ?? '') === 'ai';
+        $weeklyAi = $weeklyStored !== null && ($weeklyStored['ai_source'] ?? '') === 'ai';
         $monthlyAi = ($monthlyStored['ai_source'] ?? '') === 'ai';
         if ($weeklyAi && $monthlyAi) {
             $aiSource = 'ai';
@@ -351,21 +359,43 @@ class PortalAiGuidanceService
     }
 
     /**
-     * @param  array{headline: string, findings: list<string>, status: string}  $fallback
-     * @return array{headline: string, findings: list<string>, status: string}
+     * Generate insight mingguan penuh saat pertama kali dibuka (AI jika tersedia, else rules).
+     *
+     * @return array{payload: array<string, mixed>, ai_source: string, generated_at: string}|null
      */
-    private function pendingClinicalSummary(array $fallback): array
-    {
-        $weeklyAt = (string) config('portal_ai.guidance_weekly_label', 'Minggu pukul 22.00 WIB');
+    private function ensureWeeklyClinicalSummary(
+        int $telegramUserId,
+        string $weekKey,
+        ?FinancialBaseline $baseline,
+    ): ?array {
+        $week = $this->guidanceSnapshots->weekRange();
+        $periodLabel = $week['start']->translatedFormat('d M').' – '.$week['end']->translatedFormat('d M Y');
 
-        return [
-            'headline' => 'Insight mingguan menunggu jadwal generate',
-            'findings' => array_merge(
-                ["Insight AI diperbarui setiap {$weeklyAt}. Sementara ini, gunakan ringkasan angka dan grafik di bawah."],
-                array_slice($fallback['findings'] ?? [], 0, 3),
-            ),
-            'status' => $fallback['status'] ?? 'fair',
-        ];
+        $context = app(TransactionDashboardService::class)->financialGuidanceContext(
+            $telegramUserId,
+            $week['start'],
+            $week['end'],
+            'Minggu '.$periodLabel,
+            1,
+        );
+
+        if ($context['transaction_count'] === 0) {
+            return null;
+        }
+
+        $this->generateAndStoreWeeklyClinicalSummary(
+            $telegramUserId,
+            $weekKey,
+            $context['metrics'],
+            $baseline,
+            $context['fallback_clinical'],
+        );
+
+        return $this->guidanceSnapshots->get(
+            $telegramUserId,
+            PortalGuidanceSnapshot::TYPE_CLINICAL_SUMMARY_WEEKLY,
+            $weekKey,
+        );
     }
 
     /**
