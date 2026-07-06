@@ -14,7 +14,27 @@
     $canPay = $ftsaProduct !== null && $midtrans->clientKey() !== '';
 @endphp
 
-@if($variant === 'inline')
+@if($variant === 'embedded')
+    <div data-portal-snap-root>
+    <form id="{{ $formId }}" data-portal-snap-form
+          data-snap-success-key="ftsa_unlocked"
+          action="{{ route('portal.checkout.ftsa') }}" method="post" novalidate>
+        @csrf
+        <button type="submit" data-portal-snap-btn
+                @disabled(! $canPay)
+                class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 disabled:opacity-50 disabled:cursor-not-allowed text-navy-900 font-bold px-4 py-2.5 rounded-xl text-sm">
+            <span data-portal-snap-label>Beli FTSA Premium</span>
+        </button>
+        @if($priceLabel)
+            <p class="text-xs text-slate-500 mt-2">{{ $priceLabel }} · akses 12 bulan evaluasi</p>
+        @endif
+        <p class="text-xs text-rose-600 mt-2 hidden" data-portal-snap-error></p>
+        @unless($canPay)
+            <p class="text-xs text-slate-500 mt-2">Pembayaran sementara tidak tersedia. Hubungi tim YFD.</p>
+        @endunless
+    </form>
+    </div>
+@elseif($variant === 'inline')
     <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50/80 p-4" data-portal-snap-root>
         @if($priceLabel)
             <div class="text-xs text-amber-800 mb-3">Total: <strong>{{ $priceLabel }}</strong> · akses 12 bulan evaluasi</div>

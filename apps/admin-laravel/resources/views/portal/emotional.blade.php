@@ -89,26 +89,58 @@
 
 @else
 <div class="space-y-5">
-    {{-- 1. Doctor's Note · FTSA --}}
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <div class="text-sm font-semibold text-navy-800 mb-3">Doctor's Note</div>
-        @if($ftsaProfile)
-            @if($ftsaDoctorsNote !== '')
-                <p class="text-sm text-slate-700 leading-relaxed">{{ $ftsaDoctorsNote }}</p>
+    {{-- 1. Doctor's Note + FTSA (2 kolom) --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+            <div class="text-sm font-semibold text-navy-800 mb-3">Doctor's Note</div>
+            @if($ftsaProfile)
+                @if($ftsaDoctorsNote !== '')
+                    <p class="text-sm text-slate-700 leading-relaxed">{{ $ftsaDoctorsNote }}</p>
+                @else
+                    <p class="text-sm text-slate-700 leading-relaxed">
+                        Archetype dominan: <strong>{{ $ftsaProfile['archetype'] ?? '—' }}</strong>.
+                    </p>
+                @endif
+            @elseif($ftsaUnlocked ?? false)
+                <p class="text-sm text-slate-700 leading-relaxed">
+                    Isi kuesioner FTSA 1–32 terlebih dahulu agar Doctor's Note behavioral bisa disusun dari profil Anda.
+                </p>
             @else
                 <p class="text-sm text-slate-700 leading-relaxed">
-                    Archetype dominan: <strong>{{ $ftsaProfile['archetype'] ?? '—' }}</strong>.
+                    Unlock FTSA Premium untuk mendapatkan Doctor's Note behavioral yang dipersonalisasi dari profil FTSA Anda.
                 </p>
             @endif
-        @else
-            <p class="text-sm text-slate-700 leading-relaxed mb-3">
-                Isi kuesioner FTSA 1–32 terlebih dahulu agar Doctor's Note behavioral bisa disusun dari profil Anda.
-            </p>
-            <a href="{{ $portalFtsaUrl ?? route('portal.ftsa.create') }}"
-               class="text-sm font-semibold text-navy-800 hover:underline">
-                Isi FTSA sekarang →
-            </a>
-        @endif
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+            <div class="text-sm font-semibold text-navy-800 mb-3">FTSA</div>
+            @if($ftsaProfile)
+                <div class="text-lg font-extrabold text-navy-800">{{ $ftsaProfile['archetype'] ?? '—' }}</div>
+                <div class="grid grid-cols-2 gap-2 mt-4">
+                    @foreach($ftsaProfile['domains'] ?? [] as $domain)
+                        <div class="rounded-lg bg-slate-50 px-3 py-2 text-center">
+                            <div class="text-xs font-bold text-slate-500">{{ $domain['label'] ?? strtoupper($domain['key'] ?? '') }}</div>
+                            <div class="text-base font-extrabold text-navy-800">{{ (int) ($domain['score'] ?? 0) }}<span class="text-xs text-slate-400">/40</span></div>
+                        </div>
+                    @endforeach
+                </div>
+                @if(!($ftsaRetakeLocked ?? false))
+                    <a href="{{ $portalFtsaUrl ?? route('portal.ftsa.create') }}"
+                       class="inline-block mt-4 text-sm font-semibold text-navy-800 hover:underline">
+                        Lihat / isi ulang FTSA →
+                    </a>
+                @endif
+            @elseif($ftsaUnlocked ?? false)
+                <p class="text-sm text-slate-600 mb-4">FTSA Premium aktif. Lengkapi kuesioner 1–32 untuk melihat archetype dan skor domain.</p>
+                <a href="{{ $portalFtsaUrl ?? route('portal.ftsa.create') }}"
+                   class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2.5 rounded-xl text-sm">
+                    Isi FTSA Sekarang
+                </a>
+            @else
+                <p class="text-sm text-slate-600 mb-4">Beli FTSA Premium untuk membuka kuesioner 1–32 dan insight behavioral personal selama 12 bulan evaluasi.</p>
+                @include('portal.partials.ftsa-unlock-panel', ['variant' => 'embedded'])
+            @endif
+        </div>
     </div>
 
     {{-- 2. Insight kelakuan behavioral --}}
