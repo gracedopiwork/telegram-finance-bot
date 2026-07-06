@@ -444,12 +444,12 @@ class TransactionDashboardService
     }
 
     return $savingRows
-      ->groupBy('category')
-      ->map(function (Collection $items, string $category) use ($total) {
+      ->groupBy(fn (BotTransaction $row) => $this->savingAnalysisLabel($row))
+      ->map(function (Collection $items, string $label) use ($total) {
         $amount = (int) $items->sum('amount');
 
         return [
-          'label' => $category,
+          'label' => $label,
           'amount' => $amount,
           'share' => round(($amount / $total) * 100, 1),
         ];
@@ -457,6 +457,43 @@ class TransactionDashboardService
       ->sortByDesc('amount')
       ->values()
       ->all();
+  }
+
+  private function savingAnalysisLabel(BotTransaction $row): string
+  {
+    $notes = trim((string) $row->notes);
+    if ($notes !== '' && $notes !== '-') {
+      $inferred = $this->inferSavingLabelFromNotes($notes);
+      if ($inferred !== null) {
+        return $inferred;
+      }
+
+      return mb_strlen($notes) > 36 ? mb_substr($notes, 0, 33).'…' : $notes;
+    }
+
+    return 'Tabungan/Investasi';
+  }
+
+  private function inferSavingLabelFromNotes(string $notes): ?string
+  {
+    $lower = mb_strtolower($notes);
+    foreach ([
+      'reksadana' => 'Reksadana',
+      'saham' => 'Saham',
+      'obligasi' => 'Obligasi',
+      'emas' => 'Emas',
+      'deposito' => 'Deposito',
+      'crypto' => 'Crypto',
+      'dana darurat' => 'Dana darurat',
+      'nabung' => 'Tabungan',
+      'investasi' => 'Investasi',
+    ] as $keyword => $label) {
+      if (str_contains($lower, $keyword)) {
+        return $label;
+      }
+    }
+
+    return null;
   }
 
   /**
