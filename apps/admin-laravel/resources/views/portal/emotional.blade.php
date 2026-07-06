@@ -8,8 +8,6 @@
     $isFtsaOnly = $isFtsaOnlyPortalUser ?? false;
     $fmt = fn (int $n) => 'Rp ' . number_format($n, 0, ',', '.');
     $hasData = $assessment['expense_count'] > 0;
-    $note = $assessment['doctors_note'];
-    $noteSummary = is_array($note) ? ($note['summary'] ?? '') : (string) $note;
     $ftsaProfile = $assessment['ftsa_profile'] ?? null;
     $moodLabel = fn (string $m) => match ($m) {
         'Neutral' => 'Netral',
@@ -19,6 +17,13 @@
     };
     $matrixOrder = ['need_impulsive', 'want_impulsive', 'need_planned', 'want_planned'];
     $matrixByKey = collect($assessment['matrix'] ?? [])->keyBy('key');
+    $ftsaDoctorsNote = collect($ftsaAiGuidance['insights'] ?? [])->filter()->implode(' ');
+    $behavioralRecommendations = $ftsaProfile
+        ? array_values(array_unique(array_merge(
+            $ftsaAiGuidance['recommendations'] ?? [],
+            $assessment['recommendations']['personalized'] ?? [],
+        )))
+        : ($assessment['recommendations']['general'] ?? []);
 @endphp
 
 @if($isFtsaOnly)
@@ -84,27 +89,34 @@
 
 @else
 <div class="space-y-5">
-    {{-- 1. Doctor's Note --}}
+    {{-- 1. Doctor's Note · FTSA --}}
     <div class="bg-white rounded-xl border border-slate-200 p-5">
         <div class="text-sm font-semibold text-navy-800 mb-3">Doctor's Note</div>
-        @if($noteSummary !== '')
-            <p class="text-sm text-slate-700 leading-relaxed">{{ $noteSummary }}</p>
+        @if($ftsaProfile)
+            @if($ftsaDoctorsNote !== '')
+                <p class="text-sm text-slate-700 leading-relaxed">{{ $ftsaDoctorsNote }}</p>
+            @else
+                <p class="text-sm text-slate-700 leading-relaxed">
+                    Archetype dominan: <strong>{{ $ftsaProfile['archetype'] ?? '—' }}</strong>.
+                </p>
+            @endif
         @else
-            <p class="text-sm text-slate-500">–</p>
+            <p class="text-sm text-slate-700 leading-relaxed mb-3">
+                Isi kuesioner FTSA 1–32 terlebih dahulu agar Doctor's Note behavioral bisa disusun dari profil Anda.
+            </p>
+            <a href="{{ $portalFtsaUrl ?? route('portal.ftsa.create') }}"
+               class="text-sm font-semibold text-navy-800 hover:underline">
+                Isi FTSA sekarang →
+            </a>
         @endif
     </div>
 
     {{-- 2. Insight kelakuan behavioral --}}
     <div class="bg-white rounded-xl border border-slate-200 p-5">
         <div class="text-sm font-semibold text-navy-800 mb-3">Insight kelakuan behavioral</div>
-        @if($ftsaProfile)
-            <p class="text-xs text-slate-500 mb-2">Rekomendasi (FTSA sudah diisi — {{ $ftsaProfile['archetype'] ?? '—' }})</p>
-        @else
-            <p class="text-xs text-slate-500 mb-2">Rekomendasi: gabungkan hasil FTSA setelah tes untuk insight yang lebih personal.</p>
-        @endif
-        @if(!empty($assessment['recommendations']['personalized']))
+        @if(!empty($behavioralRecommendations))
             <ul class="space-y-1 text-sm text-slate-700">
-                @foreach($assessment['recommendations']['personalized'] as $rec)
+                @foreach($behavioralRecommendations as $rec)
                     <li class="flex gap-2"><span>–</span><span>{{ $rec }}</span></li>
                 @endforeach
             </ul>
