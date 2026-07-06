@@ -279,11 +279,22 @@ class TransactionImportService
             $notes = '-';
         }
 
+        $subCategory = '-';
+        if ($type === TransactionTaxonomy::TYPE_SAVING) {
+            $savingLabel = $this->inferSavingLabel($notes !== '-' ? $notes : $category);
+            $subCategory = $savingLabel;
+            if ($notes === '-' || $notes === '') {
+                $notes = "Investasi {$savingLabel}";
+            } elseif (! str_contains(mb_strtolower($notes), mb_strtolower($savingLabel))) {
+                $notes = "{$savingLabel}: {$notes}";
+            }
+        }
+
         return [
             'recorded_at' => $recordedAt,
             'type' => $type,
             'category' => $category,
-            'sub_category' => '-',
+            'sub_category' => $subCategory,
             'amount' => $amount,
             'nature' => $nature,
             'mood' => $mood,
@@ -513,5 +524,31 @@ class TransactionImportService
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    private function inferSavingLabel(string $text): string
+    {
+        $lower = mb_strtolower(trim($text));
+        foreach ([
+            'reksadana' => 'Reksadana',
+            'reksa dana' => 'Reksadana',
+            'saham' => 'Saham',
+            'obligasi' => 'Obligasi',
+            'emas' => 'Emas',
+            'deposito' => 'Deposito',
+            'crypto' => 'Crypto',
+            'bitcoin' => 'Crypto',
+            'dana darurat' => 'Dana darurat',
+            'nabung' => 'Tabungan',
+            'tabungan' => 'Tabungan',
+            'investasi' => 'Investasi',
+            'sbn' => 'Obligasi',
+        ] as $keyword => $label) {
+            if (str_contains($lower, $keyword)) {
+                return $label;
+            }
+        }
+
+        return 'Tabungan/Investasi';
     }
 }

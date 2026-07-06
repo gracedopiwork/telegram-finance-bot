@@ -39,6 +39,7 @@ from transaction_categories import (
     build_system_prompt_rules,
     is_water_expense,
     normalize_category_fields,
+    normalize_saving_fields,
     valid_kategori,
 )
 from impulsive_rules import (
@@ -215,8 +216,9 @@ def finalize_parsed_transaction(
     *,
     trust_ai_impulsif: bool = False,
 ) -> Dict[str, Any]:
-    normalize_category_fields(parsed, source_text)
     normalize_taxonomy(parsed)
+    normalize_category_fields(parsed, source_text)
+    normalize_saving_fields(parsed, source_text)
     ai_val = str(parsed.get("impulsif", "")).strip() if trust_ai_impulsif else None
     parsed["impulsif"] = resolve_impulsif(
         parsed,
@@ -474,7 +476,9 @@ def normalize_ai_result(data: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError("invalid_nominal")
 
     data["keterangan"] = str(data["keterangan"]).strip()
+    normalize_taxonomy(data)
     normalize_category_fields(data)
+    normalize_saving_fields(data, data["keterangan"])
 
     if data["jenis"] not in VALID_JENIS:
         raise ValueError("invalid_jenis")
@@ -624,16 +628,22 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
         "impulsif": impulsif,
     }
     normalize_category_fields(result, text)
+    normalize_taxonomy(result)
+    normalize_saving_fields(result, text)
     result["impulsif"] = resolve_impulsif(result, text)
     return result
 
 
 def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> str:
+    investasi_line = ""
+    if parsed.get("jenis") == "Saving/Investment" and parsed.get("sub_kategori"):
+        investasi_line = f"Investasi: {parsed['sub_kategori']}\n"
     return (
         f"Aku baca transaksi untuk {greeting_name} seperti ini:\n"
         f"Keterangan: {parsed['keterangan']}\n"
         f"Nominal: Rp{parsed['nominal']:,}\n"
         f"Jenis: {parsed['jenis']}\n"
+        f"{investasi_line}"
         f"Kategori: {parsed['kategori']}\n"
         f"Sifat: {parsed['sifat']}\n"
         f"Mood: {parsed['mood']}\n"

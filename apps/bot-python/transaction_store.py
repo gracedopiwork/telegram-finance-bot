@@ -34,7 +34,7 @@ def save_transaction_to_api(
         "telegram_user_id": telegram_user_id,
         "type": parsed["jenis"],
         "category": parsed["kategori"],
-        "sub_category": "-",
+        "sub_category": str(parsed.get("sub_kategori", "-")).strip() or "-",
         "amount": int(parsed["nominal"]),
         "nature": parsed["sifat"],
         "mood": parsed["mood"],

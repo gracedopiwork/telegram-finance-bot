@@ -461,6 +461,11 @@ class TransactionDashboardService
 
   private function savingAnalysisLabel(BotTransaction $row): string
   {
+    $sub = trim((string) $row->sub_category);
+    if ($sub !== '' && $sub !== '-') {
+      return $sub;
+    }
+
     $notes = trim((string) $row->notes);
     if ($notes !== '' && $notes !== '-') {
       $inferred = $this->inferSavingLabelFromNotes($notes);

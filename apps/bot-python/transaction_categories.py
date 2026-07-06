@@ -76,6 +76,53 @@ def is_electronics_expense(text: str) -> bool:
     return _matches_any_pattern(text, _ELECTRONICS_PATTERNS)
 
 
+_SAVING_LABEL_KEYWORDS: tuple[tuple[str, str], ...] = (
+    ("reksadana", "Reksadana"),
+    ("reksa dana", "Reksadana"),
+    ("saham", "Saham"),
+    ("obligasi", "Obligasi"),
+    ("emas", "Emas"),
+    ("deposito", "Deposito"),
+    ("crypto", "Crypto"),
+    ("bitcoin", "Crypto"),
+    ("dana darurat", "Dana darurat"),
+    ("nabung", "Tabungan"),
+    ("tabungan", "Tabungan"),
+    ("investasi", "Investasi"),
+    ("avg down", "Saham"),
+    ("sbn", "Obligasi"),
+)
+
+
+def infer_saving_label(text: str) -> str | None:
+    lower = text.lower()
+    for keyword, label in _SAVING_LABEL_KEYWORDS:
+        if keyword in lower:
+            return label
+    return None
+
+
+def normalize_saving_fields(parsed: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
+    """Untuk Saving/Investment: label investasi di sub_kategori + keterangan yang jelas."""
+    if str(parsed.get("jenis", "")).strip() != "Saving/Investment":
+        return parsed
+
+    combined = f"{parsed.get('keterangan', '')} {source_text}".strip()
+    label = infer_saving_label(combined) or "Tabungan/Investasi"
+    parsed["sub_kategori"] = label
+
+    keterangan = str(parsed.get("keterangan", "")).strip()
+    if keterangan == "" or label.lower() not in keterangan.lower():
+        if keterangan:
+            parsed["keterangan"] = f"{label}: {keterangan}"
+        else:
+            parsed["keterangan"] = f"Investasi {label}"
+
+    parsed["kategori"] = fallback_kategori()
+    parsed["sifat"] = "Need"
+    return parsed
+
+
 def _contains_phrase(text: str, phrases: tuple[str, ...]) -> bool:
     lower = text.lower()
     return any(phrase in lower for phrase in phrases)
@@ -166,6 +213,7 @@ Aturan:
 2) nominal: ekstrak angka jadi integer bersih (contoh: 50rb => 50000, 1,2jt => 1200000).
 3) jenis: Pemasukan | Pengeluaran | Saving/Investment.
    - Saving/Investment untuk nabung, saham, reksadana, deposito, avg down — BUKAN pengeluaran hidup.
+   - Untuk Saving/Investment, keterangan WAJIB menyebut instrumen (contoh: "Beli reksadana pasar uang", "Saham BBCA").
    - Donasi/sedekah/persembahan/ibadah = Pengeluaran + kategori Social (bukan jenis/sifat terpisah).
 4) sifat: HANYA Need atau Wants (berlaku untuk semua jenis transaksi).
 5) kategori: WAJIB persis dari enum (huruf besar/kecil sama). Jangan pernah mengarang label baru.
@@ -194,6 +242,11 @@ def _normalize_alias(value: str, aliases: dict[str, str]) -> str:
 
 def normalize_category_fields(parsed: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
     """Selaraskan kategori dengan aturan admin Laravel."""
+    if str(parsed.get("jenis", "")).strip() == "Saving/Investment":
+        parsed["kategori"] = fallback_kategori()
+        parsed.pop("sub_kategori", None)
+        return apply_admin_nature(parsed)
+
     kategori = _normalize_alias(str(parsed.get("kategori", "")), _kategori_aliases())
     combined = f"{parsed.get('keterangan', '')} {source_text}".strip().lower()
     valid_cats = valid_kategori()
