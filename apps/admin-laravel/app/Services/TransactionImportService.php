@@ -49,34 +49,9 @@ class TransactionImportService
         'catatan' => 'notes',
     ];
 
-    /** @var array<string, mixed>|null */
-    private ?array $categoryRules = null;
-
-    /** @var array<string, string> */
-    private const CATEGORY_ALIASES = [
-        'makanan' => 'Makan',
-        'makan' => 'Makan',
-        'muen' => 'Makan',
-        'grab/maxime' => 'Transport',
-        'grab' => 'Transport',
-        'maxime' => 'Transport',
-        'gojek' => 'Transport',
-        'ojek' => 'Transport',
-        'sosial' => 'Social',
-        'hiburan' => 'Social',
-        'networking' => 'Social',
-        'yfd' => 'Social',
-        'admin bank' => 'Jajan',
-        'skin care-beauty' => 'Jajan',
-        'skincare' => 'Jajan',
-        'beauty' => 'Jajan',
-        'lain-lain' => 'Jajan',
-        'lain lain' => 'Jajan',
-        'dipinjam' => 'Social',
-    ];
 
     public function __construct(
-        private readonly BotCategoryRulesService $categoryRulesService,
+        private readonly CategoryAutoRegisterService $categoryAutoRegister,
     ) {}
 
     public function templateCsv(): string
@@ -255,19 +230,6 @@ class TransactionImportService
                 : "nominal tidak valid (nilai: \"{$rawAmount}\")"];
         }
 
-        $rules = $this->rules();
-        $categoryInput = $taxonomy['category'] ?? ($data['category'] ?? '');
-
-        $category = $this->resolveCategory($categoryInput, $type, $rules);
-        if ($category === null) {
-            $allowed = implode(', ', $rules['categories']);
-            $hint = $categoryInput !== ''
-                ? "nilai \"{$categoryInput}\" tidak dikenali"
-                : 'kolom kategori kosong';
-
-            return ['error' => "kategori tidak valid — {$hint}. Gunakan: {$allowed}"];
-        }
-
         $recordedAt = $this->parseDate($data['recorded_at'] ?? '') ?? now();
 
         $nature = $taxonomy['nature'];
@@ -278,6 +240,15 @@ class TransactionImportService
         if ($notes === '') {
             $notes = '-';
         }
+
+        $categoryInput = $taxonomy['category'] ?? ($data['category'] ?? '');
+
+        $category = $this->categoryAutoRegister->resolveOrRegister(
+            $categoryInput,
+            $type,
+            $nature,
+            $notes !== '-' ? $notes : $categoryInput,
+        );
 
         $subCategory = '-';
         if ($type === TransactionTaxonomy::TYPE_SAVING) {
@@ -301,114 +272,6 @@ class TransactionImportService
             'is_impulsive' => $isImpulsive,
             'notes' => mb_substr($notes, 0, 2000),
         ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $rules
-     */
-    private function resolveCategory(string $categoryInput, string $type, array $rules): ?string
-    {
-        $categoryInput = trim($categoryInput);
-
-        if ($categoryInput === '' && $type === TransactionTaxonomy::TYPE_INCOME) {
-            return 'Gaji';
-        }
-
-        if ($categoryInput === '' && $type === TransactionTaxonomy::TYPE_SAVING) {
-            return (string) ($rules['fallback_category'] ?? 'Jajan');
-        }
-
-        if ($categoryInput === '' && $type === TransactionTaxonomy::TYPE_EXPENSE) {
-            return (string) ($rules['fallback_category'] ?? 'Jajan');
-        }
-
-        $canonical = $this->matchCategoryName($categoryInput, $rules);
-        if ($canonical !== null) {
-            return $canonical;
-        }
-
-        return $this->categoryFromLegacyLabel($categoryInput, $rules);
-    }
-
-    /**
-     * @param  array<string, mixed>  $rules
-     */
-    private function matchCategoryName(string $value, array $rules): ?string
-    {
-        $normalized = $this->normalizeAliasKey($value);
-        if ($normalized !== '' && isset(self::CATEGORY_ALIASES[$normalized])) {
-            $aliasTarget = self::CATEGORY_ALIASES[$normalized];
-            foreach ($rules['categories'] as $cat) {
-                if ((string) $cat === $aliasTarget) {
-                    return $aliasTarget;
-                }
-            }
-        }
-
-        foreach ($rules['categories'] as $cat) {
-            if (mb_strtolower((string) $cat) === mb_strtolower($value)) {
-                return (string) $cat;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Label lama (mis. Angkutan Umum) → kategori induk.
-     *
-     * @param  array<string, mixed>  $rules
-     */
-    private function categoryFromLegacyLabel(string $value, array $rules): ?string
-    {
-        $needle = $this->normalizeAliasKey($value);
-        if ($needle === '') {
-            return null;
-        }
-
-        /** @var array<string, list<string>> $categorySubMap */
-        $categorySubMap = $rules['category_sub_map'] ?? [];
-        foreach ($categorySubMap as $category => $subs) {
-            foreach ($subs as $sub) {
-                if (mb_strtolower((string) $sub) === $needle) {
-                    return (string) $category;
-                }
-            }
-        }
-
-        foreach ($rules['rules'] as $rule) {
-            if (! is_array($rule)) {
-                continue;
-            }
-            $sub = trim((string) ($rule['sub_category'] ?? ''));
-            $cat = trim((string) ($rule['category'] ?? ''));
-            if ($sub !== '' && $cat !== '' && $cat !== '*' && mb_strtolower($sub) === $needle) {
-                return $cat;
-            }
-        }
-
-        return null;
-    }
-
-    private function normalizeAliasKey(string $value): string
-    {
-        $v = mb_strtolower(trim($value));
-        $v = str_replace(['_', '-'], ' ', $v);
-        $v = preg_replace('/\s+/', ' ', $v) ?? $v;
-
-        return trim($v);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function rules(): array
-    {
-        if ($this->categoryRules === null) {
-            $this->categoryRules = $this->categoryRulesService->export();
-        }
-
-        return $this->categoryRules;
     }
 
     /**

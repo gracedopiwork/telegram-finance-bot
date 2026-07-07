@@ -21,7 +21,7 @@
                             <input type="text" name="category" class="form-control" required
                                    value="{{ old('category', $mapping->category) }}"
                                    placeholder="Makan, Gaji, Jajan, atau * untuk wildcard sifat">
-                            <small class="text-muted">Harus sudah terdaftar di tabel ini. Sub-kategori tidak dipakai lagi — pemetaan cukup per kategori.</small>
+                            <small class="text-muted">Kategori dibuat otomatis dari transaksi/import. Admin bisa menyesuaikan bucket kapan saja.</small>
                         </div>
                     </div>
                     <div class="form-row">

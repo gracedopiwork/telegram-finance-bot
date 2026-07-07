@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\BotTransaction;
+use App\Services\CategoryAutoRegisterService;
 use App\Support\TransactionTaxonomy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,11 +37,18 @@ class BotTransactionController extends Controller
             'recorded_at' => ['nullable', 'date'],
         ]);
 
+        $category = app(CategoryAutoRegisterService::class)->resolveOrRegister(
+            (string) $validated['category'],
+            (string) $validated['type'],
+            (string) $validated['nature'],
+            (string) $validated['notes'],
+        );
+
         $transaction = BotTransaction::query()->create([
             'telegram_user_id' => (int) $validated['telegram_user_id'],
             'recorded_at' => $validated['recorded_at'] ?? now(),
             'type' => $validated['type'],
-            'category' => $validated['category'],
+            'category' => $category,
             'sub_category' => trim((string) ($validated['sub_category'] ?? '')) ?: '-',
             'amount' => (int) $validated['amount'],
             'nature' => $validated['nature'],

@@ -65,11 +65,11 @@ _STATIC_FALLBACK: dict[str, Any] = {
     "fallback_sub": "Pengeluaran lain-lain",
     "natures": ["Need", "Wants"],
     "policy_notes": [
-        "Tabel Pemetaan Bucket di admin adalah sumber kebenaran pemetaan kategori → bucket.",
-        "AI bot HANYA boleh memakai Kategori yang terdaftar di tabel admin.",
-        "Kategori baru harus ditambahkan ke tabel admin dulu sebelum dashboard membacanya.",
+        "Kategori baru dibuat otomatis saat transaksi masuk; tidak perlu ditambah admin dulu.",
+        "Gunakan label kategori yang paling sesuai dari input user (contoh: Skincare, Asuransi, Subscription, Dividen).",
+        "Sistem mengelompokkan kategori ke bucket dashboard secara otomatis.",
     ],
-    "strict_categories_only": True,
+    "strict_categories_only": False,
 }
 
 

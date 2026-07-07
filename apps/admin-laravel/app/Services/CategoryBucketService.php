@@ -35,6 +35,10 @@ class CategoryBucketService
             return 'Future Building';
         }
 
+        if ($row->type === TransactionTaxonomy::TYPE_INCOME) {
+            return null;
+        }
+
         if ($this->containsAny($combined, config('category_buckets.future_building_context_keywords', []))) {
             return 'Future Building';
         }

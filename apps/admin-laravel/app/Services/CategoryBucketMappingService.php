@@ -68,7 +68,8 @@ class CategoryBucketMappingService
             $mapSub = mb_strtolower(trim((string) $mapping->sub_category));
             $wildcardCategory = $mapCategory === '*';
 
-            $categoryMatch = $wildcardCategory || ($mapCategory !== '' && $mapCategory === $category);
+            $categoryMatch = $wildcardCategory
+                || ($mapCategory !== '' && $this->categoryKeysMatch($mapCategory, $category));
             $subMatch = $mapSub === '' || $mapSub === '-' || in_array($sub, ['', '-'], true) || $mapSub === $sub;
 
             $keywordMatch = false;
@@ -94,5 +95,17 @@ class CategoryBucketMappingService
         }
 
         return null;
+    }
+
+    private function categoryKeysMatch(string $a, string $b): bool
+    {
+        if ($a === $b) {
+            return true;
+        }
+
+        $compactA = preg_replace('/\s+/', '', $a) ?? '';
+        $compactB = preg_replace('/\s+/', '', $b) ?? '';
+
+        return $compactA !== '' && $compactA === $compactB;
     }
 }

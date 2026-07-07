@@ -74,7 +74,7 @@ class BotCategoryRulesService
             'natures' => ['Need', 'Wants'],
             'source' => 'database',
             'policy_notes' => $this->policyNotes(),
-            'strict_categories_only' => true,
+            'strict_categories_only' => false,
         ];
     }
 
@@ -143,7 +143,7 @@ class BotCategoryRulesService
             'natures' => ['Need', 'Wants'],
             'source' => 'config',
             'policy_notes' => $this->policyNotes(),
-            'strict_categories_only' => true,
+            'strict_categories_only' => false,
         ];
     }
 }

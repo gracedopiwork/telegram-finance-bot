@@ -40,7 +40,6 @@ from transaction_categories import (
     is_water_expense,
     normalize_category_fields,
     normalize_saving_fields,
-    valid_kategori,
 )
 from impulsive_rules import (
     PAYDAY_SPLURGE_KEYWORDS,
@@ -482,7 +481,7 @@ def normalize_ai_result(data: Dict[str, Any]) -> Dict[str, Any]:
 
     if data["jenis"] not in VALID_JENIS:
         raise ValueError("invalid_jenis")
-    if data["kategori"] not in set(valid_kategori()):
+    if not str(data.get("kategori", "")).strip():
         raise ValueError("invalid_kategori")
     if data["sifat"] not in VALID_SIFAT:
         raise ValueError("invalid_sifat")
@@ -563,6 +562,19 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
         jenis = "Pemasukan"
         kategori = "Gaji"
         sifat = "Need"
+    elif any(keyword in lower_text for keyword in ["dividen", "dividend"]) and "reinvest" not in lower_text:
+        jenis = "Pemasukan"
+        kategori = "Dividen"
+        sifat = "Need"
+    elif any(keyword in lower_text for keyword in ["asuransi", "premi", "bpjs"]):
+        kategori = "Asuransi"
+        sifat = "Need"
+    elif any(keyword in lower_text for keyword in ["skincare", "skin care", "serum", "masker"]):
+        kategori = "Skincare"
+        sifat = "Wants"
+    elif any(keyword in lower_text for keyword in ["subscription", "langganan", "netflix", "spotify"]):
+        kategori = "Subscription"
+        sifat = "Wants"
     elif any(keyword in lower_text for keyword in ["listrik", "pln"]):
         kategori = "Listrik"
         sifat = "Need"

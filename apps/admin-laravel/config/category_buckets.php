@@ -18,8 +18,8 @@ return [
     'flexible_keywords' => [
         'jajan', 'kopi', 'coffee', 'cafe', 'restoran', 'restaurant', 'nongkrong', 'healing',
         'liburan', 'staycation', 'bioskop', 'konser', 'hobi', 'hadiah', 'donasi', 'sedekah',
-        'persembahan', 'perpuluhan', 'streaming', 'gaming', 'fashion', 'skincare', 'make up',
-        'gadget', 'fomo',
+        'persembahan', 'perpuluhan', 'streaming', 'gaming', 'fashion', 'skincare', 'skin care',
+        'make up', 'gadget', 'fomo', 'subscription', 'langganan', 'netflix', 'spotify',
     ],
     'essential_context_keywords' => [
         'hp rusak', 'handphone rusak', 'ganti hp', 'hp pecah', 'layar pecah', 'hp mati',
@@ -36,8 +36,8 @@ return [
     'bot_fallback_category' => 'Jajan',
     'bot_fallback_sub' => 'Pengeluaran lain-lain',
     'source_of_truth_note' => [
-        'Tabel Pemetaan Bucket di admin adalah sumber kebenaran (source of truth) pemetaan kategori → bucket.',
-        'Saat AI kategorisasi via YFD First Aid aktif, AI HANYA boleh menghasilkan nilai Kategori yang ada di tabel ini (kolom Kategori).',
-        'Kategori baru dari pengguna harus ditambahkan ke tabel ini dulu oleh tim YFD sebelum bisa terbaca otomatis oleh dashboard.',
+        'Kategori baru dari transaksi/import/bot dibuat otomatis dan dikelompokkan ke bucket yang sesuai.',
+        'Admin bisa menyesuaikan pemetaan kapan saja di tabel ini — tidak perlu menambah kategori manual dulu.',
+        'Bot boleh memakai label kategori apa pun; sistem akan mencocokkan atau membuat entri baru.',
     ],
 ];

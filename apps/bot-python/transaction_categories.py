@@ -128,9 +128,16 @@ def _contains_phrase(text: str, phrases: tuple[str, ...]) -> bool:
     return any(phrase in lower for phrase in phrases)
 
 
+def _title_category(value: str) -> str:
+    cleaned = re.sub(r"\s+", " ", value.strip())
+    if cleaned == "":
+        return ""
+    return " ".join(word.capitalize() for word in cleaned.split(" "))
+
+
 def _infer_kategori_from_text(text: str) -> str:
-    if _contains_phrase(text, ("gaji", "bonus", "honor", "income")):
-        return "Gaji"
+    if _contains_phrase(text, ("gaji", "bonus", "honor", "income", "dividen", "dividend")):
+        return "Gaji" if _contains_phrase(text, ("gaji", "bonus", "honor", "income")) else "Dividen"
     if _contains_phrase(text, ("ojek", "grab", "gojek", "transport", "bensin", "tol", "parkir", "angkot")):
         return "Transport"
     if _contains_phrase(text, ("listrik", "pln")):
@@ -139,6 +146,12 @@ def _infer_kategori_from_text(text: str) -> str:
         return "Air"
     if _contains_phrase(text, ("hadiah", "amplop", "konser", "ultah", "ulang tahun", "sedekah", "persembahan", "ibadah", "donasi")):
         return "Social"
+    if _contains_phrase(text, ("asuransi", "premi", "bpjs")):
+        return "Asuransi"
+    if _contains_phrase(text, ("skincare", "skin care", "serum", "masker")):
+        return "Skincare"
+    if _contains_phrase(text, ("subscription", "langganan", "netflix", "spotify", "streaming")):
+        return "Subscription"
     if _contains_phrase(text, ("makan", "restaurant", "restoran", "nasi", "sarapan", "lunch", "dinner")):
         return "Makan"
     if is_electronics_expense(text):
@@ -152,12 +165,20 @@ def _kategori_from_strong_signals(text: str) -> str | None:
         return "Air"
     if _contains_phrase(text, ("gaji", "bonus", "honor", "income")):
         return "Gaji"
+    if _contains_phrase(text, ("dividen", "dividend")) and not _contains_phrase(text, ("reinvest", "re-invest")):
+        return "Dividen"
     if _contains_phrase(text, ("listrik", "pln")):
         return "Listrik"
     if _contains_phrase(text, ("ojek", "grab", "gojek", "transport", "bensin", "tol", "parkir", "angkot")):
         return "Transport"
     if _contains_phrase(text, ("hadiah", "amplop", "konser", "ultah", "ulang tahun", "sedekah", "persembahan", "ibadah", "donasi")):
         return "Social"
+    if _contains_phrase(text, ("asuransi", "premi", "bpjs")):
+        return "Asuransi"
+    if _contains_phrase(text, ("skincare", "skin care", "serum", "masker")):
+        return "Skincare"
+    if _contains_phrase(text, ("subscription", "langganan", "netflix", "spotify", "streaming")):
+        return "Subscription"
     if _contains_phrase(text, ("makan", "restaurant", "restoran", "nasi", "sarapan", "lunch", "dinner")):
         return "Makan"
     if is_electronics_expense(text):
@@ -189,6 +210,9 @@ def build_system_prompt_rules() -> str:
     hints_block = "\n".join(admin_hints[:40]) if admin_hints else ""
     policy_lines = rules_data.get("policy_notes") or []
     policy_block = "\n".join(f"   - {line}" for line in policy_lines)
+    known_cats = ", ".join(categories[:20])
+    if len(categories) > 20:
+        known_cats += ", ..."
 
     return f"""
 Anda adalah parser keuangan pribadi.
@@ -197,39 +221,38 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
   "keterangan": string,
   "nominal": integer,
   "jenis": "Pemasukan" | "Pengeluaran" | "Saving/Investment",
-  "kategori": {_enum_join(categories)},
+  "kategori": string,
   "sifat": "Need" | "Wants",
   "mood": "Happy" | "Neutral" | "Sad" | "Stressed" | "Angry" | "Tired",
   "impulsif": "Yes" | "No"
 }}
 
-CATATAN (WAJIB — source of truth):
+CATATAN:
 {policy_block}
-   DILARANG membuat kategori baru di luar enum di atas.
-   Jika transaksi tidak cocok dengan kategori manapun → gunakan kategori "{fb_cat}".
+   Kategori boleh label deskriptif apa pun (contoh: Skincare, Asuransi, Subscription, Dividen).
+   Kategori yang sudah umum: {known_cats}
+   Jika tidak yakin → {fb_cat}.
 
 Aturan:
 1) keterangan: rapikan typo/singkatan agar mudah dibaca, gunakan kapitalisasi wajar.
 2) nominal: ekstrak angka jadi integer bersih (contoh: 50rb => 50000, 1,2jt => 1200000).
 3) jenis: Pemasukan | Pengeluaran | Saving/Investment.
-   - Saving/Investment untuk nabung, saham, reksadana, deposito, avg down — BUKAN pengeluaran hidup.
-   - Untuk Saving/Investment, keterangan WAJIB menyebut instrumen (contoh: "Beli reksadana pasar uang", "Saham BBCA").
-   - Donasi/sedekah/persembahan/ibadah = Pengeluaran + kategori Social (bukan jenis/sifat terpisah).
-4) sifat: HANYA Need atau Wants (berlaku untuk semua jenis transaksi).
-5) kategori: WAJIB persis dari enum (huruf besar/kecil sama). Jangan pernah mengarang label baru.
-   Petunjuk admin (bucket):
+   - Pemasukan: gaji, bonus, honor, dividen yang dicairkan.
+   - Saving/Investment untuk nabung, saham, reksadana, deposito, avg down, dividen reinvest — BUKAN pengeluaran hidup.
+   - Donasi/sedekah/persembahan/ibadah = Pengeluaran + kategori Social.
+4) sifat: HANYA Need atau Wants.
+5) kategori: pilih label paling sesuai dari input (Skincare, Asuransi, Subscription, Makan, Transport, dll).
+   Petunjuk bucket (referensi):
 {hints_block}
-   Jika tidak yakin kategori → {fb_cat} (bukan kategori baru).
-6) Konteks bucket (contoh — WAJIB ikuti niat transaksi):
-   - Starbucks untuk meeting kerja → kategori Makan, sifat Need → bucket Essential Living
-   - Starbucks healing/jajan → kategori Jajan, sifat Wants → bucket Flexible + Social
-   - Laptop untuk kerja / alat produktif → jenis Saving/Investment ATAU Pengeluaran Jajan + Need → bucket Future Building
-   - Laptop upgrade FOMO → kategori Jajan, sifat Wants → bucket Flexible + Social
-   - HP utama rusak / wajib ganti → kategori Jajan, sifat Need → bucket Essential Living
-7) impulsif — WAJIB pertimbangkan konteks & niat, bukan hanya nominal besar:
-   "Yes" jika spontan / fomo / euforia gajian / mood negatif + wants.
+6) Konteks bucket (contoh):
+   - Premi asuransi / BPJS → kategori Asuransi, sifat Need
+   - Skincare / skin care → kategori Skincare, sifat Wants
+   - Netflix / langganan → kategori Subscription, sifat Wants
+   - Dividen dicairkan → jenis Pemasukan, kategori Dividen
+7) impulsif — pertimbangkan konteks & niat:
+   "Yes" jika spontan / fomo / mood negatif + wants.
    "No" jika terencana, tagihan wajib, atau perayaan keluarga.
-8) Balas HANYA JSON murni, tanpa markdown dan tanpa teks tambahan.
+8) Balas HANYA JSON murni, tanpa markdown.
 9) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
    {{"error":"invalid_input"}}
 """
@@ -256,14 +279,18 @@ def normalize_category_fields(parsed: Dict[str, Any], source_text: str = "") -> 
     if strong_kategori is not None:
         kategori = strong_kategori
     elif kategori not in valid_cats:
-        kategori = _infer_kategori_from_text(combined)
-        if kategori not in valid_cats:
-            kategori = fb_cat
+        inferred = _infer_kategori_from_text(combined)
+        if inferred in valid_cats:
+            kategori = inferred
+        elif kategori.strip():
+            kategori = _title_category(kategori)
+        else:
+            kategori = inferred if inferred else fb_cat
     elif kategori == "Air" and not is_water_expense(combined):
         kategori = _infer_kategori_from_text(combined)
-        if kategori not in valid_cats:
-            kategori = fb_cat
+        if kategori not in valid_cats and kategori != fb_cat:
+            kategori = _title_category(kategori) if str(parsed.get("kategori", "")).strip() else fb_cat
 
-    parsed["kategori"] = kategori
+    parsed["kategori"] = _title_category(kategori) or fb_cat
     parsed.pop("sub_kategori", None)
     return apply_admin_nature(parsed)
