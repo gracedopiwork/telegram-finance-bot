@@ -13,6 +13,10 @@ class FtsaQuestionsController extends Controller
 {
     public function index(FtsaConfigService $ftsaConfig): View
     {
+        if ($ftsaConfig->usesDatabase() && ! FtsaQuestion::query()->exists()) {
+            $ftsaConfig->syncFromConfig();
+        }
+
         $questions = FtsaQuestion::query()
             ->orderBy('sort_order')
             ->orderBy('question_num')
