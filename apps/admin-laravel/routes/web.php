@@ -199,6 +199,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('/transaksi', [PortalDashboardController::class, 'transactions'])->name('transactions');
             Route::get('/transaksi/template', [PortalTransactionsController::class, 'importTemplate'])->name('transactions.template');
             Route::post('/transaksi/import', [PortalTransactionsController::class, 'import'])->name('transactions.import');
+            Route::delete('/transaksi', [PortalTransactionsController::class, 'destroySelected'])->name('transactions.destroy-selected');
+            Route::delete('/transaksi/bulan', [PortalTransactionsController::class, 'destroyMonth'])->name('transactions.destroy-month');
             Route::delete('/transaksi/{transaction}', [PortalTransactionsController::class, 'destroy'])->name('transactions.destroy');
             Route::get('/dashboard', [PortalDashboardController::class, 'index'])->name('dashboard');
             Route::post('/dashboard/generate-manual', [PortalDashboardController::class, 'generateManualFinancialGuidance'])->name('dashboard.generate-manual');

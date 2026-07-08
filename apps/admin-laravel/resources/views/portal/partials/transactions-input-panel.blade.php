@@ -89,10 +89,31 @@
                 </span>
             @endif
         </h3>
-        @if($dashboardLink ?? false)
-            <a href="{{ route('portal.dashboard', ['month' => $summary['month'] ?? null, 'period' => $summary['period_months'] ?? 1]) }}"
-               class="text-sm text-navy-800 font-semibold hover:underline">Lihat Dashboard →</a>
-        @endif
+        <div class="flex flex-wrap items-center gap-2">
+            @if(!empty($summary['transactions']))
+                <button type="button"
+                        id="tx-delete-selected-btn"
+                        data-url="{{ route('portal.transactions.destroy-selected', ['month' => request('month', $summary['month'] ?? null), 'period' => request('period', $summary['period_months'] ?? 1)]) }}"
+                        class="inline-flex items-center gap-1 rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 text-xs font-semibold"
+                        disabled>
+                    <span class="material-symbols-outlined text-sm">delete_sweep</span>
+                    Hapus Terpilih
+                </button>
+                <button type="button"
+                        id="tx-delete-month-btn"
+                        data-month="{{ request('month', $summary['month'] ?? now()->format('Y-m')) }}"
+                        data-month-label="{{ \Carbon\Carbon::createFromFormat('Y-m', request('month', $summary['month'] ?? now()->format('Y-m')))->translatedFormat('F Y') }}"
+                        data-url="{{ route('portal.transactions.destroy-month', ['month' => request('month', $summary['month'] ?? null), 'period' => request('period', $summary['period_months'] ?? 1)]) }}"
+                        class="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 text-xs font-semibold">
+                    <span class="material-symbols-outlined text-sm">warning</span>
+                    Hapus Semua Bulan Ini
+                </button>
+            @endif
+            @if($dashboardLink ?? false)
+                <a href="{{ route('portal.dashboard', ['month' => $summary['month'] ?? null, 'period' => $summary['period_months'] ?? 1]) }}"
+                   class="text-sm text-navy-800 font-semibold hover:underline">Lihat Dashboard →</a>
+            @endif
+        </div>
     </div>
 
     @if(empty($summary['transactions']))
@@ -105,6 +126,11 @@
             <table class="w-full text-sm">
                 <thead class="bg-slate-50 text-slate-600 text-left">
                     <tr>
+                        <th class="px-4 py-3 font-semibold w-10">
+                            <input type="checkbox" id="tx-select-all"
+                                   class="rounded border-slate-300 text-navy-700 focus:ring-navy-500"
+                                   aria-label="Pilih semua transaksi">
+                        </th>
                         <th class="px-4 py-3 font-semibold">Tanggal</th>
                         <th class="px-4 py-3 font-semibold">Jenis</th>
                         <th class="px-4 py-3 font-semibold">Kategori</th>
@@ -121,8 +147,15 @@
                 @foreach($summary['transactions'] as $t)
                     <tr class="border-t border-slate-100 hover:bg-slate-50/80 transition-opacity"
                         data-tx-row
+                        data-tx-id="{{ $t['id'] }}"
                         data-tx-type="{{ $t['type'] }}"
                         data-tx-amount="{{ $t['amount'] }}">
+                        <td class="px-4 py-3 align-top">
+                            <input type="checkbox"
+                                   class="tx-select-item rounded border-slate-300 text-navy-700 focus:ring-navy-500"
+                                   value="{{ $t['id'] }}"
+                                   aria-label="Pilih transaksi {{ $t['id'] }}">
+                        </td>
                         <td class="px-4 py-3 whitespace-nowrap text-slate-600">{{ $t['recorded_at'] }}</td>
                         <td class="px-4 py-3">
                             @php
