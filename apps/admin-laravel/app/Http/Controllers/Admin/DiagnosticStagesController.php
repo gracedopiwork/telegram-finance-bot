@@ -13,6 +13,8 @@ class DiagnosticStagesController extends Controller
 {
     public function index(): View
     {
+        $this->ensureDefaultStages();
+
         $stages = DiagnosticStage::query()->orderBy('sort_order')->get();
 
         return view('admin.diagnostic_stages.index', compact('stages'));
@@ -76,5 +78,44 @@ class DiagnosticStagesController extends Controller
         $relative = ltrim(substr($path, strlen($storagePrefix)), '/');
 
         return $relative !== '' ? $relative : null;
+    }
+
+    private function ensureDefaultStages(): void
+    {
+        if (DiagnosticStage::query()->exists()) {
+            return;
+        }
+
+        $labels = (array) config('baseline_assessment.stage_labels', []);
+        $thresholds = (array) config('baseline_assessment.stage_thresholds', []);
+        $orderedKeys = ['surviving', 'growing', 'steady', 'comfortable'];
+        $defaultColors = [
+            'surviving' => '#F4A6A6',
+            'growing' => '#7EC8C8',
+            'steady' => '#8FD9A8',
+            'comfortable' => '#8BB8E8',
+        ];
+
+        foreach ($orderedKeys as $idx => $key) {
+            $meta = is_array($labels[$key] ?? null) ? $labels[$key] : [];
+            $range = is_array($thresholds[$key] ?? null) ? $thresholds[$key] : [];
+
+            DiagnosticStage::query()->updateOrCreate(
+                ['stage_key' => $key],
+                [
+                    'label' => (string) ($meta['label'] ?? ucfirst($key)),
+                    'emoji' => (string) ($meta['emoji'] ?? ''),
+                    'phase' => (string) ($meta['phase'] ?? ''),
+                    'diagnosis' => (string) ($meta['diagnosis'] ?? ''),
+                    'risk_label' => 'Risiko keuangan',
+                    'risk_description' => (string) ($meta['diagnosis'] ?? ''),
+                    'panel_color' => (string) ($meta['panel_color'] ?? ($defaultColors[$key] ?? '#7EC8C8')),
+                    'illustration_url' => is_string($meta['illustration_url'] ?? null) ? $meta['illustration_url'] : null,
+                    'score_min' => (int) ($range['min'] ?? 0),
+                    'score_max' => (int) ($range['max'] ?? 0),
+                    'sort_order' => $idx + 1,
+                ]
+            );
+        }
     }
 }
