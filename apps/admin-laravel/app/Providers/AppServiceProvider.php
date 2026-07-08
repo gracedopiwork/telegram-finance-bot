@@ -62,6 +62,12 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('yfd', $yfd);
                 $view->with('waBookingUrl', $waBookingUrl);
                 $view->with('waDefaultMsg', $waMsg);
+                // Keep AdminLTE brand/auth/preloader logo in sync with Site Settings.
+                config([
+                    'adminlte.logo_img' => $logo,
+                    'adminlte.auth_logo.img.path' => $logo,
+                    'adminlte.preloader.img.path' => $logo,
+                ]);
                 self::shareTelegramBotUrls($view);
                 $pc = PrimaryCheckupUrl::resolve();
                 $view->with('primaryCheckupUrl', $pc['url']);
@@ -85,6 +91,11 @@ class AppServiceProvider extends ServiceProvider
                 ]);
                 $view->with('waBookingUrl', 'https://wa.me/6285111228911');
                 $view->with('waDefaultMsg', '');
+                config([
+                    'adminlte.logo_img' => 'images/yfd-logo.png',
+                    'adminlte.auth_logo.img.path' => 'images/yfd-logo.png',
+                    'adminlte.preloader.img.path' => 'images/yfd-logo.png',
+                ]);
                 self::shareTelegramBotUrls($view);
                 try {
                     $pu = route('checkup.show');
