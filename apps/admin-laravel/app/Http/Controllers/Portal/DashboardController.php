@@ -85,9 +85,11 @@ class DashboardController extends Controller
     $ftsaStatus = $featureService->ftsaEntitlementStatus($telegramUserId, $email);
     $baseline = app(PortalOnboardingService::class)->resolveBaseline($email, $telegramUserId);
     $stageMeta = [];
+    $stageGuidance = [];
     if ($baseline !== null && ($baseline->financial_stage || $baseline->stage_label)) {
       try {
         $stageMeta = app(\App\Services\BucketPrescriptionService::class)->stageMeta($baseline->financial_stage);
+        $stageGuidance = app(\App\Services\FinancialStageGuidanceService::class)->forBaseline($baseline);
       } catch (\Throwable $e) {
         report($e);
       }
@@ -105,6 +107,7 @@ class DashboardController extends Controller
       'assessment' => $assessment,
       'baseline' => $baseline,
       'stageMeta' => $stageMeta,
+      'stageGuidance' => $stageGuidance,
       'ftsaUnlocked' => $ftsaUnlocked,
       'ftsaEndsAt' => $ftsaStatus['ends_at'],
       'ftsaRetakeLocked' => app(\App\Services\FtsaEvaluationService::class)->isRetakeLocked($telegramUserId),

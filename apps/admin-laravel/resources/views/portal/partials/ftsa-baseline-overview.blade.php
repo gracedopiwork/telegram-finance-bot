@@ -81,8 +81,9 @@
                 @endif
             </div>
             @if(!empty($stageMeta['diagnosis']))
-                <p class="mt-3 text-sm text-slate-600 leading-relaxed">{{ $stageMeta['diagnosis'] }}</p>
+                <p class="mt-2 text-sm text-slate-600 leading-relaxed">{{ $stageMeta['diagnosis'] }}</p>
             @endif
+            @include('portal.partials.financial-stage-guidance', ['stageGuidance' => $stageGuidance ?? []])
         </div>
     </div>
 </div>

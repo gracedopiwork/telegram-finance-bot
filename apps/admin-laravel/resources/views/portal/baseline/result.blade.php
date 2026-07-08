@@ -61,7 +61,8 @@
         <div class="text-4xl mb-1">{{ $stageMeta['emoji'] ?? '' }}</div>
         <div class="text-2xl font-extrabold text-navy-800">{{ $baseline->stage_label }}</div>
         <div class="text-sm text-slate-500 mt-1">{{ $stageMeta['phase'] ?? '' }} · Skor {{ $baseline->financial_stage_score }}/39</div>
-        <p class="mt-3 text-sm text-slate-600 leading-relaxed flex-1">{{ $stageMeta['diagnosis'] ?? '' }}</p>
+        <p class="mt-3 text-sm text-slate-600 leading-relaxed">{{ $stageMeta['diagnosis'] ?? '' }}</p>
+        @include('portal.partials.financial-stage-guidance', ['stageGuidance' => $stageGuidance ?? []])
     </div>
 
     {{-- Archetype --}}

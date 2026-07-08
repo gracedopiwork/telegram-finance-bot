@@ -51,6 +51,7 @@ class BaselineController extends Controller
         try {
             $prescription = app(BucketPrescriptionService::class)->idealsForStage($baseline->financial_stage);
             $stageMeta = app(BucketPrescriptionService::class)->stageMeta($baseline->financial_stage);
+            $stageGuidance = app(\App\Services\FinancialStageGuidanceService::class)->forBaseline($baseline);
             $domains = config('baseline_assessment.ftsa_domains', []);
             if (! is_array($domains)) {
                 $domains = [];
@@ -65,6 +66,7 @@ class BaselineController extends Controller
                 'active' => 'baseline',
                 'baseline' => $baseline,
                 'stageMeta' => $stageMeta,
+                'stageGuidance' => $stageGuidance,
                 'prescription' => $prescription,
                 'domains' => $domains,
                 'reviewDue' => $baseline->isReviewDue(),

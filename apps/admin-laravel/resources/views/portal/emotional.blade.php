@@ -26,6 +26,7 @@
     @include('portal.partials.ftsa-baseline-overview', [
         'baseline' => $baseline ?? null,
         'stageMeta' => $stageMeta ?? [],
+        'stageGuidance' => $stageGuidance ?? [],
         'showSnapshot' => false,
     ])
 

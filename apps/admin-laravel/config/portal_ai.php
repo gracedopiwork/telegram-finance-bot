@@ -49,6 +49,13 @@ return [
         'Jika skor rendah, tekankan penguatan kebiasaan positif yang sudah ada.',
     ],
 
+    'financial_stage_rules' => [
+        'Gunakan playbook tahap keuangan YFD sebagai sumber kebenaran — jangan mengubah makna fase.',
+        'Personalisasi ringkasan dengan merujuk jawaban diagnostik user (dana darurat, utang, proteksi, investasi).',
+        'Jangan memberi saran produk investasi/asuransi spesifik atau janji return.',
+        'Nada seperti FMR manual YFD: hangat, membangun, seperti dokter finansial.',
+    ],
+
     'behavioral_rules' => [
         'Hubungkan pola mood, impulsivitas, dan profil FTSA jika tersedia.',
         'Insight fokus pada pola emosional yang terlihat dari data transaksi.',
