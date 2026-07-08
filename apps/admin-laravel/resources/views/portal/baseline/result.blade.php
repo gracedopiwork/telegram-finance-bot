@@ -41,32 +41,37 @@
     </div>
 @endif
 
-{{-- Grid 2×2: Stage · Archetype · Prescription · FTSA --}}
+{{-- Grid 2 kolom: kiri = Stage + Penjelasan FTSA · kanan = Archetype + Prescription --}}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-    {{-- Financial Stage --}}
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 flex flex-col">
-        <h3 class="font-bold text-navy-800 text-lg mb-3 flex items-center gap-2">
-            <span class="material-symbols-outlined">stairs</span> Financial Stage
-        </h3>
-        <div class="grid grid-cols-2 gap-3 text-sm mb-4 pb-4 border-b border-slate-100">
-            <div>
-                <div class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Last check up</div>
-                <div class="font-semibold text-navy-800 mt-0.5">{{ $stageLastCheckup }}</div>
+    <div class="space-y-5">
+        {{-- Financial Stage --}}
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 flex flex-col">
+            <h3 class="font-bold text-navy-800 text-lg mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined">stairs</span> Financial Stage
+            </h3>
+            <div class="grid grid-cols-2 gap-3 text-sm mb-4 pb-4 border-b border-slate-100">
+                <div>
+                    <div class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Last check up</div>
+                    <div class="font-semibold text-navy-800 mt-0.5">{{ $stageLastCheckup }}</div>
+                </div>
+                <div>
+                    <div class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Next check up</div>
+                    <div class="font-semibold text-navy-800 mt-0.5">{{ $stageNextCheckup }}</div>
+                </div>
             </div>
-            <div>
-                <div class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Next check up</div>
-                <div class="font-semibold text-navy-800 mt-0.5">{{ $stageNextCheckup }}</div>
-            </div>
+            <div class="text-4xl mb-1">{{ $stageMeta['emoji'] ?? '' }}</div>
+            <div class="text-2xl font-extrabold text-navy-800">{{ $baseline->stage_label }}</div>
+            <div class="text-sm text-slate-500 mt-1">{{ $stageMeta['phase'] ?? '' }} · Skor {{ $baseline->financial_stage_score }}/39</div>
+            <p class="mt-3 text-sm text-slate-600 leading-relaxed">{{ $stageMeta['diagnosis'] ?? '' }}</p>
+            @include('portal.partials.financial-stage-guidance', ['stageGuidance' => $stageGuidance ?? []])
         </div>
-        <div class="text-4xl mb-1">{{ $stageMeta['emoji'] ?? '' }}</div>
-        <div class="text-2xl font-extrabold text-navy-800">{{ $baseline->stage_label }}</div>
-        <div class="text-sm text-slate-500 mt-1">{{ $stageMeta['phase'] ?? '' }} · Skor {{ $baseline->financial_stage_score }}/39</div>
-        <p class="mt-3 text-sm text-slate-600 leading-relaxed">{{ $stageMeta['diagnosis'] ?? '' }}</p>
-        @include('portal.partials.financial-stage-guidance', ['stageGuidance' => $stageGuidance ?? []])
+
+        @include('portal.partials.ftsa-domain-explanation', ['domainScores' => $domainScores])
     </div>
 
-    {{-- Archetype --}}
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 flex flex-col">
+    <div class="space-y-5">
+        {{-- Archetype --}}
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 flex flex-col">
         <h3 class="font-bold text-navy-800 text-lg mb-3 flex items-center gap-2">
             <span class="material-symbols-outlined">psychology</span> Archetype
         </h3>
@@ -114,57 +119,31 @@
                 @endforeach
             </div>
         @endif
-    </div>
-
-    {{-- Prescription budget --}}
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-        <h3 class="font-bold text-navy-800 text-lg mb-4 flex items-center gap-2">
-            <span class="material-symbols-outlined">medication</span> Prescription Budget
-        </h3>
-        <p class="text-sm text-slate-600 mb-4">Target alokasi bucket untuk tahap <strong>{{ $baseline->stage_label }}</strong>.</p>
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="text-left text-slate-500 border-b">
-                    <th class="pb-2 font-semibold">Bucket</th>
-                    <th class="pb-2 font-semibold text-right">Target</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($prescriptionRows as $bucket => $pct)
-                    <tr class="border-b border-slate-50">
-                        <td class="py-2.5 text-navy-800 font-medium">{{ $bucket }}</td>
-                        <td class="py-2.5 text-right font-bold text-navy-800">{{ $pct }}%</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-
-    {{-- Penjelasan FTSA --}}
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-        <h3 class="font-bold text-navy-800 text-lg mb-3 flex items-center gap-2">
-            <span class="material-symbols-outlined">menu_book</span> Penjelasan FTSA
-        </h3>
-        <p class="text-sm text-slate-600 mb-4 leading-relaxed">
-            FTSA (Financial Therapy &amp; Strategic Action) mengukur pola behavioral finansial lewat 32 pertanyaan
-            dalam empat domain. Domain dengan skor tertinggi menentukan archetype dominan.
-        </p>
-        <div class="space-y-3">
-            @foreach($domainScores as $key => $d)
-                <div class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5">
-                    <div class="font-semibold text-navy-800 text-sm">
-                        {{ $d['meta']['code'] ?? strtoupper($key) }}
-                        @if(!empty($d['meta']['archetype_label']))
-                            <span class="text-slate-500 font-normal">· {{ $d['meta']['archetype_label'] }}</span>
-                        @endif
-                    </div>
-                    <p class="text-xs text-slate-600 mt-1 leading-relaxed">{{ $d['meta']['summary'] ?? $d['meta']['label'] ?? '' }}</p>
-                </div>
-            @endforeach
         </div>
-        <p class="text-xs text-slate-500 mt-4 pt-3 border-t border-slate-100">
-            Evaluasi baseline setiap <strong>6 bulan</strong> · Evaluasi FTSA setiap <strong>12 bulan</strong> setelah unlock premium.
-        </p>
+
+        {{-- Prescription budget --}}
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+            <h3 class="font-bold text-navy-800 text-lg mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined">medication</span> Prescription Budget
+            </h3>
+            <p class="text-sm text-slate-600 mb-4">Target alokasi bucket untuk tahap <strong>{{ $baseline->stage_label }}</strong>.</p>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-slate-500 border-b">
+                        <th class="pb-2 font-semibold">Bucket</th>
+                        <th class="pb-2 font-semibold text-right">Target</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($prescriptionRows as $bucket => $pct)
+                        <tr class="border-b border-slate-50">
+                            <td class="py-2.5 text-navy-800 font-medium">{{ $bucket }}</td>
+                            <td class="py-2.5 text-right font-bold text-navy-800">{{ $pct }}%</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
