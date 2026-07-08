@@ -40,6 +40,47 @@ class CategoryAutoRegisterService
         'bpjs' => 'Asuransi',
         'dividen' => 'Dividen',
         'dividend' => 'Dividen',
+        'affiliate' => 'Affiliate',
+        'afiliasi' => 'Affiliate',
+        'komisi' => 'Affiliate',
+        'commission' => 'Affiliate',
+        'referral' => 'Affiliate',
+        'shopee affiliate' => 'Affiliate',
+        'tiktok affiliate' => 'Affiliate',
+        'tokopedia affiliate' => 'Affiliate',
+        'lazada affiliate' => 'Affiliate',
+        'bunga' => 'Bunga Investasi',
+        'bunga investasi' => 'Bunga Investasi',
+        'bunga deposito' => 'Bunga Investasi',
+        'bunga tabungan' => 'Bunga Investasi',
+        'interest' => 'Bunga Investasi',
+        'interest income' => 'Bunga Investasi',
+        'cashback' => 'Cashback',
+        'cash back' => 'Cashback',
+        'refund' => 'Refund',
+        'pengembalian dana' => 'Refund',
+        'freelance' => 'Freelance',
+        'freelancer' => 'Freelance',
+        'honor' => 'Freelance',
+        'honorarium' => 'Freelance',
+        'bonus' => 'Bonus',
+        'thr' => 'Bonus',
+        'penjualan' => 'Penjualan',
+        'hasil jualan' => 'Penjualan',
+        'sewa masuk' => 'Sewa Masuk',
+        'transfer masuk' => 'Transfer Masuk',
+        'kesehatan' => 'Kesehatan',
+        'obat' => 'Kesehatan',
+        'pendidikan' => 'Pendidikan',
+        'spp' => 'Pendidikan',
+        'komunikasi' => 'Komunikasi',
+        'pulsa' => 'Komunikasi',
+        'kuota' => 'Komunikasi',
+        'cicilan' => 'Cicilan',
+        'angsuran' => 'Cicilan',
+        'pajak' => 'Pajak',
+        'saham' => 'Saham',
+        'reksadana' => 'Reksadana',
         'lain-lain' => 'Jajan',
         'lain lain' => 'Jajan',
         'dipinjam' => 'Social',
@@ -207,6 +248,31 @@ class CategoryAutoRegisterService
             mb_strtolower(trim($name)),
             $compact !== mb_strtolower(trim($name)) ? $compact : '',
         ])));
+
+        if ($this->categoryKeysMatch($name, 'Affiliate')) {
+            $keywords = array_values(array_unique(array_merge($keywords, [
+                'affiliate',
+                'afiliasi',
+                'komisi',
+                'commission',
+                'referral',
+                'shopee affiliate',
+                'tiktok affiliate',
+            ])));
+        }
+
+        if ($this->categoryKeysMatch($name, 'Bunga Investasi')) {
+            $keywords = array_values(array_unique(array_merge($keywords, [
+                'bunga',
+                'bunga investasi',
+                'bunga deposito',
+                'bunga tabungan',
+                'terima bunga',
+                'dapat bunga',
+                'interest',
+                'interest income',
+            ])));
+        }
 
         return implode(',', $keywords);
     }

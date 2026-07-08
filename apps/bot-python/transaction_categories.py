@@ -11,6 +11,31 @@ from category_rules_cache import (
     get_rules,
     valid_kategori,
 )
+from context_rules import (
+    apply_context_rules,
+    classify_from_text,
+    infer_saving_label,
+    is_affiliate_income,
+    is_electronics_expense,
+    is_interest_income,
+    is_water_expense,
+    prompt_context_examples,
+)
+
+# Re-export untuk kompatibilitas import lama di bot.py / tests.
+__all__ = [
+    "apply_context_rules",
+    "build_system_prompt_rules",
+    "classify_from_text",
+    "infer_saving_label",
+    "is_affiliate_income",
+    "is_electronics_expense",
+    "is_interest_income",
+    "is_water_expense",
+    "normalize_category_fields",
+    "normalize_saving_fields",
+]
+
 
 def _kategori_aliases() -> dict[str, str]:
     fb = fallback_kategori()
@@ -22,105 +47,27 @@ def _kategori_aliases() -> dict[str, str]:
         "misc": fb,
         "belanja": fb,
         "beli": fb,
+        "affiliate": "Affiliate",
+        "afiliasi": "Affiliate",
+        "komisi": "Affiliate",
+        "commission": "Affiliate",
+        "referral": "Affiliate",
+        "bunga": "Bunga Investasi",
+        "bunga investasi": "Bunga Investasi",
+        "interest": "Bunga Investasi",
+        "interest income": "Bunga Investasi",
+        "cashback": "Cashback",
+        "refund": "Refund",
+        "freelance": "Freelance",
+        "honor": "Freelance",
+        "honorarium": "Freelance",
+        "bonus": "Bonus",
+        "thr": "Bonus",
     }
-
-
-_WATER_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
-    re.compile(pattern, re.IGNORECASE)
-    for pattern in (
-        r"\bpdam\b",
-        r"\btagihan\s+air\b",
-        r"\bbayar\s+air\b",
-        r"\brekening\s+air\b",
-        r"\bbiaya\s+air\b",
-        r"\bair\s+pdam\b",
-    )
-)
-
-_ELECTRONICS_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
-    re.compile(pattern, re.IGNORECASE)
-    for pattern in (
-        r"\bhp\b",
-        r"\bhandphone\b",
-        r"\bsmartphone\b",
-        r"\blaptop\b",
-        r"\btablet\b",
-        r"\bipad\b",
-        r"\biphone\b",
-        r"\bandroid\b",
-        r"\bgadget\b",
-        r"\belektronik\b",
-        r"\btv\b",
-        r"\btelevisi\b",
-        r"\bkamera\b",
-        r"\bcharger\b",
-        r"\bearphone\b",
-        r"\bheadset\b",
-    )
-)
 
 
 def _enum_join(values: Iterable[str]) -> str:
     return " | ".join(f'"{v}"' for v in values)
-
-
-def _matches_any_pattern(text: str, patterns: Iterable[re.Pattern[str]]) -> bool:
-    return any(pattern.search(text) for pattern in patterns)
-
-
-def is_water_expense(text: str) -> bool:
-    return _matches_any_pattern(text, _WATER_PATTERNS)
-
-
-def is_electronics_expense(text: str) -> bool:
-    return _matches_any_pattern(text, _ELECTRONICS_PATTERNS)
-
-
-_SAVING_LABEL_KEYWORDS: tuple[tuple[str, str], ...] = (
-    ("reksadana", "Reksadana"),
-    ("reksa dana", "Reksadana"),
-    ("saham", "Saham"),
-    ("obligasi", "Obligasi"),
-    ("emas", "Emas"),
-    ("deposito", "Deposito"),
-    ("crypto", "Crypto"),
-    ("bitcoin", "Crypto"),
-    ("dana darurat", "Dana darurat"),
-    ("nabung", "Tabungan"),
-    ("tabungan", "Tabungan"),
-    ("investasi", "Investasi"),
-    ("avg down", "Saham"),
-    ("sbn", "Obligasi"),
-)
-
-
-def infer_saving_label(text: str) -> str | None:
-    lower = text.lower()
-    for keyword, label in _SAVING_LABEL_KEYWORDS:
-        if keyword in lower:
-            return label
-    return None
-
-
-def normalize_saving_fields(parsed: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
-    """Untuk Saving/Investment: instrumen masuk ke kategori (tanpa sub kategori)."""
-    if str(parsed.get("jenis", "")).strip() != "Saving/Investment":
-        return parsed
-
-    combined = f"{parsed.get('keterangan', '')} {source_text}".strip()
-    label = infer_saving_label(combined) or "Tabungan/Investasi"
-    parsed["kategori"] = label
-    parsed.pop("sub_kategori", None)
-
-    keterangan = str(parsed.get("keterangan", "")).strip()
-    if keterangan == "" or label.lower() not in keterangan.lower():
-        if keterangan:
-            parsed["keterangan"] = f"{label}: {keterangan}"
-        else:
-            parsed["keterangan"] = f"Investasi {label}"
-
-    parsed["sifat"] = "Need"
-    return parsed
 
 
 def _contains_phrase(text: str, phrases: tuple[str, ...]) -> bool:
@@ -135,54 +82,45 @@ def _title_category(value: str) -> str:
     return " ".join(word.capitalize() for word in cleaned.split(" "))
 
 
+def _normalize_alias(value: str, aliases: dict[str, str]) -> str:
+    key = value.strip().lower()
+    return aliases.get(key, value.strip())
+
+
+def normalize_saving_fields(parsed: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
+    """Selaraskan Saving/Investment; income khusus diarahkan lewat context rules dulu."""
+    apply_context_rules(parsed, source_text)
+
+    if str(parsed.get("jenis", "")).strip() != "Saving/Investment":
+        return parsed
+
+    combined = f"{parsed.get('keterangan', '')} {source_text}".strip()
+    label = infer_saving_label(combined) or str(parsed.get("kategori") or "Tabungan/Investasi")
+    parsed["kategori"] = label
+    parsed.pop("sub_kategori", None)
+
+    keterangan = str(parsed.get("keterangan", "")).strip()
+    if keterangan == "" or label.lower() not in keterangan.lower():
+        if keterangan:
+            parsed["keterangan"] = f"{label}: {keterangan}"
+        else:
+            parsed["keterangan"] = f"Investasi {label}"
+
+    parsed["sifat"] = "Need"
+    return parsed
+
+
 def _infer_kategori_from_text(text: str) -> str:
-    if _contains_phrase(text, ("gaji", "bonus", "honor", "income", "dividen", "dividend")):
-        return "Gaji" if _contains_phrase(text, ("gaji", "bonus", "honor", "income")) else "Dividen"
-    if _contains_phrase(text, ("ojek", "grab", "gojek", "transport", "bensin", "tol", "parkir", "angkot")):
-        return "Transport"
-    if _contains_phrase(text, ("listrik", "pln")):
-        return "Listrik"
-    if is_water_expense(text):
-        return "Air"
-    if _contains_phrase(text, ("hadiah", "amplop", "konser", "ultah", "ulang tahun", "sedekah", "persembahan", "ibadah", "donasi")):
-        return "Social"
-    if _contains_phrase(text, ("asuransi", "premi", "bpjs")):
-        return "Asuransi"
-    if _contains_phrase(text, ("skincare", "skin care", "serum", "masker")):
-        return "Skincare"
-    if _contains_phrase(text, ("subscription", "langganan", "netflix", "spotify", "streaming")):
-        return "Subscription"
-    if _contains_phrase(text, ("makan", "restaurant", "restoran", "nasi", "sarapan", "lunch", "dinner")):
-        return "Makan"
-    if is_electronics_expense(text):
-        return "Jajan"
+    hit = classify_from_text(text)
+    if hit is not None:
+        return hit["kategori"]
     return fallback_kategori()
 
 
 def _kategori_from_strong_signals(text: str) -> str | None:
-    """Kategori dengan sinyal kata kunci tegas; None jika tidak ada."""
-    if is_water_expense(text):
-        return "Air"
-    if _contains_phrase(text, ("gaji", "bonus", "honor", "income")):
-        return "Gaji"
-    if _contains_phrase(text, ("dividen", "dividend")) and not _contains_phrase(text, ("reinvest", "re-invest")):
-        return "Dividen"
-    if _contains_phrase(text, ("listrik", "pln")):
-        return "Listrik"
-    if _contains_phrase(text, ("ojek", "grab", "gojek", "transport", "bensin", "tol", "parkir", "angkot")):
-        return "Transport"
-    if _contains_phrase(text, ("hadiah", "amplop", "konser", "ultah", "ulang tahun", "sedekah", "persembahan", "ibadah", "donasi")):
-        return "Social"
-    if _contains_phrase(text, ("asuransi", "premi", "bpjs")):
-        return "Asuransi"
-    if _contains_phrase(text, ("skincare", "skin care", "serum", "masker")):
-        return "Skincare"
-    if _contains_phrase(text, ("subscription", "langganan", "netflix", "spotify", "streaming")):
-        return "Subscription"
-    if _contains_phrase(text, ("makan", "restaurant", "restoran", "nasi", "sarapan", "lunch", "dinner")):
-        return "Makan"
-    if is_electronics_expense(text):
-        return "Jajan"
+    hit = classify_from_text(text)
+    if hit is not None:
+        return hit["kategori"]
     return None
 
 
@@ -213,6 +151,7 @@ def build_system_prompt_rules() -> str:
     known_cats = ", ".join(categories[:20])
     if len(categories) > 20:
         known_cats += ", ..."
+    examples = prompt_context_examples().strip()
 
     return f"""
 Anda adalah parser keuangan pribadi.
@@ -229,7 +168,7 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
 
 CATATAN:
 {policy_block}
-   Kategori boleh label deskriptif apa pun (contoh: Skincare, Asuransi, Subscription, Dividen).
+   Kategori boleh label deskriptif (Affiliate, Bunga Investasi, Saham, Skincare, dll).
    Kategori yang sudah umum: {known_cats}
    Jika tidak yakin → {fb_cat}.
 
@@ -238,48 +177,50 @@ Aturan:
 2) nominal: ekstrak angka jadi integer rupiah penuh.
    - 50rb / 50 ribu / 50k => 50000 (suffix rb/ribu/k WAJIB menempel pada angka).
    - 1,2jt / 1.2 juta => 1200000.
-   - 83800 / 83.800 / 83,800 tanpa suffix => 83800 (BUKAN juta).
+   - 83800 / 83.800 / 83,800 / 5000 tanpa suffix => nilai apa adanya (BUKAN juta).
    - Huruf k di kata biasa (kemarin, snack, stock) BUKAN penanda ribuan.
 3) jenis: Pemasukan | Pengeluaran | Saving/Investment.
-   - Pemasukan: gaji, bonus, honor, dividen yang dicairkan.
-   - Saving/Investment untuk nabung, saham, reksadana, deposito, avg down, dividen reinvest — BUKAN pengeluaran hidup.
-   - Donasi/sedekah/persembahan/ibadah = Pengeluaran + kategori Social.
-4) sifat: HANYA Need atau Wants — dengarkan NIAT & FUNGSI user, bukan sekadar merek/harga/kategori.
-   - Need: kebutuhan hidup atau kerja yang user jelaskan fungsional (mis. kopi supaya produktif/fokus kerja, transport ke kantor, obat, tagihan).
-   - Wants: belanja diskresioner, reward diri, hiburan, atau jajan tanpa kebutuhan fungsional yang user nyatakan.
-   - JANGAN otomatis Wants hanya karena premium/jajan/starbucks — jika user bilang \"butuh supaya produktif\", \"biar bisa kerja\", \"ngantuk kerja\" → pertimbangkan Need.
-   - Skincare, subscription hiburan, belanja iseng → biasanya Wants.
-5) kategori: pilih label paling sesuai dari input (Skincare, Asuransi, Subscription, Makan, Transport, dll).
+   - Pemasukan: gaji, bonus, honor/freelance, affiliate/komisi, bunga investasi, dividen cair, cashback, refund, hasil sewa, hasil jualan.
+   - Saving/Investment: beli/nabung saham, reksadana, deposito, emas, crypto, dana darurat — BUKAN hasil investasi.
+   - Hasil investasi (bunga/dividen cair) = Pemasukan, BUKAN Saving/Investment.
+   - Donasi/sedekah/zakat = Pengeluaran + kategori Social.
+4) sifat: HANYA Need atau Wants — dengarkan NIAT & FUNGSI user.
+   - Need: kebutuhan hidup/kerja fungsional, tagihan, proteksi, cicilan, hasil/pemasukan.
+   - Wants: diskresioner, reward, hiburan, jajan tanpa kebutuhan fungsional.
+5) kategori: pilih label paling sesuai.
    Petunjuk bucket (referensi):
 {hints_block}
-6) Konteks bucket (contoh):
-   - Premi asuransi / BPJS → kategori Asuransi, sifat Need
-   - Skincare / skin care → kategori Skincare, sifat Wants
-   - Netflix / langganan → kategori Subscription, sifat Wants
-   - Dividen dicairkan → jenis Pemasukan, kategori Dividen
+6) {examples}
 7) impulsif — terpisah dari sifat Need/Wants:
-   "Yes" jika spontan / fomo / mood negatif + belanja diskresioner, atau premium di luar kebutuhan terencana.
-   "No" jika terencana, tagihan wajib, perayaan keluarga, atau kebutuhan kerja yang user jelaskan meski mood lelah.
-   Boleh impulsif=Yes sambil sifat=Need (contoh: kopi premium mendadak saat ngantuk kerja).
+   "Yes" jika spontan / fomo / mood negatif + belanja diskresioner.
+   "No" jika terencana, tagihan wajib, atau kebutuhan kerja yang dijelaskan.
 8) Balas HANYA JSON murni, tanpa markdown.
 9) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
    {{"error":"invalid_input"}}
 """
 
 
-def _normalize_alias(value: str, aliases: dict[str, str]) -> str:
-    key = value.strip().lower()
-    return aliases.get(key, value.strip())
-
-
 def normalize_category_fields(parsed: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
-    """Selaraskan kategori dengan aturan admin Laravel."""
+    """Selaraskan kategori: context rules dulu, lalu alias/admin."""
+    apply_context_rules(parsed, source_text)
+
     if str(parsed.get("jenis", "")).strip() == "Saving/Investment":
         combined = f"{parsed.get('keterangan', '')} {source_text}".strip()
-        label = infer_saving_label(combined) or "Tabungan/Investasi"
+        label = infer_saving_label(combined) or str(parsed.get("kategori") or "Tabungan/Investasi")
         parsed["kategori"] = label
         parsed.pop("sub_kategori", None)
+        parsed["sifat"] = "Need"
         return apply_admin_nature(parsed)
+
+    if str(parsed.get("jenis", "")).strip() == "Pemasukan":
+        # Jaga kategori pemasukan yang sudah di-set context rules.
+        kategori = str(parsed.get("kategori", "")).strip()
+        if kategori:
+            parsed["kategori"] = _title_category(kategori)
+            parsed.pop("sub_kategori", None)
+            if str(parsed.get("sifat", "")).strip() not in {"Need", "Wants"}:
+                parsed["sifat"] = "Need"
+            return apply_admin_nature(parsed)
 
     kategori = _normalize_alias(str(parsed.get("kategori", "")), _kategori_aliases())
     combined = f"{parsed.get('keterangan', '')} {source_text}".strip().lower()

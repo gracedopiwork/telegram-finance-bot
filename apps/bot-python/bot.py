@@ -37,8 +37,9 @@ from portal_link import fetch_portal_login_url
 from category_rules_cache import get_rules, refresh as refresh_category_rules
 from transaction_store import save_transaction_to_api
 from transaction_categories import (
+    apply_context_rules,
     build_system_prompt_rules,
-    is_water_expense,
+    classify_from_text,
     normalize_category_fields,
     normalize_saving_fields,
 )
@@ -225,6 +226,7 @@ def finalize_parsed_transaction(
             pass
 
     normalize_taxonomy(parsed)
+    apply_context_rules(parsed, source_text)
     normalize_category_fields(parsed, source_text)
     normalize_saving_fields(parsed, source_text)
     refine_sifat_from_context(parsed, source_text)
@@ -557,35 +559,11 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
     sifat = "Wants"
     mood = "Neutral"
 
-    if any(keyword in lower_text for keyword in ["gaji", "bonus", "income", "fee", "honor"]):
-        jenis = "Pemasukan"
-        kategori = "Gaji"
-        sifat = "Need"
-    elif any(keyword in lower_text for keyword in ["dividen", "dividend"]) and "reinvest" not in lower_text:
-        jenis = "Pemasukan"
-        kategori = "Dividen"
-        sifat = "Need"
-    elif any(keyword in lower_text for keyword in ["asuransi", "premi", "bpjs"]):
-        kategori = "Asuransi"
-        sifat = "Need"
-    elif any(keyword in lower_text for keyword in ["skincare", "skin care", "serum", "masker"]):
-        kategori = "Skincare"
-        sifat = "Wants"
-    elif any(keyword in lower_text for keyword in ["subscription", "langganan", "netflix", "spotify"]):
-        kategori = "Subscription"
-        sifat = "Wants"
-    elif any(keyword in lower_text for keyword in ["listrik", "pln"]):
-        kategori = "Listrik"
-        sifat = "Need"
-    elif any(keyword in lower_text for keyword in ["bensin", "transport", "angkot", "ojek", "tol", "parkir", "grab", "gojek"]):
-        kategori = "Transport"
-        sifat = "Need"
-    elif any(keyword in lower_text for keyword in ["servis", "bengkel"]):
-        kategori = "Transport"
-        sifat = "Need"
-    elif is_water_expense(lower_text):
-        kategori = "Air"
-        sifat = "Need"
+    context_hit = classify_from_text(lower_text)
+    if context_hit is not None:
+        jenis = context_hit["jenis"]
+        kategori = context_hit["kategori"]
+        sifat = context_hit["sifat"]
     elif any(keyword in lower_text for keyword in ["kopi", "coffee", "starbucks", "espresso", "americano", "kafein"]):
         kategori = "Jajan"
         sifat = (
@@ -596,20 +574,11 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
             ])
             else "Wants"
         )
-    elif any(keyword in lower_text for keyword in ["makan", "nasi", "sarapan", "lunch", "dinner", "restaurant", "restoran"]):
+    elif any(keyword in lower_text for keyword in PAYDAY_SPLURGE_KEYWORDS + REWARD_SPENDING_KEYWORDS) and any(
+        keyword in lower_text for keyword in ["makan", "nasi", "sarapan", "lunch", "dinner", "restaurant", "restoran"]
+    ):
         kategori = "Makan"
-        sifat = (
-            "Wants"
-            if any(keyword in lower_text for keyword in PAYDAY_SPLURGE_KEYWORDS + REWARD_SPENDING_KEYWORDS)
-            else "Need"
-        )
-    elif any(keyword in lower_text for keyword in ["saham", "reksa", "obligasi", "nabung", "tabung", "investasi", "investment", "deposito", "avg down", "dividen reinvest"]):
-        jenis = "Saving/Investment"
-        kategori = "Tabungan/Investasi"
-        sifat = "Need"
-    elif any(keyword in lower_text for keyword in ["hadiah", "amplop", "ultah", "ulang tahun", "konser", "sedekah", "persembahan", "ibadah", "donasi"]):
-        kategori = "Social"
-        sifat = "Need"
+        sifat = "Wants"
 
     detected_mood = detect_mood_in_text(text)
     if detected_mood:
