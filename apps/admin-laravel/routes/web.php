@@ -201,6 +201,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('/transaksi/import', [PortalTransactionsController::class, 'import'])->name('transactions.import');
             Route::delete('/transaksi/{transaction}', [PortalTransactionsController::class, 'destroy'])->name('transactions.destroy');
             Route::get('/dashboard', [PortalDashboardController::class, 'index'])->name('dashboard');
+            Route::post('/dashboard/generate-manual', [PortalDashboardController::class, 'generateManualFinancialGuidance'])->name('dashboard.generate-manual');
         });
     });
 });

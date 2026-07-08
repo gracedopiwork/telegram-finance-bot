@@ -41,7 +41,7 @@
     </div>
 @endif
 
-{{-- Grid 2 kolom: kiri = Stage + Prescription · kanan = Archetype + Penjelasan FTSA --}}
+{{-- Grid 2 kolom: kiri = Stage · kanan = Archetype + Penjelasan FTSA --}}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
     <div class="space-y-5">
         {{-- Financial Stage --}}
@@ -64,30 +64,6 @@
             <div class="text-sm text-slate-500 mt-1">{{ $stageMeta['phase'] ?? '' }} · Skor {{ $baseline->financial_stage_score }}/39</div>
             <p class="mt-3 text-sm text-slate-600 leading-relaxed">{{ $stageMeta['diagnosis'] ?? '' }}</p>
             @include('portal.partials.financial-stage-guidance', ['stageGuidance' => $stageGuidance ?? []])
-        </div>
-
-        {{-- Prescription budget --}}
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-            <h3 class="font-bold text-navy-800 text-lg mb-4 flex items-center gap-2">
-                <span class="material-symbols-outlined">medication</span> Prescription Budget
-            </h3>
-            <p class="text-sm text-slate-600 mb-4">Target alokasi bucket untuk tahap <strong>{{ $baseline->stage_label }}</strong>.</p>
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="text-left text-slate-500 border-b">
-                        <th class="pb-2 font-semibold">Bucket</th>
-                        <th class="pb-2 font-semibold text-right">Target</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($prescriptionRows as $bucket => $pct)
-                        <tr class="border-b border-slate-50">
-                            <td class="py-2.5 text-navy-800 font-medium">{{ $bucket }}</td>
-                            <td class="py-2.5 text-right font-bold text-navy-800">{{ $pct }}%</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
         </div>
     </div>
 
@@ -145,6 +121,30 @@
 
         @include('portal.partials.ftsa-domain-explanation', ['domainScores' => $domainScores])
     </div>
+</div>
+
+{{-- Prescription budget (full width) --}}
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 mb-6">
+    <h3 class="font-bold text-navy-800 text-lg mb-4 flex items-center gap-2">
+        <span class="material-symbols-outlined">medication</span> Prescription Budget
+    </h3>
+    <p class="text-sm text-slate-600 mb-4">Target alokasi bucket untuk tahap <strong>{{ $baseline->stage_label }}</strong>.</p>
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="text-left text-slate-500 border-b">
+                <th class="pb-2 font-semibold">Bucket</th>
+                <th class="pb-2 font-semibold text-right">Target</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($prescriptionRows as $bucket => $pct)
+                <tr class="border-b border-slate-50">
+                    <td class="py-2.5 text-navy-800 font-medium">{{ $bucket }}</td>
+                    <td class="py-2.5 text-right font-bold text-navy-800">{{ $pct }}%</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
 </div>
 
 {{-- Snapshot keuangan --}}

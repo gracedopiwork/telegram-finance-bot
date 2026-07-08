@@ -3,16 +3,20 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Models\PortalGuidanceSnapshot;
 use App\Services\BaselineClaimService;
 use App\Services\FtsaAnswerSummaryService;
 use App\Services\FtsaAiGuidanceService;
 use App\Services\ImpulsivityAssessmentService;
 use App\Services\PortalAccessService;
 use App\Services\PortalFeatureService;
+use App\Services\PortalGuidanceSnapshotService;
 use App\Services\PortalOnboardingService;
+use App\Services\PortalAiGuidanceService;
 use App\Services\TransactionDashboardService;
 use App\Support\PortalSession;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -62,6 +66,56 @@ class DashboardController extends Controller
       'periods' => $this->periodOptions(),
       'currentPeriod' => $period,
     ]);
+  }
+
+  public function generateManualFinancialGuidance(Request $request): RedirectResponse
+  {
+    $telegramUserId = (int) PortalSession::telegramUserId($request);
+    $email = (string) (PortalSession::email($request) ?? '');
+    app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+
+    [$month, $period] = $this->filters($request);
+    $dashboard = app(TransactionDashboardService::class);
+    $snapshot = app(PortalGuidanceSnapshotService::class);
+    $aiGuidance = app(PortalAiGuidanceService::class);
+    $baseline = app(PortalOnboardingService::class)->resolveBaseline($email, $telegramUserId);
+
+    $end = Carbon::createFromFormat('Y-m', $month)->endOfMonth();
+    $start = $end->copy()->subMonths($period - 1)->startOfMonth();
+    $periodLabel = $period === 1
+      ? Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y')
+      : $start->translatedFormat('M Y').' – '.$end->translatedFormat('M Y');
+
+    $context = $dashboard->financialGuidanceContext($telegramUserId, $start, $end, $periodLabel, max(1, $period));
+    if (($context['transaction_count'] ?? 0) === 0) {
+      return redirect()
+        ->route('portal.dashboard', ['month' => $month, 'period' => $period])
+        ->with('warning', 'Belum ada transaksi untuk periode ini, jadi belum bisa generate manual.');
+    }
+
+    $week = $snapshot->weekRange();
+    $weekPeriodLabel = 'Minggu '.$week['start']->translatedFormat('d M').' – '.$week['end']->translatedFormat('d M Y');
+    $weeklyContext = $dashboard->financialGuidanceContext($telegramUserId, $week['start'], $week['end'], $weekPeriodLabel, 1);
+
+    $aiGuidance->generateAndStoreWeeklyClinicalSummary(
+      $telegramUserId,
+      PortalGuidanceSnapshot::weekPeriodKey(),
+      $weeklyContext['metrics'],
+      $baseline,
+      $weeklyContext['fallback_clinical'],
+    );
+
+    $aiGuidance->generateAndStoreMonthlyDoctorsNote(
+      $telegramUserId,
+      $month,
+      $context['metrics'],
+      $baseline,
+      $context['fallback_doctors_note'],
+    );
+
+    return redirect()
+      ->route('portal.dashboard', ['month' => $month, 'period' => $period])
+      ->with('success', 'Doctor\'s Note dan Clinical Summary berhasil di-generate manual dari data terbaru.');
   }
 
   public function emotional(Request $request): View

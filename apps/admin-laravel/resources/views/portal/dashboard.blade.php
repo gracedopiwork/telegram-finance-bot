@@ -10,6 +10,8 @@
     $noteSummary = is_array($note) ? ($note['summary'] ?? '') : (string) $note;
     $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $summary['month'])->endOfMonth();
     $showDoctorsNote = $noteSummary !== '' && ! str_contains($noteSummary, 'akan dirilis') && ! str_contains($noteSummary, 'akan dibuat');
+    $doctorsGeneratedAt = !empty($summary['doctors_generated_at']) ? \Carbon\Carbon::parse($summary['doctors_generated_at']) : null;
+    $clinicalGeneratedAt = !empty($summary['clinical_generated_at']) ? \Carbon\Carbon::parse($summary['clinical_generated_at']) : null;
 @endphp
 
 <div class="space-y-5">
@@ -22,13 +24,27 @@
 
     {{-- Doctor's Note --}}
     <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <div class="text-sm font-semibold text-navy-800 mb-3">Doctor's Note</div>
+        <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="text-sm font-semibold text-navy-800">Doctor's Note</div>
+            <form method="post" action="{{ route('portal.dashboard.generate-manual', ['month' => $summary['month'], 'period' => $summary['period_months'] ?? 1]) }}">
+                @csrf
+                <button type="submit" class="inline-flex items-center gap-1.5 text-xs font-semibold text-navy-800 border border-slate-300 rounded-lg px-2.5 py-1.5 hover:bg-slate-50">
+                    <span class="material-symbols-outlined text-base">autorenew</span>
+                    Generate manual
+                </button>
+            </form>
+        </div>
         @if($showDoctorsNote)
             <p class="text-sm text-slate-700 leading-relaxed mb-3">{{ $noteSummary }}</p>
+            @if($doctorsGeneratedAt)
+                <p class="text-xs text-slate-500">Terakhir dibuat: {{ $doctorsGeneratedAt->format('d/m/Y H:i') }}</p>
+            @endif
+        @else
+            <p class="text-sm text-slate-600">
+                Belum ada Doctor's Note untuk periode ini.
+                Klik <strong>Generate manual</strong> agar ringkasan dibuat dari data terbaru (tanpa AI).
+            </p>
         @endif
-        <p class="text-sm text-slate-600">
-            Rekomendasi dokter akan dibuat pada tgl <strong>{{ $monthEnd->format('d/m/Y') }}</strong> pukul <strong>22.00</strong>.
-        </p>
     </div>
 
     {{-- KPI --}}
@@ -48,6 +64,9 @@
             </ul>
         @else
             <p class="text-sm text-slate-500">–</p>
+        @endif
+        @if($clinicalGeneratedAt)
+            <p class="text-xs text-slate-500 mt-3">Terakhir dibuat: {{ $clinicalGeneratedAt->format('d/m/Y H:i') }}</p>
         @endif
     </div>
 
