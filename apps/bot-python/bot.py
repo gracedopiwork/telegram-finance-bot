@@ -216,6 +216,13 @@ def finalize_parsed_transaction(
     *,
     trust_ai_impulsif: bool = False,
 ) -> Dict[str, Any]:
+    if source_text.strip():
+        try:
+            current = int(parsed.get("nominal", 0) or 0)
+            parsed["nominal"] = reconcile_nominal(current, source_text.strip())
+        except (TypeError, ValueError):
+            pass
+
     normalize_taxonomy(parsed)
     normalize_category_fields(parsed, source_text)
     normalize_saving_fields(parsed, source_text)
