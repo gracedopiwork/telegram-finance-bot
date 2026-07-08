@@ -68,6 +68,7 @@ _STATIC_FALLBACK: dict[str, Any] = {
         "Kategori baru dibuat otomatis saat transaksi masuk; tidak perlu ditambah admin dulu.",
         "Gunakan label kategori yang paling sesuai dari input user (contoh: Skincare, Asuransi, Subscription, Dividen).",
         "Sistem mengelompokkan kategori ke bucket dashboard secara otomatis.",
+        "Need vs Wants: pertimbangkan niat fungsional user (mis. kopi untuk produktif kerja bisa Need), bukan sekadar merek premium.",
     ],
     "strict_categories_only": False,
 }

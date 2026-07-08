@@ -244,7 +244,11 @@ Aturan:
    - Pemasukan: gaji, bonus, honor, dividen yang dicairkan.
    - Saving/Investment untuk nabung, saham, reksadana, deposito, avg down, dividen reinvest — BUKAN pengeluaran hidup.
    - Donasi/sedekah/persembahan/ibadah = Pengeluaran + kategori Social.
-4) sifat: HANYA Need atau Wants.
+4) sifat: HANYA Need atau Wants — dengarkan NIAT & FUNGSI user, bukan sekadar merek/harga/kategori.
+   - Need: kebutuhan hidup atau kerja yang user jelaskan fungsional (mis. kopi supaya produktif/fokus kerja, transport ke kantor, obat, tagihan).
+   - Wants: belanja diskresioner, reward diri, hiburan, atau jajan tanpa kebutuhan fungsional yang user nyatakan.
+   - JANGAN otomatis Wants hanya karena premium/jajan/starbucks — jika user bilang \"butuh supaya produktif\", \"biar bisa kerja\", \"ngantuk kerja\" → pertimbangkan Need.
+   - Skincare, subscription hiburan, belanja iseng → biasanya Wants.
 5) kategori: pilih label paling sesuai dari input (Skincare, Asuransi, Subscription, Makan, Transport, dll).
    Petunjuk bucket (referensi):
 {hints_block}
@@ -253,9 +257,10 @@ Aturan:
    - Skincare / skin care → kategori Skincare, sifat Wants
    - Netflix / langganan → kategori Subscription, sifat Wants
    - Dividen dicairkan → jenis Pemasukan, kategori Dividen
-7) impulsif — pertimbangkan konteks & niat:
-   "Yes" jika spontan / fomo / mood negatif + wants.
-   "No" jika terencana, tagihan wajib, atau perayaan keluarga.
+7) impulsif — terpisah dari sifat Need/Wants:
+   "Yes" jika spontan / fomo / mood negatif + belanja diskresioner, atau premium di luar kebutuhan terencana.
+   "No" jika terencana, tagihan wajib, perayaan keluarga, atau kebutuhan kerja yang user jelaskan meski mood lelah.
+   Boleh impulsif=Yes sambil sifat=Need (contoh: kopi premium mendadak saat ngantuk kerja).
 8) Balas HANYA JSON murni, tanpa markdown.
 9) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
    {{"error":"invalid_input"}}

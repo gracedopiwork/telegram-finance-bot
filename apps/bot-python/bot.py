@@ -47,6 +47,7 @@ from impulsive_rules import (
     REWARD_SPENDING_KEYWORDS,
     resolve_impulsif,
 )
+from nature_rules import refine_sifat_from_context
 
 load_dotenv()
 
@@ -226,6 +227,7 @@ def finalize_parsed_transaction(
     normalize_taxonomy(parsed)
     normalize_category_fields(parsed, source_text)
     normalize_saving_fields(parsed, source_text)
+    refine_sifat_from_context(parsed, source_text)
     ai_val = str(parsed.get("impulsif", "")).strip() if trust_ai_impulsif else None
     parsed["impulsif"] = resolve_impulsif(
         parsed,
@@ -584,6 +586,16 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
     elif is_water_expense(lower_text):
         kategori = "Air"
         sifat = "Need"
+    elif any(keyword in lower_text for keyword in ["kopi", "coffee", "starbucks", "espresso", "americano", "kafein"]):
+        kategori = "Jajan"
+        sifat = (
+            "Need"
+            if any(keyword in lower_text for keyword in [
+                "produktif", "kerja", "kantor", "fokus", "konsentrasi", "butuh supaya", "biar bisa",
+                "ngantuk kerja", "melek", "meeting", "rapat",
+            ])
+            else "Wants"
+        )
     elif any(keyword in lower_text for keyword in ["makan", "nasi", "sarapan", "lunch", "dinner", "restaurant", "restoran"]):
         kategori = "Makan"
         sifat = (
