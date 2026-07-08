@@ -189,16 +189,37 @@
 
     {{-- 5. Mood distribusi --}}
     <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <div class="text-sm font-semibold text-navy-800 mb-4">Mood distribusi</div>
-        <div class="h-52 flex items-center justify-center">
-            @if($hasData)
-                <canvas id="moodDistribusiChart"></canvas>
-            @endif
-        </div>
-        <div class="flex justify-center gap-4 mt-3 text-xs text-slate-600">
-            <span>Positif {{ $assessment['mood_groups']['positive']['share'] }}%</span>
-            <span>Netral {{ $assessment['mood_groups']['neutral']['share'] }}%</span>
-            <span>Negatif {{ $assessment['mood_groups']['negative']['share'] }}%</span>
+        <div class="text-sm font-semibold text-navy-800 mb-3">Mood distribusi</div>
+        <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,220px)_1fr] gap-4 sm:gap-6 items-start">
+            <div class="w-full max-w-[220px] mx-auto sm:mx-0">
+                @if($hasData)
+                    <div class="relative w-full aspect-square max-h-[200px]">
+                        <canvas id="moodDistribusiChart"></canvas>
+                    </div>
+                @else
+                    <p class="text-sm text-slate-500 text-center sm:text-left py-8">Belum ada data mood pada periode ini.</p>
+                @endif
+            </div>
+            <div class="text-xs sm:text-sm text-slate-600 space-y-3 min-w-0">
+                <div class="flex flex-wrap gap-x-4 gap-y-1 font-medium text-slate-700">
+                    <span>Positif {{ $assessment['mood_groups']['positive']['share'] }}%</span>
+                    <span>Netral {{ $assessment['mood_groups']['neutral']['share'] }}%</span>
+                    <span>Negatif {{ $assessment['mood_groups']['negative']['share'] }}%</span>
+                </div>
+                <div class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-3 space-y-2 leading-relaxed">
+                    <p><span class="font-semibold text-navy-800">Positif:</span> Happy</p>
+                    <p><span class="font-semibold text-navy-800">Netral:</span> Netral</p>
+                    <div>
+                        <span class="font-semibold text-navy-800">Negatif:</span>
+                        <ul class="mt-1 space-y-0.5 text-slate-500">
+                            <li>– Sad</li>
+                            <li>– Stressed</li>
+                            <li>– Angry</li>
+                            <li>– Tired</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -340,7 +361,13 @@ if (document.getElementById('moodDistribusiChart')) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } },
+            layout: { padding: { top: 4, bottom: 4, left: 4, right: 4 } },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 10, padding: 8, font: { size: 11 } },
+                },
+            },
         },
     });
 }
