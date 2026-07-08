@@ -11,7 +11,7 @@
             'items' => [
                 ['key' => 'paket',     'label' => 'Health Check Up',       'desc' => 'Screening kesehatan finansial gratis — 3–5 menit',       'route' => 'checkup.show',              'icon' => 'monitor_heart', 'badge' => 'Gratis'],
                 ['key' => 'pertemuan', 'label' => 'Konsultasi 1-on-1',     'desc' => 'Sesi privat dengan dokter QWP',                          'route' => 'company.pertemuan',         'icon' => 'forum',         'badge' => null],
-                ['key' => 'recovery',  'label' => 'Recovery Program',      'desc' => 'Pendampingan intensif untuk kondisi finansial darurat',  'route' => 'company.pertemuan',         'query' => ['type' => 'recovery'], 'icon' => 'healing', 'badge' => null],
+                ['key' => 'recovery',  'label' => 'Recovery Program',      'desc' => 'Pendampingan intensif untuk kondisi finansial darurat',  'route' => 'company.bundle.recovery',   'icon' => 'healing', 'badge' => null],
                 ['key' => 'edukasi',   'label' => 'Education Platform',    'desc' => 'Webinar, kelas online, e-book & Wealthpedia',            'route' => 'company.bundle.education',  'icon' => 'school',        'badge' => null],
             ],
             'cta' => ['label' => 'Lihat semua 6 pilar layanan', 'route' => 'company.layanan'],
@@ -553,7 +553,7 @@
                 <li><a href="{{ route('company.paket') }}" class="hover:text-secondary-fixed-dim transition-all">Tarif Konsultasi</a></li>
                 <li><a href="{{ route('company.pertemuan') }}" class="hover:text-secondary-fixed-dim transition-all">Konsultasi</a></li>
                 <li><a href="{{ route('company.bundle.education') }}" class="hover:text-secondary-fixed-dim transition-all">Education Platform</a></li>
-                <li><a href="{{ route('company.pertemuan', ['type' => 'recovery']) }}" class="hover:text-secondary-fixed-dim transition-all">Recovery Program</a></li>
+                <li><a href="{{ route('company.bundle.recovery') }}" class="hover:text-secondary-fixed-dim transition-all">Recovery Program</a></li>
             </ul>
         </div>
 
