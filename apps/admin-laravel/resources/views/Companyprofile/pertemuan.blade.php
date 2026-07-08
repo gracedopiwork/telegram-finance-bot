@@ -15,6 +15,16 @@
 @php
     use App\Support\ConsultationPricing;
     $selectedType = $selectedType ?? 'standard';
+    $defaultService = match ($selectedType) {
+        'recovery' => 'recovery-program',
+        'diagnostic' => 'diagnostic',
+        default => 'consultation',
+    };
+    if (request('service') === 'recovery') {
+        $defaultService = 'recovery-program';
+    } elseif (request('service') === 'diagnostic') {
+        $defaultService = 'diagnostic';
+    }
 @endphp
 
 <main class="max-w-container-max mx-auto px-margin-desktop py-12">
@@ -25,16 +35,16 @@
             <span class="material-symbols-outlined text-[18px]">event_available</span>
             ONLINE BOOKING
         </span>
-        <h1 class="font-display-lg text-display-lg text-primary mb-4">Booking Financial Consultation</h1>
+        <h1 class="font-display-lg text-display-lg text-primary mb-4">Rencanakan Pertemuan Anda</h1>
         <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
-            Konsultasi 1-on-1 dengan tim dokter YFD dilakukan secara <strong>online via WhatsApp</strong>.
-            Belum tahu tahap finansial Anda? <a href="{{ $primaryCheckupUrl }}" class="text-primary-container font-semibold underline">Mulai screening gratis</a> dulu.
+            Booking layanan YFD dilakukan secara <strong>online via WhatsApp</strong>.
+            Screening gratis? <a href="{{ $primaryCheckupUrl }}" class="text-primary-container font-semibold underline">Mulai Health Check-Up</a>.
         </p>
     </div>
 
-    @if($selectedTier)
+    @if($selectedTier && ($defaultService === 'diagnostic' || request('service') === 'diagnostic'))
         <div class="mb-8 max-w-3xl mx-auto rounded-xl bg-secondary-container/20 border border-secondary-container/40 px-5 py-4 text-sm text-on-surface">
-            <strong>Estimasi tarif konsultasi untuk tahap {{ $selectedTier['label'] }}:</strong>
+            <strong>Estimasi tarif diagnostik untuk tahap {{ $selectedTier['label'] }}:</strong>
             {{ ConsultationPricing::formatRange($selectedTier) }} {{ $consultationMeta['period'] ?? '/sesi' }}.
         </div>
     @endif
@@ -53,29 +63,40 @@
 
                 <form id="bookingForm" class="space-y-6" onsubmit="return goToWhatsApp(event)">
 
-                    {{-- Layanan: hanya Financial Consultation di halaman ini --}}
+                    {{-- Pilih layanan --}}
                     <div>
-                        <label class="font-label-md text-label-md text-on-surface-variant block mb-3">Layanan</label>
-                        <input type="hidden" name="service" value="Financial Consultation">
-                        <div class="border-2 border-primary-container rounded-lg p-4 flex items-center gap-3 bg-primary-container/5">
-                            <span class="material-symbols-outlined text-primary-container">stethoscope</span>
-                            <div>
-                                <span class="font-body-md text-body-md text-on-surface font-semibold block">Financial Consultation</span>
-                                <span class="font-caption text-caption text-on-surface-variant">Konsultasi 1-on-1 dengan dokter finansial YFD via WhatsApp</span>
-                            </div>
+                        <label class="font-label-md text-label-md text-on-surface-variant block mb-3">Pilih Layanan *</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="serviceOptions">
+                            @foreach([
+                                ['v' => 'consultation',     'ic' => 'stethoscope',    'label' => 'Financial Consultation'],
+                                ['v' => 'recovery-program', 'ic' => 'healing',        'label' => 'Financial Recovery Program'],
+                                ['v' => 'diagnostic',       'ic' => 'monitor_heart',  'label' => 'Financial Health Check Up / Diagnostik'],
+                            ] as $opt)
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="service_key" value="{{ $opt['v'] }}"
+                                           data-label="{{ $opt['label'] }}"
+                                           {{ $defaultService === $opt['v'] ? 'checked' : '' }}
+                                           class="peer sr-only service-radio" required>
+                                    <div class="border-2 border-outline-variant rounded-lg p-4 flex items-center gap-3 hover:border-primary-container peer-checked:border-primary-container peer-checked:bg-primary-container/5 transition-all h-full">
+                                        <span class="material-symbols-outlined text-primary-container">{{ $opt['ic'] }}</span>
+                                        <span class="font-body-md text-body-md text-on-surface">{{ $opt['label'] }}</span>
+                                    </div>
+                                </label>
+                            @endforeach
                         </div>
+                        <input type="hidden" name="service" id="serviceLabel" value="">
                         <p class="font-caption text-caption text-on-surface-variant mt-2">
-                            Recovery Program, Education/Webinar, dan Digital Monitoring Bot memiliki halaman &amp; paket masing-masing — tidak melalui form ini.
-                            Screening Health Check-Up <strong>gratis</strong> —
-                            <a href="{{ $primaryCheckupUrl }}" class="text-primary-container underline">mulai di sini</a>.
+                            Pilih <strong>Diagnostik</strong> jika sudah tahu tahap finansial Anda — dropdown tarif akan muncul.
+                            Screening online gratis tetap tersedia di
+                            <a href="{{ $primaryCheckupUrl }}" class="text-primary-container underline">/check-up</a>.
                         </p>
                     </div>
 
-                    {{-- Tahap finansial (untuk estimasi tarif) --}}
-                    <div>
-                        <label class="font-label-md text-label-md text-on-surface-variant block mb-3">Tahap Finansial (hasil screening)</label>
+                    {{-- Tahap finansial — hanya untuk Diagnostik --}}
+                    <div id="stageWrapper" class="hidden">
+                        <label class="font-label-md text-label-md text-on-surface-variant block mb-3">Tahap Finansial *</label>
                         <select name="stage" id="stageSelect" class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
-                            <option value="">— belum screening / belum tahu —</option>
+                            <option value="">— pilih tahap finansial —</option>
                             @foreach($consultationTiers as $stageKey => $tier)
                                 <option value="{{ $stageKey }}"
                                         data-range="{{ ConsultationPricing::formatRange($tier) }}"
@@ -180,19 +201,61 @@
 @push('scripts')
 <script>
     const stageSelect = document.getElementById('stageSelect');
+    const stageWrapper = document.getElementById('stageWrapper');
     const stageFeeHint = document.getElementById('stageFeeHint');
+    const serviceLabel = document.getElementById('serviceLabel');
+    const serviceRadios = document.querySelectorAll('.service-radio');
+
+    function selectedServiceKey() {
+        const checked = document.querySelector('.service-radio:checked');
+        return checked ? checked.value : '';
+    }
+
+    function syncServiceLabel() {
+        const checked = document.querySelector('.service-radio:checked');
+        if (serviceLabel && checked) {
+            serviceLabel.value = checked.dataset.label || checked.value;
+        }
+    }
+
+    function toggleStageField() {
+        const isDiagnostic = selectedServiceKey() === 'diagnostic';
+        if (stageWrapper) {
+            stageWrapper.classList.toggle('hidden', !isDiagnostic);
+        }
+        if (stageSelect) {
+            stageSelect.required = isDiagnostic;
+            if (!isDiagnostic) {
+                stageSelect.value = '';
+                if (stageFeeHint) stageFeeHint.classList.add('hidden');
+            } else {
+                updateStageHint();
+            }
+        }
+    }
 
     function updateStageHint() {
+        if (selectedServiceKey() !== 'diagnostic' || !stageSelect || !stageFeeHint) {
+            return;
+        }
         const opt = stageSelect.options[stageSelect.selectedIndex];
         if (!opt || !opt.value) {
             stageFeeHint.classList.add('hidden');
             return;
         }
-        stageFeeHint.textContent = 'Estimasi tarif konsultasi: ' + (opt.dataset.range || '-') + '/sesi (bisa berbeda sesuai kompleksitas kasus).';
+        stageFeeHint.textContent = 'Estimasi tarif: ' + (opt.dataset.range || '-') + '/sesi (bisa berbeda sesuai kompleksitas kasus).';
         stageFeeHint.classList.remove('hidden');
     }
-    stageSelect.addEventListener('change', updateStageHint);
-    updateStageHint();
+
+    serviceRadios.forEach(r => r.addEventListener('change', () => {
+        syncServiceLabel();
+        toggleStageField();
+    }));
+    if (stageSelect) {
+        stageSelect.addEventListener('change', updateStageHint);
+    }
+    syncServiceLabel();
+    toggleStageField();
 
     function goToWhatsApp(event) {
         event.preventDefault();
@@ -200,26 +263,32 @@
         const fd = new FormData(form);
 
         const service = fd.get('service') || '-';
-        const stage = fd.get('stage') || '';
+        const serviceKey = selectedServiceKey();
+        const stage = serviceKey === 'diagnostic' ? (fd.get('stage') || '') : '';
         const name = fd.get('name') || '-';
         const age = fd.get('age') || '';
         const condition = fd.get('condition') || '';
         const time = fd.get('time') || '';
 
+        if (serviceKey === 'diagnostic' && !stage) {
+            alert('Pilih tahap finansial untuk layanan Diagnostik.');
+            return false;
+        }
+
         let stageLabel = '';
-        if (stage) {
+        if (stage && stageSelect) {
             const opt = stageSelect.options[stageSelect.selectedIndex];
             stageLabel = opt ? opt.textContent.trim() : stage;
         }
 
         let lines = [];
-        lines.push("Halo Tim YFD, saya ingin booking konsultasi finansial.");
+        lines.push("Halo Tim YFD, saya ingin booking layanan finansial.");
         lines.push("");
         lines.push("*Nama:* " + name);
         if (age) lines.push("*Usia:* " + age);
         lines.push("*Layanan:* " + service);
         if (stageLabel) {
-            lines.push("*Tahap finansial (hasil screening):* " + stageLabel);
+            lines.push("*Tahap finansial:* " + stageLabel);
         }
         if (condition) {
             lines.push("");
@@ -231,7 +300,7 @@
             lines.push("*Preferensi waktu:* " + time);
         }
         lines.push("");
-        lines.push("Mohon info jadwal & estimasi biaya sesi. Terima kasih.");
+        lines.push("Mohon info jadwal & langkah berikutnya. Terima kasih.");
 
         const text = encodeURIComponent(lines.join("\n"));
         const url = "https://wa.me/{{ $yfd['wa_number'] }}?text=" + text;
