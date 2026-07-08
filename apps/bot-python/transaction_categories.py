@@ -235,7 +235,11 @@ CATATAN:
 
 Aturan:
 1) keterangan: rapikan typo/singkatan agar mudah dibaca, gunakan kapitalisasi wajar.
-2) nominal: ekstrak angka jadi integer bersih (contoh: 50rb => 50000, 1,2jt => 1200000).
+2) nominal: ekstrak angka jadi integer rupiah penuh.
+   - 50rb / 50 ribu / 50k => 50000 (suffix rb/ribu/k WAJIB menempel pada angka).
+   - 1,2jt / 1.2 juta => 1200000.
+   - 83800 / 83.800 / 83,800 tanpa suffix => 83800 (BUKAN juta).
+   - Huruf k di kata biasa (kemarin, snack, stock) BUKAN penanda ribuan.
 3) jenis: Pemasukan | Pengeluaran | Saving/Investment.
    - Pemasukan: gaji, bonus, honor, dividen yang dicairkan.
    - Saving/Investment untuk nabung, saham, reksadana, deposito, avg down, dividen reinvest — BUKAN pengeluaran hidup.

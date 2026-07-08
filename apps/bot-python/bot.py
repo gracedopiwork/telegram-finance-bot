@@ -23,6 +23,7 @@ from claude_ai import analyze_with_claude as claude_parse_json
 from claude_ai import extract_transaction_text_from_image as claude_extract_image_text
 from laravel_api import log_laravel_api_config
 from license_activate import activate_license_via_api
+from nominal_parser import parse_nominal_from_text, reconcile_nominal
 from ai_quota import (
     format_quota_exhausted_notice,
     format_quota_status,
@@ -462,7 +463,7 @@ def extract_json(raw_text: str) -> Dict[str, Any]:
     return json.loads(cleaned)
 
 
-def normalize_ai_result(data: Dict[str, Any]) -> Dict[str, Any]:
+def normalize_ai_result(data: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
     if data.get("error") == "invalid_input":
         raise ValueError("invalid_input")
 
@@ -470,8 +471,13 @@ def normalize_ai_result(data: Dict[str, Any]) -> Dict[str, Any]:
     if any(key not in data for key in required_keys):
         raise ValueError("missing_keys")
 
-    nominal = data["nominal"]
-    if not isinstance(nominal, int) or nominal <= 0:
+    ai_nominal = int(data["nominal"])
+    if ai_nominal <= 0:
+        raise ValueError("invalid_nominal")
+
+    combined = f"{source_text} {data.get('keterangan', '')}".strip()
+    data["nominal"] = reconcile_nominal(ai_nominal, combined)
+    if data["nominal"] <= 0:
         raise ValueError("invalid_nominal")
 
     data["keterangan"] = str(data["keterangan"]).strip()
@@ -501,7 +507,7 @@ def analyze_with_claude(user_text: str) -> Dict[str, Any]:
 
     try:
         parsed = claude_parse_json(f"Input user: {user_text}", get_system_prompt())
-        result = normalize_ai_result(parsed)
+        result = normalize_ai_result(parsed, user_text)
         report_ai_event("success")
         return result
     except Exception as exc:  # pragma: no cover - external provider fallback
@@ -529,23 +535,7 @@ def extract_transaction_text_from_image(image_path: str) -> str:
 
 
 def parse_nominal_fallback(text: str) -> int:
-    cleaned = text.lower().replace(" ", "")
-    multiplier = 1
-    if "jt" in cleaned:
-        multiplier = 1_000_000
-    elif "rb" in cleaned or "k" in cleaned:
-        multiplier = 1_000
-
-    matches = re.findall(r"\d+[.,]?\d*", cleaned)
-    if not matches:
-        raise ValueError("invalid_nominal")
-
-    value = matches[0].replace(",", ".")
-    number = float(value)
-    nominal = int(number * multiplier)
-    if nominal <= 0:
-        raise ValueError("invalid_nominal")
-    return nominal
+    return parse_nominal_from_text(text)
 
 
 def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
