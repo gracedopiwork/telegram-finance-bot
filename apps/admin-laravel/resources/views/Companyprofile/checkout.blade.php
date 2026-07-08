@@ -30,7 +30,7 @@
                     @if($product->code === 'yfd-ftsa-premium')
                         Email wajib diisi — gunakan <strong>email yang sama</strong> dengan akun YFD First Aid jika ini upgrade. Paket FTSA membuka <strong>dashboard FTSA saja</strong> (12 bulan evaluasi), bukan YFD First Aid.
                     @else
-                        Email wajib diisi — setelah pembayaran lunas, kami kirim ke email tersebut: <strong>tautan YFD First Aid</strong>, <strong>kode /activate</strong>, dan <strong>akses dashboard web</strong>. Lisensi berlaku <strong>selamanya</strong> (sekali bayar). Kode aktivasi <strong>tidak ditampilkan di website</strong>, hanya lewat email. Nomor WhatsApp untuk kontak darurat.
+                        Email wajib diisi — setelah pembayaran lunas, kami kirim ke email tersebut: <strong>tautan YFD First Aid</strong>, <strong>kode /activate</strong>, dan <strong>akses dashboard web</strong>. Pembelian mencakup <strong>biaya admin 1 tahun</strong>; tahun berikutnya perpanjang Rp10.000/bulan atau Rp99.000/tahun. Kode aktivasi <strong>tidak ditampilkan di website</strong>, hanya lewat email. Nomor WhatsApp untuk kontak darurat.
                     @endif
                 </p>
 
@@ -129,7 +129,7 @@
                         <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">link</span> Upgrade dari bot? Pakai <strong>email &amp; lisensi yang sama</strong></li>
                     @else
                         <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">mail</span> Setelah lunas: <strong>email otomatis</strong> berisi link YFD First Aid, kode lisensi, &amp; akses dashboard web</li>
-                        <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">all_inclusive</span> Lisensi bot &amp; dashboard berlaku <strong>selamanya</strong> (sekali bayar)</li>
+                        <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">schedule</span> Termasuk <strong>biaya admin 1 tahun</strong> — lalu perpanjang Rp10.000/bulan atau Rp99.000/tahun</li>
                         <li class="flex items-start gap-2"><span class="material-symbols-outlined text-emerald-600 text-[16px]">support_agent</span> Onboarding 1×24 jam oleh tim YFD</li>
                     @endif
                 </ul>

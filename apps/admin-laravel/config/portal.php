@@ -29,6 +29,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Biaya admin bot (tahun ke-2 dst)
+    |--------------------------------------------------------------------------
+    | Pembelian First Aid mencakup 1 tahun biaya admin gratis.
+    | Setelah itu perpanjang dengan bulanan (10rb) atau tahunan (99rb).
+    */
+    'bot_admin' => [
+        'inclusion_months' => (int) env('PORTAL_BOT_ADMIN_INCLUSION_MONTHS', 12),
+        'monthly_product_code' => env('PORTAL_BOT_ADMIN_MONTHLY_CODE', 'yfd-bot-admin-monthly'),
+        'yearly_product_code' => env('PORTAL_BOT_ADMIN_YEARLY_CODE', 'yfd-bot-admin-yearly'),
+        'monthly_price' => (int) env('PORTAL_BOT_ADMIN_MONTHLY_PRICE', 10000),
+        'yearly_price' => (int) env('PORTAL_BOT_ADMIN_YEARLY_PRICE', 99000),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | FTSA-only portal user IDs (tanpa aktivasi Telegram)
     |--------------------------------------------------------------------------
     | assigned_user_id = base + license_id — harus unsigned BIGINT (bukan negatif).

@@ -10,14 +10,20 @@ use Carbon\Carbon;
 class LicenseEntitlementService
 {
     /**
-     * Bot = selamanya (null). FTSA-only = evaluasi 12 bulan (atau config).
+     * First Aid = 12 bulan (tahun 1 termasuk biaya admin).
+     * Renew admin bulanan = +1 bulan; tahunan = +12 bulan.
+     * FTSA-only = evaluasi 12 bulan (atau config).
      */
-    public function expiresAtForNewLicense(Order $order): ?Carbon
+    public function expiresAtForNewLicense(Order $order, ?Carbon $currentExpires = null): ?Carbon
     {
         $code = $this->productCode($order);
 
-        if ($this->isBotProductCode($code)) {
-            return null;
+        if ($this->isBotAdminMonthlyCode($code)) {
+            return $this->extendFrom($currentExpires, 1);
+        }
+
+        if ($this->isBotAdminYearlyCode($code) || $this->isBotProductCode($code)) {
+            return $this->extendFrom($currentExpires, $this->botAdminInclusionMonths());
         }
 
         if ($this->isFtsaProductCode($code)) {
@@ -25,6 +31,35 @@ class LicenseEntitlementService
         }
 
         return null;
+    }
+
+    public function botAdminInclusionMonths(): int
+    {
+        return max(1, (int) config('portal.bot_admin.inclusion_months', 12));
+    }
+
+    public function isBotAdminMonthlyCode(string $code): bool
+    {
+        return $code !== '' && $code === (string) config('portal.bot_admin.monthly_product_code', 'yfd-bot-admin-monthly');
+    }
+
+    public function isBotAdminYearlyCode(string $code): bool
+    {
+        return $code !== '' && $code === (string) config('portal.bot_admin.yearly_product_code', 'yfd-bot-admin-yearly');
+    }
+
+    public function isBotAdminRenewalCode(string $code): bool
+    {
+        return $this->isBotAdminMonthlyCode($code) || $this->isBotAdminYearlyCode($code);
+    }
+
+    private function extendFrom(?Carbon $currentExpires, int $months): Carbon
+    {
+        $base = ($currentExpires !== null && $currentExpires->isFuture())
+            ? $currentExpires->copy()
+            : now();
+
+        return $base->addMonths(max(1, $months));
     }
 
     public function ftsaEvaluationMonths(): int
@@ -154,8 +189,20 @@ class LicenseEntitlementService
             ->all();
 
         $merged = array_values(array_unique(array_merge($codes, $aliases, $featured)));
+        $merged = array_values(array_diff($merged, $ftsaCodes, $this->botAdminRenewalCodes()));
 
-        return array_values(array_diff($merged, $ftsaCodes));
+        return $merged;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function botAdminRenewalCodes(): array
+    {
+        return array_values(array_filter([
+            (string) config('portal.bot_admin.monthly_product_code', 'yfd-bot-admin-monthly'),
+            (string) config('portal.bot_admin.yearly_product_code', 'yfd-bot-admin-yearly'),
+        ]));
     }
 
     /**
@@ -255,7 +302,7 @@ class LicenseEntitlementService
         }
 
         if ($hasBot) {
-            return 'YFD First Aid (selamanya)';
+            return 'YFD First Aid ('.$this->botAdminInclusionMonths().' bulan + perpanjangan admin)';
         }
 
         if ($hasFtsa) {

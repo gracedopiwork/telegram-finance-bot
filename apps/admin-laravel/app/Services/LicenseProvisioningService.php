@@ -70,8 +70,12 @@ class LicenseProvisioningService
 
         $updates = [];
 
-        if ($this->entitlements->isBotProductCode($code)) {
-            $updates['expires_at'] = null;
+        if ($this->entitlements->isBotAdminRenewalCode($code) || $this->entitlements->isBotProductCode($code)) {
+            $updates['expires_at'] = $this->entitlements->expiresAtForNewLicense(
+                $order,
+                $license->expires_at instanceof \Carbon\Carbon ? $license->expires_at : null,
+            );
+            $updates['status'] = 'active';
         } elseif ($this->entitlements->isFtsaProductCode($code) && ! $this->hasPaidBotOrderOnLicense($license)) {
             $updates['expires_at'] = $this->entitlements->expiresAtForNewLicense($order);
         }

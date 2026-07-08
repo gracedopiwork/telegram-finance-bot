@@ -102,7 +102,7 @@
                         @elseif($isBotAfterFtsa)
                             <li>Buka YFD First Aid di Telegram → <code class="bg-white px-1 rounded">/activate {{ $order->license->license_key }}</code> (kode sama dengan FTSA)</li>
                             <li>Login portal: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> atau <code class="bg-white px-1 rounded">/web</code> di YFD First Aid</li>
-                            <li>Dashboard lengkap + FTSA — lisensi YFD First Aid berlaku <strong>selamanya</strong></li>
+                            <li>Dashboard lengkap + FTSA — akses First Aid mencakup <strong>biaya admin 1 tahun</strong></li>
                         @elseif($isFtsaOnly)
                             <li>Login portal: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> dengan email & kode lisensi di atas</li>
                             <li>Di dalam portal: isi <strong>diagnostik keuangan</strong> lalu <strong>FTSA 1–32</strong> (aktif <strong>12 bulan evaluasi</strong>)</li>
@@ -110,7 +110,7 @@
                             <li>Buka YFD First Aid di Telegram → <code class="bg-white px-1 rounded">/activate {{ $order->license->license_key }}</code></li>
                             <li>Masuk dashboard: <a href="{{ route('portal.login') }}" class="text-primary font-semibold underline">portal/login</a> atau ketik <code class="bg-white px-1 rounded">/web</code> di YFD First Aid</li>
                             <li>Di dalam portal: isi <strong>Baseline Data (diagnostik)</strong> — bukan di landing page</li>
-                            <li>Catat transaksi harian di YFD First Aid, pantau dashboard — lisensi berlaku <strong>selamanya</strong></li>
+                            <li>Catat transaksi harian di YFD First Aid, pantau dashboard — termasuk <strong>biaya admin 1 tahun</strong> (lalu perpanjang Rp10rb/bln atau Rp99rb/thn)</li>
                         @endif
                     </ol>
                     @if($isFtsaUpgrade)

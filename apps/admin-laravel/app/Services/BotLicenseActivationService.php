@@ -50,9 +50,9 @@ class BotLicenseActivationService
             ]);
         }
 
-        if ($license->expires_at && $license->expires_at->isPast() && ! $this->provisioning->hasPaidBotOrderOnLicense($license)) {
+        if ($license->expires_at && $license->expires_at->isPast()) {
             throw ValidationException::withMessages([
-                'license_key' => 'Lisensi sudah expired.',
+                'license_key' => 'Lisensi sudah expired. Perpanjang biaya admin dulu (Rp10.000/bulan atau Rp99.000/tahun).',
             ]);
         }
 
@@ -88,7 +88,6 @@ class BotLicenseActivationService
                 'assigned_user_id' => $telegramUserId,
                 'assigned_username' => $telegramUsername,
                 'activated_at' => now(),
-                'expires_at' => null,
                 'status' => 'active',
             ])->save();
 

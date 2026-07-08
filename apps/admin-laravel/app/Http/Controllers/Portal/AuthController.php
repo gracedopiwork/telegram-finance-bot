@@ -49,7 +49,9 @@ class AuthController extends Controller
         }
 
         if ($license->expires_at && $license->expires_at->isPast()) {
-            return back()->withInput()->withErrors(['license_key' => 'Lisensi sudah expired.']);
+            return back()->withInput()->withErrors([
+                'license_key' => 'Lisensi sudah expired. Perpanjang biaya admin dulu (Rp10.000/bulan atau Rp99.000/tahun).',
+            ]);
         }
 
         $order = Order::query()

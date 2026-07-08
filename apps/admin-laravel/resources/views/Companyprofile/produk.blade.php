@@ -73,8 +73,11 @@
                             <span class="material-symbols-outlined text-[16px] align-[-3px]">schedule</span>
                             Masa aktif: <strong>{{ $featured->period }}</strong> sejak pembayaran lunas.
                         @elseif($featured->code === 'yfd-bot-telegram')
-                            <span class="material-symbols-outlined text-[16px] align-[-3px]">all_inclusive</span>
-                            Lisensi bot &amp; dashboard berlaku <strong>{{ $featured->period }}</strong> — sekali bayar, tanpa langganan bulanan.
+                            <span class="material-symbols-outlined text-[16px] align-[-3px]">schedule</span>
+                            Termasuk <strong>biaya admin 1 tahun</strong>. Tahun berikutnya: Rp10.000/bulan atau Rp99.000/tahun.
+                        @elseif(in_array($featured->code, ['yfd-bot-admin-monthly', 'yfd-bot-admin-yearly'], true))
+                            <span class="material-symbols-outlined text-[16px] align-[-3px]">autorenew</span>
+                            Perpanjang akses bot &amp; dashboard: <strong>{{ $featured->period }}</strong>.
                         @endif
                     </p>
                 @endif
