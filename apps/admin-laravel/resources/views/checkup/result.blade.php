@@ -108,10 +108,6 @@
                                 <span class="material-symbols-outlined text-[20px]">event_available</span>
                                 Booking Konsultasi
                             </a>
-                            <a href="{{ ConsultationPricing::bookingUrl($baseline->financial_stage, 'recovery') }}"
-                               class="btn btn-ghost btn-lg text-center border border-outline-variant">
-                                Recovery Program
-                            </a>
                         </div>
                     </div>
                 </div>

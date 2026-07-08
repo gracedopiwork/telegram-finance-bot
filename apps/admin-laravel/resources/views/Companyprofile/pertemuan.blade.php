@@ -25,20 +25,17 @@
             <span class="material-symbols-outlined text-[18px]">event_available</span>
             ONLINE BOOKING
         </span>
-        <h1 class="font-display-lg text-display-lg text-primary mb-4">Rencanakan Pertemuan Anda</h1>
+        <h1 class="font-display-lg text-display-lg text-primary mb-4">Booking Financial Consultation</h1>
         <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
-            Konsultasi YFD dilakukan secara <strong>online via WhatsApp</strong>.
+            Konsultasi 1-on-1 dengan tim dokter YFD dilakukan secara <strong>online via WhatsApp</strong>.
             Belum tahu tahap finansial Anda? <a href="{{ $primaryCheckupUrl }}" class="text-primary-container font-semibold underline">Mulai screening gratis</a> dulu.
         </p>
     </div>
 
     @if($selectedTier)
         <div class="mb-8 max-w-3xl mx-auto rounded-xl bg-secondary-container/20 border border-secondary-container/40 px-5 py-4 text-sm text-on-surface">
-            <strong>Estimasi tarif untuk tahap {{ $selectedTier['label'] }}:</strong>
+            <strong>Estimasi tarif konsultasi untuk tahap {{ $selectedTier['label'] }}:</strong>
             {{ ConsultationPricing::formatRange($selectedTier) }} {{ $consultationMeta['period'] ?? '/sesi' }}.
-            @if($selectedType === 'recovery')
-                (Program Recovery — mulai {{ ConsultationPricing::formatRupiah($consultationMeta['recovery_from'] ?? 150000) }}/sesi)
-            @endif
         </div>
     @endif
 
@@ -56,30 +53,20 @@
 
                 <form id="bookingForm" class="space-y-6" onsubmit="return goToWhatsApp(event)">
 
-                    {{-- Layanan --}}
+                    {{-- Layanan: hanya Financial Consultation di halaman ini --}}
                     <div>
-                        <label class="font-label-md text-label-md text-on-surface-variant block mb-3">Pilih Layanan *</label>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            @foreach([
-                                ['v' => 'consultation',        'ic' => 'stethoscope',    'label' => 'Financial Consultation', 'default' => true],
-                                ['v' => 'recovery-program',    'ic' => 'healing',        'label' => 'Financial Recovery Program'],
-                                ['v' => 'education-platform',  'ic' => 'school',         'label' => 'Education / Webinar'],
-                                ['v' => 'digital-monitoring',  'ic' => 'monitoring',     'label' => 'Digital Monitoring Bot'],
-                                ['v' => 'other',               'ic' => 'help',           'label' => 'Lainnya / Belum Tahu'],
-                            ] as $idx => $opt)
-                                <label class="cursor-pointer relative">
-                                    <input type="radio" name="service" value="{{ $opt['label'] }}"
-                                           {{ ($selectedType === 'recovery' && $opt['v'] === 'recovery-program') || ($selectedType !== 'recovery' && !empty($opt['default'])) ? 'checked' : '' }}
-                                           class="peer sr-only" required>
-                                    <div class="border-2 border-outline-variant rounded-lg p-4 flex items-center gap-3 hover:border-primary-container peer-checked:border-primary-container peer-checked:bg-primary-container/5 transition-all">
-                                        <span class="material-symbols-outlined text-primary-container">{{ $opt['ic'] }}</span>
-                                        <span class="font-body-md text-body-md text-on-surface">{{ $opt['label'] }}</span>
-                                    </div>
-                                </label>
-                            @endforeach
+                        <label class="font-label-md text-label-md text-on-surface-variant block mb-3">Layanan</label>
+                        <input type="hidden" name="service" value="Financial Consultation">
+                        <div class="border-2 border-primary-container rounded-lg p-4 flex items-center gap-3 bg-primary-container/5">
+                            <span class="material-symbols-outlined text-primary-container">stethoscope</span>
+                            <div>
+                                <span class="font-body-md text-body-md text-on-surface font-semibold block">Financial Consultation</span>
+                                <span class="font-caption text-caption text-on-surface-variant">Konsultasi 1-on-1 dengan dokter finansial YFD via WhatsApp</span>
+                            </div>
                         </div>
                         <p class="font-caption text-caption text-on-surface-variant mt-2">
-                            Financial Health Check-Up / screening adalah <strong>gratis</strong> —
+                            Recovery Program, Education/Webinar, dan Digital Monitoring Bot memiliki halaman &amp; paket masing-masing — tidak melalui form ini.
+                            Screening Health Check-Up <strong>gratis</strong> —
                             <a href="{{ $primaryCheckupUrl }}" class="text-primary-container underline">mulai di sini</a>.
                         </p>
                     </div>
