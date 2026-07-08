@@ -393,7 +393,7 @@
                 </p>
             </div>
             <div class="grid grid-cols-2 gap-3">
-                <a href="{{ route('company.paket') }}" class="bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl p-5 transition">
+                <a href="{{ $primaryCheckupUrl }}" class="bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl p-5 transition">
                     <span class="material-symbols-outlined text-secondary-fixed text-[28px] mb-2 block">monitor_heart</span>
                     <div class="font-bold text-[15px]">Health Check Up</div>
                     <div class="text-[12.5px] text-white/70 mt-1">Diagnosa kondisi finansial</div>

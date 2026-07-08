@@ -87,7 +87,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('waDefaultMsg', '');
                 self::shareTelegramBotUrls($view);
                 try {
-                    $pu = route('company.paket');
+                    $pu = route('checkup.show');
                 } catch (\Throwable) {
                     $pu = '#';
                 }

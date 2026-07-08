@@ -8,6 +8,7 @@ use App\Services\DiagnosticConfigService;
 use App\Services\FtsaAnswerSummaryService;
 use App\Services\PortalAccessService;
 use App\Services\PortalOnboardingService;
+use App\Support\ConsultationPricing;
 use App\Support\FinancialBaselineSchema;
 use App\Support\PortalSession;
 use Illuminate\Database\QueryException;
@@ -156,6 +157,8 @@ class PublicCheckupController extends Controller
             'portalHomeRoute' => $portalHomeRoute,
             'portalNextUrl' => $portalNextUrl,
             'portalNextLabel' => $portalNextLabel,
+            'consultationTier' => ConsultationPricing::forStage((string) $baseline->financial_stage),
+            'consultationMeta' => config('consultation_pricing'),
         ]);
     }
 

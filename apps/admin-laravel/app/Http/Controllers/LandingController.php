@@ -9,6 +9,7 @@ use App\Models\CpFaq;
 use App\Models\CpPackage;
 use App\Models\CpService;
 use App\Models\Setting;
+use App\Support\ConsultationPricing;
 use Illuminate\Support\Facades\Cache;
 
 class LandingController extends Controller
@@ -60,8 +61,9 @@ class LandingController extends Controller
     public function paket()
     {
         return view('Companyprofile.paket', [
-            'active'   => 'paket',
-            'packages' => $this->packages(),
+            'active' => 'paket',
+            'consultationTiers' => ConsultationPricing::stages(),
+            'consultationMeta' => config('consultation_pricing'),
         ]);
     }
 
@@ -97,9 +99,16 @@ class LandingController extends Controller
 
     public function pertemuan()
     {
+        $stageKey = request('stage');
+        $consultationType = request('type', 'standard');
+
         return view('Companyprofile.pertemuan', [
-            'active'   => 'pertemuan',
-            'packages' => $this->packages(),
+            'active' => 'pertemuan',
+            'consultationTiers' => ConsultationPricing::stages(),
+            'consultationMeta' => config('consultation_pricing'),
+            'selectedStage' => is_string($stageKey) ? $stageKey : null,
+            'selectedType' => is_string($consultationType) ? $consultationType : 'standard',
+            'selectedTier' => ConsultationPricing::forStage(is_string($stageKey) ? $stageKey : null),
         ]);
     }
 

@@ -5,6 +5,7 @@
 
 @section('content')
 @php
+    use App\Support\ConsultationPricing;
     $panelColor = $stageDisplay['panel_color'] ?? '#7EC8C8';
     $logo = asset($yfd['logo'] ?? 'images/yfd-logo.png');
 @endphp
@@ -83,6 +84,39 @@
                 @endif
             </div>
 
+            @if($consultationTier ?? null)
+                <div class="mt-6 rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 md:p-8">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <h2 class="font-headline-md text-headline-md text-primary mb-2">Estimasi Tarif Konsultasi</h2>
+                            <p class="text-sm text-on-surface-variant mb-3">
+                                Berdasarkan tahap finansial Anda (<strong>{{ $consultationTier['label'] }}</strong>),
+                                tarif konsultasi 1-on-1 dengan tim dokter YFD:
+                            </p>
+                            <div class="font-display text-3xl font-extrabold text-primary-container">
+                                {{ ConsultationPricing::formatRange($consultationTier) }}
+                                <span class="text-base font-medium text-on-surface-variant">{{ $consultationMeta['period'] ?? '/sesi' }}</span>
+                            </div>
+                            <p class="text-xs text-on-surface-variant mt-3 max-w-lg">
+                                {{ $consultationMeta['multi_session_note'] ?? '' }}
+                                Screening ini <strong>gratis</strong> — biaya hanya untuk sesi konsultasi berikutnya.
+                            </p>
+                        </div>
+                        <div class="flex flex-col gap-2 shrink-0">
+                            <a href="{{ ConsultationPricing::bookingUrl($baseline->financial_stage) }}"
+                               class="btn btn-gold btn-lg text-center">
+                                <span class="material-symbols-outlined text-[20px]">event_available</span>
+                                Booking Konsultasi
+                            </a>
+                            <a href="{{ ConsultationPricing::bookingUrl($baseline->financial_stage, 'recovery') }}"
+                               class="btn btn-ghost btn-lg text-center border border-outline-variant">
+                                Recovery Program
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <div class="flex flex-wrap gap-3 mt-8 justify-center">
                 @if($fromPortal && !empty($portalNextUrl))
                     <a href="{{ $portalNextUrl }}" class="btn btn-gold btn-lg">
@@ -111,7 +145,7 @@
                         Lihat YFD First Aid
                     </a>
                     <a href="{{ route('company.paket') }}" class="btn btn-ghost btn-lg">
-                        Lihat Paket Layanan
+                        Lihat Tarif Konsultasi
                     </a>
                 @endif
                 <a href="{{ route('checkup.show') }}" class="btn btn-ghost btn-lg">Check-Up Ulang</a>

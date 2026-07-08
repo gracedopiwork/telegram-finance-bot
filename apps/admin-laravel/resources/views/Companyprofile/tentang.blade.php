@@ -268,7 +268,7 @@
             Mulai perjalanan kesehatan finansial Anda hari ini bersama tim dokter YFD.
         </p>
         <div class="flex flex-col sm:flex-row justify-center gap-6">
-            <a href="{{ route('company.paket') }}"
+            <a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif
                class="bg-secondary-container text-on-secondary-container font-label-md text-label-md px-10 py-5 hover:scale-105 transition-transform font-bold">
                 Mulai Health Check Up
             </a>

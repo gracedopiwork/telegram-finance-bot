@@ -1,26 +1,29 @@
 @extends('Companyprofile.layouts.main')
 
-@section('title', 'Paket Financial Health Check Up — YFD')
+@section('title', 'Tarif Konsultasi Finansial — YFD')
 
 @section('content')
 
 <main class="max-w-container-max mx-auto px-margin-desktop py-12">
 
-    {{-- ============== Hero ============== --}}
+    {{-- ============== Hero: Screening GRATIS ============== --}}
     <header class="text-center mb-16">
         <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container/20 text-secondary text-caption mb-4 border border-secondary/10">
             <span class="material-symbols-outlined text-[16px]">monitor_heart</span>
             <span class="font-label-md text-label-md tracking-wider">FINANCIAL HEALTH CHECK UP</span>
         </span>
-        <h1 class="font-display-lg text-display-lg text-primary mb-4">Mulai dari Sini: Diagnosa Kesehatan Finansial Anda</h1>
+        <h1 class="font-display-lg text-display-lg text-primary mb-4">Screening Gratis Dulu — Konsultasi Setelahnya</h1>
         <p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl mx-auto">
-            Layanan pemeriksaan kesehatan finansial untuk mengukur cashflow, debt ratio, dana darurat,
-            proteksi, investasi, perilaku finansial, financial stress, dan tingkat risiko Anda.
+            <strong>Financial Health Check-Up / screening</strong> adalah layanan <strong>gratis</strong> (3–5 menit)
+            untuk mengetahui tahap finansial Anda. Biaya konsultasi dengan tim dokter YFD baru berlaku
+            <strong>setelah screening</strong>, disesuaikan dengan tahap finansial Anda.
         </p>
-        <div class="flex justify-center flex-wrap gap-2 mt-6">
-            <span class="bg-primary-fixed text-on-primary-fixed px-3 py-1 rounded font-label-md text-label-md">Financial Health Score</span>
-            <span class="bg-primary-fixed text-on-primary-fixed px-3 py-1 rounded font-label-md text-label-md">Financial Risk Category</span>
-            <span class="bg-primary-fixed text-on-primary-fixed px-3 py-1 rounded font-label-md text-label-md">Personalized Recommendation</span>
+        <div class="mt-8">
+            <a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif
+               class="inline-flex items-center gap-2 btn btn-gold btn-lg">
+                <span class="material-symbols-outlined text-[20px]">play_arrow</span>
+                Mulai Screening Gratis
+            </a>
         </div>
     </header>
 
@@ -32,71 +35,62 @@
             </div>
         </div>
         <div>
-            <h2 class="font-headline-lg text-headline-lg mb-3">Pulse Metric: Vital Signs Anda</h2>
+            <h2 class="font-headline-lg text-headline-lg mb-3">Yang Gratis vs Yang Berbayar</h2>
+            <p class="font-body-lg text-body-lg opacity-90 mb-4">
+                <strong>Gratis:</strong> kuesioner screening, skor tahap finansial (Surviving / Growing / Steady / Comfortable),
+                dan gambaran risiko awal.
+            </p>
             <p class="font-body-lg text-body-lg opacity-90">
-                Setiap paket menghasilkan <strong>Financial Health Score</strong> yang mudah dipahami —
-                seperti tekanan darah dan denyut jantung. Anda akan tahu persis area mana yang sehat dan
-                area mana yang butuh perawatan.
+                <strong>Berbayar:</strong> sesi konsultasi 1-on-1 dengan dokter finansial YFD via WhatsApp —
+                tarif per sesi mengikuti tahap finansial hasil screening Anda.
             </p>
         </div>
     </section>
 
-    {{-- ============== Packages ============== --}}
-    <section class="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-20">
-        @forelse($packages as $pkg)
-            @php $isFeatured = $pkg->is_recommended || $pkg->variant === 'featured'; @endphp
-            <div class="relative bg-surface-container-lowest border-2 rounded-2xl p-8 flex flex-col
-                {{ $isFeatured ? 'border-primary-container shadow-2xl scale-[1.02]' : 'border-outline-variant hover:border-primary-container/40 transition-all' }}">
-                @if($isFeatured)
-                    <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-secondary-container text-on-secondary-container px-4 py-1 rounded-full font-label-md text-label-md uppercase tracking-wider shadow-md">
-                        Paling Populer
-                    </div>
-                @endif
-
-                <div class="text-center mb-6">
-                    <h3 class="font-headline-lg text-[24px] font-bold text-primary mb-2">{{ $pkg->name }}</h3>
-                    <p class="font-body-md text-body-md text-on-surface-variant min-h-[48px]">{{ $pkg->description }}</p>
-                </div>
-
-                <div class="text-center mb-6 pb-6 border-b border-outline-variant">
-                    <div class="font-display-lg text-[36px] font-bold text-primary-container">
-                        Rp {{ number_format($pkg->price, 0, ',', '.') }}
-                    </div>
-                    <div class="font-caption text-caption text-on-surface-variant mt-1">{{ $pkg->period ?? '/paket' }}</div>
-                </div>
-
-                @if(is_array($pkg->features) && count($pkg->features))
-                    <ul class="space-y-3 mb-6 flex-grow">
-                        @foreach($pkg->features as $f)
-                            <li class="flex items-start gap-3">
-                                <span class="material-symbols-outlined text-secondary mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
-                                <span class="font-body-md text-body-md text-on-surface">{{ $f }}</span>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
-
-                <a href="{{ route('company.pertemuan', ['plan' => $pkg->code]) }}"
-                   class="block text-center py-3 rounded-lg font-label-md text-label-md transition-all
-                       {{ $isFeatured
-                            ? 'bg-primary-container text-on-primary hover:opacity-90'
-                            : 'border-2 border-primary-container text-primary-container hover:bg-primary-container/5' }}">
-                    Pilih Paket Ini
-                </a>
-            </div>
-        @empty
-            <div class="md:col-span-3 text-center py-12 text-on-surface-variant italic">
-                Paket belum tersedia. Hubungi tim YFD via WhatsApp untuk info lebih lanjut.
-            </div>
-        @endforelse
-    </section>
-
-    {{-- ============== Apa yang Diukur ============== --}}
+    {{-- ============== Tarif Konsultasi per Tahap ============== --}}
     <section class="mb-20">
         <div class="text-center mb-12">
-            <h2 class="font-headline-lg text-headline-lg text-primary mb-3">Apa Saja yang Diperiksa?</h2>
+            <h2 class="font-headline-lg text-headline-lg text-primary mb-3">Tarif Konsultasi per Tahap Finansial</h2>
             <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl mx-auto">
-                Seperti medical check up — kami periksa semua aspek vital kesehatan finansial Anda.
+                Setelah screening, sistem menampilkan estimasi tarif sesuai tahap Anda.
+                Konsultasi awal standar mulai <strong>{{ \App\Support\ConsultationPricing::formatRupiah($consultationMeta['standard_from'] ?? 100000) }}</strong>/sesi;
+                program Recovery mulai <strong>{{ \App\Support\ConsultationPricing::formatRupiah($consultationMeta['recovery_from'] ?? 150000) }}</strong>/sesi.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+            @foreach($consultationTiers as $stageKey => $tier)
+                <div class="bg-surface-container-lowest border-2 border-outline-variant rounded-2xl p-6 flex flex-col hover:border-primary-container/40 transition-all">
+                    <div class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">{{ $tier['phase'] ?? '' }}</div>
+                    <h3 class="font-headline-lg text-[22px] font-bold text-primary mb-2">{{ $tier['label'] }}</h3>
+                    <p class="font-body-md text-body-md text-on-surface-variant min-h-[72px] mb-4">{{ $tier['description'] ?? '' }}</p>
+
+                    <div class="text-center mb-5 pb-5 border-b border-outline-variant mt-auto">
+                        <div class="font-display-lg text-[28px] font-bold text-primary-container leading-tight">
+                            {{ \App\Support\ConsultationPricing::formatRange($tier) }}
+                        </div>
+                        <div class="font-caption text-caption text-on-surface-variant mt-1">{{ $consultationMeta['period'] ?? '/sesi' }}</div>
+                    </div>
+
+                    <a href="{{ \App\Support\ConsultationPricing::bookingUrl($stageKey) }}"
+                       class="block text-center py-3 rounded-lg font-label-md text-label-md border-2 border-primary-container text-primary-container hover:bg-primary-container/5 transition-all">
+                        Booking Konsultasi
+                    </a>
+                </div>
+            @endforeach
+        </div>
+
+        <p class="text-center text-sm text-on-surface-variant mt-8 max-w-2xl mx-auto">
+            {{ $consultationMeta['multi_session_note'] ?? '' }}
+        </p>
+    </section>
+
+    {{-- ============== Apa yang Diukur (Screening) ============== --}}
+    <section class="mb-20">
+        <div class="text-center mb-12">
+            <h2 class="font-headline-lg text-headline-lg text-primary mb-3">Apa Saja yang Diperiksa di Screening?</h2>
+            <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl mx-auto">
+                Seperti medical check-up — kami periksa aspek vital kesehatan finansial Anda (gratis).
             </p>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-gutter">
@@ -122,16 +116,22 @@
 
     {{-- ============== CTA ============== --}}
     <section class="bg-primary text-on-primary rounded-2xl p-12 text-center">
-        <h2 class="font-headline-lg text-headline-lg mb-4">Belum Yakin Pilih Paket Mana?</h2>
+        <h2 class="font-headline-lg text-headline-lg mb-4">Belum Tahu Tahap Finansial Anda?</h2>
         <p class="font-body-lg text-body-lg opacity-80 mb-8 max-w-2xl mx-auto">
-            Konsultasi gratis di WhatsApp dulu — tim YFD bantu Anda menemukan paket yang paling sesuai
-            dengan kondisi finansial saat ini.
+            Mulai screening gratis dulu — hasilnya langsung menunjukkan tahap finansial dan estimasi tarif konsultasi.
         </p>
-        <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener"
-           class="inline-flex items-center gap-2 bg-[#25D366] text-white px-10 py-4 rounded-lg font-label-md text-label-md hover:opacity-90 shadow-lg transition-all">
-            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat</span>
-            Tanya Tim YFD via WhatsApp
-        </a>
+        <div class="flex flex-wrap justify-center gap-3">
+            <a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif
+               class="inline-flex items-center gap-2 bg-secondary-container text-on-secondary-container px-10 py-4 rounded-lg font-label-md text-label-md hover:brightness-105 shadow-lg transition-all">
+                <span class="material-symbols-outlined">monitor_heart</span>
+                Mulai Screening Gratis
+            </a>
+            <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener"
+               class="inline-flex items-center gap-2 bg-[#25D366] text-white px-10 py-4 rounded-lg font-label-md text-label-md hover:opacity-90 shadow-lg transition-all">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat</span>
+                Tanya Tim YFD via WhatsApp
+            </a>
+        </div>
     </section>
 
 </main>

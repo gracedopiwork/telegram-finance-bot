@@ -136,6 +136,7 @@ class CompanyProfileSeeder extends Seeder
 
     private function seedPackages(): void
     {
+        // Paket 3-tier lama (250k/750k/2.5M) dinonaktifkan — screening gratis, konsultasi per tahap finansial.
         $packages = [
             [
                 'code' => 'lite',
@@ -154,6 +155,7 @@ class CompanyProfileSeeder extends Seeder
                 ],
                 'variant' => 'plain',
                 'is_recommended' => false,
+                'is_active' => false,
                 'sort' => 1,
             ],
             [
@@ -174,7 +176,8 @@ class CompanyProfileSeeder extends Seeder
                     'Personalized written recommendation',
                 ],
                 'variant' => 'featured',
-                'is_recommended' => true,
+                'is_recommended' => false,
+                'is_active' => false,
                 'sort' => 2,
             ],
             [
@@ -196,6 +199,7 @@ class CompanyProfileSeeder extends Seeder
                 ],
                 'variant' => 'plain',
                 'is_recommended' => false,
+                'is_active' => false,
                 'sort' => 3,
             ],
         ];
@@ -424,7 +428,7 @@ class CompanyProfileSeeder extends Seeder
             [
                 'category' => 'Pricing',
                 'question' => 'Berapa biaya konsultasi YFD?',
-                'answer'   => 'Konsultasi awal via WhatsApp gratis. Untuk Financial Health Check Up dan layanan lain, silakan lihat halaman Paket Health Check Up untuk detail harga.',
+                'answer'   => 'Screening Financial Health Check-Up gratis di /check-up. Konsultasi 1-on-1 berbayar per sesi — tarif mengikuti tahap finansial (Surviving mulai Rp 100.000/sesi, Growing Rp 250.000–500.000, Steady Rp 500.000–750.000, Comfortable Rp 1.500.000–2.500.000). Lihat halaman Tarif Konsultasi untuk detail.',
                 'sort' => 6,
             ],
             [
