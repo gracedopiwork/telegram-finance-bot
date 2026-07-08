@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\PortalTimezone;
 use App\Support\TransactionTaxonomy;
 use App\Models\BotTransaction;
 use Carbon\Carbon;
@@ -230,7 +231,7 @@ class TransactionImportService
                 : "nominal tidak valid (nilai: \"{$rawAmount}\")"];
         }
 
-        $recordedAt = $this->parseDate($data['recorded_at'] ?? '') ?? now();
+        $recordedAt = $this->parseDate($data['recorded_at'] ?? '') ?? PortalTimezone::nowUtc();
 
         $nature = $taxonomy['nature'];
         $mood = $this->normalizeMood($data['mood'] ?? '');
@@ -374,16 +375,17 @@ class TransactionImportService
             return null;
         }
 
+        $tz = PortalTimezone::name();
         $formats = ['Y-m-d', 'Y-m-d H:i:s', 'd-m-Y', 'd/m/Y', 'd-m-Y H:i', 'd/m/Y H:i'];
         foreach ($formats as $format) {
             try {
-                return Carbon::createFromFormat($format, $value);
+                return Carbon::createFromFormat($format, $value, $tz)->utc();
             } catch (\Throwable) {
             }
         }
 
         try {
-            return Carbon::parse($value);
+            return Carbon::parse($value, $tz)->utc();
         } catch (\Throwable) {
             return null;
         }

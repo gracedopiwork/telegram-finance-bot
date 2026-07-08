@@ -34,4 +34,11 @@ return [
     | assigned_user_id = base + license_id — harus unsigned BIGINT (bukan negatif).
     */
     'synthetic_user_id_base' => (int) env('PORTAL_SYNTHETIC_USER_ID_BASE', 9_000_000_000_000),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Zona waktu tampilan portal (transaksi, guidance, dll.)
+    |--------------------------------------------------------------------------
+    */
+    'display_timezone' => env('PORTAL_DISPLAY_TZ', 'Asia/Jakarta'),
 ];

@@ -6,7 +6,7 @@
 return [
     'recovery' => [
         'slug' => 'recovery',
-        'active' => 'layanan',
+        'active' => 'recovery',
         'number' => '05',
         'eyebrow' => 'Recovery',
         'title' => 'Financial Recovery Program',
@@ -26,13 +26,13 @@ return [
             ['label' => 'Sesi lanjutan / mitra profesional', 'amount' => null, 'note' => 'Tarif disesuaikan kebutuhan individu'],
         ],
         'footnote' => 'Satu kasus bisa membutuhkan lebih dari satu pertemuan. Tim YFD akan menjelaskan rencana pendampingan setelah konsultasi awal.',
-        'cta_primary' => ['label' => 'Booking Recovery via WA', 'type' => 'wa', 'wa_topic' => 'Financial Recovery Program'],
+        'cta_primary' => ['label' => 'Booking Recovery', 'route' => 'company.pertemuan', 'query' => ['type' => 'recovery']],
         'cta_secondary' => ['label' => 'Konsultasi Reguler', 'route' => 'company.pertemuan'],
     ],
 
     'education' => [
         'slug' => 'education',
-        'active' => 'layanan',
+        'active' => 'edukasi',
         'number' => '04',
         'eyebrow' => 'Education',
         'title' => 'Financial Education Platform',

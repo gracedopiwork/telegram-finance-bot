@@ -1,6 +1,6 @@
 @extends('Companyprofile.layouts.main')
 
-@section('title', 'Booking Pertemuan — YFD')
+@section('title', $isRecovery ? 'Booking Recovery Program — YFD' : 'Booking Pertemuan — YFD')
 
 @push('head')
     <style>
@@ -14,6 +14,9 @@
 
 @php
     use App\Support\ConsultationPricing;
+    $isRecovery = ($selectedType ?? 'standard') === 'recovery';
+    $serviceLabel = $isRecovery ? 'Financial Recovery Program' : 'Financial Consultation';
+    $recoveryFrom = ConsultationPricing::formatRupiah($consultationMeta['recovery_from'] ?? 150_000);
 @endphp
 
 <main class="max-w-container-max mx-auto px-margin-desktop py-12">
@@ -24,14 +27,21 @@
             <span class="material-symbols-outlined text-[18px]">event_available</span>
             ONLINE BOOKING
         </span>
-        <h1 class="font-display-lg text-display-lg text-primary mb-4">Booking Financial Consultation</h1>
+        <h1 class="font-display-lg text-display-lg text-primary mb-4">
+            {{ $isRecovery ? 'Booking Financial Recovery Program' : 'Booking Financial Consultation' }}
+        </h1>
         <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
-            Konsultasi 1-on-1 dengan tim dokter YFD dilakukan secara <strong>online via WhatsApp</strong>.
-            Belum tahu tahap finansial Anda? <a href="{{ $primaryCheckupUrl }}" class="text-primary-container font-semibold underline">Mulai screening gratis</a> dulu.
+            @if($isRecovery)
+                Pendampingan intensif untuk kondisi finansial darurat — trauma finansial, krisis hutang, burnout, atau adiksi perilaku finansial.
+                Konsultasi awal Recovery mulai <strong>{{ $recoveryFrom }}</strong>/sesi via <strong>WhatsApp</strong>.
+            @else
+                Konsultasi 1-on-1 dengan tim dokter YFD dilakukan secara <strong>online via WhatsApp</strong>.
+                Belum tahu tahap finansial Anda? <a href="{{ $primaryCheckupUrl }}" class="text-primary-container font-semibold underline">Mulai screening gratis</a> dulu.
+            @endif
         </p>
     </div>
 
-    @if($selectedTier ?? null)
+    @if(!$isRecovery && ($selectedTier ?? null))
         <div class="mb-8 max-w-3xl mx-auto rounded-xl bg-secondary-container/20 border border-secondary-container/40 px-5 py-4 text-sm text-on-surface">
             <strong>Estimasi tarif konsultasi untuk tahap {{ $selectedTier['label'] }}:</strong>
             {{ ConsultationPricing::formatRange($selectedTier) }} {{ $consultationMeta['period'] ?? '/sesi' }}.
@@ -52,23 +62,38 @@
 
                 <form id="bookingForm" class="space-y-6" onsubmit="return goToWhatsApp(event)">
 
-                    {{-- Layanan: hanya Financial Consultation di halaman ini --}}
+                    {{-- Layanan --}}
                     <div>
                         <label class="font-label-md text-label-md text-on-surface-variant block mb-3">Layanan</label>
-                        <input type="hidden" name="service" value="Financial Consultation">
+                        <input type="hidden" name="service" value="{{ $serviceLabel }}">
                         <div class="border-2 border-primary-container rounded-lg p-4 flex items-center gap-3 bg-primary-container/5">
-                            <span class="material-symbols-outlined text-primary-container">stethoscope</span>
+                            <span class="material-symbols-outlined text-primary-container">{{ $isRecovery ? 'healing' : 'stethoscope' }}</span>
                             <div>
-                                <span class="font-body-md text-body-md text-on-surface font-semibold block">Financial Consultation</span>
-                                <span class="font-caption text-caption text-on-surface-variant">Konsultasi 1-on-1 dengan dokter finansial YFD via WhatsApp</span>
+                                <span class="font-body-md text-body-md text-on-surface font-semibold block">{{ $serviceLabel }}</span>
+                                <span class="font-caption text-caption text-on-surface-variant">
+                                    @if($isRecovery)
+                                        Konsultasi awal Recovery via WhatsApp — estimasi {{ $recoveryFrom }}/sesi
+                                    @else
+                                        Konsultasi 1-on-1 dengan dokter finansial YFD via WhatsApp
+                                    @endif
+                                </span>
                             </div>
                         </div>
-                        <p class="font-caption text-caption text-on-surface-variant mt-2">
-                            Screening Health Check-Up <strong>gratis</strong> —
-                            <a href="{{ $primaryCheckupUrl }}" class="text-primary-container underline">mulai di sini</a>.
-                        </p>
+                        @if($isRecovery)
+                            <p class="font-caption text-caption text-on-surface-variant mt-2">
+                                <a href="{{ route('company.bundle.recovery') }}" class="text-primary-container underline">Pelajari program Recovery</a>
+                                · Screening gratis tetap tersedia di
+                                <a href="{{ $primaryCheckupUrl }}" class="text-primary-container underline">/check-up</a>.
+                            </p>
+                        @else
+                            <p class="font-caption text-caption text-on-surface-variant mt-2">
+                                Screening Health Check-Up <strong>gratis</strong> —
+                                <a href="{{ $primaryCheckupUrl }}" class="text-primary-container underline">mulai di sini</a>.
+                            </p>
+                        @endif
                     </div>
 
+                    @if(!$isRecovery)
                     {{-- Tahap finansial (estimasi tarif konsultasi) --}}
                     <div>
                         <label class="font-label-md text-label-md text-on-surface-variant block mb-3">Tahap Finansial (hasil screening)</label>
@@ -84,6 +109,22 @@
                         </select>
                         <p id="stageFeeHint" class="font-caption text-caption text-on-surface-variant mt-2 hidden"></p>
                     </div>
+                    @endif
+
+                    @if($isRecovery)
+                    <div class="space-y-2">
+                        <label for="bf-situation" class="font-label-md text-label-md text-on-surface-variant">Kondisi / Permasalahan Finansial *</label>
+                        <select id="bf-situation" name="situation" required class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
+                            <option value="">— pilih kondisi terdekat —</option>
+                            <option>Financial trauma / tekanan finansial kronis</option>
+                            <option>Krisis hutang / pinjol / judol</option>
+                            <option>Compulsive spending / adiksi perilaku finansial</option>
+                            <option>Financial burnout</option>
+                            <option>Krisis finansial keluarga</option>
+                            <option>Lainnya (jelaskan di bawah)</option>
+                        </select>
+                    </div>
+                    @endif
 
                     {{-- Nama --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -101,8 +142,11 @@
 
                     {{-- Kondisi singkat --}}
                     <div class="space-y-2">
-                        <label for="bf-cond" class="font-label-md text-label-md text-on-surface-variant">Tujuan / Keluhan Finansial Singkat</label>
-                        <textarea id="bf-cond" name="condition" rows="4" placeholder="Contoh: Ingin konsultasi setelah screening, fokus perbaikan cashflow dan utang..."
+                        <label for="bf-cond" class="font-label-md text-label-md text-on-surface-variant">
+                            {{ $isRecovery ? 'Ceritakan situasi Anda (opsional)' : 'Tujuan / Keluhan Finansial Singkat' }}
+                        </label>
+                        <textarea id="bf-cond" name="condition" rows="4"
+                                  placeholder="{{ $isRecovery ? 'Contoh: Hutang pinjol menumpuk, sulit kontrol pengeluaran, butuh pendampingan bertahap...' : 'Contoh: Ingin konsultasi setelah screening, fokus perbaikan cashflow dan utang...' }}"
                                   class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface"></textarea>
                     </div>
 
@@ -162,14 +206,24 @@
                 <div class="bg-secondary-container/20 border border-secondary-container/40 p-4 rounded-lg flex gap-3 mb-4">
                     <span class="material-symbols-outlined text-secondary-fixed">info</span>
                     <p class="font-caption text-caption opacity-90 leading-relaxed">
-                        Screening gratis di <a href="{{ $primaryCheckupUrl }}" class="underline font-semibold">/check-up</a>.
-                        Tarif konsultasi mengikuti tahap finansial hasil screening.
+                        @if($isRecovery)
+                            Konsultasi awal Recovery {{ $recoveryFrom }}/sesi. Tim YFD akan menjelaskan rencana pendampingan setelah sesi pertama.
+                        @else
+                            Screening gratis di <a href="{{ $primaryCheckupUrl }}" class="underline font-semibold">/check-up</a>.
+                            Tarif konsultasi mengikuti tahap finansial hasil screening.
+                        @endif
                     </p>
                 </div>
 
+                @if(!$isRecovery)
                 <a href="{{ $primaryCheckupUrl }}" class="block text-center py-3 rounded-lg bg-secondary-container text-on-secondary-container font-label-md text-label-md hover:brightness-105 transition-all">
                     Belum Screening? Mulai Gratis
                 </a>
+                @else
+                <a href="{{ route('company.bundle.recovery') }}" class="block text-center py-3 rounded-lg bg-secondary-container text-on-secondary-container font-label-md text-label-md hover:brightness-105 transition-all">
+                    Pelajari Program Recovery
+                </a>
+                @endif
             </div>
         </aside>
     </div>
@@ -179,8 +233,10 @@
 <script>
     const stageSelect = document.getElementById('stageSelect');
     const stageFeeHint = document.getElementById('stageFeeHint');
+    const isRecovery = {{ $isRecovery ? 'true' : 'false' }};
 
     function updateStageHint() {
+        if (!stageSelect || !stageFeeHint) return;
         const opt = stageSelect.options[stageSelect.selectedIndex];
         if (!opt || !opt.value) {
             stageFeeHint.classList.add('hidden');
@@ -189,8 +245,10 @@
         stageFeeHint.textContent = 'Estimasi tarif konsultasi: ' + (opt.dataset.range || '-') + '/sesi (bisa berbeda sesuai kompleksitas kasus).';
         stageFeeHint.classList.remove('hidden');
     }
-    stageSelect.addEventListener('change', updateStageHint);
-    updateStageHint();
+    if (stageSelect) {
+        stageSelect.addEventListener('change', updateStageHint);
+        updateStageHint();
+    }
 
     function goToWhatsApp(event) {
         event.preventDefault();
@@ -199,29 +257,33 @@
 
         const service = fd.get('service') || '-';
         const stage = fd.get('stage') || '';
+        const situation = fd.get('situation') || '';
         const name = fd.get('name') || '-';
         const age = fd.get('age') || '';
         const condition = fd.get('condition') || '';
         const time = fd.get('time') || '';
 
         let stageLabel = '';
-        if (stage) {
+        if (stage && stageSelect) {
             const opt = stageSelect.options[stageSelect.selectedIndex];
             stageLabel = opt ? opt.textContent.trim() : stage;
         }
 
         let lines = [];
-        lines.push("Halo Tim YFD, saya ingin booking konsultasi finansial.");
+        lines.push(isRecovery
+            ? "Halo Tim YFD, saya ingin booking Financial Recovery Program."
+            : "Halo Tim YFD, saya ingin booking konsultasi finansial.");
         lines.push("");
         lines.push("*Nama:* " + name);
         if (age) lines.push("*Usia:* " + age);
         lines.push("*Layanan:* " + service);
+        if (situation) lines.push("*Kondisi:* " + situation);
         if (stageLabel) {
             lines.push("*Tahap finansial (hasil screening):* " + stageLabel);
         }
         if (condition) {
             lines.push("");
-            lines.push("*Tujuan / keluhan:*");
+            lines.push("*Cerita / keluhan:*");
             lines.push(condition);
         }
         if (time) {
@@ -229,7 +291,9 @@
             lines.push("*Preferensi waktu:* " + time);
         }
         lines.push("");
-        lines.push("Mohon info jadwal & estimasi biaya sesi. Terima kasih.");
+        lines.push(isRecovery
+            ? "Mohon info jadwal konsultasi awal & rencana pendampingan. Terima kasih."
+            : "Mohon info jadwal & estimasi biaya sesi. Terima kasih.");
 
         const text = encodeURIComponent(lines.join("\n"));
         const url = "https://wa.me/{{ $yfd['wa_number'] }}?text=" + text;

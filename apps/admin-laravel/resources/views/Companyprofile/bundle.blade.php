@@ -82,7 +82,7 @@
                             {{ $cta['label'] }}
                         </button>
                     @elseif(!empty($cta['route']))
-                        <a href="{{ route($cta['route']) }}" class="inline-flex items-center gap-2 bg-primary-container text-on-primary px-7 py-3 rounded-lg font-label-md text-label-md hover:opacity-90 transition-all">
+                        <a href="{{ route($cta['route'], $cta['query'] ?? []) }}" class="inline-flex items-center gap-2 bg-primary-container text-on-primary px-7 py-3 rounded-lg font-label-md text-label-md hover:opacity-90 transition-all">
                             {{ $cta['label'] }}
                             <span class="material-symbols-outlined">arrow_forward</span>
                         </a>
@@ -97,7 +97,7 @@
                             {{ $cta2['label'] }}
                         </button>
                     @elseif(!empty($cta2['route']))
-                        <a href="{{ route($cta2['route']) }}" class="inline-flex items-center gap-2 border border-primary-container text-primary-container px-7 py-3 rounded-lg font-label-md text-label-md hover:bg-primary-container/5 transition-all">
+                        <a href="{{ route($cta2['route'], $cta2['query'] ?? []) }}" class="inline-flex items-center gap-2 border border-primary-container text-primary-container px-7 py-3 rounded-lg font-label-md text-label-md hover:bg-primary-container/5 transition-all">
                             {{ $cta2['label'] }}
                         </a>
                     @endif

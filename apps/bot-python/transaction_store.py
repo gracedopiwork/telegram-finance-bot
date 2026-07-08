@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -41,6 +43,7 @@ def save_transaction_to_api(
         "is_impulsive": str(parsed.get("impulsif", "No")).strip().lower() == "yes",
         "notes": str(parsed.get("keterangan", "")).strip(),
         "source": source,
+        "recorded_at": datetime.now(ZoneInfo("Asia/Jakarta")).strftime("%Y-%m-%d %H:%M:%S"),
     }
 
     url = f"{app_url}/api/bot/transactions"

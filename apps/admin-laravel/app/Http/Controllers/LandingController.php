@@ -97,7 +97,7 @@ class LandingController extends Controller
         $consultationType = request('type', 'standard');
 
         return view('Companyprofile.pertemuan', [
-            'active' => 'pertemuan',
+            'active' => $consultationType === 'recovery' ? 'recovery' : 'pertemuan',
             'consultationTiers' => ConsultationPricing::stages(),
             'consultationMeta' => config('consultation_pricing'),
             'selectedStage' => is_string($stageKey) ? $stageKey : null,

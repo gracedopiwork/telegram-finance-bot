@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BotTransaction;
 use App\Models\FinancialBaseline;
+use App\Support\PortalTimezone;
 use App\Support\TransactionTaxonomy;
 use App\Services\BaselineClaimService;
 use Carbon\Carbon;
@@ -758,7 +759,7 @@ class TransactionDashboardService
   {
     return [
       'id' => $t->id,
-      'recorded_at' => $t->recorded_at->format('d-m-Y H:i'),
+      'recorded_at' => PortalTimezone::formatRecordedAt($t->recorded_at),
       'type' => $t->type,
       'category' => $t->category,
       'sub_category' => $t->sub_category,

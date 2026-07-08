@@ -9,9 +9,10 @@
             'title' => 'Jasa & Pendampingan',
             'icon'  => 'stethoscope',
             'items' => [
-                ['key' => 'paket',     'label' => 'Health Check Up',  'desc' => 'Screening kesehatan finansial gratis — 3–5 menit',  'route' => 'checkup.show',     'icon' => 'monitor_heart',     'badge' => 'Gratis'],
-                ['key' => 'pertemuan', 'label' => 'Konsultasi 1-on-1','desc' => 'Sesi privat dengan dokter QWP',                 'route' => 'company.pertemuan', 'icon' => 'forum',             'badge' => null],
-                ['key' => 'layanan',   'label' => 'Recovery Program', 'desc' => 'Pendampingan 6 bulan untuk kondisi finansial darurat', 'route' => 'company.layanan',  'icon' => 'healing',     'badge' => null],
+                ['key' => 'paket',     'label' => 'Health Check Up',       'desc' => 'Screening kesehatan finansial gratis — 3–5 menit',       'route' => 'checkup.show',              'icon' => 'monitor_heart', 'badge' => 'Gratis'],
+                ['key' => 'pertemuan', 'label' => 'Konsultasi 1-on-1',     'desc' => 'Sesi privat dengan dokter QWP',                          'route' => 'company.pertemuan',         'icon' => 'forum',         'badge' => null],
+                ['key' => 'recovery',  'label' => 'Recovery Program',      'desc' => 'Pendampingan intensif untuk kondisi finansial darurat',  'route' => 'company.pertemuan',         'query' => ['type' => 'recovery'], 'icon' => 'healing', 'badge' => null],
+                ['key' => 'edukasi',   'label' => 'Education Platform',    'desc' => 'Webinar, kelas online, e-book & Wealthpedia',            'route' => 'company.bundle.education',  'icon' => 'school',        'badge' => null],
             ],
             'cta' => ['label' => 'Lihat semua 6 pilar layanan', 'route' => 'company.layanan'],
         ],
@@ -39,7 +40,7 @@
     ];
 
     // Active grup
-    $serviceKeys = ['layanan', 'paket', 'pertemuan'];
+    $serviceKeys = ['layanan', 'paket', 'pertemuan', 'recovery', 'edukasi'];
     $aboutKeys   = ['tentang', 'penasihat'];
     $isServiceActive = in_array($active, $serviceKeys, true);
     $isAboutActive   = in_array($active, $aboutKeys,   true);
@@ -288,7 +289,11 @@
                                             @foreach($col['items'] as $sub)
                                                 @php
                                                     $href = '#';
-                                                    if (!empty($sub['route'])) { try { $href = route($sub['route']); } catch (\Throwable $e) {} }
+                                                    if (!empty($sub['route'])) {
+                                                        try {
+                                                            $href = route($sub['route'], $sub['query'] ?? []);
+                                                        } catch (\Throwable $e) {}
+                                                    }
                                                     elseif (!empty($sub['url'])) { $href = $sub['url']; }
                                                     $isDisabled = $href === '#' || $href === null;
                                                 @endphp
@@ -421,7 +426,11 @@
                                     @foreach($col['items'] as $sub)
                                         @php
                                             $href = '#';
-                                            if (!empty($sub['route'])) { try { $href = route($sub['route']); } catch (\Throwable $e) {} }
+                                            if (!empty($sub['route'])) {
+                                                try {
+                                                    $href = route($sub['route'], $sub['query'] ?? []);
+                                                } catch (\Throwable $e) {}
+                                            }
                                             elseif (!empty($sub['url'])) { $href = $sub['url']; }
                                             $isDisabled = $href === '#' || $href === null;
                                         @endphp
@@ -542,9 +551,9 @@
             <ul class="space-y-2.5 text-[13.5px] opacity-90">
                 <li><a href="{{ route('checkup.show') }}" class="hover:text-secondary-fixed-dim transition-all">Health Check Up</a></li>
                 <li><a href="{{ route('company.paket') }}" class="hover:text-secondary-fixed-dim transition-all">Tarif Konsultasi</a></li>
-                <li><a href="{{ route('company.layanan') }}" class="hover:text-secondary-fixed-dim transition-all">Konsultasi</a></li>
-                <li><a href="{{ route('company.wealthpedia') }}" class="hover:text-secondary-fixed-dim transition-all">Education Platform</a></li>
-                <li><a href="{{ route('company.layanan') }}" class="hover:text-secondary-fixed-dim transition-all">Recovery Program</a></li>
+                <li><a href="{{ route('company.pertemuan') }}" class="hover:text-secondary-fixed-dim transition-all">Konsultasi</a></li>
+                <li><a href="{{ route('company.bundle.education') }}" class="hover:text-secondary-fixed-dim transition-all">Education Platform</a></li>
+                <li><a href="{{ route('company.pertemuan', ['type' => 'recovery']) }}" class="hover:text-secondary-fixed-dim transition-all">Recovery Program</a></li>
             </ul>
         </div>
 
@@ -654,6 +663,20 @@
                 e.preventDefault();
                 if (panel.classList.contains('hidden')) open(); else close(true);
             });
+            // Klik link di dalam panel → pastikan navigasi jalan (jangan ditangkap trigger/outside)
+            panel.querySelectorAll('a[href]').forEach(function (link) {
+                var href = link.getAttribute('href');
+                if (!href || href === '#') return;
+                link.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    close(true);
+                    // Biarkan browser ikuti href; fallback jika event dibatalkan di tempat lain
+                    if (e.defaultPrevented) {
+                        window.location.href = href;
+                    }
+                });
+            });
+
             // Click di luar wrapper → close
             document.addEventListener('click', function (e) {
                 if (!wrapper.contains(e.target)) close(true);
