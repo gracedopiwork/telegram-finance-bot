@@ -14,8 +14,7 @@
             theme: {
                 extend: {
                     colors: {
-                        navy: { 600: '#1c3f6e', 700: '#143057', 800: '#0c2240', 900: '#06152b' },
-                        gold: { 400: '#f5c130', 500: '#dca115' },
+                        @include('partials.yfd-tailwind-colors')
                     },
                     fontFamily: { sans: ['Manrope', 'system-ui', 'sans-serif'] },
                 },

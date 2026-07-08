@@ -61,7 +61,7 @@
                     <tr>
                         <th>Tahap</th>
                         <td>
-                            <span class="badge badge-lg" style="background: {{ $panelColor }}; color: #0c2240;">
+                            <span class="badge badge-lg" style="background: {{ $panelColor }}; color: {{ config('yfd_brand.navy') }};">
                                 {{ $stageDisplay['label'] ?? $baseline->stage_label }}
                             </span>
                             <div class="small text-muted mt-1">{{ $stageDisplay['phase'] ?? '' }} · {{ $stageDisplay['diagnosis'] ?? '' }}</div>

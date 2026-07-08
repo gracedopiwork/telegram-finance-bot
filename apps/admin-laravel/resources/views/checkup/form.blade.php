@@ -5,30 +5,30 @@
 
 @push('head')
 <style>
-    .checkup-wizard { background: #B8E8E0; min-height: 70vh; }
+    .checkup-wizard { background: {{ config('yfd_brand.mint_light') }}33; min-height: 70vh; }
     .checkup-step-badge {
         width: 2.25rem; height: 2.25rem;
-        background: #0c2240; color: #fff;
+        background: {{ config('yfd_brand.navy') }}; color: {{ config('yfd_brand.white') }};
         font-weight: 800; border-radius: 0.5rem;
         display: inline-flex; align-items: center; justify-content: center;
     }
     .checkup-option {
         display: flex; align-items: center; gap: 0.75rem;
         background: rgba(255,255,255,0.35);
-        border: 2px solid rgba(12,34,64,0.15);
+        border: 2px solid rgba(13,43,78,0.15);
         border-radius: 0.75rem;
         padding: 0.85rem 1rem;
         cursor: pointer;
         transition: border-color .15s, background .15s;
     }
     .checkup-option:has(input:checked) {
-        border-color: #0c2240;
+        border-color: {{ config('yfd_brand.navy') }};
         background: rgba(255,255,255,0.65);
-        box-shadow: 0 0 0 1px #0c2240;
+        box-shadow: 0 0 0 1px {{ config('yfd_brand.navy') }};
     }
     .checkup-option-letter {
         width: 1.75rem; height: 1.75rem;
-        border: 2px solid rgba(12,34,64,0.35);
+        border: 2px solid rgba(13,43,78,0.35);
         border-radius: 0.35rem;
         display: inline-flex; align-items: center; justify-content: center;
         font-weight: 800; font-size: 0.8rem; flex-shrink: 0;
@@ -36,13 +36,13 @@
     }
     .checkup-option input { position: absolute; opacity: 0; pointer-events: none; }
     .checkup-ok-btn {
-        background: #3B9BFF; color: #0c2240; font-weight: 800;
+        background: {{ config('yfd_brand.gold') }}; color: {{ config('yfd_brand.navy') }}; font-weight: 800;
         border-radius: 0.5rem; padding: 0.5rem 1.75rem;
         border: none; cursor: pointer;
     }
     .checkup-ok-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .checkup-progress { height: 4px; background: rgba(12,34,64,0.12); border-radius: 999px; overflow: hidden; }
-    .checkup-progress-bar { height: 100%; background: #0c2240; transition: width .25s; }
+    .checkup-progress { height: 4px; background: rgba(13,43,78,0.12); border-radius: 999px; overflow: hidden; }
+    .checkup-progress-bar { height: 100%; background: {{ config('yfd_brand.mint') }}; transition: width .25s; }
 </style>
 @endpush
 

@@ -22,7 +22,7 @@
     @endif
 
     <p>
-        <a href="{{ $portalHref }}" style="display: inline-block; background: #003366; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 600;">Login Portal FTSA</a>
+        <a href="{{ $portalHref }}" style="display: inline-block; background: {{ config('yfd_brand.navy') }}; color: {{ config('yfd_brand.white') }}; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 600;">Login Portal FTSA</a>
     </p>
     <p style="font-size: 0.875rem; color: #52525b; word-break: break-all;">{{ $portalHref }}</p>
     <p style="font-size: 0.875rem; color: #52525b;">
@@ -35,7 +35,7 @@
         Isi <strong>Financial Health Check-Up</strong> lalu lengkapi <strong>FTSA 1–32</strong> di menu Baseline Data portal.
     </p>
     <p>
-        <a href="{{ $checkupHref }}" style="display: inline-block; background: #dca115; color: #0c2240; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 700;">Mulai Check-Up</a>
+        <a href="{{ $checkupHref }}" style="display: inline-block; background: {{ config('yfd_brand.gold') }}; color: {{ config('yfd_brand.navy') }}; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 700;">Mulai Check-Up</a>
     </p>
 
     <p style="margin-top: 2rem; font-size: 0.8125rem; color: #71717a;">Email otomatis dari YFD. Mohon tidak membalas ke alamat pengirim.</p>

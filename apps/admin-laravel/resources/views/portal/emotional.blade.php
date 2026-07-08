@@ -334,7 +334,7 @@
 @push('scripts')
 <script>
 Chart.defaults.font.family = 'Manrope';
-const chartColors = ['#0c2240','#26528b','#4d7ec0','#dca115','#059669','#e11d48','#7c3aed'];
+const chartColors = @json(config('yfd_brand.chart'));
 const moodGroups = @json($assessment['mood_groups']);
 const byMood = @json($assessment['by_mood']);
 const needWant = @json($assessment['need_vs_want']);
@@ -353,7 +353,7 @@ if (document.getElementById('moodDistribusiChart')) {
                     moodGroups.neutral.share,
                     moodGroups.negative.share,
                 ],
-                backgroundColor: ['#059669', '#94a3b8', '#e11d48'],
+                backgroundColor: ['{{ config('yfd_brand.mint') }}', '#94a3b8', '#e11d48'],
                 borderWidth: 2,
                 borderColor: '#fff',
             }],
@@ -380,7 +380,7 @@ if (byMood.length && document.getElementById('moodPengeluaranChart')) {
             datasets: [{
                 label: 'Pengeluaran',
                 data: byMood.map(m => m.amount),
-                backgroundColor: '#26528b',
+                backgroundColor: '{{ config('yfd_brand.navy_600') }}',
                 borderRadius: 4,
             }],
         },
@@ -401,7 +401,7 @@ if (byMood.length && document.getElementById('moodTransaksiChart')) {
             datasets: [{
                 label: 'Transaksi',
                 data: byMood.map(m => m.count),
-                backgroundColor: '#dca115',
+                backgroundColor: '{{ config('yfd_brand.gold') }}',
                 borderRadius: 4,
             }],
         },
@@ -421,7 +421,7 @@ if (document.getElementById('needWantChart')) {
             labels: ['Need', 'Want'],
             datasets: [{
                 data: [needWant.need.count, needWant.want.count],
-                backgroundColor: ['#059669', '#dca115'],
+                backgroundColor: ['{{ config('yfd_brand.mint') }}', '{{ config('yfd_brand.gold') }}'],
                 borderWidth: 2,
                 borderColor: '#fff',
             }],

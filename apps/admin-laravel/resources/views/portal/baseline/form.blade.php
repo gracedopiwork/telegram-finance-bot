@@ -307,13 +307,13 @@
 @push('scripts')
 <style>
     .ftsa-likert-btn:has(input:checked) {
-        background-color: #0c2240;
-        border-color: #f5c130;
-        box-shadow: 0 10px 15px -3px rgb(12 34 64 / 0.25);
+        background-color: {{ config('yfd_brand.navy') }};
+        border-color: {{ config('yfd_brand.gold') }};
+        box-shadow: 0 10px 15px -3px rgb(13 43 78 / 0.25);
         transform: scale(1.03);
     }
     .ftsa-likert-btn:has(input:checked) .ftsa-likert-num {
-        color: #f5c130;
+        color: {{ config('yfd_brand.gold') }};
     }
     .ftsa-likert-btn:has(input:checked) .ftsa-likert-label {
         color: #fff;

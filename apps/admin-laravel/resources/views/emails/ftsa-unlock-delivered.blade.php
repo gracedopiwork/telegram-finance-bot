@@ -16,7 +16,7 @@
     <p>FTSA 1–32 di portal YFD sekarang <strong>sudah aktif</strong> pada akun lisensi bot Anda yang sama, berlaku <strong>12 bulan evaluasi</strong> sejak pembayaran.</p>
 
     <p>
-        <a href="{{ $portalHref }}" style="display: inline-block; background: #003366; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 600;">Buka Portal YFD</a>
+        <a href="{{ $portalHref }}" style="display: inline-block; background: {{ config('yfd_brand.navy') }}; color: {{ config('yfd_brand.white') }}; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 600;">Buka Portal YFD</a>
     </p>
     <p style="font-size: 0.875rem; color: #52525b; word-break: break-all;">{{ $portalHref }}</p>
 

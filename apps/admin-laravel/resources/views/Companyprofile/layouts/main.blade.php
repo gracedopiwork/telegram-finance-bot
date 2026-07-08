@@ -68,30 +68,27 @@
             theme: {
                 extend: {
                     colors: {
-                        // YFD Brand
-                        navy:     { 50:'#eef3fa',100:'#d5e1f1',200:'#aac3e3',300:'#7ea4d4',400:'#4d7ec0',500:'#26528b',600:'#1c3f6e',700:'#143057',800:'#0c2240',900:'#06152b',950:'#040d1f' },
-                        gold:     { 50:'#fffaeb',100:'#fff1c6',200:'#ffe088',300:'#fed65b',400:'#f5c130',500:'#dca115',600:'#bf7f0d',700:'#995d0e',800:'#7a4711',900:'#623a14' },
+                        @include('partials.yfd-tailwind-colors')
+                        // Material You alias (YFD client palette)
+                        primary:                "{{ config('yfd_brand.navy') }}",
+                        "primary-container":    "{{ config('yfd_brand.navy') }}",
+                        "on-primary":           "{{ config('yfd_brand.white') }}",
+                        "on-primary-container": "{{ config('yfd_brand.mint_light') }}",
 
-                        // Material You alias (kompatibel)
-                        primary:                "#001e40",
-                        "primary-container":    "#003366",
-                        "on-primary":           "#ffffff",
-                        "on-primary-container": "#a7c8ff",
+                        secondary:                "{{ config('yfd_brand.mint') }}",
+                        "secondary-container":    "{{ config('yfd_brand.mint_light') }}",
+                        "secondary-fixed":        "{{ config('yfd_brand.mint_light') }}",
+                        "secondary-fixed-dim":    "{{ config('yfd_brand.mint') }}",
+                        "on-secondary":           "{{ config('yfd_brand.white') }}",
+                        "on-secondary-container": "{{ config('yfd_brand.navy') }}",
+                        "on-secondary-fixed":     "{{ config('yfd_brand.navy') }}",
+                        "on-secondary-fixed-variant": "{{ config('yfd_brand.navy_700') }}",
 
-                        secondary:                "#735c00",
-                        "secondary-container":    "#fed65b",
-                        "secondary-fixed":        "#ffe088",
-                        "secondary-fixed-dim":    "#e9c349",
-                        "on-secondary":           "#ffffff",
-                        "on-secondary-container": "#241a00",
-                        "on-secondary-fixed":     "#241a00",
-                        "on-secondary-fixed-variant": "#574500",
-
-                        tertiary:               "#381300",
-                        "tertiary-container":   "#592300",
-                        "tertiary-fixed":       "#ffdbca",
-                        "tertiary-fixed-dim":   "#ffb690",
-                        "on-tertiary":          "#ffffff",
+                        tertiary:               "{{ config('yfd_brand.gold_dark') }}",
+                        "tertiary-container":   "{{ config('yfd_brand.gold') }}",
+                        "tertiary-fixed":       "{{ config('yfd_brand.gold') }}",
+                        "tertiary-fixed-dim":   "{{ config('yfd_brand.gold_dark') }}",
+                        "on-tertiary":          "{{ config('yfd_brand.navy') }}",
 
                         background:                  "#f8fafc",
                         surface:                     "#ffffff",
@@ -148,13 +145,13 @@
                         "caption":    ["12px", { lineHeight: "16px", fontWeight: "500" }]
                     },
                     boxShadow: {
-                        "soft":   "0 1px 2px rgba(15, 23, 42, .04), 0 4px 12px rgba(15, 23, 42, .04)",
-                        "card":   "0 4px 20px rgba(0, 51, 102, .08)",
-                        "lift":   "0 12px 40px rgba(0, 51, 102, .12)"
+                        "soft":   "0 1px 2px rgba(13, 43, 78, .04), 0 4px 12px rgba(13, 43, 78, .04)",
+                        "card":   "0 4px 20px rgba(13, 43, 78, .08)",
+                        "lift":   "0 12px 40px rgba(13, 43, 78, .12)"
                     },
                     backgroundImage: {
                         "hero-grid":     "linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px)",
-                        "hero-radial":   "radial-gradient(60% 80% at 80% 20%, rgba(254,214,91,.15), transparent 60%), radial-gradient(50% 80% at 0% 100%, rgba(167,200,255,.15), transparent 60%)"
+                        "hero-radial":   "radial-gradient(60% 80% at 80% 20%, rgba(245,166,35,.18), transparent 60%), radial-gradient(50% 80% at 0% 100%, rgba(79,195,161,.18), transparent 60%)"
                     }
                 }
             }
@@ -173,16 +170,16 @@
             transition: transform .15s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease;
             line-height: 1;
         }
-        .btn-primary { background: #003366; color: #fff; box-shadow: 0 6px 18px rgba(0,51,102,.18); }
-        .btn-primary:hover { background: #00264d; transform: translateY(-1px); box-shadow: 0 10px 24px rgba(0,51,102,.25); }
-        .btn-gold { background: #fed65b; color: #241a00; box-shadow: 0 6px 18px rgba(254,214,91,.35); }
-        .btn-gold:hover { background: #f5c130; transform: translateY(-1px); }
+        .btn-primary { background: {{ config('yfd_brand.navy') }}; color: #fff; box-shadow: 0 6px 18px rgba(13,43,78,.18); }
+        .btn-primary:hover { background: {{ config('yfd_brand.navy_700') }}; transform: translateY(-1px); box-shadow: 0 10px 24px rgba(13,43,78,.25); }
+        .btn-gold { background: {{ config('yfd_brand.gold') }}; color: {{ config('yfd_brand.navy') }}; box-shadow: 0 6px 18px rgba(245,166,35,.35); }
+        .btn-gold:hover { background: {{ config('yfd_brand.gold_dark') }}; transform: translateY(-1px); }
         .btn-ghost { color: #fff; border: 1px solid rgba(255,255,255,.35); background: transparent; }
         .btn-ghost:hover { background: rgba(255,255,255,.12); }
         .btn-wa { background: #25D366; color: #fff; box-shadow: 0 6px 16px rgba(37,211,102,.35); }
         .btn-wa:hover { background: #1ebe5b; }
-        .btn-outline-primary { color:#003366; border:1px solid #003366; background:transparent;}
-        .btn-outline-primary:hover { background:#003366; color:#fff; }
+        .btn-outline-primary { color:{{ config('yfd_brand.navy') }}; border:1px solid {{ config('yfd_brand.navy') }}; background:transparent;}
+        .btn-outline-primary:hover { background:{{ config('yfd_brand.navy') }}; color:#fff; }
         .btn-lg { padding: .9rem 1.6rem; font-size: 15px; }
 
         /* nav active underline */
@@ -190,19 +187,19 @@
             position: relative; padding: 8px 4px; font-weight: 500; color: #475569;
             transition: color .15s ease;
         }
-        .nav-link:hover { color: #003366; }
-        .nav-link.active { color: #003366; font-weight: 700; }
+        .nav-link:hover { color: {{ config('yfd_brand.navy') }}; }
+        .nav-link.active { color: {{ config('yfd_brand.navy') }}; font-weight: 700; }
         .nav-link.active::after {
             content:""; position: absolute; left:0; right:0; bottom: -2px; height: 3px;
-            border-radius: 3px; background: #fed65b;
+            border-radius: 3px; background: {{ config('yfd_brand.gold') }};
         }
 
         .clinical-shadow { box-shadow: 0 4px 20px rgba(0,51,102,.08); }
-        .gold-border { border-left: 4px solid #fed65b; }
+        .gold-border { border-left: 4px solid {{ config('yfd_brand.gold') }}; }
 
         /* prose-ish utilities */
         .prose-yfd p { margin-bottom: 1rem; line-height: 1.75; color: #334155; }
-        .prose-yfd strong { color: #003366; }
+        .prose-yfd strong { color: {{ config('yfd_brand.navy') }}; }
         .prose-yfd ul { list-style: disc; padding-left: 1.25rem; }
 
         /* keep tagline single line */

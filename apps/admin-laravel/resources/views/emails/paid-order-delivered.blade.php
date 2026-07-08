@@ -48,7 +48,7 @@
 
     <h2 style="font-size: 1rem; margin-top: 1.75rem;">3) Dashboard Web YFD</h2>
     <p>
-        <a href="{{ $portalHref }}" style="display: inline-block; background: #003366; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 600;">Buka Dashboard Web</a>
+        <a href="{{ $portalHref }}" style="display: inline-block; background: {{ config('yfd_brand.navy') }}; color: {{ config('yfd_brand.white') }}; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 600;">Buka Dashboard Web</a>
     </p>
     <p style="font-size: 0.875rem; color: #52525b; word-break: break-all;">{{ $portalHref }}</p>
     <p style="font-size: 0.875rem; color: #52525b;">
@@ -66,7 +66,7 @@
         @endif
     </p>
     <p>
-        <a href="{{ $baselineHref }}" style="display: inline-block; background: #dca115; color: #0c2240; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 700;">Isi Diagnostik Sekarang</a>
+        <a href="{{ $baselineHref }}" style="display: inline-block; background: {{ config('yfd_brand.gold') }}; color: {{ config('yfd_brand.navy') }}; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 700;">Isi Diagnostik Sekarang</a>
     </p>
     <p style="font-size: 0.8125rem; color: #71717a;">Menu di portal: <strong>BASELINE DATA (WAJIB DI ISI)</strong> → jawab semua pertanyaan → Simpan.</p>
 

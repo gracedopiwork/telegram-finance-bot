@@ -130,7 +130,7 @@
 @push('scripts')
 <script>
 Chart.defaults.font.family = 'Manrope';
-const chartColors = ['#0c2240','#26528b','#4d7ec0','#dca115','#059669','#e11d48','#7c3aed'];
+const chartColors = @json(config('yfd_brand.chart'));
 const trend = @json($summary['trend']);
 const buckets = @json($summary['buckets']);
 const incomeSources = @json($summary['income_analysis']['by_source']);
@@ -161,9 +161,9 @@ if (document.getElementById('trendChart')) {
         data: {
             labels: trend.map(t => t.label),
             datasets: [
-                { label: 'Pendapatan', data: trend.map(t => t.income), borderColor: '#059669', tension: 0.35 },
+                { label: 'Pendapatan', data: trend.map(t => t.income), borderColor: '{{ config('yfd_brand.mint') }}', tension: 0.35 },
                 { label: 'Pengeluaran', data: trend.map(t => t.expense), borderColor: '#e11d48', tension: 0.35 },
-                { label: 'Cashflow', data: trend.map(t => t.cashflow), borderColor: '#26528b', borderDash: [4,4], tension: 0.35 },
+                { label: 'Cashflow', data: trend.map(t => t.cashflow), borderColor: '{{ config('yfd_brand.navy_600') }}', borderDash: [4,4], tension: 0.35 },
             ],
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },
