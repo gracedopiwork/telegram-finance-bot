@@ -34,8 +34,8 @@
         <p class="text-sm text-slate-600 mb-4">
             Isi data di Excel/Google Sheets lalu simpan sebagai <strong>CSV UTF-8</strong> (koma atau titik-koma).
             Kolom: tanggal, <strong>jenis</strong> (Pemasukan / Pengeluaran / Saving/Investment), kategori, nominal,
-            <strong>sifat</strong> (Need / Wants), mood, impulsif, keterangan.
-            Donasi/ibadah = Pengeluaran + kategori Social. Investasi = jenis Saving/Investment (bukan Pengeluaran).
+            <strong>sifat</strong> (Need / Wants), mood (atau Mood Spending), impulsif, keterangan.
+            File Excel: simpan sebagai <strong>CSV UTF-8</strong> (titik-koma atau koma) — ekstensi .csv / .txt / .xls didukung.
             Kategori resmi: Makan, Transport, Listrik, Air, Jajan, Social, Gaji.
             Nominal: angka polos (<code>35000</code>) atau format Indonesia (<code>35.000</code>, <code>35rb</code>).
             Maks. 500 baris per file.
@@ -55,7 +55,7 @@
             @csrf
             <div class="flex-1 min-w-0">
                 <label class="block text-sm font-medium text-slate-700 mb-1">File CSV</label>
-                <input type="file" name="file" accept=".csv,text/csv"
+                <input type="file" name="file" accept=".csv,.txt,.xls,.xlsx,text/csv"
                        class="block w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-navy-800 file:text-white file:font-semibold hover:file:bg-navy-700"
                        required>
                 @error('file')
@@ -78,6 +78,16 @@
         <h3 class="font-bold text-navy-800">
             Tabel Transaksi
             <span class="text-slate-400 font-normal text-sm">({{ $summary['period_label'] ?? '—' }})</span>
+            @if(($summary['transactions_total'] ?? 0) > ($summary['transactions_shown'] ?? count($summary['transactions'] ?? [])))
+                <span class="block text-xs font-normal text-amber-700 mt-1">
+                    Menampilkan {{ $summary['transactions_shown'] ?? count($summary['transactions'] ?? []) }}
+                    dari {{ $summary['transactions_total'] }} transaksi — gunakan filter bulan jika data tidak muncul.
+                </span>
+            @elseif(($summary['transactions_total'] ?? 0) > 0)
+                <span class="block text-xs font-normal text-slate-500 mt-1">
+                    {{ $summary['transactions_total'] }} transaksi pada periode ini.
+                </span>
+            @endif
         </h3>
         @if($dashboardLink ?? false)
             <a href="{{ route('portal.dashboard', ['month' => $summary['month'] ?? null, 'period' => $summary['period_months'] ?? 1]) }}"

@@ -31,9 +31,9 @@ class TransactionsController extends Controller
             'file' => [
                 'required',
                 'file',
-                'extensions:csv,txt',
-                'mimetypes:text/csv,text/plain,application/csv,application/vnd.ms-excel,text/x-csv,application/octet-stream',
-                'max:2048',
+                'extensions:csv,txt,xls,xlsx',
+                'mimetypes:text/csv,text/plain,application/csv,application/vnd.ms-excel,text/x-csv,application/octet-stream,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'max:5120',
             ],
         ]);
 
@@ -58,6 +58,10 @@ class TransactionsController extends Controller
         $message = "{$result['imported']} transaksi berhasil diimpor.";
         if ($result['failed'] > 0) {
             $message .= " {$result['failed']} baris gagal.";
+        }
+        if (! empty($result['focus_month'])) {
+            $monthLabel = \Carbon\Carbon::createFromFormat('Y-m', $result['focus_month'])->translatedFormat('F Y');
+            $message .= " Buka periode {$monthLabel} di filter bulan untuk melihat semua data.";
         }
 
         $month = $result['focus_month'] ?? null;

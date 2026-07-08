@@ -42,6 +42,7 @@ class TransactionImportService
         'sifat' => 'nature',
         'nature' => 'nature',
         'mood' => 'mood',
+        'mood_spending' => 'mood',
         'impulsif' => 'is_impulsive',
         'is_impulsive' => 'is_impulsive',
         'impulsive' => 'is_impulsive',

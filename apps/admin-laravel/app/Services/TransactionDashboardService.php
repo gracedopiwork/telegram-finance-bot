@@ -15,6 +15,8 @@ class TransactionDashboardService
   /** @var list<int> */
   private const ALLOWED_PERIODS = [1, 3, 6, 12];
 
+  private const TRANSACTION_TABLE_LIMIT = 500;
+
   public function __construct(
     private readonly BucketPrescriptionService $prescription,
     private readonly CategoryBucketService $categoryBuckets,
@@ -134,7 +136,9 @@ class TransactionDashboardService
       'doctors_pending' => $aiGuidance['doctors_pending'] ?? false,
       'clinical_generated_at' => $aiGuidance['clinical_generated_at'] ?? null,
       'doctors_generated_at' => $aiGuidance['doctors_generated_at'] ?? null,
-      'transactions' => $rows->take(50)->map(fn (BotTransaction $t) => $this->serializeTransaction($t, $telegramUserId))->all(),
+      'transactions_total' => $rows->count(),
+      'transactions_shown' => min($rows->count(), self::TRANSACTION_TABLE_LIMIT),
+      'transactions' => $rows->take(self::TRANSACTION_TABLE_LIMIT)->map(fn (BotTransaction $t) => $this->serializeTransaction($t, $telegramUserId))->all(),
     ];
   }
 
