@@ -54,7 +54,15 @@
             <div class="card card-outline card-secondary mb-3">
                 <div class="card-header"><h3 class="card-title mb-0">Fitur (satu per baris)</h3></div>
                 <div class="card-body">
-                    <textarea name="features_text" rows="8" class="form-control font-monospace">{{ old('features_text', is_array($service->features) ? implode("\n", $service->features) : '') }}</textarea>
+                    <textarea name="features_text" rows="8" class="form-control font-monospace">@php
+                        $features = $service->features;
+                        if (is_array($features) && isset($features['items']) && is_array($features['items'])) {
+                            echo e(implode("\n", $features['items']));
+                        } elseif (is_array($features)) {
+                            echo e(implode("\n", array_filter($features, 'is_string')));
+                        }
+                    @endphp</textarea>
+                    <small class="text-muted d-block mt-2">Satu fitur per baris. Label cakupan, footnote, dan CTA sekunder diatur lewat seeder.</small>
                 </div>
             </div>
         </div>

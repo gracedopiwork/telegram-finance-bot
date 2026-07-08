@@ -159,6 +159,39 @@
         </div>
     </section>
 
+    {{-- ============== Partner for Financial Support ============== --}}
+    <section class="mb-20">
+        <div class="text-center mb-10">
+            <span class="font-label-md text-label-md text-secondary tracking-widest block mb-2">KOLABORASI</span>
+            <h2 class="font-headline-lg text-headline-lg text-primary mb-3">Partner for Financial Support</h2>
+            <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl mx-auto">
+                YFD berkolaborasi dengan mitra profesional untuk mendukung kebutuhan finansial klien secara menyeluruh —
+                dari proteksi, investasi, perpajakan, hingga perencanaan hidup.
+            </p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-gutter">
+            @foreach([
+                ['ic' => 'health_and_safety', 'title' => 'Insurance partner', 'desc' => 'Mitra asuransi untuk perlindungan jiwa, kesehatan, dan aset sesuai kebutuhan finansial Anda.'],
+                ['ic' => 'trending_up',       'title' => 'Manager Investasi', 'desc' => 'Pendamping investasi dan pengelolaan portofolio untuk pertumbuhan aset jangka menengah–panjang.'],
+                ['ic' => 'receipt_long',      'title' => 'Tax analyst',       'desc' => 'Analisis dan perencanaan perpajakan agar keputusan finansial tetap efisien dan patuh regulasi.'],
+                ['ic' => 'favorite',          'title' => 'Wedding organizer', 'desc' => 'Perencanaan pernikahan yang terukur agar momen spesial tidak mengganggu kesehatan finansial.'],
+                ['ic' => 'home_work',         'title' => 'Property agency',   'desc' => 'Pendamping keputusan properti — sewa, beli, atau investasi — sesuai kapasitas finansial.'],
+            ] as $partner)
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 hover:border-primary-container hover:shadow-md transition-all">
+                    <div class="w-12 h-12 bg-secondary-container/20 rounded-lg flex items-center justify-center mb-4">
+                        <span class="material-symbols-outlined text-primary-container">{{ $partner['ic'] }}</span>
+                    </div>
+                    <h3 class="font-headline-md text-[18px] font-bold text-primary mb-2">{{ $partner['title'] }}</h3>
+                    <p class="font-body-md text-body-md text-on-surface-variant mb-4">{{ $partner['desc'] }}</p>
+                    <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener"
+                       class="inline-flex items-center gap-2 text-primary-container font-label-md text-label-md hover:underline">
+                        Tanya via WA <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    </a>
+                </div>
+            @endforeach
+        </div>
+    </section>
+
     {{-- ============== Pulse CTA ============== --}}
     <div class="bg-primary-container text-on-primary rounded-xl p-10 shadow-xl relative overflow-hidden">
         <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-end pr-4 md:pr-10 opacity-10">

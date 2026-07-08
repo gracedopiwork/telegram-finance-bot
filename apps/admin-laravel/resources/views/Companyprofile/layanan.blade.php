@@ -21,7 +21,7 @@
             </p>
             <div class="flex flex-wrap gap-4">
                 <a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif class="bg-secondary-container text-on-secondary-container px-8 py-3 rounded-lg font-label-md text-label-md hover:brightness-110 transition-all">
-                    Mulai Diagnosa
+                    Check up sekarang
                 </a>
                 <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="border border-white/30 bg-white/10 backdrop-blur-sm text-white px-8 py-3 rounded-lg font-label-md text-label-md hover:bg-white/20 transition-all flex items-center gap-2">
                     <span class="material-symbols-outlined">chat</span>
@@ -99,13 +99,21 @@
                 <h2 class="font-headline-lg text-headline-lg text-primary-container">{{ $svc->title }}</h2>
                 <p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">{{ $svc->description }}</p>
 
-                @if(is_array($svc->features) && count($svc->features))
+                @php
+                    $featureItems = $svc->featureItems();
+                    $secondaryCta = $svc->secondaryCta();
+                    $primaryCtaUrl = $svc->cta_route === '__primary_checkup__'
+                        ? $primaryCheckupUrl
+                        : $svc->resolveCtaUrl();
+                @endphp
+
+                @if(count($featureItems))
                     <div>
-                        <p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-3">Cakupan</p>
+                        <p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-3">{{ $svc->featureLabel() }}</p>
                         <ul class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            @foreach($svc->features as $f)
-                                <li class="flex items-center gap-3 text-on-surface">
-                                    <span class="material-symbols-outlined text-secondary-container" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                            @foreach($featureItems as $f)
+                                <li class="flex items-start gap-3 text-on-surface">
+                                    <span class="material-symbols-outlined text-secondary-container mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
                                     <span class="font-body-md text-body-md">{{ $f }}</span>
                                 </li>
                             @endforeach
@@ -113,14 +121,33 @@
                     </div>
                 @endif
 
+                @if($footnote = $svc->featureFootnote())
+                    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest px-5 py-4 text-on-surface-variant">
+                        @foreach(preg_split("/\r\n|\n|\r/", $footnote) as $line)
+                            @if(trim($line) !== '')
+                                <p class="font-body-md text-body-md {{ $loop->first ? '' : 'mt-2' }}">{{ trim($line) }}</p>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
+
                 <div class="flex flex-wrap gap-3 pt-2">
-                    @if($svc->cta_route && $svc->cta_label)
-                        @php
-                            try { $ctaUrl = route($svc->cta_route); } catch (\Throwable $e) { $ctaUrl = '#'; }
-                        @endphp
-                        <a href="{{ $ctaUrl }}" class="inline-flex items-center gap-2 bg-primary-container text-on-primary px-7 py-3 rounded-lg font-label-md text-label-md hover:opacity-90 transition-all">
+                    @if($svc->cta_label && $primaryCtaUrl)
+                        <a href="{{ $primaryCtaUrl }}" @if($svc->cta_route === '__primary_checkup__' && $primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif class="inline-flex items-center gap-2 bg-primary-container text-on-primary px-7 py-3 rounded-lg font-label-md text-label-md hover:opacity-90 transition-all">
                             {{ $svc->cta_label }}
                             <span class="material-symbols-outlined">arrow_forward</span>
+                        </a>
+                    @endif
+                    @if($secondaryCta)
+                        @php
+                            try {
+                                $secondaryCtaUrl = !empty($secondaryCta['route']) ? route($secondaryCta['route']) : '#';
+                            } catch (\Throwable $e) {
+                                $secondaryCtaUrl = '#';
+                            }
+                        @endphp
+                        <a href="{{ $secondaryCtaUrl }}" class="inline-flex items-center gap-2 border border-primary-container text-primary-container px-7 py-3 rounded-lg font-label-md text-label-md hover:bg-primary-container/5 transition-all">
+                            {{ $secondaryCta['label'] }}
                         </a>
                     @endif
                     <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 border border-primary-container text-primary-container px-7 py-3 rounded-lg font-label-md text-label-md hover:bg-primary-container/5 transition-all">
@@ -134,6 +161,34 @@
         <div class="text-center py-16 text-on-surface-variant italic">Layanan belum tersedia.</div>
     @endforelse
 
+</section>
+
+{{-- ============== Partner Panel ============== --}}
+<section class="py-16 px-margin-desktop max-w-container-max mx-auto w-full">
+    <div class="rounded-2xl border border-outline-variant bg-surface-container-lowest p-8 md:p-10">
+        <div class="max-w-3xl">
+            <span class="font-label-md text-label-md text-secondary tracking-widest uppercase">Kolaborasi</span>
+            <h2 class="font-headline-lg text-headline-lg text-primary-container mt-2 mb-3">Partner for Financial Support</h2>
+            <p class="font-body-md text-body-md text-on-surface-variant mb-6">
+                Konsultasi dapat dilakukan online dan offline. Konsultasi online melalui Zoom, Webex, video call, dan platform serupa.
+                Konsultasi offline dapat dijadwalkan jika Anda berdomisili di Bali.
+            </p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach([
+                ['icon' => 'health_and_safety', 'label' => 'Insurance partner'],
+                ['icon' => 'trending_up', 'label' => 'Manager Investasi'],
+                ['icon' => 'receipt_long', 'label' => 'Tax analyst'],
+                ['icon' => 'favorite', 'label' => 'Wedding organizer'],
+                ['icon' => 'home_work', 'label' => 'Property agency'],
+            ] as $partner)
+                <div class="flex items-center gap-3 rounded-xl border border-outline-variant bg-white px-5 py-4">
+                    <span class="material-symbols-outlined text-secondary-container">{{ $partner['icon'] }}</span>
+                    <span class="font-body-md text-body-md text-on-surface">{{ $partner['label'] }}</span>
+                </div>
+            @endforeach
+        </div>
+    </div>
 </section>
 
 {{-- ============== Final CTA ============== --}}
