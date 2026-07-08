@@ -725,7 +725,8 @@ async def save_transaction(
 
     saved_db = False
     if uid:
-        ok, err = save_transaction_to_api(uid, parsed, source=source)
+        recorded_at = getattr(message, "date", None) if message is not None else None
+        ok, err = save_transaction_to_api(uid, parsed, source=source, recorded_at=recorded_at)
         saved_db = ok
         if not ok:
             hint = (

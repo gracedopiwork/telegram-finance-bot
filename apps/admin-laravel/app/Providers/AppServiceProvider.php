@@ -109,6 +109,8 @@ class AppServiceProvider extends ServiceProvider
                 'ftsaRetakeLocked' => false,
                 'ftsaRetakeAvailableAt' => null,
                 'dashboardNavHighlight' => false,
+                'portalTimezoneMeta' => ['timezone' => 'Asia/Jakarta', 'label' => 'WIB', 'source' => 'default'],
+                'portalTimezoneOptions' => (array) config('portal.indonesia_timezones', []),
             ];
             $view->with($portalDefaults);
 
@@ -157,6 +159,9 @@ class AppServiceProvider extends ServiceProvider
                     : $onboarding->firstBaselineUrl($email, $telegramUserId));
                 $view->with('diagnosticCheckupUrl', $onboarding->portalDiagnosticUrl());
                 $view->with('dashboardNavHighlight', ! $portalOnboardingComplete && $needsBaseline && $hasBotPortalAccess);
+                $tzService = app(\App\Services\PortalUserTimezoneService::class);
+                $view->with('portalTimezoneMeta', $tzService->meta($telegramUserId));
+                $view->with('portalTimezoneOptions', $tzService->options());
             } catch (\Throwable) {
                 // Portal routes may not be registered during early boot.
             }

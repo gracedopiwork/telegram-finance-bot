@@ -134,7 +134,7 @@ class TransactionDashboardService
       'doctors_pending' => $aiGuidance['doctors_pending'] ?? false,
       'clinical_generated_at' => $aiGuidance['clinical_generated_at'] ?? null,
       'doctors_generated_at' => $aiGuidance['doctors_generated_at'] ?? null,
-      'transactions' => $rows->take(50)->map(fn (BotTransaction $t) => $this->serializeTransaction($t))->all(),
+      'transactions' => $rows->take(50)->map(fn (BotTransaction $t) => $this->serializeTransaction($t, $telegramUserId))->all(),
     ];
   }
 
@@ -755,11 +755,11 @@ class TransactionDashboardService
   /**
    * @return array<string, mixed>
    */
-  private function serializeTransaction(BotTransaction $t): array
+  private function serializeTransaction(BotTransaction $t, int $telegramUserId): array
   {
     return [
       'id' => $t->id,
-      'recorded_at' => PortalTimezone::formatRecordedAt($t->recorded_at),
+      'recorded_at' => PortalTimezone::formatRecordedAt($t->recorded_at, $telegramUserId),
       'type' => $t->type,
       'category' => $t->category,
       'sub_category' => $t->sub_category,

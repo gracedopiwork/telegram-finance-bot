@@ -41,4 +41,28 @@ return [
     |--------------------------------------------------------------------------
     */
     'display_timezone' => env('PORTAL_DISPLAY_TZ', 'Asia/Jakarta'),
+
+    'indonesia_timezones' => [
+        'wib' => [
+            'name' => 'Asia/Jakarta',
+            'label' => 'WIB',
+            'desc' => 'Jakarta, Jawa, Sumatra, Kalimantan Barat/Tengah',
+        ],
+        'wita' => [
+            'name' => 'Asia/Makassar',
+            'label' => 'WITA',
+            'desc' => 'Sulawesi, Bali, NTT, Kalimantan Timur/Selatan',
+        ],
+        'wit' => [
+            'name' => 'Asia/Jayapura',
+            'label' => 'WIT',
+            'desc' => 'Papua, Maluku',
+        ],
+    ],
+
+    // Pemetaan IANA dari browser ke zona resmi Indonesia (jika beda nama).
+    'timezone_aliases' => [
+        'Asia/Pontianak' => 'Asia/Jakarta',
+        'Asia/Ujung_Pandang' => 'Asia/Makassar',
+    ],
 ];

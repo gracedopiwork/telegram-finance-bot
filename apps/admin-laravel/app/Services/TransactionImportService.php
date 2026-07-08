@@ -125,7 +125,7 @@ class TransactionImportService
                 break;
             }
 
-            $parsed = $this->parseRow($map, $row);
+            $parsed = $this->parseRow($map, $row, $telegramUserId);
             if (isset($parsed['error'])) {
                 $failed++;
                 $errors[] = "Baris {$line}: {$parsed['error']}";
@@ -193,7 +193,7 @@ class TransactionImportService
      * @param  list<string|null>  $row
      * @return array<string, mixed>|array{error: string}
      */
-    private function parseRow(array $map, array $row): array
+    private function parseRow(array $map, array $row, int $telegramUserId): array
     {
         $data = [];
         foreach ($map as $i => $field) {
@@ -231,7 +231,7 @@ class TransactionImportService
                 : "nominal tidak valid (nilai: \"{$rawAmount}\")"];
         }
 
-        $recordedAt = $this->parseDate($data['recorded_at'] ?? '') ?? PortalTimezone::nowUtc();
+        $recordedAt = $this->parseDate($data['recorded_at'] ?? '', $telegramUserId) ?? PortalTimezone::nowUtc();
 
         $nature = $taxonomy['nature'];
         $mood = $this->normalizeMood($data['mood'] ?? '');
@@ -368,14 +368,14 @@ class TransactionImportService
         return max(0, (int) round((float) $digits * $multiplier));
     }
 
-    private function parseDate(string $value): ?Carbon
+    private function parseDate(string $value, int $telegramUserId): ?Carbon
     {
         $value = trim($value);
         if ($value === '') {
             return null;
         }
 
-        $tz = PortalTimezone::name();
+        $tz = PortalTimezone::forUser($telegramUserId);
         $formats = ['Y-m-d', 'Y-m-d H:i:s', 'd-m-Y', 'd/m/Y', 'd-m-Y H:i', 'd/m/Y H:i'];
         foreach ($formats as $format) {
             try {

@@ -48,7 +48,7 @@ class BotTransactionController extends Controller
         $transaction = BotTransaction::query()->create([
             'telegram_user_id' => (int) $validated['telegram_user_id'],
             'recorded_at' => isset($validated['recorded_at'])
-                ? PortalTimezone::parseRecordedAt((string) $validated['recorded_at'])
+                ? PortalTimezone::parseRecordedAt((string) $validated['recorded_at'], (int) $validated['telegram_user_id'])
                 : PortalTimezone::nowUtc(),
             'type' => $validated['type'],
             'category' => $category,

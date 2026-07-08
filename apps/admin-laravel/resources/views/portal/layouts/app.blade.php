@@ -125,6 +125,31 @@
         </div>
     </main>
 </div>
+<script>
+(function () {
+    var autoUrl = @json(route('portal.timezone.auto'));
+    var token = @json(csrf_token());
+    try {
+        var browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (!browserTz) return;
+        fetch(autoUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ timezone: browserTz }),
+            credentials: 'same-origin',
+        }).then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (data) {
+              if (!data || !data.ok) return;
+              var badge = document.getElementById('portal-tz-badge');
+              if (badge && data.label) badge.textContent = data.label;
+          }).catch(function () {});
+    } catch (e) {}
+})();
+</script>
 @stack('scripts')
 </body>
 </html>

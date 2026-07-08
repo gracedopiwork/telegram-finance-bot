@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime, timezone
 
 import requests
 
@@ -15,11 +14,22 @@ logger = logging.getLogger(__name__)
 _warned_missing_config = False
 
 
+def _format_recorded_at(recorded_at: datetime | None) -> str:
+    if recorded_at is None:
+        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    if recorded_at.tzinfo is None:
+        recorded_at = recorded_at.replace(tzinfo=timezone.utc)
+
+    return recorded_at.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def save_transaction_to_api(
     telegram_user_id: int,
     parsed: dict,
     *,
     source: str = "manual",
+    recorded_at: datetime | None = None,
 ) -> tuple[bool, str]:
     """Return (success, error_message)."""
     global _warned_missing_config
@@ -43,7 +53,7 @@ def save_transaction_to_api(
         "is_impulsive": str(parsed.get("impulsif", "No")).strip().lower() == "yes",
         "notes": str(parsed.get("keterangan", "")).strip(),
         "source": source,
-        "recorded_at": datetime.now(ZoneInfo("Asia/Jakarta")).strftime("%Y-%m-%d %H:%M:%S"),
+        "recorded_at": _format_recorded_at(recorded_at),
     }
 
     url = f"{app_url}/api/bot/transactions"

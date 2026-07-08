@@ -24,6 +24,7 @@ use App\Http\Controllers\Portal\BaselineController as PortalBaselineController;
 use App\Http\Controllers\Portal\CheckoutController as PortalCheckoutController;
 use App\Http\Controllers\Portal\DashboardController as PortalDashboardController;
 use App\Http\Controllers\Portal\DiagnosticController as PortalDiagnosticController;
+use App\Http\Controllers\Portal\TimezoneController as PortalTimezoneController;
 use App\Http\Controllers\Portal\TransactionsController as PortalTransactionsController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
@@ -164,6 +165,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
 
     Route::middleware('portal.auth')->group(function () {
         Route::post('/logout', [PortalAuthController::class, 'logout'])->name('logout');
+        Route::post('/pengaturan/zona-waktu', [PortalTimezoneController::class, 'updateManual'])->name('timezone.manual');
+        Route::post('/pengaturan/zona-waktu/auto', [PortalTimezoneController::class, 'updateAuto'])->name('timezone.auto');
         Route::get('/baseline', [PortalBaselineController::class, 'index'])->name('baseline');
         Route::get('/baseline/baru', [PortalBaselineController::class, 'create'])->name('baseline.create');
         Route::post('/baseline', [PortalBaselineController::class, 'store'])->name('baseline.store');

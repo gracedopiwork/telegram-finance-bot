@@ -60,6 +60,7 @@
     </div>
     @endif
 </nav>
+@include('portal.partials.sidebar-timezone')
 <div class="p-4 m-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white/75 italic leading-relaxed">
     "Kesehatan finansial yang baik dimulai dari kesadaran hari ini."
     <span class="block mt-1 not-italic text-white/50">— dr. Financial</span>
