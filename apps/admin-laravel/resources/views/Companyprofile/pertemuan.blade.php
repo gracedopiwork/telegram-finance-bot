@@ -64,9 +64,10 @@
                             </div>
                         </div>
                         <p class="font-caption text-caption text-on-surface-variant mt-2">
-                            Recovery Program, Education/Webinar, Digital Monitoring Bot, dan screening gratis masing-masing punya halaman &amp; alur sendiri — tidak melalui form ini.
-                            Screening Health Check-Up <strong>gratis</strong> —
-                            <a href="{{ $primaryCheckupUrl }}" class="text-primary-container underline">mulai di sini</a>.
+                            <strong>Recovery Program</strong> dan <strong>Education Platform</strong> punya halaman bundle sendiri —
+                            <a href="{{ route('company.bundle.recovery') }}" class="text-primary-container underline">Recovery</a>,
+                            <a href="{{ route('company.bundle.education') }}" class="text-primary-container underline">Edukasi</a>.
+                            Screening gratis di <a href="{{ $primaryCheckupUrl }}" class="text-primary-container underline">/check-up</a>.
                         </p>
                     </div>
 

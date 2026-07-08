@@ -38,6 +38,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/',              [LandingController::class, 'home'])->name('company.home');
 Route::get('/tentang',       [LandingController::class, 'tentang'])->name('company.tentang');
 Route::get('/layanan',       [LandingController::class, 'layanan'])->name('company.layanan');
+Route::get('/layanan/recovery', [LandingController::class, 'bundle'])->defaults('slug', 'recovery')->name('company.bundle.recovery');
+Route::get('/layanan/edukasi',  [LandingController::class, 'bundle'])->defaults('slug', 'edukasi')->name('company.bundle.education');
 Route::get('/paket',         [LandingController::class, 'paket'])->name('company.paket');
 Route::get('/penasihat',     [LandingController::class, 'penasihat'])->name('company.penasihat');
 Route::get('/produk',        [LandingController::class, 'produk'])->name('company.produk');

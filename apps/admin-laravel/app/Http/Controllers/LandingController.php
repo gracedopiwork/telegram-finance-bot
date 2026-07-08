@@ -114,6 +114,24 @@ class LandingController extends Controller
         ]);
     }
 
+    public function bundle(string $slug)
+    {
+        $key = match ($slug) {
+            'edukasi' => 'education',
+            'recovery' => 'recovery',
+            default => $slug,
+        };
+        $bundle = config("yfd_bundles.{$key}");
+        if (! is_array($bundle)) {
+            abort(404);
+        }
+
+        return view('Companyprofile.bundle', [
+            'active' => $bundle['active'] ?? 'layanan',
+            'bundle' => $bundle,
+        ]);
+    }
+
     public function index()
     {
         return $this->home();

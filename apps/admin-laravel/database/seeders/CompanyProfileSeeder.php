@@ -330,8 +330,8 @@ class CompanyProfileSeeder extends Seeder
                         'Community Learning',
                     ],
                 ],
-                'cta_label' => 'Kunjungi Wealthpedia',
-                'cta_route' => 'company.wealthpedia',
+                'cta_label' => 'Lihat Platform Edukasi',
+                'cta_route' => 'company.bundle.education',
                 'sort' => 4,
             ],
             [
@@ -352,8 +352,8 @@ class CompanyProfileSeeder extends Seeder
                     ],
                     'footnote' => "Konsultasi awal dokter financial: Rp 150k (30 menit–1 jam).\nTarif konsultasi mitra profesional (misalnya: Psikolog, psikiater, hipnoterapi, dsb.) tergantung kebutuhan tiap individu.",
                 ],
-                'cta_label' => 'Lihat Paket Konsultasi Recovery',
-                'cta_route' => 'company.pertemuan',
+                'cta_label' => 'Lihat Program Recovery',
+                'cta_route' => 'company.bundle.recovery',
                 'sort' => 5,
             ],
             [
