@@ -605,7 +605,7 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
         )
     elif any(keyword in lower_text for keyword in ["saham", "reksa", "obligasi", "nabung", "tabung", "investasi", "investment", "deposito", "avg down", "dividen reinvest"]):
         jenis = "Saving/Investment"
-        kategori = "Jajan"
+        kategori = "Tabungan/Investasi"
         sifat = "Need"
     elif any(keyword in lower_text for keyword in ["hadiah", "amplop", "ultah", "ulang tahun", "konser", "sedekah", "persembahan", "ibadah", "donasi"]):
         kategori = "Social"
@@ -656,15 +656,11 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
 
 
 def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> str:
-    investasi_line = ""
-    if parsed.get("jenis") == "Saving/Investment" and parsed.get("sub_kategori"):
-        investasi_line = f"Investasi: {parsed['sub_kategori']}\n"
     return (
         f"Aku baca transaksi untuk {greeting_name} seperti ini:\n"
         f"Keterangan: {parsed['keterangan']}\n"
         f"Nominal: Rp{parsed['nominal']:,}\n"
         f"Jenis: {parsed['jenis']}\n"
-        f"{investasi_line}"
         f"Kategori: {parsed['kategori']}\n"
         f"Sifat: {parsed['sifat']}\n"
         f"Mood: {parsed['mood']}\n"

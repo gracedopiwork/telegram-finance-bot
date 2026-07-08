@@ -245,17 +245,9 @@ class TransactionImportService
 
         $categoryInput = $taxonomy['category'] ?? ($data['category'] ?? '');
 
-        $category = $this->categoryAutoRegister->resolveOrRegister(
-            $categoryInput,
-            $type,
-            $nature,
-            $notes !== '-' ? $notes : $categoryInput,
-        );
-
-        $subCategory = '-';
         if ($type === TransactionTaxonomy::TYPE_SAVING) {
-            $savingLabel = $this->inferSavingLabel($notes !== '-' ? $notes : $category);
-            $subCategory = $savingLabel;
+            $savingLabel = $this->inferSavingLabel($notes !== '-' ? $notes : (string) $categoryInput);
+            $categoryInput = $savingLabel;
             if ($notes === '-' || $notes === '') {
                 $notes = "Investasi {$savingLabel}";
             } elseif (! str_contains(mb_strtolower($notes), mb_strtolower($savingLabel))) {
@@ -263,11 +255,18 @@ class TransactionImportService
             }
         }
 
+        $category = $this->categoryAutoRegister->resolveOrRegister(
+            $categoryInput,
+            $type,
+            $nature,
+            $notes !== '-' ? $notes : $categoryInput,
+        );
+
         return [
             'recorded_at' => $recordedAt,
             'type' => $type,
             'category' => $category,
-            'sub_category' => $subCategory,
+            'sub_category' => '-',
             'amount' => $amount,
             'nature' => $nature,
             'mood' => $mood,

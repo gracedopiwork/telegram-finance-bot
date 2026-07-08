@@ -103,13 +103,14 @@ def infer_saving_label(text: str) -> str | None:
 
 
 def normalize_saving_fields(parsed: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
-    """Untuk Saving/Investment: label investasi di sub_kategori + keterangan yang jelas."""
+    """Untuk Saving/Investment: instrumen masuk ke kategori (tanpa sub kategori)."""
     if str(parsed.get("jenis", "")).strip() != "Saving/Investment":
         return parsed
 
     combined = f"{parsed.get('keterangan', '')} {source_text}".strip()
     label = infer_saving_label(combined) or "Tabungan/Investasi"
-    parsed["sub_kategori"] = label
+    parsed["kategori"] = label
+    parsed.pop("sub_kategori", None)
 
     keterangan = str(parsed.get("keterangan", "")).strip()
     if keterangan == "" or label.lower() not in keterangan.lower():
@@ -118,7 +119,6 @@ def normalize_saving_fields(parsed: Dict[str, Any], source_text: str = "") -> Di
         else:
             parsed["keterangan"] = f"Investasi {label}"
 
-    parsed["kategori"] = fallback_kategori()
     parsed["sifat"] = "Need"
     return parsed
 
@@ -275,7 +275,9 @@ def _normalize_alias(value: str, aliases: dict[str, str]) -> str:
 def normalize_category_fields(parsed: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
     """Selaraskan kategori dengan aturan admin Laravel."""
     if str(parsed.get("jenis", "")).strip() == "Saving/Investment":
-        parsed["kategori"] = fallback_kategori()
+        combined = f"{parsed.get('keterangan', '')} {source_text}".strip()
+        label = infer_saving_label(combined) or "Tabungan/Investasi"
+        parsed["kategori"] = label
         parsed.pop("sub_kategori", None)
         return apply_admin_nature(parsed)
 
