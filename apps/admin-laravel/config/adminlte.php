@@ -326,11 +326,6 @@ return [
         ['header' => 'Konten Website'],
 
         [
-            'text' => 'Paket Health Check',
-            'route' => 'admin.packages.index',
-            'icon' => 'fas fa-fw fa-box-open',
-        ],
-        [
             'text' => 'Layanan',
             'route' => 'admin.services.index',
             'icon' => 'fas fa-fw fa-hand-holding-medical',

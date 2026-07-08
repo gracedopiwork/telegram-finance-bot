@@ -151,78 +151,78 @@
 
             {{-- Right: chat mockup — YFD First Aid + AI impulsif detection --}}
             <div class="lg:col-span-5 bg-gradient-to-br from-primary-container to-primary p-6 md:p-10 flex items-center">
-                <div class="w-full max-w-sm mx-auto bg-[#0e1c33] rounded-2xl shadow-2xl overflow-hidden border border-white/10">
-                    <div class="bg-[#142841] px-4 py-3 flex items-center gap-3 border-b border-white/5">
-                        <div class="w-9 h-9 rounded-full bg-secondary-container grid place-items-center text-on-secondary-container font-bold text-[14px]">YFD</div>
+                <div class="w-full max-w-sm mx-auto rounded-2xl shadow-2xl overflow-hidden border border-white/10" style="background: {{ config('yfd_brand.navy') }}">
+                    <div class="px-4 py-3 flex items-center gap-3 border-b border-white/10" style="background: {{ config('yfd_brand.navy_700') }}">
+                        <div class="w-9 h-9 rounded-full grid place-items-center font-bold text-[14px]" style="background: {{ config('yfd_brand.mint') }}; color: {{ config('yfd_brand.navy') }}">YFD</div>
                         <div class="flex-1 min-w-0">
                             <div class="text-white font-semibold text-[14px] leading-tight">YFD First Aid</div>
-                            <div class="text-emerald-400 text-[11px] leading-tight">● AI aktif · deteksi impulsif</div>
+                            <div class="text-[11px] leading-tight" style="color: {{ config('yfd_brand.mint_light') }}">● AI aktif · deteksi impulsif</div>
                         </div>
-                        <span class="shrink-0 text-[9px] font-bold uppercase tracking-wider bg-violet-500/20 text-violet-300 border border-violet-400/30 px-2 py-0.5 rounded-full">Claude</span>
+                        <span class="shrink-0 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border" style="background: {{ config('yfd_brand.gold') }}22; color: {{ config('yfd_brand.gold') }}; border-color: {{ config('yfd_brand.gold') }}55">Claude</span>
                     </div>
-                    <div class="px-4 py-5 space-y-3 bg-[#0a1626]">
+                    <div class="px-4 py-5 space-y-3" style="background: {{ config('yfd_brand.navy_900') }}">
                         <div class="flex justify-end">
-                            <div class="bg-[#2b5278] text-white text-[13.5px] px-3 py-2 rounded-2xl rounded-br-sm max-w-[85%] shadow">
+                            <div class="text-white text-[13.5px] px-3 py-2 rounded-2xl rounded-br-sm max-w-[85%] shadow" style="background: {{ config('yfd_brand.navy_600') }}">
                                 makan malam 50rb di warung deket kampus
                                 <div class="text-[10px] text-white/50 text-right mt-1">19:24 ✓✓</div>
                             </div>
                         </div>
                         <div class="flex">
-                            <div class="bg-[#1a2c45] text-white/90 text-[13px] px-3 py-2 rounded-2xl rounded-bl-sm max-w-[92%] shadow">
-                                <div class="flex items-center gap-1.5 text-emerald-400 text-[11px] font-bold mb-1.5">
+                            <div class="text-white/90 text-[13px] px-3 py-2 rounded-2xl rounded-bl-sm max-w-[92%] shadow" style="background: {{ config('yfd_brand.navy_700') }}">
+                                <div class="flex items-center gap-1.5 text-[11px] font-bold mb-1.5" style="color: {{ config('yfd_brand.mint_light') }}">
                                     <span class="material-symbols-outlined text-[14px]">check_circle</span> Tercatat
                                 </div>
-                                <div class="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2 py-1.5 mb-2 text-[10.5px] text-emerald-200/90 leading-snug">
-                                    <span class="font-bold text-emerald-300">AI:</span> Kebutuhan terencana — tidak terdeteksi pola impulsif.
+                                <div class="rounded-lg px-2 py-1.5 mb-2 text-[10.5px] leading-snug border" style="background: {{ config('yfd_brand.mint') }}18; border-color: {{ config('yfd_brand.mint') }}44; color: {{ config('yfd_brand.mint_light') }}">
+                                    <span class="font-bold" style="color: {{ config('yfd_brand.mint') }}">AI:</span> Kebutuhan terencana — tidak terdeteksi pola impulsif.
                                 </div>
                                 <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[12px]">
-                                    <span class="text-white/60">Nominal</span><span class="text-amber-300 font-semibold">Rp 50.000</span>
+                                    <span class="text-white/60">Nominal</span><span class="font-semibold" style="color: {{ config('yfd_brand.gold') }}">Rp 50.000</span>
                                     <span class="text-white/60">Kategori</span><span>Makan</span>
                                     <span class="text-white/60">Sifat</span><span>Need</span>
-                                    <span class="text-white/60">Impulsif</span><span class="text-emerald-300">No</span>
+                                    <span class="text-white/60">Impulsif</span><span style="color: {{ config('yfd_brand.mint') }}">No</span>
                                 </div>
                                 <div class="text-[10px] text-white/40 text-right mt-1.5">19:24</div>
                             </div>
                         </div>
                         <div class="flex justify-end">
-                            <div class="bg-[#2b5278] text-white text-[13.5px] px-3 py-2 rounded-2xl rounded-br-sm max-w-[85%] shadow">
-                                beli kopi 18rb karena ngantuk banget
+                            <div class="text-white text-[13.5px] px-3 py-2 rounded-2xl rounded-br-sm max-w-[85%] shadow" style="background: {{ config('yfd_brand.navy_600') }}">
+                                beli kopi starbuck 79k karena ngantuk mau kerja, abis begadang nonton piala dunia
                                 <div class="text-[10px] text-white/50 text-right mt-1">19:25 ✓✓</div>
                             </div>
                         </div>
                         <div class="flex">
-                            <div class="bg-[#1a2c45] text-white/90 text-[13px] px-3 py-2 rounded-2xl rounded-bl-sm max-w-[92%] shadow ring-1 ring-pink-500/20">
+                            <div class="text-white/90 text-[13px] px-3 py-2 rounded-2xl rounded-bl-sm max-w-[92%] shadow ring-1" style="background: {{ config('yfd_brand.navy_700') }}; ring-color: {{ config('yfd_brand.gold') }}44">
                                 <div class="flex items-center justify-between gap-2 mb-1.5">
-                                    <div class="flex items-center gap-1.5 text-pink-300 text-[11px] font-bold">
+                                    <div class="flex items-center gap-1.5 text-[11px] font-bold" style="color: {{ config('yfd_brand.gold') }}">
                                         <span class="material-symbols-outlined text-[14px]">psychology</span> AI mendeteksi impulsif
                                     </div>
-                                    <span class="text-[9px] font-bold bg-pink-500/20 text-pink-200 px-1.5 py-0.5 rounded">⚡ Yes</span>
+                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded" style="background: {{ config('yfd_brand.gold') }}22; color: {{ config('yfd_brand.gold') }}">⚡ Yes</span>
                                 </div>
-                                <div class="rounded-lg bg-gradient-to-r from-violet-500/15 to-pink-500/15 border border-violet-400/25 px-2.5 py-2 mb-2 space-y-1">
-                                    <div class="text-[10.5px] text-violet-200/95 leading-snug">
-                                        <span class="font-bold text-violet-300">Pemicu emosional:</span> kelelahan («ngantuk»)
+                                <div class="rounded-lg border px-2.5 py-2 mb-2 space-y-1" style="background: linear-gradient(90deg, {{ config('yfd_brand.gold') }}18, {{ config('yfd_brand.mint') }}12); border-color: {{ config('yfd_brand.gold') }}44">
+                                    <div class="text-[10.5px] leading-snug text-white/90">
+                                        <span class="font-bold" style="color: {{ config('yfd_brand.gold') }}">Pemicu emosional:</span> kelelahan (ngantuk) + begadang nonton piala dunia
                                     </div>
-                                    <div class="text-[10.5px] text-pink-200/90 leading-snug">
-                                        <span class="font-bold text-pink-300">Pola:</span> regulator mood via belanja kecil (Wants)
+                                    <div class="text-[10.5px] leading-snug text-white/85">
+                                        <span class="font-bold" style="color: {{ config('yfd_brand.mint_light') }}">Pola:</span> regulator mood via belanja premium (Wants) — bukan kebutuhan kerja mendesak
                                     </div>
                                     <div class="text-[10px] text-white/55 italic border-t border-white/10 pt-1">
                                         dr. Financial: coba jeda 10 menit sebelum transaksi serupa.
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[12px]">
-                                    <span class="text-white/60">Nominal</span><span class="text-amber-300 font-semibold">Rp 18.000</span>
+                                    <span class="text-white/60">Nominal</span><span class="font-semibold" style="color: {{ config('yfd_brand.gold') }}">Rp 79.000</span>
                                     <span class="text-white/60">Kategori</span><span>Jajan</span>
                                     <span class="text-white/60">Mood</span><span>Tired</span>
-                                    <span class="text-white/60">Sifat</span><span class="text-pink-300 font-semibold">Wants</span>
+                                    <span class="text-white/60">Sifat</span><span class="font-semibold" style="color: {{ config('yfd_brand.gold') }}">Wants</span>
                                 </div>
                                 <div class="text-[10px] text-white/40 text-right mt-1.5">19:25</div>
                             </div>
                         </div>
                     </div>
-                    <div class="bg-[#142841] px-3 py-2.5 flex items-center gap-2 border-t border-white/5">
+                    <div class="px-3 py-2.5 flex items-center gap-2 border-t border-white/10" style="background: {{ config('yfd_brand.navy_700') }}">
                         <span class="material-symbols-outlined text-white/40 text-[20px]">attach_file</span>
-                        <div class="flex-1 bg-[#0a1626] rounded-full px-3 py-1.5 text-white/40 text-[12px]">Ceritakan transaksi &amp; perasaan Anda…</div>
-                        <span class="material-symbols-outlined text-[#3b82f6] text-[22px]">send</span>
+                        <div class="flex-1 rounded-full px-3 py-1.5 text-white/40 text-[12px]" style="background: {{ config('yfd_brand.navy_900') }}">Ceritakan transaksi &amp; perasaan Anda…</div>
+                        <span class="material-symbols-outlined text-[22px]" style="color: {{ config('yfd_brand.mint_light') }}">send</span>
                     </div>
                 </div>
             </div>

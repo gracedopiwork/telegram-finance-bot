@@ -6,7 +6,6 @@ use App\Models\CpAdvisor;
 use App\Models\CpArticle;
 use App\Models\CpDigitalProduct;
 use App\Models\CpFaq;
-use App\Models\CpPackage;
 use App\Models\CpService;
 use App\Models\Setting;
 use App\Support\ConsultationPricing;
@@ -22,11 +21,6 @@ class LandingController extends Controller
         return Cache::remember("settings.group.{$group}", 3600, function () use ($group) {
             return Setting::where('group', $group)->orderBy('sort')->pluck('value', 'key')->toArray();
         });
-    }
-
-    private function packages()
-    {
-        return CpPackage::active()->orderBy('sort')->get();
     }
 
     public function home()
