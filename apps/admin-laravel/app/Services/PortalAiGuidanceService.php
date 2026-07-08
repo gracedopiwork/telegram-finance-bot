@@ -800,10 +800,10 @@ PROMPT;
         $note = $this->normalizeDoctorsNote($parsed['doctors_note'] ?? null, $fallback['doctors_note'], false);
 
         return [
-            'insights' => $insights !== [] ? $insights : $fallback['insights'],
+            'insights' => $this->normalizeMoneyAbbrevList($insights !== [] ? $insights : $fallback['insights']),
             'recommendations' => [
-                'personalized' => $personal !== [] ? $personal : $fallback['recommendations']['personalized'],
-                'general' => $general !== [] ? $general : $fallback['recommendations']['general'],
+                'personalized' => $this->normalizeMoneyAbbrevList($personal !== [] ? $personal : $fallback['recommendations']['personalized']),
+                'general' => $this->normalizeMoneyAbbrevList($general !== [] ? $general : $fallback['recommendations']['general']),
             ],
             'doctors_note' => $note,
         ];
@@ -829,8 +829,8 @@ PROMPT;
         $allowedStatuses = ['healthy', 'fair', 'attention', 'critical', 'no_data'];
 
         $clinicalSummary = [
-            'headline' => $headline !== '' ? $headline : $fallback['clinical_summary']['headline'],
-            'findings' => $findings !== [] ? $findings : $fallback['clinical_summary']['findings'],
+            'headline' => $this->normalizeMoneyAbbrev($headline !== '' ? $headline : $fallback['clinical_summary']['headline']),
+            'findings' => $this->normalizeMoneyAbbrevList($findings !== [] ? $findings : $fallback['clinical_summary']['findings']),
             'status' => in_array($status, $allowedStatuses, true) ? $status : $fallback['clinical_summary']['status'],
         ];
 
@@ -858,18 +858,44 @@ PROMPT;
         $priority = trim((string) ($raw['priority'] ?? ''));
 
         $note = [
-            'summary' => $summary !== '' ? $summary : $fallback['summary'],
-            'findings' => $findings !== [] ? $findings : $fallback['findings'],
-            'interpretation' => $interpretation !== '' ? $interpretation : $fallback['interpretation'],
-            'priority' => $priority !== '' ? $priority : $fallback['priority'],
+            'summary' => $this->normalizeMoneyAbbrev($summary !== '' ? $summary : $fallback['summary']),
+            'findings' => $this->normalizeMoneyAbbrevList($findings !== [] ? $findings : $fallback['findings']),
+            'interpretation' => $this->normalizeMoneyAbbrev($interpretation !== '' ? $interpretation : $fallback['interpretation']),
+            'priority' => $this->normalizeMoneyAbbrev($priority !== '' ? $priority : $fallback['priority']),
         ];
 
         if ($withEducation) {
             $education = trim((string) ($raw['education'] ?? ''));
-            $note['education'] = $education !== '' ? $education : ($fallback['education'] ?? '');
+            $note['education'] = $this->normalizeMoneyAbbrev($education !== '' ? $education : ($fallback['education'] ?? ''));
         }
 
         return $note;
+    }
+
+    /**
+     * Ganti singkatan nominal "M"/"m" (million) menjadi "jt".
+     * Contoh: "2M", "1.5 m", "0,8M" -> "2 jt", "1.5 jt", "0,8 jt".
+     */
+    private function normalizeMoneyAbbrev(string $text): string
+    {
+        $trimmed = trim($text);
+        if ($trimmed === '') {
+            return $trimmed;
+        }
+
+        return (string) preg_replace('/(?<=\d)\s*[mM]\b/u', ' jt', $trimmed);
+    }
+
+    /**
+     * @param  list<string>  $lines
+     * @return list<string>
+     */
+    private function normalizeMoneyAbbrevList(array $lines): array
+    {
+        return array_values(array_map(
+            fn (string $line) => $this->normalizeMoneyAbbrev($line),
+            $lines
+        ));
     }
 
     private function ftsaBaselineContext(FinancialBaseline $baseline): string

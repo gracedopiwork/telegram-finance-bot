@@ -7,7 +7,7 @@
 @endsection
 
 @section('main')
-<form method="POST" action="{{ route('admin.diagnostic-stages.update', $stage) }}">
+<form method="POST" action="{{ route('admin.diagnostic-stages.update', $stage) }}" enctype="multipart/form-data">
     @csrf
     @method('PUT')
 
@@ -52,9 +52,22 @@
                         <input type="color" name="panel_color" class="form-control" value="{{ old('panel_color', $stage->panel_color ?: '#7EC8C8') }}">
                     </div>
                     <div class="form-group">
+                        <label>Upload ilustrasi (kanan)</label>
+                        <input type="file" name="illustration_file" class="form-control-file" accept=".jpg,.jpeg,.png,.webp,image/*">
+                        <small class="text-muted d-block">Maks 5MB. Format: JPG, PNG, WEBP.</small>
+                    </div>
+                    @if(!empty($stage->illustration_url))
+                        <div class="form-group">
+                            <label>Preview ilustrasi saat ini</label>
+                            <div class="border rounded p-2 text-center bg-light">
+                                <img src="{{ $stage->illustration_url }}" alt="{{ $stage->label }}" style="max-height: 180px; max-width: 100%; object-fit: contain;">
+                            </div>
+                        </div>
+                    @endif
+                    <div class="form-group">
                         <label>URL ilustrasi (kanan)</label>
                         <input type="url" name="illustration_url" class="form-control" value="{{ old('illustration_url', $stage->illustration_url) }}" placeholder="https://...">
-                        <small class="text-muted">Upload gambar ke storage/CDN lalu tempel URL di sini.</small>
+                        <small class="text-muted">Opsional manual URL. Jika upload file di atas, URL ini akan otomatis terisi path file baru.</small>
                     </div>
                     <div class="form-row">
                         <div class="form-group col-6">
