@@ -240,15 +240,13 @@ class PortalAiGuidanceService
         }
 
         return [
-            'insights' => [
-                "Insight bulanan akan dirilis pada tgl {$release} pukul 22.00, bersamaan dengan Doctor's Note dan Behavioral Recommendation.",
-            ],
+            'insights' => [],
             'recommendations' => [
                 'personalized' => [],
                 'general' => $fallback['recommendations']['general'],
             ],
             'doctors_note' => array_merge($fallback['doctors_note'], [
-                'summary' => "Rekomendasi dokter behavioral bulan ini akan dirilis pada tgl {$release} pukul 22.00.",
+                'summary' => "Behavioral recommendation bulan ini akan dirilis pada tgl {$release} pukul 22.00.",
             ]),
         ];
     }
@@ -279,7 +277,7 @@ class PortalAiGuidanceService
             ]);
         }
 
-        $weekKey = PortalGuidanceSnapshot::weekPeriodKey();
+        $weekKey = PortalGuidanceSnapshot::monthCumulativeWeekPeriodKey();
         $monthKey = $month;
 
         $weeklyStored = $this->guidanceSnapshots->get(
@@ -443,14 +441,14 @@ class PortalAiGuidanceService
         string $weekKey,
         ?FinancialBaseline $baseline,
     ): ?array {
-        $week = $this->guidanceSnapshots->weekRange();
-        $periodLabel = $week['start']->translatedFormat('d M').' – '.$week['end']->translatedFormat('d M Y');
+        $week = $this->guidanceSnapshots->monthCumulativeWeekRange();
+        $periodLabel = $week['label'];
 
         $context = app(TransactionDashboardService::class)->financialGuidanceContext(
             $telegramUserId,
             $week['start'],
             $week['end'],
-            'Minggu '.$periodLabel,
+            $periodLabel,
             1,
         );
 
@@ -561,6 +559,22 @@ PROMPT;
 
         $stage = $baseline?->stage_label ? "Tahap finansial baseline: {$baseline->stage_label}" : 'Tahap finansial baseline: belum diisi';
 
+        $moodTableLines = [];
+        foreach ((array) ($metrics['mood_table'] ?? []) as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $moodTableLines[] = sprintf(
+                '- %s: %d transaksi, %s%% impulsif',
+                $row['mood'] ?? '—',
+                (int) ($row['count'] ?? 0),
+                $row['impulsive_rate'] ?? '0',
+            );
+        }
+        $moodTableBlock = $moodTableLines !== []
+            ? "TABEL MOOD:\n".implode("\n", $moodTableLines)
+            : 'TABEL MOOD: belum tersedia';
+
         return <<<PROMPT
 Anda adalah dr. Financial dari Your Financial Doctor (YFD). Analisis behavioral finansial user dari data transaksi bot Telegram berikut.
 
@@ -578,13 +592,15 @@ METRIK:
 - Mood positif: {$moodGroups['positive']['share']}% | netral: {$moodGroups['neutral']['share']}% | negatif: {$moodGroups['negative']['share']}%
 - {$leakageLine}
 
+{$moodTableBlock}
+
 ATURAN WAJIB:
 {$rules}
 
 OUTPUT: JSON valid saja, tanpa markdown, format:
 {
-  "insights": ["..."],
-  "recommendations_personalized": ["..."],
+  "insights": ["ringkasan deskriptif + insight korelasi FTSA"],
+  "recommendations_personalized": ["rekomendasi tindakan bulanan"],
   "recommendations_general": ["..."],
   "doctors_note": {
     "summary": "...",
@@ -688,9 +704,10 @@ PROMPT;
         $maxFindings = (int) config('portal_ai.max_findings', 5);
 
         return <<<PROMPT
-Anda adalah dr. Financial dari Your Financial Doctor (YFD). Berikan clinical summary mingguan keuangan berdasarkan data berikut.
+Anda adalah dr. Financial dari Your Financial Doctor (YFD). Berikan clinical summary keuangan berdasarkan data kumulatif bulan ini.
 
-PERIODE MINGGUAN: {$metrics['period_label']}
+PERIODE KUMULATIF: {$metrics['period_label']}
+(Data dijumlahkan dari awal bulan hingga akhir minggu berjalan — bukan hanya 7 hari terakhir.)
 {$stage}
 
 METRIK:
@@ -716,7 +733,7 @@ OUTPUT: JSON valid saja, tanpa markdown, format:
   }
 }
 
-Maksimal {$maxFindings} findings. Fokus pola minggu ini, bukan archetype FTSA.
+Maksimal {$maxFindings} findings. Fokus kondisi kumulatif bulan ini (deskriptif), bukan archetype FTSA.
 PROMPT;
     }
 
@@ -763,19 +780,21 @@ BUCKET PRESCRIPTION:
 ATURAN WAJIB:
 {$rules}
 Jangan menyebut archetype FTSA — itu ada di dashboard behavioral.
+Doctor's note HANYA berisi rekomendasi tindakan — jangan ulang ringkasan deskriptif (itu ada di clinical summary).
+Tiap rekomendasi harus konkret, bisa dilakukan, dan spesifik (contoh: alokasikan cashflow positif ke Future Building, tingkatkan saving rate >30%, diversifikasi investasi, batasi Flexible+Social ≤10%, evaluasi proteksi keuangan).
 
 OUTPUT: JSON valid saja, tanpa markdown, format:
 {
   "doctors_note": {
-    "summary": "...",
-    "findings": ["..."],
-    "interpretation": "...",
-    "priority": "...",
-    "education": "..."
+    "summary": "Rekomendasi untuk periode ini",
+    "findings": ["rekomendasi 1", "rekomendasi 2"],
+    "interpretation": "",
+    "priority": "rekomendasi prioritas utama (1 kalimat)",
+    "education": ""
   }
 }
 
-Maksimal {$maxFindings} findings.
+Maksimal {$maxFindings} rekomendasi di findings. summary singkat saja; interpretation & education boleh kosong.
 PROMPT;
     }
 

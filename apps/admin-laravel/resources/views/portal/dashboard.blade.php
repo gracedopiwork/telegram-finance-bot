@@ -7,11 +7,15 @@
 @php
     $fmt = fn (int $n) => 'Rp ' . number_format($n, 0, ',', '.');
     $note = $summary['doctors_note'];
+    $noteRecommendations = is_array($note) ? ($note['findings'] ?? []) : [];
+    $notePriority = is_array($note) ? trim((string) ($note['priority'] ?? '')) : '';
     $noteSummary = is_array($note) ? ($note['summary'] ?? '') : (string) $note;
-    $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $summary['month'])->endOfMonth();
-    $showDoctorsNote = $noteSummary !== '' && ! str_contains($noteSummary, 'akan dirilis') && ! str_contains($noteSummary, 'akan dibuat');
+    $showDoctorsNote = ($noteRecommendations !== [] || $notePriority !== '')
+        && ! str_contains($noteSummary, 'akan dirilis')
+        && ! str_contains($noteSummary, 'akan dibuat');
     $doctorsGeneratedAt = !empty($summary['doctors_generated_at']) ? \Carbon\Carbon::parse($summary['doctors_generated_at']) : null;
     $clinicalGeneratedAt = !empty($summary['clinical_generated_at']) ? \Carbon\Carbon::parse($summary['clinical_generated_at']) : null;
+    $clinicalWeek = \App\Models\PortalGuidanceSnapshot::monthCumulativeWeekNumber();
 @endphp
 
 <div class="space-y-5">
@@ -35,14 +39,22 @@
             </form>
         </div>
         @if($showDoctorsNote)
-            <p class="text-sm text-slate-700 leading-relaxed mb-3">{{ $noteSummary }}</p>
+            @if($noteRecommendations !== [])
+                <ul class="space-y-2 text-sm text-slate-700 leading-relaxed mb-3">
+                    @foreach($noteRecommendations as $recommendation)
+                        <li class="flex gap-2"><span class="text-gold-500 font-bold">•</span><span>{{ $recommendation }}</span></li>
+                    @endforeach
+                </ul>
+            @elseif($notePriority !== '')
+                <p class="text-sm text-slate-700 leading-relaxed mb-3">{{ $notePriority }}</p>
+            @endif
             @if($doctorsGeneratedAt)
                 <p class="text-xs text-slate-500">Terakhir dibuat: {{ $doctorsGeneratedAt->format('d/m/Y H:i') }}</p>
             @endif
         @else
             <p class="text-sm text-slate-600">
                 Belum ada Doctor's Note untuk periode ini.
-                Klik <strong>Generate manual</strong> agar ringkasan dibuat dari data terbaru (tanpa AI).
+                Rekomendasi bulanan dirilis akhir bulan pukul 22.00 WIB, atau klik <strong>Generate manual</strong>.
             </p>
         @endif
     </div>
@@ -52,7 +64,7 @@
 
     {{-- Clinical Summary / Minggu --}}
     <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <div class="text-sm font-semibold text-navy-800 mb-3">Clinical Summary / Minggu ini</div>
+        <div class="text-sm font-semibold text-navy-800 mb-3">Clinical Summary / Akumulasi minggu ke-{{ $clinicalWeek }}</div>
         @if(!empty($summary['clinical_summary']['headline']))
             <p class="text-base font-semibold text-navy-800 mb-2">{{ $summary['clinical_summary']['headline'] }}</p>
         @endif
@@ -141,7 +153,13 @@
 
     <div class="bg-white rounded-xl border border-slate-200 p-5">
         <div class="text-sm font-semibold text-navy-800 mb-4">Analisis Cashflow Trend</div>
-        <div class="h-56"><canvas id="trendChart"></canvas></div>
+        <div class="h-56">
+            @if(collect($summary['trend'] ?? [])->sum(fn ($t) => ($t['income'] ?? 0) + ($t['expense'] ?? 0) + abs($t['cashflow'] ?? 0)) > 0)
+                <canvas id="trendChart"></canvas>
+            @else
+                <p class="text-sm text-slate-500 flex items-center justify-center h-full">Belum ada data cashflow untuk ditampilkan.</p>
+            @endif
+        </div>
     </div>
 </div>
 @endsection
@@ -174,7 +192,7 @@ function doughnutChart(canvasId, labels, data) {
     });
 }
 
-if (document.getElementById('trendChart')) {
+if (document.getElementById('trendChart') && trend.length > 0) {
     new Chart(document.getElementById('trendChart'), {
         type: 'line',
         data: {
@@ -185,7 +203,12 @@ if (document.getElementById('trendChart')) {
                 { label: 'Cashflow', data: trend.map(t => t.cashflow), borderColor: '{{ config('yfd_brand.navy_600') }}', borderDash: [4,4], tension: 0.35 },
             ],
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } },
+            scales: { y: { beginAtZero: true } },
+        },
     });
 }
 

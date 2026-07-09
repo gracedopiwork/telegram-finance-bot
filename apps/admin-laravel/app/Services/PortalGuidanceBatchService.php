@@ -21,8 +21,8 @@ class PortalGuidanceBatchService
      */
     public function generateWeeklyClinicalSummaries(?Carbon $weekAnchor = null, bool $force = false): array
     {
-        $week = $this->snapshots->weekRange($weekAnchor);
-        $periodLabel = $week['start']->translatedFormat('d M').' – '.$week['end']->translatedFormat('d M Y');
+        $week = $this->snapshots->monthCumulativeWeekRange($weekAnchor);
+        $periodLabel = $week['label'];
 
         $userIds = BotTransaction::query()
             ->whereBetween('recorded_at', [$week['start'], $week['end']])
@@ -52,7 +52,7 @@ class PortalGuidanceBatchService
                 $telegramUserId,
                 $week['start'],
                 $week['end'],
-                'Minggu '.$periodLabel,
+                $periodLabel,
                 1,
             );
 

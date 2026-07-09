@@ -93,13 +93,18 @@ class DashboardController extends Controller
         ->with('warning', 'Belum ada transaksi untuk periode ini, jadi belum bisa generate manual.');
     }
 
-    $week = $snapshot->weekRange();
-    $weekPeriodLabel = 'Minggu '.$week['start']->translatedFormat('d M').' – '.$week['end']->translatedFormat('d M Y');
-    $weeklyContext = $dashboard->financialGuidanceContext($telegramUserId, $week['start'], $week['end'], $weekPeriodLabel, 1);
+    $week = $snapshot->monthCumulativeWeekRange();
+    $weeklyContext = $dashboard->financialGuidanceContext(
+      $telegramUserId,
+      $week['start'],
+      $week['end'],
+      $week['label'],
+      1,
+    );
 
     $aiGuidance->generateAndStoreWeeklyClinicalSummary(
       $telegramUserId,
-      PortalGuidanceSnapshot::weekPeriodKey(),
+      PortalGuidanceSnapshot::monthCumulativeWeekPeriodKey(),
       $weeklyContext['metrics'],
       $baseline,
       $weeklyContext['fallback_clinical'],

@@ -69,7 +69,7 @@ class TransactionDashboardService
     $topExpenses = $byCategory->sortByDesc('amount')->take(10)->values()->all();
     $idealShares = $this->prescription->idealsForUser($telegramUserId);
     $buckets = $this->budgetBuckets($rows, $expense, $savingInvestment, $idealShares);
-    $trend = $this->cashflowTrend($telegramUserId, $month, min(6, $periodMonths));
+    $trend = $this->cashflowTrend($telegramUserId, $month, 6);
     $pulse = $this->financialPulse($income, $expense, $savingInvestment, $savingRate, $buckets);
     $baseline = FinancialBaseline::latestForUser($telegramUserId);
     if ($baseline === null && $email !== '') {
@@ -660,50 +660,61 @@ class TransactionDashboardService
     array $buckets,
     ?FinancialBaseline $baseline,
   ): array {
-    $findings = [];
-    foreach ($buckets as $bucket) {
-      if ($bucket['status'] !== 'empty' && $bucket['status'] !== 'on_target' && $bucket['status'] !== 'within' && $bucket['status'] !== 'met') {
-        $findings[] = "{$bucket['bucket']}: {$bucket['status_label']}";
-      }
+    $recommendations = [];
+
+    if ($cashflow > 0 && $savingRate < 30) {
+      $recommendations[] = 'Alokasikan cashflow positif ke Future Building dengan menaikkan saving rate minimal >30%.';
+    } elseif ($cashflow > 0) {
+      $recommendations[] = 'Pertahankan saving rate di atas 30% dan arahkan surplus ke instrumen jangka panjang.';
     }
 
     if ($cashflow < 0) {
-      $interpretation = 'Arus kas negatif menandakan konsumsi melebihi kapasitas pendapatan periode ini.';
-      $priority = 'Kurangi pengeluaran fleksibel dan tunda pembelian non-esensial hingga cashflow positif.';
-      $education = 'Prioritaskan Essential Living terlebih dahulu, lalu naikkan alokasi Protection & Future Building secara bertahap.';
-      $summary = 'Pengeluaran melebihi pendapatan. Tinjau kategori terbesar dan kebiasaan impulsif.';
-    } elseif ($savingRate >= 20) {
-      $interpretation = 'Anda mempertahankan surplus yang sehat relatif terhadap pendapatan.';
-      $priority = 'Pertahankan konsistensi pencatatan dan evaluasi bucket setiap bulan.';
-      $education = 'Alokasikan surplus ke Future Building sesuai tahap finansial Anda.';
-      $summary = 'Cashflow positif dan saving rate sehat. Pertahankan konsistensi pencatatan.';
-    } elseif ($savingRate < 10) {
-      $interpretation = 'Surplus tipis — sedikit shock pengeluaran bisa mengganggu stabilitas.';
-      $priority = 'Naikkan saving rate dengan membatasi Flexible + Social sebelum mengurangi kebutuhan esensial.';
-      $education = 'Targetkan saving rate 10–20% sebagai langkah bertahap menuju tahap berikutnya.';
-      $summary = 'Saving rate masih rendah. Prioritaskan alokasi Future Building sebelum pengeluaran fleksibel.';
-    } elseif ($pulseScore < 50) {
-      $interpretation = 'Distribusi bucket belum selaras dengan prescription tahap finansial Anda.';
-      $priority = 'Sesuaikan proporsi Essential, Protection, dan Future Building.';
-      $education = 'Gunakan rekomendasi % ideal di tabel bucket sebagai panduan mingguan.';
-      $summary = 'Distribusi bucket belum ideal. Sesuaikan proporsi Essential, Protection, dan Future Building.';
-    } else {
-      $interpretation = 'Kondisi cukup stabil dengan ruang perbaikan bertahap.';
-      $priority = 'Lanjutkan catat transaksi harian agar pola lebih jelas.';
-      $education = 'Evaluasi baseline setiap 6 bulan untuk memperbarui tahap & prescription.';
-      $summary = 'Kondisi cukup stabil. Lanjutkan catat transaksi harian agar pola lebih jelas.';
+      $recommendations[] = 'Kurangi pengeluaran Flexible + Social hingga cashflow kembali positif sebelum menambah investasi.';
     }
 
-    if ($baseline?->stage_label) {
-      $findings[] = "Tahap finansial: {$baseline->stage_label}.";
+    foreach ($buckets as $bucket) {
+      $name = (string) ($bucket['bucket'] ?? '');
+      $share = (float) ($bucket['share'] ?? 0);
+      $ideal = (float) ($bucket['ideal'] ?? 0);
+      $status = (string) ($bucket['status'] ?? '');
+
+      if ($name === 'Flexible + Social' && in_array($status, ['over_max', 'over'], true)) {
+        $recommendations[] = 'Kontrol pengeluaran Flexible + Social agar tidak melebihi 10% dari pendapatan.';
+      }
+
+      if ($name === 'Future Building' && in_array($status, ['under_min', 'under'], true)) {
+        $recommendations[] = 'Naikkan alokasi Future Building agar mendekati target prescription tahap finansial Anda.';
+      }
+
+      if ($name === 'Protection' && in_array($status, ['under_min', 'under'], true)) {
+        $recommendations[] = 'Evaluasi apakah proteksi keuangan (asuransi/dana darurat) sudah memadai — bisa diperbaiki dengan konsultasi tim YFD.';
+      }
+
+      if ($name === 'Future Building' && $share > 0 && $savingRate >= 20) {
+        $recommendations[] = 'Lakukan diversifikasi ke instrumen investasi selain saham untuk menyeimbangkan risiko.';
+      }
+    }
+
+    if ($pulseScore < 50) {
+      $recommendations[] = 'Sesuaikan distribusi bucket (Essential, Protection, Future Building, Flexible + Social) agar selaras prescription tahap finansial.';
+    }
+
+    if ($baseline !== null && ! $baseline->has_health_insurance && ! $baseline->has_life_insurance) {
+      $recommendations[] = 'Evaluasi proteksi keuangan Anda — pertimbangkan konsultasi dengan tim YFD via WhatsApp untuk penyesuaian asuransi.';
+    }
+
+    $recommendations = array_values(array_unique(array_slice($recommendations, 0, 5)));
+
+    if ($recommendations === []) {
+      $recommendations[] = 'Pertahankan konsistensi pencatatan transaksi dan tinjau bucket prescription setiap minggu.';
     }
 
     return [
-      'summary' => $summary,
-      'findings' => $findings,
-      'interpretation' => $interpretation,
-      'priority' => $priority,
-      'education' => $education,
+      'summary' => 'Rekomendasi untuk periode ini',
+      'findings' => $recommendations,
+      'interpretation' => '',
+      'priority' => $recommendations[0],
+      'education' => '',
     ];
   }
 

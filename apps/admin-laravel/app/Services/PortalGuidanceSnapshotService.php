@@ -59,6 +59,39 @@ class PortalGuidanceSnapshotService
         ];
     }
 
+    /**
+     * Rentang kumulatif dalam bulan: minggu 1 = hari 1–7, minggu 2 = 1–14, … minggu 4 = 1–akhir bulan.
+     *
+     * @return array{start: Carbon, end: Carbon, key: string, week_in_month: int, label: string}
+     */
+    public function monthCumulativeWeekRange(?Carbon $anchor = null): array
+    {
+        $anchor ??= now();
+        $monthStart = $anchor->copy()->startOfMonth()->startOfDay();
+        $weekInMonth = PortalGuidanceSnapshot::monthCumulativeWeekNumber($anchor);
+
+        if ($weekInMonth >= 4) {
+            $end = $anchor->copy()->endOfMonth()->endOfDay();
+        } else {
+            $end = $monthStart->copy()->addDays($weekInMonth * 7 - 1)->endOfDay();
+        }
+
+        $label = sprintf(
+            'Akumulasi minggu ke-%d (%s – %s)',
+            $weekInMonth,
+            $monthStart->translatedFormat('d M'),
+            $end->translatedFormat('d M Y'),
+        );
+
+        return [
+            'start' => $monthStart,
+            'end' => $end,
+            'key' => PortalGuidanceSnapshot::monthCumulativeWeekPeriodKey($anchor),
+            'week_in_month' => $weekInMonth,
+            'label' => $label,
+        ];
+    }
+
     public function monthRange(?Carbon $anchor = null): array
     {
         $anchor ??= now();

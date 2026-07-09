@@ -116,7 +116,15 @@ class ImpulsivityAssessmentService
       ? app(FtsaAiGuidanceService::class)->forBaseline($guidanceContext['baseline'])
       : ['recommendations' => []];
 
+    $behavioralSummary = $this->behavioralSummaryCumulative($telegramUserId, $month, $email);
+
+    if (($behavioralSummary['week_in_month'] ?? 0) >= 4) {
+      $behavioralSummary['headline'] = 'Ringkasan behavioral '.$core['month_label'];
+      $behavioralSummary['period_label'] = $core['month_label'];
+    }
+
     return array_merge($core, [
+      'behavioral_summary' => $behavioralSummary,
       'insights' => $aiGuidance['insights'],
       'recommendations' => $aiGuidance['recommendations'],
       'behavioral_recommendations' => $this->behavioralRecommendationItems(
@@ -124,6 +132,7 @@ class ImpulsivityAssessmentService
         $guidanceContext['metrics']['ftsa_profile'] ?? null,
         $ftsaGuidance,
       ),
+      'behavioral_recommendations_pending' => ! ($aiGuidance['monthly_stored'] ?? false),
       'doctors_note' => $aiGuidance['doctors_note'],
       'ai_source' => $aiGuidance['ai_source'],
       'ai_generated_at' => $aiGuidance['generated_at'],
@@ -173,6 +182,7 @@ class ImpulsivityAssessmentService
     $highestLeakage = $this->highestLeakage($impulsiveRows);
     $dominantPattern = $this->dominantPattern($matrix);
     $dominantMood = $this->dominantMood($expenses);
+    $moodTable = $this->moodTableRows($expenses);
     $baseline = FinancialBaseline::latestForUser($telegramUserId);
     if ($baseline === null && is_string($email) && trim($email) !== '') {
       $baseline = FinancialBaseline::latestForEmail($email);
@@ -192,13 +202,23 @@ class ImpulsivityAssessmentService
       'dominant_pattern' => $dominantPattern,
       'highest_leakage' => $highestLeakage,
       'mood_groups' => $moodGroups,
+      'mood_table' => $moodTable,
       'emotional_balance' => $this->emotionalBalanceScore($expenses),
       'ftsa_profile' => $ftsaProfile,
     ];
 
+    $summaryBlock = $this->buildBehavioralSummaryFindings(
+      $impulsiveCount,
+      $impulsiveRate,
+      $expenseCount,
+      $moodTable,
+      $ftsaProfile,
+      $baseline,
+    );
+
     $fallback = [
-      'insights' => $this->autoInsights($impulsiveRate, $dominantMood, $dominantPattern, $moodGroups, $highestLeakage, $ftsaProfile),
-      'recommendations' => $this->recommendations($impulsiveRate, $dominantMood, $ftsaProfile, $moodGroups),
+      'insights' => array_merge($summaryBlock['findings'], $summaryBlock['insights']),
+      'recommendations' => $this->recommendations($impulsiveRate, $dominantMood, $ftsaProfile, $moodGroups, $moodTable, $baseline),
       'doctors_note' => $this->doctorsNote(
         $impulsiveRate,
         $dominantMood,
@@ -225,11 +245,10 @@ class ImpulsivityAssessmentService
   private function behavioralRecommendationItems(array $aiGuidance, ?array $ftsaProfile, array $ftsaGuidance): array
   {
     if (! ($aiGuidance['monthly_stored'] ?? false)) {
-      return $aiGuidance['recommendations']['general'] ?? [];
+      return [];
     }
 
     $personal = $aiGuidance['recommendations']['personalized'] ?? [];
-    $general = $aiGuidance['recommendations']['general'] ?? [];
 
     if ($ftsaProfile !== null) {
       return array_values(array_unique(array_merge(
@@ -238,7 +257,171 @@ class ImpulsivityAssessmentService
       )));
     }
 
-    return array_values(array_unique(array_merge($personal, $general)));
+    return array_values(array_unique($personal));
+  }
+
+  /**
+   * Ringkasan deskriptif behavioral kumulatif (minggu 1→4 dalam bulan).
+   *
+   * @return array{headline: string, findings: list<string>, week_in_month: int, period_label: string}
+   */
+  public function behavioralSummaryCumulative(int $telegramUserId, string $monthKey, ?string $email = null): array
+  {
+    $month = app(TransactionDashboardService::class)->monthKey($monthKey);
+    $monthCarbon = Carbon::createFromFormat('Y-m', $month);
+    $anchor = $monthCarbon->isCurrentMonth() ? now() : $monthCarbon->copy()->endOfMonth();
+    $week = app(PortalGuidanceSnapshotService::class)->monthCumulativeWeekRange($anchor);
+
+    $rows = BotTransaction::query()
+      ->forUser($telegramUserId)
+      ->whereBetween('recorded_at', [$week['start'], $week['end']])
+      ->get();
+
+    $expenses = $rows->where('type', 'Pengeluaran');
+    if ($expenses->isEmpty()) {
+      return [
+        'headline' => 'Belum ada data behavioral',
+        'findings' => ['Catat pengeluaran via YFD First Aid untuk melihat pola mood & impulsivitas.'],
+        'week_in_month' => $week['week_in_month'],
+        'period_label' => $week['label'],
+      ];
+    }
+
+    $impulsiveRows = $expenses->where('is_impulsive', true);
+    $expenseCount = $expenses->count();
+    $impulsiveCount = $impulsiveRows->count();
+    $impulsiveRate = $expenseCount > 0
+      ? round(($impulsiveCount / $expenseCount) * 100, 1)
+      : 0.0;
+
+    $moodGroups = $this->moodGroups($expenses);
+
+    $baseline = FinancialBaseline::latestForUser($telegramUserId);
+    if ($baseline === null && is_string($email) && trim($email) !== '') {
+      $baseline = FinancialBaseline::latestForEmail($email);
+    }
+    $ftsaProfile = $this->ftsaProfile($baseline);
+
+    $moodTable = $this->moodTableRows($expenses);
+    $findingsBlock = $this->buildBehavioralSummaryFindings(
+      $impulsiveCount,
+      $impulsiveRate,
+      $expenseCount,
+      $moodTable,
+      $ftsaProfile,
+      $baseline,
+    );
+
+    $headline = match (true) {
+      $impulsiveRate >= 40 => 'Impulsivitas tinggi — perlu intervensi behavioral',
+      $impulsiveRate >= 25 => 'Pola impulsif terdeteksi — waspadai pemicu emosional',
+      $moodGroups['negative']['share'] >= 40 => 'Mood negatif dominan pada pengeluaran',
+      default => 'Pola behavioral relatif terkendali',
+    };
+
+    return [
+      'headline' => $headline,
+      'findings' => $findingsBlock['findings'],
+      'insights' => $findingsBlock['insights'],
+      'week_in_month' => $week['week_in_month'],
+      'period_label' => $week['label'],
+    ];
+  }
+
+  /**
+   * @param  list<array{mood: string, count: int, amount: int, average: int, impulsive_rate: float}>  $moodTable
+   * @param  array<string, mixed>|null  $ftsaProfile
+   * @return array{findings: list<string>, insights: list<string>}
+   */
+  private function buildBehavioralSummaryFindings(
+    int $impulsiveCount,
+    float $impulsiveRate,
+    int $expenseCount,
+    array $moodTable,
+    ?array $ftsaProfile,
+    ?FinancialBaseline $baseline,
+  ): array {
+    $findings = [];
+    $insights = [];
+
+    if ($expenseCount > 0) {
+      $findings[] = sprintf(
+        'Sekitar %d transaksi (%.1f%%) bersifat impulsif.',
+        $impulsiveCount,
+        $impulsiveRate,
+      );
+    }
+
+    $highImpulseMoods = collect($moodTable)
+      ->filter(fn (array $row) => ($row['impulsive_rate'] ?? 0) >= 50 && ($row['count'] ?? 0) > 0)
+      ->sortByDesc('impulsive_rate')
+      ->values();
+
+    if ($highImpulseMoods->isNotEmpty()) {
+      $parts = $highImpulseMoods->map(function (array $row) {
+        $rate = rtrim(rtrim(number_format((float) $row['impulsive_rate'], 1, '.', ''), '0'), '.');
+
+        return sprintf(
+          'Saat mood %s, %s%% transaksi impulsif',
+          $this->moodDisplayLabel((string) $row['mood']),
+          $rate,
+        );
+      })->all();
+
+      $findings[] = implode('; ', $parts).'.';
+    }
+
+    $topMood = collect($moodTable)->sortByDesc('count')->first();
+    if (is_array($topMood)) {
+      $findings[] = sprintf(
+        'Mood %s mendominasi transaksi terbanyak (%d transaksi).',
+        $this->moodDisplayLabel((string) $topMood['mood']),
+        (int) $topMood['count'],
+      );
+    }
+
+    $tiredRow = collect($moodTable)->firstWhere('mood', 'Tired');
+    $ssdLevel = strtolower((string) ($baseline?->ssd_level ?? ''));
+    $archetype = strtolower((string) ($ftsaProfile['archetype'] ?? ''));
+    $tiredImpulsive = is_array($tiredRow) ? (float) ($tiredRow['impulsive_rate'] ?? 0) : 0.0;
+
+    if ($tiredImpulsive >= 80 && (str_contains($ssdLevel, 'severe') || str_contains($archetype, 'overworker'))) {
+      $profileRef = str_contains($ssdLevel, 'severe')
+        ? 'SSD '.($baseline?->ssd_level ?? 'Severe')
+        : ($ftsaProfile['archetype'] ?? 'Overworker');
+      $insights[] = sprintf(
+        '%s%% transaksi impulsif saat lelah berkorelasi positif dengan %s.',
+        rtrim(rtrim(number_format($tiredImpulsive, 1, '.', ''), '0'), '.'),
+        $profileRef,
+      );
+    } elseif ($ftsaProfile !== null && $impulsiveRate >= 25) {
+      $insights[] = sprintf(
+        'Pola impulsif terlihat pada archetype %s — pantau pemicu emosional yang memicu belanja spontan.',
+        $ftsaProfile['archetype'],
+      );
+    }
+
+    if ($impulsiveRate >= 30 || $tiredImpulsive >= 80) {
+      $insights[] = 'Pola ini berpotensi membahayakan kondisi keuangan jika tidak diatur.';
+    }
+
+    return [
+      'findings' => array_slice(array_values(array_unique(array_filter($findings))), 0, 4),
+      'insights' => array_slice(array_values(array_unique(array_filter($insights))), 0, 2),
+    ];
+  }
+
+  private function moodDisplayLabel(string $mood): string
+  {
+    return match ($mood) {
+      'Happy' => 'happy',
+      'Neutral' => 'netral',
+      'Sad' => 'sedih',
+      'Stressed' => 'stres',
+      'Angry' => 'marah',
+      'Tired' => 'lelah',
+      default => strtolower($mood),
+    };
   }
 
   /**
@@ -692,6 +875,8 @@ class ImpulsivityAssessmentService
     string $dominantMood,
     ?array $ftsaProfile,
     array $moodGroups,
+    array $moodTable = [],
+    ?FinancialBaseline $baseline = null,
   ): array {
     $personalized = [];
     $general = [
@@ -699,6 +884,17 @@ class ImpulsivityAssessmentService
       'Catat mood setiap pengeluaran untuk melihat pola emosional.',
       'Tinjau dashboard behavioral setiap akhir minggu.',
     ];
+
+    $tiredRow = collect($moodTable)->firstWhere('mood', 'Tired');
+    $tiredImpulsive = is_array($tiredRow) ? (float) ($tiredRow['impulsive_rate'] ?? 0) : 0.0;
+    $ssdLevel = strtolower((string) ($baseline?->ssd_level ?? ''));
+    $archetype = strtolower((string) ($ftsaProfile['archetype'] ?? ''));
+
+    if ($tiredImpulsive >= 80 || str_contains($ssdLevel, 'severe') || str_contains($archetype, 'overworker')) {
+      $personalized[] = 'Tetapkan angka cukup (enough number) sebagai batas pengeluaran impulsif bulanan.';
+      $personalized[] = 'Jadwalkan hari libur dari pekerjaan agar mood lelah tidak memicu belanja impulsif.';
+      $personalized[] = 'Mulai membangun passive income agar tidak terus bergantung pada overwork demi rasa aman finansial.';
+    }
 
     if ($impulsiveRate >= 25) {
       $personalized[] = 'Terapkan aturan jeda 10 menit untuk pembelian di luar daftar belanja.';
@@ -718,7 +914,7 @@ class ImpulsivityAssessmentService
     }
 
     return [
-      'personalized' => array_slice($personalized, 0, 3),
+      'personalized' => array_slice(array_values(array_unique($personalized)), 0, 3),
       'general' => $general,
     ];
   }

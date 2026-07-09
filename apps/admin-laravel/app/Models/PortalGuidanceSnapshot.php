@@ -37,6 +37,24 @@ class PortalGuidanceSnapshot extends Model
         return sprintf('%d-W%02d', $date->isoWeekYear(), $date->isoWeek());
     }
 
+    /**
+     * Minggu ke-N dalam bulan (1–4), dipakai untuk clinical summary kumulatif.
+     */
+    public static function monthCumulativeWeekPeriodKey(?Carbon $date = null): string
+    {
+        $date ??= now();
+        $weekInMonth = self::monthCumulativeWeekNumber($date);
+
+        return sprintf('%s-W%d', $date->format('Y-m'), $weekInMonth);
+    }
+
+    public static function monthCumulativeWeekNumber(?Carbon $date = null): int
+    {
+        $date ??= now();
+
+        return min(max((int) ceil($date->day / 7), 1), 4);
+    }
+
     public static function monthPeriodKey(?Carbon $date = null): string
     {
         $date ??= now();

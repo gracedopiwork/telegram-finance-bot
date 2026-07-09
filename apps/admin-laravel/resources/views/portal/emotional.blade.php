@@ -138,7 +138,7 @@
         </div>
     </div>
 
-    {{-- 2. Behavioral Recommendation --}}
+    {{-- 2. Behavioral Recommendation (bulanan) --}}
     <div class="bg-white rounded-xl border border-slate-200 p-5">
         <div class="text-sm font-semibold text-navy-800 mb-3">Behavioral Recommendation</div>
         @if(!empty($assessment['behavioral_recommendations']))
@@ -147,23 +147,51 @@
                     <li class="flex gap-2"><span>–</span><span>{{ $rec }}</span></li>
                 @endforeach
             </ul>
+        @elseif($assessment['behavioral_recommendations_pending'] ?? false)
+            @php
+                $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $assessment['month'])->endOfMonth();
+            @endphp
+            <p class="text-sm text-slate-600">
+                Rekomendasi bulanan (menghubungkan hasil FTSA dengan behavioral summary) dirilis
+                <strong>{{ $monthEnd->format('d/m/Y') }} pukul 22.00 WIB</strong>.
+            </p>
         @else
             <p class="text-sm text-slate-500">–</p>
         @endif
     </div>
 
-    {{-- 3. Insight bulanan --}}
+    {{-- 3. Behavioral summary (kumulatif mingguan) --}}
     <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <div class="text-sm font-semibold text-navy-800 mb-3">Insight bulanan</div>
-        <p class="text-xs text-slate-500 mb-2">{{ $assessment['month_label'] ?? $assessment['period_label'] }}</p>
-        @if(!empty($assessment['insights']))
+        <div class="text-sm font-semibold text-navy-800 mb-3">
+            Behavioral summary
+            @if(!empty($assessment['behavioral_summary']['week_in_month']))
+                <span class="text-slate-500 font-normal">/ Akumulasi minggu ke-{{ $assessment['behavioral_summary']['week_in_month'] }}</span>
+            @endif
+        </div>
+        @if(!empty($assessment['behavioral_summary']['period_label']))
+            <p class="text-xs text-slate-500 mb-2">{{ $assessment['behavioral_summary']['period_label'] }}</p>
+        @endif
+        @if(!empty($assessment['behavioral_summary']['headline']))
+            <p class="text-sm font-semibold text-navy-800 mb-2">{{ $assessment['behavioral_summary']['headline'] }}</p>
+        @endif
+        @if(!empty($assessment['behavioral_summary']['findings']))
             <ul class="space-y-1 text-sm text-slate-700">
-                @foreach($assessment['insights'] as $insight)
-                    <li class="flex gap-2"><span>–</span><span>{{ $insight }}</span></li>
+                @foreach($assessment['behavioral_summary']['findings'] as $finding)
+                    <li class="flex gap-2"><span>–</span><span>{{ $finding }}</span></li>
                 @endforeach
             </ul>
         @else
             <p class="text-sm text-slate-500">–</p>
+        @endif
+        @if(!empty($assessment['behavioral_summary']['insights']))
+            <div class="mt-4 pt-3 border-t border-slate-100">
+                <p class="text-xs font-semibold text-slate-600 mb-2">Insight</p>
+                <ul class="space-y-1 text-sm text-slate-700">
+                    @foreach($assessment['behavioral_summary']['insights'] as $insight)
+                        <li class="flex gap-2"><span>–</span><span>{{ $insight }}</span></li>
+                    @endforeach
+                </ul>
+            </div>
         @endif
     </div>
 

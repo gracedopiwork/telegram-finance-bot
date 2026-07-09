@@ -58,13 +58,16 @@ return [
 
     'behavioral_rules' => [
         'Hubungkan pola mood, impulsivitas, dan profil FTSA jika tersedia.',
-        'Insight fokus pada pola emosional yang terlihat dari data transaksi.',
-        'Rekomendasi personal spesifik untuk kondisi user; rekomendasi umum berlaku untuk siapa saja.',
+        'Behavioral summary = ringkasan deskriptif kumulatif mingguan (bukan rekomendasi). Contoh: "Sekitar 36 transaksi (30,3%) bersifat impulsif.", "Saat mood lelah, 100% transaksi impulsif; saat stres 66% impulsif.", "Mood netral mendominasi transaksi terbanyak (60 transaksi)."',
+        'Insight = interpretasi korelasi FTSA (mis. impulsif saat lelah + SSD Severe) dan risiko finansial jika tidak diatur.',
+        'Behavioral recommendation = rekomendasi tindakan bulanan yang menghubungkan FTSA dengan pola transaksi (mis. enough number, hari libur, passive income untuk Overworker/SSD).',
+        'Rekomendasi personal spesifik untuk kondisi user; hindari mengulang ringkasan deskriptif di rekomendasi.',
     ],
 
     'financial_rules' => [
-        'Clinical summary merangkum kondisi arus kas dan bucket prescription periode ini.',
-        'Doctor\'s note memberikan interpretasi dan prioritas tindakan praktis.',
+        'Clinical summary merangkum kondisi deskriptif arus kas dan bucket prescription — kumulatif dari awal bulan.',
+        'Doctor\'s note HANYA berisi rekomendasi tindakan praktis — jangan mengulang ringkasan deskriptif clinical summary.',
+        'Rekomendasi doctor\'s note harus spesifik dan dapat ditindaklanjuti (alokasi bucket, saving rate, diversifikasi, proteksi).',
         'Status clinical_summary harus salah satu: healthy, fair, attention, critical.',
     ],
 
