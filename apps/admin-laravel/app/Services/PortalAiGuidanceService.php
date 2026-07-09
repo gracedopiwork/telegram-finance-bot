@@ -620,19 +620,7 @@ PROMPT;
     private function financialPrompt(array $metrics, ?FinancialBaseline $baseline): string
     {
         $rules = $this->claude->rulesBlock(['shared_rules', 'financial_rules']);
-        $bucketLines = [];
-        foreach ((array) ($metrics['buckets'] ?? []) as $bucket) {
-            if (! is_array($bucket)) {
-                continue;
-            }
-            $bucketLines[] = sprintf(
-                '- %s: aktual %s%% (ideal %s%%) — %s',
-                $bucket['bucket'] ?? '—',
-                $bucket['share'] ?? '0',
-                $bucket['ideal'] ?? '0',
-                $bucket['status_label'] ?? '—'
-            );
-        }
+        $bucketLines = $this->formatBucketPrescriptionLines((array) ($metrics['buckets'] ?? []));
 
         $stage = $baseline?->stage_label ? "Tahap finansial: {$baseline->stage_label}" : 'Tahap finansial: belum diisi';
         $archetype = $baseline?->dominant_archetype_label ? "Archetype: {$baseline->dominant_archetype_label}" : '';
@@ -686,19 +674,7 @@ PROMPT;
     private function weeklyClinicalPrompt(array $metrics, ?FinancialBaseline $baseline): string
     {
         $rules = $this->claude->rulesBlock(['shared_rules', 'financial_rules']);
-        $bucketLines = [];
-        foreach ((array) ($metrics['buckets'] ?? []) as $bucket) {
-            if (! is_array($bucket)) {
-                continue;
-            }
-            $bucketLines[] = sprintf(
-                '- %s: aktual %s%% (ideal %s%%) — %s',
-                $bucket['bucket'] ?? '—',
-                $bucket['share'] ?? '0',
-                $bucket['ideal'] ?? '0',
-                $bucket['status_label'] ?? '—'
-            );
-        }
+        $bucketLines = $this->formatBucketPrescriptionLines((array) ($metrics['buckets'] ?? []));
 
         $stage = $baseline?->stage_label ? "Tahap finansial: {$baseline->stage_label}" : 'Tahap finansial: belum diisi';
         $maxFindings = (int) config('portal_ai.max_findings', 5);
@@ -743,19 +719,7 @@ PROMPT;
     private function monthlyDoctorsNotePrompt(array $metrics, ?FinancialBaseline $baseline): string
     {
         $rules = $this->claude->rulesBlock(['shared_rules', 'financial_rules']);
-        $bucketLines = [];
-        foreach ((array) ($metrics['buckets'] ?? []) as $bucket) {
-            if (! is_array($bucket)) {
-                continue;
-            }
-            $bucketLines[] = sprintf(
-                '- %s: aktual %s%% (ideal %s%%) — %s',
-                $bucket['bucket'] ?? '—',
-                $bucket['share'] ?? '0',
-                $bucket['ideal'] ?? '0',
-                $bucket['status_label'] ?? '—'
-            );
-        }
+        $bucketLines = $this->formatBucketPrescriptionLines((array) ($metrics['buckets'] ?? []));
 
         $stage = $baseline?->stage_label ? "Tahap finansial: {$baseline->stage_label}" : 'Tahap finansial: belum diisi';
         $maxFindings = (int) config('portal_ai.max_findings', 5);
@@ -782,6 +746,7 @@ ATURAN WAJIB:
 Jangan menyebut archetype FTSA — itu ada di dashboard behavioral.
 Doctor's note HANYA berisi rekomendasi tindakan — jangan ulang ringkasan deskriptif (itu ada di clinical summary).
 Tiap rekomendasi harus konkret, bisa dilakukan, dan spesifik (contoh: alokasikan cashflow positif ke Future Building, tingkatkan saving rate >30%, diversifikasi investasi, batasi Flexible+Social ≤10%, evaluasi proteksi keuangan).
+JANGAN sarankan menaikkan Essential Living jika aktual sudah di bawah 50% — itu justru sehat.
 
 OUTPUT: JSON valid saja, tanpa markdown, format:
 {
@@ -1030,6 +995,36 @@ PROMPT;
             'transaction_count' => (int) ($metrics['transaction_count'] ?? 0),
         ];
     }
+
+  /**
+   * @param  list<array<string, mixed>>  $buckets
+   * @return list<string>
+   */
+  private function formatBucketPrescriptionLines(array $buckets): array
+  {
+    $directions = (array) config('portal_ai.bucket_prescription_directions', []);
+    $lines = [];
+
+    foreach ($buckets as $bucket) {
+      if (! is_array($bucket)) {
+        continue;
+      }
+      $name = (string) ($bucket['bucket'] ?? '—');
+      $direction = (string) ($directions[$name] ?? '');
+      $directionSuffix = $direction !== '' ? " [{$direction}]" : '';
+
+      $lines[] = sprintf(
+        '- %s: aktual %s%% (prescription %s%%)%s — %s',
+        $name,
+        $bucket['share'] ?? '0',
+        $bucket['ideal'] ?? '0',
+        $directionSuffix,
+        $bucket['status_label'] ?? '—',
+      );
+    }
+
+    return $lines;
+  }
 
   /**
    * @param  list<string>  $lines

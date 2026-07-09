@@ -69,6 +69,17 @@ return [
         'Doctor\'s note HANYA berisi rekomendasi tindakan praktis — jangan mengulang ringkasan deskriptif clinical summary.',
         'Rekomendasi doctor\'s note harus spesifik dan dapat ditindaklanjuti (alokasi bucket, saving rate, diversifikasi, proteksi).',
         'Status clinical_summary harus salah satu: healthy, fair, attention, critical.',
+        'Aturan bucket prescription (tahap Steady/Growing): Essential Living target MAKS ≤50% — semakin rendah semakin sehat; JANGAN komentar negatif atau sarankan menaikkan Essential Living jika aktual di bawah 50%.',
+        'Future Building target MIN ≥30% — komentari jika di bawah target.',
+        'Protection target MIN ~10% — boleh komentari untuk optimisasi alokasi jika di bawah target.',
+        'Flexible + Social target MAKS ≤10% — komentari jika melebihi batas.',
+    ],
+
+    'bucket_prescription_directions' => [
+        'Essential Living' => 'maksimum ≤50% — lebih rendah lebih sehat',
+        'Future Building' => 'minimum ≥30% — lebih tinggi lebih sehat',
+        'Protection' => 'minimum ~10% — optimalkan jika di bawah target',
+        'Flexible + Social' => 'maksimum ≤10% — jangan melebihi batas',
     ],
 
     'archetype_fallback' => [

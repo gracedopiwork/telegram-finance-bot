@@ -318,16 +318,45 @@ class TransactionDashboardService
   private function bucketStatus(string $bucket, float $share, float $ideal): array
   {
     return match ($bucket) {
-      'Essential Living', 'Protection', 'Flexible + Social' => $this->maxBucketStatus($bucket, $share, $ideal),
-      'Future Building' => $share < $ideal - 5
-        ? ['key' => 'under_min', 'label' => 'Di bawah minimum ideal']
-        : ($share >= $ideal ? ['key' => 'met', 'label' => 'Memenuhi minimum'] : ['key' => 'near_min', 'label' => 'Mendekati minimum']),
+      'Essential Living', 'Flexible + Social' => $this->maxBucketStatus($bucket, $share, $ideal),
+      'Future Building', 'Protection' => $this->minBucketStatus($bucket, $share, $ideal),
       default => abs($share - $ideal) <= 5
         ? ['key' => 'on_target', 'label' => 'Sesuai target']
         : ($share > $ideal
           ? ['key' => 'over', 'label' => 'Di atas target']
           : ['key' => 'under', 'label' => 'Di bawah target']),
     };
+  }
+
+  /**
+   * Bucket dengan target minimum — semakin tinggi % aktual, semakin sehat.
+   *
+   * @return array{key: string, label: string}
+   */
+  private function minBucketStatus(string $bucket, float $share, float $ideal): array
+  {
+    $underLabel = match ($bucket) {
+      'Protection' => 'Di bawah target proteksi',
+      default => 'Di bawah minimum ideal',
+    };
+    $metLabel = match ($bucket) {
+      'Protection' => 'Memenuhi target proteksi',
+      default => 'Memenuhi minimum',
+    };
+    $nearLabel = match ($bucket) {
+      'Protection' => 'Mendekati target proteksi',
+      default => 'Mendekati minimum',
+    };
+
+    if ($share < $ideal - 5) {
+      return ['key' => 'under_min', 'label' => $underLabel];
+    }
+
+    if ($share >= $ideal) {
+      return ['key' => 'met', 'label' => $metLabel];
+    }
+
+    return ['key' => 'near_min', 'label' => $nearLabel];
   }
 
   /**
@@ -343,7 +372,7 @@ class TransactionDashboardService
       default => 'Melebihi batas fleksibel',
     };
     $withinLabel = match ($bucket) {
-      'Essential Living', 'Protection' => 'Di bawah maksimum — sehat',
+      'Essential Living' => 'Di bawah maksimum — sehat',
       default => 'Dalam batas',
     };
 
@@ -431,8 +460,8 @@ class TransactionDashboardService
     $delta = $share - $ideal;
 
     return match ($bucket) {
-      'Future Building' => $delta < 0 ? abs($delta) : 0.0,
-      'Essential Living', 'Protection', 'Flexible + Social' => $delta > 0 ? $delta : 0.0,
+      'Future Building', 'Protection' => $delta < 0 ? abs($delta) : 0.0,
+      'Essential Living', 'Flexible + Social' => $delta > 0 ? $delta : 0.0,
       default => abs($delta),
     };
   }
@@ -678,16 +707,23 @@ class TransactionDashboardService
       $ideal = (float) ($bucket['ideal'] ?? 0);
       $status = (string) ($bucket['status'] ?? '');
 
+      if ($name === 'Essential Living') {
+        if (in_array($status, ['over_max', 'over'], true)) {
+          $recommendations[] = 'Kurangi pengeluaran Essential Living agar tidak melebihi batas prescription tahap finansial Anda.';
+        }
+        continue;
+      }
+
       if ($name === 'Flexible + Social' && in_array($status, ['over_max', 'over'], true)) {
         $recommendations[] = 'Kontrol pengeluaran Flexible + Social agar tidak melebihi 10% dari pendapatan.';
       }
 
       if ($name === 'Future Building' && in_array($status, ['under_min', 'under'], true)) {
-        $recommendations[] = 'Naikkan alokasi Future Building agar mendekati target prescription tahap finansial Anda.';
+        $recommendations[] = 'Naikkan alokasi Future Building agar mendekati target minimal 30% dari pendapatan.';
       }
 
-      if ($name === 'Protection' && in_array($status, ['under_min', 'under'], true)) {
-        $recommendations[] = 'Evaluasi apakah proteksi keuangan (asuransi/dana darurat) sudah memadai — bisa diperbaiki dengan konsultasi tim YFD.';
+      if ($name === 'Protection' && in_array($status, ['under_min', 'under', 'near_min'], true) && $share < $ideal) {
+        $recommendations[] = 'Evaluasi dan optimalkan alokasi proteksi keuangan (asuransi/dana darurat) — saat ini masih di bawah target prescription.';
       }
 
       if ($name === 'Future Building' && $share > 0 && $savingRate >= 20) {
@@ -696,7 +732,7 @@ class TransactionDashboardService
     }
 
     if ($pulseScore < 50) {
-      $recommendations[] = 'Sesuaikan distribusi bucket (Essential, Protection, Future Building, Flexible + Social) agar selaras prescription tahap finansial.';
+      $recommendations[] = 'Prioritaskan penyesuaian bucket yang menyimpang (Flexible + Social, Future Building, Protection) — Essential Living yang rendah justru sehat.';
     }
 
     if ($baseline !== null && ! $baseline->has_health_insurance && ! $baseline->has_life_insurance) {
