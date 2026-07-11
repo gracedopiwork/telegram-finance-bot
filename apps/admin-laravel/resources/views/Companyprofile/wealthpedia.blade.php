@@ -74,7 +74,8 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
             @forelse($articles as $article)
-                <article class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:border-primary-container transition-colors flex flex-col">
+                <a href="{{ route('company.wealthpedia.show', $article->slug) }}"
+                   class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:border-primary-container transition-colors flex flex-col group">
                     <div class="aspect-video bg-primary-container/10 flex items-center justify-center overflow-hidden">
                         @if($article->image_url)
                             <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="w-full h-full object-cover">
@@ -86,7 +87,7 @@
                         @if($article->category)
                             <span class="font-label-md text-label-md text-secondary mb-2 tracking-wider uppercase">{{ $article->category }}</span>
                         @endif
-                        <h3 class="font-headline-md text-[18px] font-bold text-primary mb-2 leading-snug">{{ $article->title }}</h3>
+                        <h3 class="font-headline-md text-[18px] font-bold text-primary mb-2 leading-snug group-hover:text-primary-container transition-colors">{{ $article->title }}</h3>
                         @if($article->description)
                             <p class="font-body-md text-body-md text-on-surface-variant flex-grow mb-4">{{ Str::limit($article->description, 130) }}</p>
                         @endif
@@ -98,10 +99,10 @@
                             @else
                                 <span></span>
                             @endif
-                            <a href="#" class="font-label-md text-label-md text-primary-container hover:underline">Baca →</a>
+                            <span class="font-label-md text-label-md text-primary-container group-hover:underline">Baca →</span>
                         </div>
                     </div>
-                </article>
+                </a>
             @empty
                 <div class="md:col-span-3 text-center py-12 text-on-surface-variant italic">Belum ada artikel.</div>
             @endforelse

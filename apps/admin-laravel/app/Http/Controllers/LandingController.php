@@ -91,6 +91,16 @@ class LandingController extends Controller
         ]);
     }
 
+    public function wealthpediaShow(string $slug)
+    {
+        $article = CpArticle::active()->where('slug', $slug)->firstOrFail();
+
+        return view('Companyprofile.wealthpedia-show', [
+            'active'  => 'wealthpedia',
+            'article' => $article,
+        ]);
+    }
+
     public function pertemuan()
     {
         $stageKey = request('stage');

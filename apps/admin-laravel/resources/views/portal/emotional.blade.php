@@ -140,7 +140,16 @@
 
     {{-- 2. Behavioral Recommendation (bulanan) --}}
     <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <div class="text-sm font-semibold text-navy-800 mb-3">Behavioral Recommendation</div>
+        <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="text-sm font-semibold text-navy-800">Behavioral Recommendation</div>
+            <form method="post" action="{{ route('portal.emotional.generate-manual', ['month' => $assessment['month'], 'period' => $assessment['period_months'] ?? 1]) }}">
+                @csrf
+                <button type="submit" class="inline-flex items-center gap-1.5 text-xs font-semibold text-navy-800 border border-slate-300 rounded-lg px-2.5 py-1.5 hover:bg-slate-50">
+                    <span class="material-symbols-outlined text-base">autorenew</span>
+                    Generate manual
+                </button>
+            </form>
+        </div>
         @if(!empty($assessment['behavioral_recommendations']))
             <ul class="space-y-1 text-sm text-slate-700">
                 @foreach($assessment['behavioral_recommendations'] as $rec)
@@ -153,7 +162,8 @@
             @endphp
             <p class="text-sm text-slate-600">
                 Rekomendasi bulanan (menghubungkan hasil FTSA dengan behavioral summary) dirilis
-                <strong>{{ $monthEnd->format('d/m/Y') }} pukul 22.00 WIB</strong>.
+                <strong>{{ $monthEnd->format('d/m/Y') }} pukul 22.00 WIB</strong>,
+                atau klik <strong>Generate manual</strong> di atas.
             </p>
         @else
             <p class="text-sm text-slate-500">–</p>

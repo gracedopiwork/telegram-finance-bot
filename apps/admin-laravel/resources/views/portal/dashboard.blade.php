@@ -15,7 +15,9 @@
         && ! str_contains($noteSummary, 'akan dibuat');
     $doctorsGeneratedAt = !empty($summary['doctors_generated_at']) ? \Carbon\Carbon::parse($summary['doctors_generated_at']) : null;
     $clinicalGeneratedAt = !empty($summary['clinical_generated_at']) ? \Carbon\Carbon::parse($summary['clinical_generated_at']) : null;
-    $clinicalWeek = \App\Models\PortalGuidanceSnapshot::monthCumulativeWeekNumber();
+    $monthCarbon = \Carbon\Carbon::createFromFormat('Y-m', $summary['month'] ?? now()->format('Y-m'));
+    $clinicalAnchor = $monthCarbon->isCurrentMonth() ? now() : $monthCarbon->copy()->endOfMonth();
+    $clinicalWeek = \App\Models\PortalGuidanceSnapshot::monthCumulativeWeekNumber($clinicalAnchor);
 @endphp
 
 <div class="space-y-5">

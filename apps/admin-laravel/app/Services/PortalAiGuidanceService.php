@@ -277,7 +277,8 @@ class PortalAiGuidanceService
             ]);
         }
 
-        $weekKey = PortalGuidanceSnapshot::monthCumulativeWeekPeriodKey();
+        $weekAnchor = $this->clinicalWeekAnchor($month);
+        $weekKey = PortalGuidanceSnapshot::monthCumulativeWeekPeriodKey($weekAnchor);
         $monthKey = $month;
 
         $weeklyStored = $this->guidanceSnapshots->get(
@@ -441,7 +442,8 @@ class PortalAiGuidanceService
         string $weekKey,
         ?FinancialBaseline $baseline,
     ): ?array {
-        $week = $this->guidanceSnapshots->monthCumulativeWeekRange();
+        $anchor = $this->anchorFromWeekKey($weekKey);
+        $week = $this->guidanceSnapshots->monthCumulativeWeekRange($anchor);
         $periodLabel = $week['label'];
 
         $context = app(TransactionDashboardService::class)->financialGuidanceContext(
@@ -1024,6 +1026,26 @@ PROMPT;
     }
 
     return $lines;
+  }
+
+  private function clinicalWeekAnchor(string $monthKey): \Carbon\Carbon
+  {
+    try {
+      $month = \Carbon\Carbon::createFromFormat('Y-m', $monthKey)->startOfMonth();
+    } catch (\Throwable) {
+      return now();
+    }
+
+    return $month->isCurrentMonth() ? now() : $month->copy()->endOfMonth();
+  }
+
+  private function anchorFromWeekKey(string $weekKey): \Carbon\Carbon
+  {
+    if (preg_match('/^(\d{4}-\d{2})-W(\d+)$/', $weekKey, $matches) === 1) {
+      return $this->clinicalWeekAnchor($matches[1]);
+    }
+
+    return now();
   }
 
   /**

@@ -530,19 +530,25 @@ def analyze_with_claude(user_text: str) -> Dict[str, Any]:
     raise RuntimeError(f"Semua model Claude gagal dipakai: {last_error}")
 
 
-def extract_transaction_text_from_image(image_path: str) -> str:
+def extract_transaction_text_from_image(image_path: str, mime_type: str = "image/jpeg") -> str:
     prompt = (
-        "Ekstrak isi transaksi dari gambar struk/foto jadi satu kalimat singkat bahasa Indonesia "
-        "yang berisi keterangan dan nominal. Jangan isi mood. Jika tidak terbaca, balas INVALID_IMAGE."
+        "Ekstrak isi transaksi dari gambar struk/nota/foto belanja jadi satu kalimat singkat bahasa Indonesia "
+        "yang berisi keterangan dan nominal (contoh: 'Makan siang 45000'). "
+        "Fokus pada total bayar/total harga jika ada. Jangan isi mood. "
+        "Hanya balas INVALID_IMAGE jika benar-benar tidak ada angka/teks transaksi yang terbaca."
     )
     with open(image_path, "rb") as image_file:
         image_bytes = image_file.read()
 
-    text = claude_extract_image_text(image_bytes, "image/jpeg", prompt).strip()
+    media = mime_type if mime_type.startswith("image/") else "image/jpeg"
+    if media in {"image/heic", "image/heif"}:
+        raise RuntimeError("FORMAT_HEIC")
+
+    text = claude_extract_image_text(image_bytes, media, prompt).strip()
     if text and text.upper() != "INVALID_IMAGE":
         return text
 
-    raise RuntimeError("Gagal ekstrak transaksi dari gambar")
+    raise RuntimeError("INVALID_IMAGE")
 
 
 def parse_nominal_fallback(text: str) -> int:
@@ -1224,6 +1230,7 @@ async def process_struk_image_message(
     file_id: str,
     *,
     intro: str,
+    mime_type: str = "image/jpeg",
 ) -> None:
     user = message.from_user
     user_id = user.id if user else 0
@@ -1241,13 +1248,23 @@ async def process_struk_image_message(
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
             temp_path = tmp.name
         await telegram_file.download_to_drive(temp_path)
-        extracted_text = extract_transaction_text_from_image(temp_path)
+        extracted_text = extract_transaction_text_from_image(temp_path, mime_type=mime_type)
         record_ai_usage(user_id, "vision")
     except Exception as exc:  # pragma: no cover - external provider guard
         logger.exception("Gagal proses gambar transaksi: %s", exc)
-        await message.reply_text(
-            "Maaf, gambar belum bisa dibaca. Coba foto lebih jelas atau kirim dalam bentuk teks."
-        )
+        err = str(exc)
+        if "FORMAT_HEIC" in err:
+            reply = "Format HEIC belum didukung. Kirim ulang sebagai JPG/PNG, atau kirim dalam bentuk teks."
+        elif "INVALID_IMAGE" in err:
+            reply = (
+                "Maaf, teks nominal di foto belum terbaca. "
+                "Coba foto lebih dekat/terang (hindari pantulan), atau ketik manual mis. `makan 45000`."
+            )
+        elif any(token in err.lower() for token in ("api key", "authentication", "401", "unauthorized")):
+            reply = "Layanan baca gambar sedang bermasalah (konfigurasi AI). Coba lagi nanti atau kirim dalam bentuk teks."
+        else:
+            reply = "Maaf, gambar belum bisa dibaca. Coba foto lebih jelas atau kirim dalam bentuk teks."
+        await message.reply_text(reply)
         return
     finally:
         try:
@@ -1303,6 +1320,7 @@ async def document_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         context,
         document.file_id,
         intro="File struk sudah kebaca.",
+        mime_type=mime_type or "image/jpeg",
     )
 
 

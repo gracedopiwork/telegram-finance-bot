@@ -93,7 +93,9 @@ class DashboardController extends Controller
         ->with('warning', 'Belum ada transaksi untuk periode ini, jadi belum bisa generate manual.');
     }
 
-    $week = $snapshot->monthCumulativeWeekRange();
+    $monthCarbon = Carbon::createFromFormat('Y-m', $month);
+    $weekAnchor = $monthCarbon->isCurrentMonth() ? now() : $monthCarbon->copy()->endOfMonth();
+    $week = $snapshot->monthCumulativeWeekRange($weekAnchor);
     $weeklyContext = $dashboard->financialGuidanceContext(
       $telegramUserId,
       $week['start'],
@@ -104,7 +106,7 @@ class DashboardController extends Controller
 
     $aiGuidance->generateAndStoreWeeklyClinicalSummary(
       $telegramUserId,
-      PortalGuidanceSnapshot::monthCumulativeWeekPeriodKey(),
+      PortalGuidanceSnapshot::monthCumulativeWeekPeriodKey($weekAnchor),
       $weeklyContext['metrics'],
       $baseline,
       $weeklyContext['fallback_clinical'],
@@ -121,6 +123,35 @@ class DashboardController extends Controller
     return redirect()
       ->route('portal.dashboard', ['month' => $month, 'period' => $period])
       ->with('success', 'Doctor\'s Note dan Clinical Summary berhasil di-generate manual dari data terbaru.');
+  }
+
+  public function generateManualBehavioralGuidance(Request $request): RedirectResponse
+  {
+    $telegramUserId = (int) PortalSession::telegramUserId($request);
+    $email = (string) (PortalSession::email($request) ?? '');
+    app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+
+    [$month, $period] = $this->filters($request);
+    $baseline = app(PortalOnboardingService::class)->resolveBaseline($email, $telegramUserId);
+    $context = app(ImpulsivityAssessmentService::class)->monthlyGuidanceContext($telegramUserId, $month, $email);
+
+    if (($context['expense_count'] ?? 0) === 0) {
+      return redirect()
+        ->route('portal.emotional', ['month' => $month, 'period' => $period])
+        ->with('warning', 'Belum ada pengeluaran untuk bulan ini, jadi belum bisa generate behavioral recommendation.');
+    }
+
+    app(PortalAiGuidanceService::class)->generateAndStoreMonthlyBehavioralGuidance(
+      $telegramUserId,
+      $month,
+      $context['metrics'],
+      $baseline,
+      $context['fallback'],
+    );
+
+    return redirect()
+      ->route('portal.emotional', ['month' => $month, 'period' => $period])
+      ->with('success', 'Behavioral Recommendation berhasil di-generate manual dari data bulan ini.');
   }
 
   public function emotional(Request $request): View
@@ -253,6 +284,12 @@ class DashboardController extends Controller
 
     if (! is_string($month) || ! preg_match('/^\d{4}-\d{2}$/', $month)) {
       $month = Carbon::now()->format('Y-m');
+    } else {
+      // Cegah month lama (mis. 2024-05) nyangkut di URL sementara dropdown hanya 12 bulan terakhir.
+      $allowed = collect($this->monthOptions())->pluck('value')->all();
+      if (! in_array($month, $allowed, true)) {
+        $month = Carbon::now()->format('Y-m');
+      }
     }
 
     return [$month, $period];

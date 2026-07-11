@@ -45,6 +45,7 @@ Route::get('/paket',         [LandingController::class, 'paket'])->name('company
 Route::get('/penasihat',     [LandingController::class, 'penasihat'])->name('company.penasihat');
 Route::get('/produk',        [LandingController::class, 'produk'])->name('company.produk');
 Route::get('/wealthpedia',   [LandingController::class, 'wealthpedia'])->name('company.wealthpedia');
+Route::get('/wealthpedia/{slug}', [LandingController::class, 'wealthpediaShow'])->name('company.wealthpedia.show');
 Route::get('/pertemuan',     [LandingController::class, 'pertemuan'])->name('company.pertemuan');
 Route::get('/informasi',     [LandingController::class, 'informasi'])->name('company.informasi');
 
@@ -204,6 +205,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::delete('/transaksi/{transaction}', [PortalTransactionsController::class, 'destroy'])->name('transactions.destroy');
             Route::get('/dashboard', [PortalDashboardController::class, 'index'])->name('dashboard');
             Route::post('/dashboard/generate-manual', [PortalDashboardController::class, 'generateManualFinancialGuidance'])->name('dashboard.generate-manual');
+            Route::post('/emotional/generate-manual', [PortalDashboardController::class, 'generateManualBehavioralGuidance'])->name('emotional.generate-manual');
         });
     });
 });
