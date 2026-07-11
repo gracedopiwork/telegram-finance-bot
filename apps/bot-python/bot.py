@@ -513,7 +513,7 @@ def normalize_ai_result(data: Dict[str, Any], source_text: str = "") -> Dict[str
 
 
 def analyze_with_claude(user_text: str) -> Dict[str, Any]:
-    candidate_models = os.getenv("CLAUDE_MODELS", "claude-3-5-haiku-20241022,claude-sonnet-4-20250514")
+    candidate_models = os.getenv("CLAUDE_MODELS", "claude-haiku-4-5,claude-sonnet-4-6")
     last_error: Exception | None = None
 
     try:

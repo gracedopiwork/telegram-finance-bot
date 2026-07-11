@@ -13,7 +13,7 @@ from anthropic import Anthropic
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODELS = "claude-3-5-haiku-20241022,claude-sonnet-4-20250514"
+DEFAULT_MODELS = "claude-haiku-4-5,claude-sonnet-4-6"
 
 
 def _get_env(name: str, required: bool = True) -> str:
