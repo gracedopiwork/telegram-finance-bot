@@ -33,7 +33,6 @@
         body { font-family: Manrope, system-ui, sans-serif; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
         .nav-active { background: rgba(255,255,255,.14); box-shadow: inset 3px 0 0 {{ config('yfd_brand.gold') }}; }
-        .pulse-ring { background: conic-gradient({{ config('yfd_brand.mint') }} calc(var(--score) * 1%), #e2e8f0 0); }
     </style>
     @stack('head')
 </head>

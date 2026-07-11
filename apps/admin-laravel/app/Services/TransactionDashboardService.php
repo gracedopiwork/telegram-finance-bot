@@ -70,7 +70,6 @@ class TransactionDashboardService
     $idealShares = $this->prescription->idealsForUser($telegramUserId);
     $buckets = $this->budgetBuckets($rows, $expense, $savingInvestment, $idealShares);
     $trend = $this->cashflowTrend($telegramUserId, $month, 6);
-    $pulse = $this->financialPulse($income, $expense, $savingInvestment, $savingRate, $buckets);
     $baseline = FinancialBaseline::latestForUser($telegramUserId);
     if ($baseline === null && $email !== '') {
       $baseline = FinancialBaseline::latestForEmail($email);
@@ -79,7 +78,7 @@ class TransactionDashboardService
     $savingAnalysis = $this->savingAnalysis($rows);
     $dailyExpenses = $this->dailyExpenseTrend($telegramUserId, $month);
     $fallbackClinical = $this->clinicalSummary($income, $expense, $cashflow, $savingRate, $buckets, $baseline, $periodMonths);
-    $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $pulse['score'], $buckets, $baseline);
+    $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $buckets, $baseline);
 
     $aiGuidance = app(PortalAiGuidanceService::class)->financial(
       $telegramUserId,
@@ -92,7 +91,6 @@ class TransactionDashboardService
         'saving_investment' => $savingInvestment,
         'cashflow' => $cashflow,
         'saving_rate' => $savingRate,
-        'pulse_score' => $pulse['score'],
         'transaction_count' => $transactionCount,
         'buckets' => $buckets,
       ],
@@ -124,7 +122,6 @@ class TransactionDashboardService
       'baseline' => $this->serializeBaseline($baseline),
       'baseline_review_due' => $baseline?->isReviewDue() ?? false,
       'trend' => $trend,
-      'pulse' => $pulse,
       'income_analysis' => $incomeAnalysis,
       'saving_analysis' => $savingAnalysis,
       'daily_expenses' => $dailyExpenses,
@@ -174,7 +171,6 @@ class TransactionDashboardService
 
     $idealShares = $this->prescription->idealsForUser($telegramUserId);
     $buckets = $this->budgetBuckets($rows, $expense, $savingInvestment, $idealShares);
-    $pulse = $this->financialPulse($income, $expense, $savingInvestment, $savingRate, $buckets);
     $baseline = FinancialBaseline::latestForUser($telegramUserId);
 
     $fallbackClinical = $this->clinicalSummary(
@@ -186,7 +182,7 @@ class TransactionDashboardService
       $baseline,
       $periodMonthsForClinical,
     );
-    $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $pulse['score'], $buckets, $baseline);
+    $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $buckets, $baseline);
 
     return [
       'metrics' => [
@@ -196,7 +192,6 @@ class TransactionDashboardService
         'saving_investment' => $savingInvestment,
         'cashflow' => $cashflow,
         'saving_rate' => $savingRate,
-        'pulse_score' => $pulse['score'],
         'transaction_count' => $transactionCount,
         'buckets' => $buckets,
       ],
@@ -422,51 +417,6 @@ class TransactionDashboardService
   }
 
   /**
-   * @param  list<array{bucket: string, amount: int, share: float, ideal: float, progress: float, status: string, status_label: string}>  $buckets
-   * @return array{score: int, label: string}
-   */
-  private function financialPulse(int $income, int $expense, int $savingInvestment, float $savingRate, array $buckets): array
-  {
-    $score = 50;
-    if ($income > 0) {
-      $score += (int) min(25, max(-25, $savingRate / 2));
-      $score += ($expense + $savingInvestment) <= $income ? 10 : -15;
-    }
-    foreach ($buckets as $bucket) {
-      $penalty = $this->bucketDeviationPenalty(
-        (string) $bucket['bucket'],
-        (float) $bucket['share'],
-        (float) $bucket['ideal'],
-      );
-      $score -= (int) min(8, $penalty / 5);
-    }
-    $score = max(0, min(100, $score));
-
-    $label = match (true) {
-      $score >= 80 => 'Excellent',
-      $score >= 65 => 'Good',
-      $score >= 45 => 'Fair',
-      default => 'Needs Attention',
-    };
-
-    return ['score' => $score, 'label' => $label];
-  }
-
-  /**
-   * Penalti skor pulse: bucket min hanya jika di bawah ideal; bucket max hanya jika di atas ideal.
-   */
-  private function bucketDeviationPenalty(string $bucket, float $share, float $ideal): float
-  {
-    $delta = $share - $ideal;
-
-    return match ($bucket) {
-      'Future Building', 'Protection' => $delta < 0 ? abs($delta) : 0.0,
-      'Essential Living', 'Flexible + Social' => $delta > 0 ? $delta : 0.0,
-      default => abs($delta),
-    };
-  }
-
-  /**
    * @return list<array{label: string, amount: int, share: float}>
    */
   private function savingAnalysis(Collection $rows): array
@@ -685,7 +635,6 @@ class TransactionDashboardService
   private function doctorsNoteFinancial(
     int $cashflow,
     float $savingRate,
-    int $pulseScore,
     array $buckets,
     ?FinancialBaseline $baseline,
   ): array {
@@ -701,6 +650,7 @@ class TransactionDashboardService
       $recommendations[] = 'Kurangi pengeluaran Flexible + Social hingga cashflow kembali positif sebelum menambah investasi.';
     }
 
+    $hasBucketIssue = false;
     foreach ($buckets as $bucket) {
       $name = (string) ($bucket['bucket'] ?? '');
       $share = (float) ($bucket['share'] ?? 0);
@@ -710,20 +660,24 @@ class TransactionDashboardService
       if ($name === 'Essential Living') {
         if (in_array($status, ['over_max', 'over'], true)) {
           $recommendations[] = 'Kurangi pengeluaran Essential Living agar tidak melebihi batas prescription tahap finansial Anda.';
+          $hasBucketIssue = true;
         }
         continue;
       }
 
       if ($name === 'Flexible + Social' && in_array($status, ['over_max', 'over'], true)) {
         $recommendations[] = 'Kontrol pengeluaran Flexible + Social agar tidak melebihi 10% dari pendapatan.';
+        $hasBucketIssue = true;
       }
 
       if ($name === 'Future Building' && in_array($status, ['under_min', 'under'], true)) {
         $recommendations[] = 'Naikkan alokasi Future Building agar mendekati target minimal 30% dari pendapatan.';
+        $hasBucketIssue = true;
       }
 
       if ($name === 'Protection' && in_array($status, ['under_min', 'under', 'near_min'], true) && $share < $ideal) {
         $recommendations[] = 'Evaluasi dan optimalkan alokasi proteksi keuangan (asuransi/dana darurat) — saat ini masih di bawah target prescription.';
+        $hasBucketIssue = true;
       }
 
       if ($name === 'Future Building' && $share > 0 && $savingRate >= 20) {
@@ -731,7 +685,7 @@ class TransactionDashboardService
       }
     }
 
-    if ($pulseScore < 50) {
+    if ($hasBucketIssue) {
       $recommendations[] = 'Prioritaskan penyesuaian bucket yang menyimpang (Flexible + Social, Future Building, Protection) — Essential Living yang rendah justru sehat.';
     }
 

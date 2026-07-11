@@ -73,6 +73,7 @@ return [
         'Future Building target MIN ≥30% — komentari jika di bawah target.',
         'Protection target MIN ~10% — boleh komentari untuk optimisasi alokasi jika di bawah target.',
         'Flexible + Social target MAKS ≤10% — komentari jika melebihi batas.',
+        'JANGAN menyebut Financial Pulse, skor pulse, atau rating KPI pulse — fitur itu sudah dihapus.',
     ],
 
     'bucket_prescription_directions' => [

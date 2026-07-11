@@ -641,7 +641,6 @@ METRIK:
 - Pengeluaran: Rp {$this->formatIdr((int) $metrics['expense'])}
 - Cashflow: Rp {$this->formatIdr((int) $metrics['cashflow'])}
 - Saving rate: {$metrics['saving_rate']}%
-- Financial pulse: {$metrics['pulse_score']}/100
 - Jumlah transaksi: {$metrics['transaction_count']}
 
 BUCKET PRESCRIPTION:
@@ -693,7 +692,6 @@ METRIK:
 - Pengeluaran: Rp {$this->formatIdr((int) $metrics['expense'])}
 - Cashflow: Rp {$this->formatIdr((int) $metrics['cashflow'])}
 - Saving rate: {$metrics['saving_rate']}%
-- Financial pulse: {$metrics['pulse_score']}/100
 - Jumlah transaksi: {$metrics['transaction_count']}
 
 BUCKET PRESCRIPTION:
@@ -737,7 +735,6 @@ METRIK:
 - Pengeluaran: Rp {$this->formatIdr((int) $metrics['expense'])}
 - Cashflow: Rp {$this->formatIdr((int) $metrics['cashflow'])}
 - Saving rate: {$metrics['saving_rate']}%
-- Financial pulse: {$metrics['pulse_score']}/100
 - Jumlah transaksi: {$metrics['transaction_count']}
 
 BUCKET PRESCRIPTION:
@@ -993,7 +990,6 @@ PROMPT;
             'expense' => (int) ($metrics['expense'] ?? 0),
             'cashflow' => (int) ($metrics['cashflow'] ?? 0),
             'saving_rate' => (float) ($metrics['saving_rate'] ?? 0),
-            'pulse_score' => (int) ($metrics['pulse_score'] ?? 0),
             'transaction_count' => (int) ($metrics['transaction_count'] ?? 0),
         ];
     }
