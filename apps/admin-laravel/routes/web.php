@@ -68,7 +68,7 @@ Route::get('/check-up/hasil', [PublicCheckupController::class, 'result'])->name(
 Route::get('/checkout/{code}',  [CheckoutController::class, 'show'])->name('checkout.show');
 Route::post('/checkout',        [CheckoutController::class, 'store'])->name('checkout.store');
 Route::get('/checkout/finish/done', [CheckoutController::class, 'finish'])->name('checkout.finish');
-Route::post('/webhooks/midtrans', [WebhookController::class, 'midtrans'])
+Route::match(['get', 'post'], '/webhooks/midtrans', [WebhookController::class, 'midtrans'])
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])
     ->name('webhooks.midtrans');
 

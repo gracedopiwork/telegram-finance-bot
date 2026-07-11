@@ -16,6 +16,14 @@ class WebhookController extends Controller
      */
     public function midtrans(Request $request, MidtransPaymentSyncService $sync)
     {
+        // Browser buka URL = GET. Midtrans kirim notifikasi = POST.
+        if ($request->isMethod('get')) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Endpoint Midtrans webhook aktif. Notifikasi pembayaran dikirim via POST, bukan GET.',
+            ]);
+        }
+
         if (trim((string) config('services.midtrans.server_key')) === '') {
             Log::error('Midtrans webhook: MIDTRANS_SERVER_KEY belum dikonfigurasi');
 
