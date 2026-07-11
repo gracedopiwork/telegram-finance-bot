@@ -43,6 +43,7 @@ from transaction_categories import (
     normalize_category_fields,
     normalize_saving_fields,
 )
+from date_parser import apply_transaction_date, format_recorded_at_label
 from impulsive_rules import (
     PAYDAY_SPLURGE_KEYWORDS,
     REWARD_SPENDING_KEYWORDS,
@@ -67,11 +68,13 @@ HELP_TEXT = (
     "Contoh format yang benar:\n"
     "- makan malam 50rb\n"
     "- beli kopi 18000 karena ngantuk\n"
-    "- nabung 200000"
+    "- nabung 200000\n"
+    "- tgl 2/7 beli makan 50k  (catat ke tanggal 2 Juli)"
 )
 CATAT_HELP_TEXT = (
     "Gunakan `/catat <catatan>` atau kirim teks biasa.\n"
-    "Contoh: `/catat makan malam 50rb`"
+    "Contoh: `/catat makan malam 50rb`\n"
+    "Backdate: `/catat tgl 2/7 beli makan 50k`"
 )
 ACTIVATE_HELP_TEXT = (
     "Lisensi belum aktif.\n"
@@ -237,6 +240,7 @@ def finalize_parsed_transaction(
         ai_suggested=ai_val,
         trust_ai=trust_ai_impulsif,
     )
+    apply_transaction_date(parsed, source_text)
     return parsed
 
 
@@ -509,6 +513,7 @@ def normalize_ai_result(data: Dict[str, Any], source_text: str = "") -> Dict[str
     if data["impulsif"] not in VALID_IMPULSIF:
         raise ValueError("invalid_impulsif")
 
+    apply_transaction_date(data, source_text)
     return data
 
 
@@ -627,12 +632,19 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
     normalize_taxonomy(result)
     normalize_saving_fields(result, text)
     result["impulsif"] = resolve_impulsif(result, text)
+    apply_transaction_date(result, text)
     return result
 
 
 def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> str:
+    date_line = ""
+    label = format_recorded_at_label(parsed.get("recorded_at"))
+    if label:
+        date_line = f"Tanggal: {label}\n"
+
     return (
         f"Aku baca transaksi untuk {greeting_name} seperti ini:\n"
+        f"{date_line}"
         f"Keterangan: {parsed['keterangan']}\n"
         f"Nominal: Rp{parsed['nominal']:,}\n"
         f"Jenis: {parsed['jenis']}\n"
@@ -696,7 +708,9 @@ async def save_transaction(
 
     saved_db = False
     if uid:
-        recorded_at = getattr(message, "date", None) if message is not None else None
+        recorded_at = parsed.get("recorded_at")
+        if recorded_at is None and message is not None:
+            recorded_at = getattr(message, "date", None)
         ok, err = save_transaction_to_api(uid, parsed, source=source, recorded_at=recorded_at)
         saved_db = ok
         if not ok:
@@ -732,7 +746,8 @@ async def save_transaction(
 
     await message.reply_text(
         f"Tercatat untuk {greeting_name}:\n"
-        f"Keterangan: {parsed['keterangan']}\n"
+        + (f"Tanggal: {format_recorded_at_label(parsed.get('recorded_at'))}\n" if parsed.get("recorded_at") else "")
+        + f"Keterangan: {parsed['keterangan']}\n"
         f"Nominal: Rp{parsed['nominal']:,}\n"
         f"Jenis: {parsed['jenis']}\n"
         f"Kategori: {parsed['kategori']}\n"

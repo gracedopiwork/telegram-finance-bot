@@ -163,7 +163,8 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
   "kategori": string,
   "sifat": "Need" | "Wants",
   "mood": "Happy" | "Neutral" | "Sad" | "Stressed" | "Angry" | "Tired",
-  "impulsif": "Yes" | "No"
+  "impulsif": "Yes" | "No",
+  "tanggal": "YYYY-MM-DD" | null
 }}
 
 CATATAN:
@@ -194,8 +195,11 @@ Aturan:
 7) impulsif — terpisah dari sifat Need/Wants:
    "Yes" jika spontan / fomo / mood negatif + belanja diskresioner.
    "No" jika terencana, tagihan wajib, atau kebutuhan kerja yang dijelaskan.
-8) Balas HANYA JSON murni, tanpa markdown.
-9) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
+8) tanggal: opsional. Isi YYYY-MM-DD HANYA jika user menyebut tanggal transaksi
+   (contoh: "tgl 2/7", "tanggal 2 juli", "kemarin", "2 hari lalu").
+   Format Indonesia biasanya hari/bulan. Jika tidak ada tanggal eksplisit → null.
+9) Balas HANYA JSON murni, tanpa markdown.
+10) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
    {{"error":"invalid_input"}}
 """
 
