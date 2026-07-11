@@ -85,9 +85,57 @@ class LandingController extends Controller
 
     public function wealthpedia()
     {
+        $categoryFilter = trim((string) request('category', ''));
+        $articlesQuery = CpArticle::active()->orderBy('sort')->orderByDesc('id');
+        if ($categoryFilter !== '') {
+            $articlesQuery->where('category', $categoryFilter);
+        }
+
+        $categoryMeta = [
+            'Cashflow' => ['ic' => 'water_drop', 'title' => 'Cashflow & Budgeting', 'desc' => 'Mengatur arus kas, anggaran, dan kebiasaan harian.'],
+            'Cashflow & Budgeting' => ['ic' => 'water_drop', 'title' => 'Cashflow & Budgeting', 'desc' => 'Mengatur arus kas, anggaran, dan kebiasaan harian.'],
+            'Hutang' => ['ic' => 'credit_card_off', 'title' => 'Manajemen Hutang', 'desc' => 'Strategi keluar dari hutang dan menghindari hutang destruktif.'],
+            'Manajemen Hutang' => ['ic' => 'credit_card_off', 'title' => 'Manajemen Hutang', 'desc' => 'Strategi keluar dari hutang dan menghindari hutang destruktif.'],
+            'Dana Darurat' => ['ic' => 'savings', 'title' => 'Dana Darurat & Tabungan', 'desc' => 'Membangun bantalan finansial yang sehat.'],
+            'Tabungan' => ['ic' => 'savings', 'title' => 'Dana Darurat & Tabungan', 'desc' => 'Membangun bantalan finansial yang sehat.'],
+            'Proteksi' => ['ic' => 'shield', 'title' => 'Proteksi & Asuransi', 'desc' => 'Memahami asuransi sebelum membeli.'],
+            'Asuransi' => ['ic' => 'shield', 'title' => 'Proteksi & Asuransi', 'desc' => 'Memahami asuransi sebelum membeli.'],
+            'Investasi' => ['ic' => 'trending_up', 'title' => 'Investasi Dasar', 'desc' => 'Reksadana, saham, emas — untuk pemula.'],
+            'Emotional Finance' => ['ic' => 'psychology', 'title' => 'Emotional Finance', 'desc' => 'Trauma finansial, impulsive spending, regulasi diri.'],
+        ];
+
+        $categories = CpArticle::active()
+            ->whereNotNull('category')
+            ->where('category', '!=', '')
+            ->select('category')
+            ->selectRaw('COUNT(*) as article_count')
+            ->groupBy('category')
+            ->orderBy('category')
+            ->get()
+            ->map(function ($row) use ($categoryMeta) {
+                $name = (string) $row->category;
+                $meta = $categoryMeta[$name] ?? [
+                    'ic' => 'article',
+                    'title' => $name,
+                    'desc' => 'Artikel seputar '.$name.'.',
+                ];
+
+                return [
+                    'name' => $name,
+                    'ic' => $meta['ic'],
+                    'title' => $meta['title'],
+                    'desc' => $meta['desc'],
+                    'count' => (int) $row->article_count,
+                ];
+            })
+            ->values()
+            ->all();
+
         return view('Companyprofile.wealthpedia', [
-            'active'   => 'wealthpedia',
-            'articles' => CpArticle::active()->orderBy('sort')->orderByDesc('id')->get(),
+            'active' => 'wealthpedia',
+            'articles' => $articlesQuery->get(),
+            'categories' => $categories,
+            'activeCategory' => $categoryFilter,
         ]);
     }
 

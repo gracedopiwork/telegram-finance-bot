@@ -50,7 +50,25 @@
                 <div class="card-body">
                     <div class="form-group">
                         <label>Kategori</label>
-                        <input type="text" name="category" value="{{ old('category', $article->category) }}" class="form-control">
+                        @php
+                            $existingCategories = \App\Models\CpArticle::query()
+                                ->whereNotNull('category')
+                                ->where('category', '!=', '')
+                                ->distinct()
+                                ->orderBy('category')
+                                ->pluck('category');
+                        @endphp
+                        <input type="text" name="category" list="article-categories"
+                               value="{{ old('category', $article->category) }}" class="form-control"
+                               placeholder="Contoh: Emotional Finance, Cashflow, Investasi">
+                        <datalist id="article-categories">
+                            @foreach($existingCategories as $cat)
+                                <option value="{{ $cat }}"></option>
+                            @endforeach
+                        </datalist>
+                        <small class="form-text text-muted">
+                            Diisi manual (bukan otomatis). Kategori ini muncul di Wealthpedia sebagai filter/pool artikel.
+                        </small>
                     </div>
                     <div class="form-group">
                         <label>Read time</label>

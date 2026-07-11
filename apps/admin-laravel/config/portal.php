@@ -80,4 +80,17 @@ return [
         'Asia/Pontianak' => 'Asia/Jakarta',
         'Asia/Ujung_Pandang' => 'Asia/Makassar',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Branding Doctor's Note di dashboard portal
+    |--------------------------------------------------------------------------
+    | photo: path relatif ke public/ (contoh images/doctors/ayuti.jpg) atau URL penuh.
+    | Kosongkan photo untuk pakai ikon stethoscope generik.
+    */
+    'doctors_note' => [
+        'name' => env('PORTAL_DOCTORS_NOTE_NAME', 'dr. Financial'),
+        'title' => env('PORTAL_DOCTORS_NOTE_TITLE', 'Your Financial Doctor'),
+        'photo' => env('PORTAL_DOCTORS_NOTE_PHOTO', ''),
+    ],
 ];

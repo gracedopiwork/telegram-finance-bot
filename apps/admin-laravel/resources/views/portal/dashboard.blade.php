@@ -31,7 +31,7 @@
     {{-- Doctor's Note --}}
     <div class="bg-white rounded-xl border border-slate-200 p-5">
         <div class="flex items-start justify-between gap-3 mb-3">
-            <div class="text-sm font-semibold text-navy-800">Doctor's Note</div>
+            @include('portal.partials.doctors-note-brand')
             <form method="post" action="{{ route('portal.dashboard.generate-manual', ['month' => $summary['month'], 'period' => $summary['period_months'] ?? 1]) }}">
                 @csrf
                 <button type="submit" class="inline-flex items-center gap-1.5 text-xs font-semibold text-navy-800 border border-slate-300 rounded-lg px-2.5 py-1.5 hover:bg-slate-50">

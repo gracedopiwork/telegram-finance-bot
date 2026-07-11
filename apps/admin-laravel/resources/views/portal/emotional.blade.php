@@ -87,7 +87,7 @@
     {{-- 1. Doctor's Note + FTSA (2 kolom) --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div class="bg-white rounded-xl border border-slate-200 p-5">
-            <div class="text-sm font-semibold text-navy-800 mb-3">Doctor's Note</div>
+            @include('portal.partials.doctors-note-brand', ['extraClass' => 'mb-3'])
             @if($ftsaProfile)
                 @if($ftsaDoctorsNote !== '')
                     <p class="text-sm text-slate-700 leading-relaxed">{{ $ftsaDoctorsNote }}</p>

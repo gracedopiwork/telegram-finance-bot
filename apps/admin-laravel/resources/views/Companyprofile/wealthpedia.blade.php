@@ -31,35 +31,36 @@
         </form>
     </header>
 
-    {{-- ============== Kategori Bento ============== --}}
+    {{-- ============== Kategori dari artikel aktif ============== --}}
     <section class="mb-20">
         <div class="flex items-end justify-between mb-8">
             <div>
                 <h2 class="font-headline-lg text-headline-lg text-primary mb-2">Kategori Edukasi</h2>
-                <p class="font-body-md text-body-md text-on-surface-variant">Pilih topik sesuai kebutuhan Anda.</p>
+                <p class="font-body-md text-body-md text-on-surface-variant">Kategori mengikuti field kategori saat upload artikel di admin.</p>
             </div>
+            @if(!empty($activeCategory))
+                <a href="{{ route('company.wealthpedia') }}" class="font-label-md text-label-md text-primary-container hover:underline">Lihat semua</a>
+            @endif
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
-            @foreach([
-                ['ic' => 'water_drop',    'title' => 'Cashflow & Budgeting',    'desc' => 'Mengatur arus kas, anggaran, dan kebiasaan harian.', 'count' => '12 artikel'],
-                ['ic' => 'credit_card_off','title' => 'Manajemen Hutang',        'desc' => 'Strategi keluar dari hutang dan menghindari hutang destruktif.', 'count' => '9 artikel'],
-                ['ic' => 'savings',       'title' => 'Dana Darurat & Tabungan', 'desc' => 'Membangun bantalan finansial yang sehat.',          'count' => '8 artikel'],
-                ['ic' => 'shield',        'title' => 'Proteksi & Asuransi',     'desc' => 'Memahami asuransi sebelum membeli.',                 'count' => '6 artikel'],
-                ['ic' => 'trending_up',   'title' => 'Investasi Dasar',         'desc' => 'Reksadana, saham, emas — untuk pemula.',             'count' => '11 artikel'],
-                ['ic' => 'psychology',    'title' => 'Emotional Finance',       'desc' => 'Trauma finansial, impulsive spending, regulasi diri.','count' => '7 artikel'],
-            ] as $cat)
-                <a href="#" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-6 hover:border-primary-container transition-colors">
+            @forelse(($categories ?? []) as $cat)
+                <a href="{{ route('company.wealthpedia', ['category' => $cat['name']]) }}"
+                   class="group bg-surface-container-lowest border rounded-xl p-6 transition-colors {{ ($activeCategory ?? '') === $cat['name'] ? 'border-primary-container ring-1 ring-primary-container' : 'border-outline-variant hover:border-primary-container' }}">
                     <div class="flex items-start justify-between mb-4">
                         <div class="w-12 h-12 bg-primary-container/10 rounded-lg flex items-center justify-center">
                             <span class="material-symbols-outlined text-primary-container">{{ $cat['ic'] }}</span>
                         </div>
-                        <span class="font-caption text-caption text-on-surface-variant">{{ $cat['count'] }}</span>
+                        <span class="font-caption text-caption text-on-surface-variant">{{ $cat['count'] }} artikel</span>
                     </div>
                     <h3 class="font-headline-md text-[18px] font-bold text-primary mb-2 group-hover:text-primary-container transition-colors">{{ $cat['title'] }}</h3>
                     <p class="font-body-md text-body-md text-on-surface-variant">{{ $cat['desc'] }}</p>
                 </a>
-            @endforeach
+            @empty
+                <div class="md:col-span-3 text-center py-8 text-on-surface-variant italic">
+                    Belum ada kategori. Isi field <strong>Kategori</strong> saat upload artikel di admin.
+                </div>
+            @endforelse
         </div>
     </section>
 
