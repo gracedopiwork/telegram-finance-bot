@@ -207,12 +207,17 @@ Aturan:
    - Huruf k di kata biasa (kemarin, snack, stock) BUKAN penanda ribuan.
    - Tagihan (listrik/sewa/BPJS/cicilan) jarang di bawah Rp1000 — jika user tulis "90 br/rb", pakai skala ribuan.
 3) jenis: Pemasukan | Pengeluaran | Saving/Investment.
-   - Jika user menulis "Pengeluaran" / "Pemasukan" / "Saving" di AWAL pesan, jenis WAJIB mengikuti itu (abaikan kata freelance/honor di deskripsi).
-   - Pemasukan: gaji, bonus, honor/freelance yang DITERIMA, affiliate/komisi, bunga investasi, dividen cair, cashback, refund, hasil sewa, hasil jualan.
-   - Bayar/melunasi/pelunasan jasa freelancer = Pengeluaran (BUKAN Pemasukan), meskipun ada kata freelance.
+   - UTAMA: lihat KATA KERJA arah uang dulu.
+     * Pemasukan: terima, dapat, dapet, uang masuk, cair (hasil).
+     * Pengeluaran: bayar, pengeluaran, melunasi, pelunasan, belanja, keluarin.
+   - Jika user menulis "Pengeluaran" / "Pemasukan" / "Saving" di AWAL pesan, jenis WAJIB mengikuti itu.
+   - "terima jasa freelance/freelence 6jt" = Pemasukan / Freelance (BUKAN Pengeluaran, BUKAN Jajan).
+   - "bayar/melunasi jasa freelancer" = Pengeluaran / Jasa (BUKAN Pemasukan), meskipun ada kata freelance.
+   - Pemasukan lain: gaji, bonus, honor yang DITERIMA, affiliate/komisi, bunga investasi, dividen cair, cashback, refund, hasil sewa, hasil jualan.
    - Saving/Investment: beli/nabung saham, reksadana, deposito, emas, crypto, dana darurat — BUKAN hasil investasi.
    - Hasil investasi (bunga/dividen cair) = Pemasukan, BUKAN Saving/Investment.
    - Donasi/sedekah/zakat = Pengeluaran + kategori Social.
+   - Typo "freelence" = freelance.
 4) sifat: HANYA Need atau Wants — dengarkan NIAT & FUNGSI user.
    - Need: kebutuhan hidup/kerja fungsional, tagihan, proteksi, cicilan, hasil/pemasukan.
    - Wants: diskresioner, reward, hiburan, jajan, belanja gaya hidup tanpa urgensi.

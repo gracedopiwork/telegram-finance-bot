@@ -122,6 +122,9 @@ _HONOR = (
     "honor freelancer",
     "terima freelance",
     "dapat freelance",
+    "terima jasa",
+    "dapat jasa",
+    "dapet jasa",
     "fee freelance",
     "fee project",
     "fee proyek",
@@ -130,17 +133,47 @@ _HONOR = (
 )
 
 # Sinyal jelas: user MEMBAYAR jasa/freelance (bukan menerima honor).
+# Jangan pakai bare "jasa freelance" — "terima jasa freelance" = pemasukan.
 _PAYING_FREELANCE = (
     "bayar jasa",
     "bayar freelancer",
     "bayar freelance",
     "bayar ke freelancer",
     "bayar ke freelance",
+    "melunasi jasa",
+    "pelunasan jasa",
+    "melunasi freelancer",
+    "pelunasan freelancer",
+)
+
+# Arah uang (kata kerja) — lebih penting dari label kategori.
+_INCOME_DIRECTION = (
+    "terima",
+    "dapat",
+    "dapet",
+    "menerima",
+    "uang masuk",
+    "dana masuk",
+)
+
+_EXPENSE_DIRECTION = (
+    "bayar",
+    "membayar",
+    "pengeluaran",
+    "keluarkan",
+    "keluarin",
     "melunasi",
     "pelunasan",
-    "jasa freelancer",
-    "jasa freelance",
-    "jasa konsultasi",
+    "belanja",
+)
+
+_FREELANCE_MARKERS = (
+    "freelance",
+    "freelancer",
+    "freelence",  # typo umum
+    "freelanc",
+    "honor",
+    "honorarium",
 )
 
 _CASHBACK = (
@@ -581,25 +614,76 @@ def is_saving_action(text: str) -> bool:
     return False
 
 
+def _normalize_typos(text: str) -> str:
+    """Normalisasi typo umum sebelum matching keyword."""
+    lower = text.lower()
+    return lower.replace("freelence", "freelance").replace("freelanc ", "freelance ")
+
+
+def detect_cashflow_direction(text: str) -> str | None:
+    """
+    Deteksi arah uang dari kata kerja user.
+    terima/dapat → Pemasukan; bayar/pengeluaran/melunasi → Pengeluaran.
+    """
+    explicit = detect_explicit_jenis(text)
+    if explicit in {"Pemasukan", "Pengeluaran"}:
+        return explicit
+
+    lower = _normalize_typos(text)
+    has_in = _contains(lower, _INCOME_DIRECTION)
+    has_out = _contains(lower, _EXPENSE_DIRECTION)
+
+    if has_in and not has_out:
+        return "Pemasukan"
+    if has_out and not has_in:
+        return "Pengeluaran"
+    if has_in and has_out:
+        # Keduanya ada: utamakan kata yang muncul lebih dulu.
+        first_in = min(
+            (lower.find(p) for p in _INCOME_DIRECTION if p in lower),
+            default=10**9,
+        )
+        first_out = min(
+            (lower.find(p) for p in _EXPENSE_DIRECTION if p in lower),
+            default=10**9,
+        )
+        return "Pemasukan" if first_in <= first_out else "Pengeluaran"
+    return None
+
+
+def _has_freelance_marker(text: str) -> bool:
+    return _contains(_normalize_typos(text), _FREELANCE_MARKERS) or "jasa" in _normalize_typos(
+        text
+    )
+
+
 def _is_honor_income(text: str) -> bool:
     """Honor/freelance masuk HANYA jika bukan pembayaran ke freelancer."""
-    lower = text.lower()
+    lower = _normalize_typos(text)
+    if detect_cashflow_direction(text) == "Pengeluaran":
+        return False
     if _contains(lower, _PAYING_FREELANCE):
         return False
     if detect_explicit_jenis(text) == "Pengeluaran":
         return False
-    return _contains(lower, _HONOR)
+    if _contains(lower, _HONOR):
+        return True
+    # "terima jasa freelence" / "dapat freelance 6jt"
+    if detect_cashflow_direction(text) == "Pemasukan" and _has_freelance_marker(lower):
+        return True
+    return False
 
 
 def classify_from_text(text: str) -> dict[str, str] | None:
     """Kembalikan {jenis, kategori, sifat} jika rule kuat cocok, else None."""
-    lower = text.lower().strip()
+    lower = _normalize_typos(text).strip()
     if not lower:
         return None
 
     explicit = detect_explicit_jenis(text)
+    direction = detect_cashflow_direction(text)
     # User tulis "Pengeluaran …" → jangan pernah paksa Pemasukan dari keyword kategori.
-    skip_income = explicit == "Pengeluaran"
+    skip_income = explicit == "Pengeluaran" or direction == "Pengeluaran"
     # User tulis "Pemasukan …" → tetap izinkan income rules (dan skip expense force).
     force_income_only = explicit == "Pemasukan"
 
@@ -627,12 +711,15 @@ def classify_from_text(text: str) -> dict[str, str] | None:
             return {"jenis": "Pemasukan", "kategori": "Sewa Masuk", "sifat": "Need"}
         if _contains(lower, _TRANSFER_MASUK):
             return {"jenis": "Pemasukan", "kategori": "Transfer Masuk", "sifat": "Need"}
+        # Kata kerja masuk jelas, tapi kategori belum ketemu → Pemasukan generik.
+        if direction == "Pemasukan":
+            return {"jenis": "Pemasukan", "kategori": "Lainnya", "sifat": "Need"}
 
     if force_income_only:
         return None
 
     # ---- Saving / Investment ----
-    if explicit != "Pengeluaran" and (
+    if explicit != "Pengeluaran" and direction != "Pengeluaran" and (
         is_saving_action(lower)
         or (
             infer_saving_label(lower) is not None
@@ -650,12 +737,14 @@ def classify_from_text(text: str) -> dict[str, str] | None:
             return {"jenis": "Saving/Investment", "kategori": label, "sifat": "Need"}
 
     # Dividen reinvest = saving
-    if explicit != "Pengeluaran" and _contains(lower, _DIVIDEN_REINVEST):
+    if explicit != "Pengeluaran" and direction != "Pengeluaran" and _contains(lower, _DIVIDEN_REINVEST):
         return {"jenis": "Saving/Investment", "kategori": "Saham", "sifat": "Need"}
 
     # ---- Pengeluaran ----
     # Bayar jasa/freelancer dulu — sebelum _MAKAN ("nasi" di dalam "melunasi").
-    if _contains(lower, _PAYING_FREELANCE):
+    if _contains(lower, _PAYING_FREELANCE) or (
+        direction == "Pengeluaran" and _has_freelance_marker(lower)
+    ):
         return {"jenis": "Pengeluaran", "kategori": "Jasa", "sifat": "Need"}
 
     if _contains(lower, _ASURANSI):
@@ -697,33 +786,53 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         }
 
     # User tulis "Pengeluaran …" tanpa kategori spesifik → jenis tetap Pengeluaran.
-    if explicit == "Pengeluaran":
-        return {"jenis": "Pengeluaran", "kategori": "Jasa", "sifat": "Need"}
+    if explicit == "Pengeluaran" or direction == "Pengeluaran":
+        return {"jenis": "Pengeluaran", "kategori": "Lainnya", "sifat": "Need"}
 
     return None
 
 
 def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[str, Any]:
     """
-    Setelah AI parse: JANGAN timpa jenis/kategori yang sudah diisi AI.
+    Setelah AI parse: hormati AI, kecuali arah uang dari kata kerja jelas salah.
 
-    Rule hanya:
-    - hormati jenis eksplisit yang user tulis di awal pesan ("Pengeluaran …"),
-    - koreksi dump kategori jelas (Elektronik vs Jajan, GrabFood vs Transport),
-    - mengisi field yang AI biarkan kosong.
+    Rule:
+    - hormati jenis eksplisit user ("Pengeluaran …" / "Pemasukan …"),
+    - koreksi jenis jika kata kerja arah jelas (terima→masuk, bayar→keluar),
+    - koreksi dump kategori (Elektronik vs Jajan, GrabFood vs Transport),
+    - isi field yang AI biarkan kosong.
     """
     combined = f"{source_text} {parsed.get('keterangan', '')}".strip()
     explicit = detect_explicit_jenis(source_text) or detect_explicit_jenis(combined)
+    direction = detect_cashflow_direction(source_text) or detect_cashflow_direction(combined)
 
-    # Jenis yang user tulis sendiri di awal pesan — bukan heuristik keyword.
+    # Jenis yang user tulis sendiri di awal pesan.
     if explicit and str(parsed.get("jenis") or "").strip() != explicit:
         parsed["jenis"] = explicit
+
+    # Kata kerja arah uang menang jika AI salah (terima ≠ pengeluaran).
+    if direction and str(parsed.get("jenis") or "").strip() != direction:
+        parsed["jenis"] = direction
+        kat_l = str(parsed.get("kategori") or "").strip().lower()
+        if direction == "Pemasukan" and _has_freelance_marker(combined):
+            if kat_l in {"", "jajan", "belanja", "makan", "lain-lain", "lain lain", "jasa", "lainnya"}:
+                parsed["kategori"] = "Freelance"
+                parsed["sifat"] = "Need"
+                parsed.pop("sub_kategori", None)
+        elif direction == "Pengeluaran" and (
+            _contains(_normalize_typos(combined), _PAYING_FREELANCE)
+            or _has_freelance_marker(combined)
+        ):
+            if kat_l in {"", "freelance", "gaji", "bonus", "honor", "jajan"}:
+                parsed["kategori"] = "Jasa"
+                parsed["sifat"] = "Need"
+                parsed.pop("sub_kategori", None)
 
     ai_jenis = str(parsed.get("jenis") or "").strip()
     ai_kat = str(parsed.get("kategori") or "").strip()
     ai_kat_l = ai_kat.lower()
 
-    # AI sudah lengkap → jangan timpa dengan rule income/freelance/dll.
+    # AI sudah lengkap → jangan timpa dengan rule income/freelance generik.
     if ai_jenis and ai_kat:
         # Koreksi dump kategori saja (bukan jenis).
         if is_electronics_expense(combined) and ai_kat_l in {
@@ -754,7 +863,7 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
             parsed.pop("sub_kategori", None)
             return parsed
 
-        if ai_kat_l == "jajan":
+        if ai_kat_l == "jajan" and ai_jenis == "Pengeluaran":
             parsed["sifat"] = "Wants"
         return parsed
 
@@ -786,6 +895,8 @@ Contoh klasifikasi WAJIB diikuti:
 - "refund tiket 100rb" → Pemasukan / Refund / Need
 - "gaji bulan ini 8jt" → Pemasukan / Gaji / Need
 - "honor freelance 1.5jt" → Pemasukan / Freelance / Need
+- "terima jasa freelence 6 jt" → Pemasukan / Freelance / Need (BUKAN Pengeluaran, BUKAN Jajan)
+- "terima jasa freelance 6jt" → Pemasukan / Freelance / Need
 - "Pengeluaran melunasi jasa freelancer IT Rp 5.750.000" → Pengeluaran / Jasa / Need (BUKAN Pemasukan)
 - "Bayar jasa freelancer web developer 2jt" → Pengeluaran / Jasa / Need (BUKAN Pemasukan)
 - "bayar BPJS 150rb" → Pengeluaran / Asuransi / Need

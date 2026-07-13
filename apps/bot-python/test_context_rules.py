@@ -42,6 +42,12 @@ class ContextRulesTests(unittest.TestCase):
     def test_freelance(self) -> None:
         self.assertClass("honor freelance 1500000", "Pemasukan", "Freelance")
 
+    def test_terima_jasa_freelence_pemasukan(self) -> None:
+        self.assertClass("terima jasa freelence 6 jt", "Pemasukan", "Freelance")
+
+    def test_terima_jasa_freelance_pemasukan(self) -> None:
+        self.assertClass("terima jasa freelance 6jt", "Pemasukan", "Freelance")
+
     def test_explicit_pengeluaran_freelancer_bukan_pemasukan(self) -> None:
         text = (
             "Pengeluaran melunasi jasa freelancer IT dan web developer "
@@ -86,8 +92,20 @@ class ContextRulesTests(unittest.TestCase):
         )
         self.assertEqual(out["jenis"], "Pengeluaran")
 
+    def test_apply_rules_terima_corrects_ai_pengeluaran(self) -> None:
+        """Kata 'terima' = uang masuk → koreksi AI yang salah ke Pengeluaran/Jajan."""
+        parsed = {
+            "keterangan": "terima jasa freelence 6 jt",
+            "jenis": "Pengeluaran",
+            "kategori": "Jajan",
+            "sifat": "Wants",
+        }
+        out = apply_context_rules(parsed, "terima jasa freelence 6 jt")
+        self.assertEqual(out["jenis"], "Pemasukan")
+        self.assertEqual(out["kategori"], "Freelance")
+
     def test_apply_rules_does_not_force_income_over_ai(self) -> None:
-        """Tanpa jenis eksplisit: AI Pengeluaran tetap menang meski ada kata freelancer."""
+        """Bayar jasa freelancer: AI Pengeluaran tetap menang."""
         parsed = {
             "keterangan": "Bayar jasa freelancer web developer",
             "jenis": "Pengeluaran",
