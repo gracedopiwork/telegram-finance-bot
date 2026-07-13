@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import unittest
 
-from nominal_parser import parse_nominal_from_text, reconcile_nominal
+from nominal_parser import (
+    nominal_sanity_warning,
+    parse_nominal_from_text,
+    reconcile_nominal,
+)
 
 
 class NominalParserTests(unittest.TestCase):
@@ -16,6 +20,12 @@ class NominalParserTests(unittest.TestCase):
 
     def test_suffix_rb(self) -> None:
         self.assertEqual(parse_nominal_from_text("mkn malm 50rb"), 50_000)
+
+    def test_suffix_br_typo_spaced(self) -> None:
+        self.assertEqual(parse_nominal_from_text("bayar tagihan listrik 90 br"), 90_000)
+
+    def test_suffix_br_typo_attached(self) -> None:
+        self.assertEqual(parse_nominal_from_text("listrik 90br"), 90_000)
 
     def test_suffix_k_attached(self) -> None:
         self.assertEqual(parse_nominal_from_text("kopi 25k"), 25_000)
@@ -37,6 +47,22 @@ class NominalParserTests(unittest.TestCase):
 
     def test_reconcile_ai_exact_multiple(self) -> None:
         self.assertEqual(reconcile_nominal(83_800_000, "beli 83800"), 83800)
+
+    def test_reconcile_ai_missed_br_typo(self) -> None:
+        self.assertEqual(
+            reconcile_nominal(90, "bayar tagihan listrik 90 br"),
+            90_000,
+        )
+
+    def test_sanity_warning_listrik_too_small(self) -> None:
+        warn = nominal_sanity_warning(90, "bayar tagihan listrik", "Listrik")
+        self.assertIsNotNone(warn)
+        assert warn is not None
+        self.assertIn("90rb", warn)
+
+    def test_sanity_ok_after_br_fix(self) -> None:
+        amount = parse_nominal_from_text("bayar tagihan listrik 90 br")
+        self.assertIsNone(nominal_sanity_warning(amount, "bayar tagihan listrik", "Listrik"))
 
 
 if __name__ == "__main__":

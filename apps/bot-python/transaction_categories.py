@@ -206,9 +206,11 @@ Aturan:
 1) keterangan: rapikan typo/singkatan agar mudah dibaca, gunakan kapitalisasi wajar.
 2) nominal: ekstrak angka jadi integer rupiah penuh.
    - 50rb / 50 ribu / 50k => 50000 (suffix rb/ribu/k WAJIB menempel pada angka).
+   - Typo umum: "90 br" / "90br" = "90 rb" => 90000 (bukan 90).
    - 1,2jt / 1.2 juta => 1200000.
    - 83800 / 83.800 / 83,800 / 5000 tanpa suffix => nilai apa adanya (BUKAN juta).
    - Huruf k di kata biasa (kemarin, snack, stock) BUKAN penanda ribuan.
+   - Tagihan (listrik/sewa/BPJS/cicilan) jarang di bawah Rp1000 — jika user tulis "90 br/rb", pakai skala ribuan.
 3) jenis: Pemasukan | Pengeluaran | Saving/Investment.
    - Pemasukan: gaji, bonus, honor/freelance, affiliate/komisi, bunga investasi, dividen cair, cashback, refund, hasil sewa, hasil jualan.
    - Saving/Investment: beli/nabung saham, reksadana, deposito, emas, crypto, dana darurat — BUKAN hasil investasi.

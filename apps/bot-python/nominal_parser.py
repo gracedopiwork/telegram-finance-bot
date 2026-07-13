@@ -8,36 +8,69 @@ _JT_PATTERN = re.compile(
     r"(\d+(?:[.,]\d+)?)\s*(?:jt|juta|milyun|miliar)\b",
     re.IGNORECASE,
 )
-# k/rb harus menempel pada angka (50k, 50rb). "ribu" boleh pakai spasi (50 ribu).
+# k/rb menempel pada angka (50k, 50rb). "br" = typo umum untuk "rb".
+# "ribu" / "rb" / "br" boleh pakai spasi (50 ribu, 90 br).
 _RIBU_ATTACHED = re.compile(
-    r"(\d+(?:[.,]\d+)?)(?:rb|k)\b",
+    r"(\d+(?:[.,]\d+)?)(?:rb|br|k)\b",
     re.IGNORECASE,
 )
 _RIBU_SPACED = re.compile(
-    r"(\d+(?:[.,]\d+)?)\s+ribu\b",
+    r"(\d+(?:[.,]\d+)?)\s+(?:ribu|rb|br)\b",
     re.IGNORECASE,
 )
 _GROUPED_AMOUNT = re.compile(r"\d{1,3}(?:[.,]\d{3})+")
 _PLAIN_NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
 _TRAILING_PLAIN = re.compile(r"(\d{4,7})\s*$")
 
+# Konteks tagihan yang jarang bernilai sangat kecil (tanpa suffix ribu).
+_HIGH_COST_HINTS = (
+    "listrik",
+    "pln",
+    "token",
+    "tagihan",
+    "sewa",
+    "kos",
+    "kontrakan",
+    "kpr",
+    "bpjs",
+    "asuransi",
+    "cicilan",
+    "angsuran",
+    "kuliah",
+    "spp",
+    "wifi",
+    "indihome",
+    "pdam",
+)
+
 
 def _token_to_float(token: str) -> float:
     raw = token.strip()
+    # Ribuan ID: 1.200.000 / 65.700
     if re.match(r"^\d{1,3}(\.\d{3})+(,\d+)?$", raw):
         raw = raw.replace(".", "").replace(",", ".")
     elif re.match(r"^\d{1,3}(,\d{3})+(\.\d+)?$", raw):
         raw = raw.replace(",", "")
     elif re.match(r"^\d+\.\d{3}$", raw):
+        # Satu pemisah ribuan 3 digit (65.700)
         raw = raw.replace(".", "")
+    elif re.match(r"^\d+,\d{1,2}$", raw):
+        # Desimal koma: 1,2
+        raw = raw.replace(",", ".")
+    elif re.match(r"^\d+\.\d{1,2}$", raw):
+        # Desimal titik: 1.2 — biarkan
+        pass
     else:
-        raw = raw.replace(".", "").replace(",", ".")
+        raw = raw.replace(",", ".")
     return float(raw)
 
 
 def _has_explicit_scale_suffix(text: str, number_token: str) -> bool:
     """True jika angka diikuti suffix ribu/juta yang valid (bukan huruf k di kata lain)."""
-    pattern = rf"{re.escape(number_token)}(?:\s*(?:rb|ribu|k|jt|juta|milyun|miliar)\b|(?:rb|k)\b)"
+    pattern = (
+        rf"{re.escape(number_token)}"
+        rf"(?:\s*(?:rb|br|ribu|k|jt|juta|milyun|miliar)\b|(?:rb|br|k)\b)"
+    )
     return bool(re.search(pattern, text, flags=re.IGNORECASE))
 
 
@@ -127,3 +160,31 @@ def reconcile_nominal(ai_nominal: int, source_text: str) -> int:
         return ai_nominal
 
     return parsed
+
+
+def nominal_sanity_warning(
+    amount: int,
+    source_text: str = "",
+    kategori: str = "",
+) -> str | None:
+    """Peringatan jika nominal terlihat tidak masuk akal untuk konteksnya."""
+    if amount <= 0:
+        return None
+
+    combined = f"{source_text} {kategori}".lower()
+    high_cost = any(hint in combined for hint in _HIGH_COST_HINTS)
+
+    if high_cost and amount < 1_000:
+        scaled = f"Rp{amount * 1_000:,}"
+        return (
+            f"⚠️ Nominal Rp{amount:,} terlihat terlalu kecil untuk tagihan ini.\n"
+            f"Kalau maksudnya {amount}rb, seharusnya {scaled}. Cek lagi ya."
+        )
+
+    if amount < 100 and not high_cost:
+        return (
+            f"⚠️ Nominal Rp{amount:,} sangat kecil. "
+            "Kalau maksudnya ribuan, tulis mis. 90rb / 90 ribu."
+        )
+
+    return None

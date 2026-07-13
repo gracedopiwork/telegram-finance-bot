@@ -23,7 +23,7 @@ from claude_ai import analyze_with_claude as claude_parse_json
 from claude_ai import extract_transaction_text_from_image as claude_extract_image_text
 from laravel_api import log_laravel_api_config
 from license_activate import activate_license_via_api
-from nominal_parser import parse_nominal_from_text, reconcile_nominal
+from nominal_parser import parse_nominal_from_text, reconcile_nominal, nominal_sanity_warning
 from ai_quota import (
     format_quota_exhausted_notice,
     format_quota_status,
@@ -642,6 +642,13 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
     if label:
         date_line = f"Tanggal: {label}\n"
 
+    warning = nominal_sanity_warning(
+        int(parsed.get("nominal") or 0),
+        source_text=str(parsed.get("keterangan") or ""),
+        kategori=str(parsed.get("kategori") or ""),
+    )
+    warn_block = f"\n{warning}\n" if warning else ""
+
     return (
         f"Aku baca transaksi untuk {greeting_name} seperti ini:\n"
         f"{date_line}"
@@ -651,7 +658,8 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
         f"Kategori: {parsed['kategori']}\n"
         f"Sifat: {parsed['sifat']}\n"
         f"Mood: {parsed['mood']}\n"
-        f"Impulsif: {parsed['impulsif']}\n\n"
+        f"Impulsif: {parsed['impulsif']}\n"
+        f"{warn_block}\n"
         "Sudah benar?"
     )
 
