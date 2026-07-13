@@ -18,11 +18,6 @@ class CategoryAutoRegisterService
         'makanan' => 'Makan',
         'makan' => 'Makan',
         'muen' => 'Makan',
-        'grab/maxime' => 'Transport',
-        'grab' => 'Transport',
-        'maxime' => 'Transport',
-        'gojek' => 'Transport',
-        'ojek' => 'Transport',
         'sosial' => 'Social',
         'hiburan' => 'Social',
         'networking' => 'Social',
@@ -90,6 +85,10 @@ class CategoryAutoRegisterService
         'laptop' => 'Elektronik',
         'hp' => 'Elektronik',
         'handphone' => 'Elektronik',
+        'tumbler' => 'Peralatan',
+        'botol minum' => 'Peralatan',
+        'peralatan' => 'Peralatan',
+        'rumah tangga' => 'Peralatan',
         'dipinjam' => 'Social',
     ];
 
@@ -187,11 +186,13 @@ class CategoryAutoRegisterService
             return;
         }
 
-        $exists = CategoryBucketMapping::query()
+        $existing = CategoryBucketMapping::query()
             ->whereRaw('LOWER(TRIM(category)) = ?', [mb_strtolower(trim($name))])
-            ->exists();
+            ->first();
 
-        if ($exists) {
+        if ($existing !== null) {
+            $this->mergeKeywordsFromNotes($existing, $notes);
+
             return;
         }
 
@@ -205,12 +206,31 @@ class CategoryAutoRegisterService
             'bucket' => $bucket,
             'transaction_type' => $txType,
             'nature' => $nature !== '' ? $nature : null,
-            'match_keywords' => $this->keywordsForAutoCategory($name),
-            'reason' => 'Dibuat otomatis dari transaksi/import',
+            'match_keywords' => $this->keywordsForAutoCategory($name, $notes),
+            'reason' => 'Dibuat otomatis dari transaksi/import/bot',
             'sort_order' => $maxSort + 1,
             'is_active' => true,
         ]);
 
+        $this->mappingService->forgetCache();
+    }
+
+    private function mergeKeywordsFromNotes(CategoryBucketMapping $mapping, string $notes): void
+    {
+        $extra = $this->keywordsFromNotes($notes);
+        if ($extra === []) {
+            return;
+        }
+
+        $current = $mapping->keywordsList();
+        $merged = array_values(array_unique(array_merge($current, $extra)));
+        if (count($merged) === count($current)) {
+            return;
+        }
+
+        $mapping->update([
+            'match_keywords' => implode(',', array_slice($merged, 0, 50)),
+        ]);
         $this->mappingService->forgetCache();
     }
 
@@ -248,13 +268,16 @@ class CategoryAutoRegisterService
         };
     }
 
-    private function keywordsForAutoCategory(string $name): string
+    private function keywordsForAutoCategory(string $name, string $notes = ''): string
     {
         $compact = $this->compactKey($name);
-        $keywords = array_values(array_unique(array_filter([
-            mb_strtolower(trim($name)),
-            $compact !== mb_strtolower(trim($name)) ? $compact : '',
-        ])));
+        $keywords = array_values(array_unique(array_filter(array_merge(
+            [
+                mb_strtolower(trim($name)),
+                $compact !== mb_strtolower(trim($name)) ? $compact : '',
+            ],
+            $this->keywordsFromNotes($notes),
+        ))));
 
         if ($this->categoryKeysMatch($name, 'Affiliate')) {
             $keywords = array_values(array_unique(array_merge($keywords, [
@@ -281,7 +304,52 @@ class CategoryAutoRegisterService
             ])));
         }
 
-        return implode(',', $keywords);
+        if ($this->categoryKeysMatch($name, 'Peralatan')) {
+            $keywords = array_values(array_unique(array_merge($keywords, [
+                'tumbler',
+                'botol minum',
+                'peralatan',
+                'rumah tangga',
+            ])));
+        }
+
+        return implode(',', array_slice($keywords, 0, 50));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function keywordsFromNotes(string $notes): array
+    {
+        $text = mb_strtolower(trim($notes));
+        if ($text === '') {
+            return [];
+        }
+
+        $text = preg_replace('/\d+([.,]\d+)?\s*(rb|ribu|jt|juta|k|rp)?/u', ' ', $text) ?? $text;
+        $text = preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $text) ?? $text;
+
+        $stop = [
+            'beli', 'bayar', 'di', 'ke', 'dari', 'yang', 'untuk', 'dengan', 'dan', 'atau',
+            'ini', 'itu', 'ada', 'sudah', 'bisa', 'masuk', 'setelah', 'sebelum', 'karena',
+            'hari', 'tanggal', 'tgl', 'bulan', 'tahun', 'rp', 'rupiah', 'nominal', 'harga',
+            'happy', 'senang', 'sedih', 'capek', 'lelah', 'rawat', 'kerja', 'setelah',
+        ];
+
+        $tokens = preg_split('/\s+/u', $text) ?: [];
+        $out = [];
+        foreach ($tokens as $token) {
+            $token = trim($token);
+            if (mb_strlen($token) < 3 || in_array($token, $stop, true)) {
+                continue;
+            }
+            if (preg_match('/^\d+$/', $token)) {
+                continue;
+            }
+            $out[] = $token;
+        }
+
+        return array_values(array_unique(array_slice($out, 0, 12)));
     }
 
   /**

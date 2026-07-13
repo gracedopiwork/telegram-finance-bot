@@ -36,9 +36,10 @@ return [
     'bot_fallback_category' => 'Jajan',
     'bot_fallback_sub' => 'Pengeluaran lain-lain',
     'source_of_truth_note' => [
-        'Kategori baru dari transaksi/import/bot dibuat otomatis dan dikelompokkan ke bucket yang sesuai.',
-        'Admin bisa menyesuaikan pemetaan kapan saja di tabel ini — tidak perlu menambah kategori manual dulu.',
-        'Bot boleh memakai label kategori apa pun; sistem akan mencocokkan atau membuat entri baru.',
-        'Need vs Wants: AI mempertimbangkan niat fungsional user (kopi untuk produktif kerja bisa Need), bukan sekadar label jajan premium.',
+        'Taxonomy terbuka: AI boleh membuat label kategori baru sesuai barang/jasa (contoh: Peralatan, Fashion, Hobi).',
+        'Daftar kategori yang sudah ada hanya referensi — jangan memaksa transaksi ke Jajan jika tidak cocok.',
+        'Kategori baru dari bot/import dibuat otomatis di pemetaan bucket beserta keyword dari catatan transaksi.',
+        'Admin boleh menyesuaikan bucket/nature nanti; tidak perlu menambah kategori manual dulu.',
+        'Need vs Wants: dengarkan niat fungsional user, bukan sekadar merek premium.',
     ],
 ];

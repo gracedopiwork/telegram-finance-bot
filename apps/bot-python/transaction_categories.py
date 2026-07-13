@@ -52,6 +52,9 @@ def _kategori_aliases() -> dict[str, str]:
         "laptop": "Elektronik",
         "hp": "Elektronik",
         "handphone": "Elektronik",
+        "tumbler": "Peralatan",
+        "botol minum": "Peralatan",
+        "peralatan": "Peralatan",
         "affiliate": "Affiliate",
         "afiliasi": "Affiliate",
         "komisi": "Affiliate",
@@ -178,7 +181,7 @@ def build_system_prompt_rules() -> str:
     examples = prompt_context_examples().strip()
 
     return f"""
-Anda adalah parser keuangan pribadi.
+Anda adalah parser keuangan pribadi dengan TAXONOMY TERBUKA.
 Ubah input user menjadi JSON VALID dengan schema berikut:
 {{
   "keterangan": string,
@@ -193,10 +196,11 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
 
 CATATAN:
 {policy_block}
-   Kategori boleh label deskriptif (Affiliate, Bunga Investasi, Saham, Skincare, Elektronik, dll).
-   Kategori yang sudah umum: {known_cats}
-   Jika tidak yakin pada pengeluaran yang TIDAK jajan/snack → buat label deskriptif baru.
-   Jangan default ke {fb_cat} kecuali memang snack/kopi/cemilan.
+   Anda BOLEH dan DIANJURKAN membuat label kategori baru yang deskriptif (Bahasa Indonesia, Title Case).
+   Contoh label baru yang valid: Peralatan, Fashion, Hobi, Perawatan Rumah, Buku, dll.
+   Daftar yang sudah ada HANYA referensi (bukan batasan): {known_cats}
+   Jangan memaksa ke {fb_cat} kecuali memang snack/kopi/cemilan.
+   Sistem akan otomatis mendaftarkan kategori baru ke rule admin.
 
 Aturan:
 1) keterangan: rapikan typo/singkatan agar mudah dibaca, gunakan kapitalisasi wajar.
@@ -212,13 +216,15 @@ Aturan:
    - Donasi/sedekah/zakat = Pengeluaran + kategori Social.
 4) sifat: HANYA Need atau Wants — dengarkan NIAT & FUNGSI user.
    - Need: kebutuhan hidup/kerja fungsional, tagihan, proteksi, cicilan, hasil/pemasukan.
-   - Wants: diskresioner, reward, hiburan, jajan tanpa kebutuhan fungsional.
-5) kategori: pilih label paling sesuai dari makna barang/jasa.
+   - Wants: diskresioner, reward, hiburan, jajan, belanja gaya hidup tanpa urgensi.
+5) kategori: tentukan dari MAKNA barang/jasa — bebas label baru.
+   - Utamakan label yang tepat; reuse kategori lama HANYA jika benar-benar cocok.
    - Jajan HANYA: kopi, boba, snack, cemilan, kue, dessert ringan.
-   - GrabFood / GoFood / ShopeeFood = makanan atau jajan sesuai isinya — BUKAN Transport.
+   - GrabFood / GoFood / ShopeeFood = Makan atau Jajan sesuai isinya — BUKAN Transport.
    - Transport = ojek/grab ride/bensin/parkir, bukan pesanan makanan.
-   - Elektronik: headset, earphone, HP, laptop, charger, gadget, kamera, dll. BUKAN Jajan.
-   - Lebih baik label baru yang tepat daripada memasukkan ke Jajan secara asal.
+   - Elektronik: headset, earphone, HP, laptop, charger, gadget — BUKAN Jajan.
+   - Tumbler / botol minum / peralatan dapur → Peralatan (BUKAN Jajan).
+   - Baju/sepatu → Fashion. Buku → Buku. dll.
    Petunjuk bucket (referensi):
 {hints_block}
 6) {examples}

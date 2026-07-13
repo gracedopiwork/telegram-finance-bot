@@ -736,4 +736,6 @@ Contoh klasifikasi WAJIB diikuti:
 - "ganti hp rusak 3jt" → Pengeluaran / Elektronik / Need
 - "laptop kerja 8jt" → Pengeluaran / Elektronik / Need
 - "kopi susu 28rb" → Pengeluaran / Jajan / Wants
+- "beli tumbler 150rb" → Pengeluaran / Peralatan / Wants (BUKAN Jajan)
+- "beli baju 200rb" → Pengeluaran / Fashion / Wants
 """

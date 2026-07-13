@@ -12,7 +12,7 @@ from laravel_api import auth_headers, missing_laravel_config_message, resolve_la
 
 logger = logging.getLogger(__name__)
 
-_CACHE_TTL_SECONDS = 300
+_CACHE_TTL_SECONDS = 60
 _cache: dict[str, Any] | None = None
 _cache_loaded_at: float = 0.0
 _warned_fetch_fail = False
@@ -21,7 +21,17 @@ _warned_fetch_fail = False
 _STATIC_FALLBACK: dict[str, Any] = {
     "version": "static",
     "source": "static",
-    "categories": ["Makan", "Transport", "Listrik", "Air", "Jajan", "Social", "Gaji"],
+    "categories": [
+        "Makan",
+        "Transport",
+        "Listrik",
+        "Air",
+        "Jajan",
+        "Social",
+        "Gaji",
+        "Elektronik",
+        "Peralatan",
+    ],
     "sub_categories": [
         "Listrik",
         "Pakaian",
@@ -65,10 +75,10 @@ _STATIC_FALLBACK: dict[str, Any] = {
     "fallback_sub": "Pengeluaran lain-lain",
     "natures": ["Need", "Wants"],
     "policy_notes": [
-        "Kategori baru dibuat otomatis saat transaksi masuk; tidak perlu ditambah admin dulu.",
-        "Gunakan label kategori yang paling sesuai dari input user (contoh: Skincare, Asuransi, Subscription, Dividen).",
-        "Sistem mengelompokkan kategori ke bucket dashboard secara otomatis.",
-        "Need vs Wants: pertimbangkan niat fungsional user (mis. kopi untuk produktif kerja bisa Need), bukan sekadar merek premium.",
+        "Taxonomy terbuka: AI boleh membuat kategori baru sesuai barang/jasa (Peralatan, Fashion, Hobi, dll).",
+        "Daftar kategori lama hanya referensi — jangan memaksa ke Jajan jika tidak cocok.",
+        "Kategori baru otomatis masuk rule admin beserta keyword dari catatan transaksi.",
+        "Need vs Wants: pertimbangkan niat fungsional user, bukan sekadar merek premium.",
     ],
     "strict_categories_only": False,
 }
