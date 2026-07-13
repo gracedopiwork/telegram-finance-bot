@@ -45,8 +45,13 @@ def _kategori_aliases() -> dict[str, str]:
         "other": fb,
         "umum": fb,
         "misc": fb,
-        "belanja": fb,
-        "beli": fb,
+        "elektronik": "Elektronik",
+        "gadget": "Elektronik",
+        "headset": "Elektronik",
+        "earphone": "Elektronik",
+        "laptop": "Elektronik",
+        "hp": "Elektronik",
+        "handphone": "Elektronik",
         "affiliate": "Affiliate",
         "afiliasi": "Affiliate",
         "komisi": "Affiliate",
@@ -117,16 +122,35 @@ def _infer_kategori_from_text(text: str) -> str:
     return fallback_kategori()
 
 
-def _kategori_from_strong_signals(text: str) -> str | None:
+def _kategori_from_strong_signals(text: str, current: str = "") -> str | None:
+    """Hanya override AI untuk jenis kritis / koreksi dump Jajan → Elektronik."""
     hit = classify_from_text(text)
-    if hit is not None:
+    if hit is None:
+        return None
+    if hit["jenis"] in {"Pemasukan", "Saving/Investment"}:
         return hit["kategori"]
+    current_l = current.strip().lower()
+    if is_electronics_expense(text) and current_l in {
+        "",
+        "jajan",
+        "belanja",
+        "lain-lain",
+        "lain lain",
+        "other",
+        "misc",
+        "umum",
+    }:
+        return "Elektronik"
     return None
 
 
 def build_system_prompt_rules() -> str:
     rules_data = get_rules()
-    categories = rules_data.get("categories") or list(valid_kategori())
+    categories = list(rules_data.get("categories") or list(valid_kategori()))
+    # Pastikan AI selalu tahu label Elektronik meski belum di-sync admin.
+    for required in ("Elektronik", "Jajan", "Makan", "Transport"):
+        if required not in categories:
+            categories.insert(0, required)
     fb_cat = rules_data.get("fallback_category") or fallback_kategori()
 
     admin_hints = []
@@ -148,8 +172,8 @@ def build_system_prompt_rules() -> str:
     hints_block = "\n".join(admin_hints[:40]) if admin_hints else ""
     policy_lines = rules_data.get("policy_notes") or []
     policy_block = "\n".join(f"   - {line}" for line in policy_lines)
-    known_cats = ", ".join(categories[:20])
-    if len(categories) > 20:
+    known_cats = ", ".join(categories[:24])
+    if len(categories) > 24:
         known_cats += ", ..."
     examples = prompt_context_examples().strip()
 
@@ -169,9 +193,10 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
 
 CATATAN:
 {policy_block}
-   Kategori boleh label deskriptif (Affiliate, Bunga Investasi, Saham, Skincare, dll).
+   Kategori boleh label deskriptif (Affiliate, Bunga Investasi, Saham, Skincare, Elektronik, dll).
    Kategori yang sudah umum: {known_cats}
-   Jika tidak yakin → {fb_cat}.
+   Jika tidak yakin pada pengeluaran yang TIDAK jajan/snack → buat label deskriptif baru.
+   Jangan default ke {fb_cat} kecuali memang snack/kopi/cemilan.
 
 Aturan:
 1) keterangan: rapikan typo/singkatan agar mudah dibaca, gunakan kapitalisasi wajar.
@@ -188,7 +213,12 @@ Aturan:
 4) sifat: HANYA Need atau Wants — dengarkan NIAT & FUNGSI user.
    - Need: kebutuhan hidup/kerja fungsional, tagihan, proteksi, cicilan, hasil/pemasukan.
    - Wants: diskresioner, reward, hiburan, jajan tanpa kebutuhan fungsional.
-5) kategori: pilih label paling sesuai.
+5) kategori: pilih label paling sesuai dari makna barang/jasa.
+   - Jajan HANYA: kopi, boba, snack, cemilan, kue, dessert ringan.
+   - GrabFood / GoFood / ShopeeFood = makanan atau jajan sesuai isinya — BUKAN Transport.
+   - Transport = ojek/grab ride/bensin/parkir, bukan pesanan makanan.
+   - Elektronik: headset, earphone, HP, laptop, charger, gadget, kamera, dll. BUKAN Jajan.
+   - Lebih baik label baru yang tepat daripada memasukkan ke Jajan secara asal.
    Petunjuk bucket (referensi):
 {hints_block}
 6) {examples}
@@ -205,7 +235,7 @@ Aturan:
 
 
 def normalize_category_fields(parsed: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
-    """Selaraskan kategori: context rules dulu, lalu alias/admin."""
+    """Hormati kategori AI; rule hanya koreksi kasus kritis / kosong."""
     apply_context_rules(parsed, source_text)
 
     if str(parsed.get("jenis", "")).strip() == "Saving/Investment":
@@ -231,21 +261,19 @@ def normalize_category_fields(parsed: Dict[str, Any], source_text: str = "") -> 
     valid_cats = valid_kategori()
     fb_cat = fallback_kategori()
 
-    strong_kategori = _kategori_from_strong_signals(combined)
+    strong_kategori = _kategori_from_strong_signals(combined, kategori)
     if strong_kategori is not None:
         kategori = strong_kategori
-    elif kategori not in valid_cats:
+    elif not kategori.strip():
         inferred = _infer_kategori_from_text(combined)
-        if inferred in valid_cats:
-            kategori = inferred
-        elif kategori.strip():
-            kategori = _title_category(kategori)
-        else:
-            kategori = inferred if inferred else fb_cat
+        kategori = inferred if inferred else fb_cat
+    elif kategori not in valid_cats:
+        # Biarkan label deskriptif dari AI (auto-register di Laravel).
+        kategori = _title_category(kategori)
     elif kategori == "Air" and not is_water_expense(combined):
-        kategori = _infer_kategori_from_text(combined)
-        if kategori not in valid_cats and kategori != fb_cat:
-            kategori = _title_category(kategori) if str(parsed.get("kategori", "")).strip() else fb_cat
+        inferred = _infer_kategori_from_text(combined)
+        if inferred and inferred != "Air":
+            kategori = inferred if inferred in valid_cats else _title_category(str(parsed.get("kategori", "")) or inferred)
 
     parsed["kategori"] = _title_category(kategori) or fb_cat
     parsed.pop("sub_kategori", None)

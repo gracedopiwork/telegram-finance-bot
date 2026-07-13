@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from context_rules import classify_from_text
+from context_rules import apply_context_rules, classify_from_text
 
 
 class ContextRulesTests(unittest.TestCase):
@@ -70,6 +70,88 @@ class ContextRulesTests(unittest.TestCase):
         hit = classify_from_text("bunga deposito 15000")
         self.assertEqual(hit["jenis"], "Pemasukan")
         self.assertNotEqual(hit["jenis"], "Saving/Investment")
+
+    def test_headset_elektronik_bukan_jajan(self) -> None:
+        hit = classify_from_text("beli headset 350rb")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["jenis"], "Pengeluaran")
+        self.assertEqual(hit["kategori"], "Elektronik")
+        self.assertEqual(hit["sifat"], "Wants")
+
+    def test_earphone_elektronik(self) -> None:
+        self.assertClass("earphone 150rb", "Pengeluaran", "Elektronik")
+
+    def test_hp_rusak_elektronik_need(self) -> None:
+        hit = classify_from_text("ganti hp rusak 3jt")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Elektronik")
+        self.assertEqual(hit["sifat"], "Need")
+
+    def test_laptop_kerja_elektronik_need(self) -> None:
+        hit = classify_from_text("laptop kerja 8jt")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Elektronik")
+        self.assertEqual(hit["sifat"], "Need")
+
+    def test_trust_ai_expense_category(self) -> None:
+        parsed = {
+            "keterangan": "beli headset",
+            "jenis": "Pengeluaran",
+            "kategori": "Elektronik",
+            "sifat": "Wants",
+        }
+        out = apply_context_rules(parsed, "beli headset 350rb")
+        self.assertEqual(out["kategori"], "Elektronik")
+
+    def test_correct_ai_jajan_to_elektronik(self) -> None:
+        parsed = {
+            "keterangan": "beli headset",
+            "jenis": "Pengeluaran",
+            "kategori": "Jajan",
+            "sifat": "Wants",
+        }
+        out = apply_context_rules(parsed, "beli headset 350rb")
+        self.assertEqual(out["kategori"], "Elektronik")
+
+    def test_do_not_override_ai_makan(self) -> None:
+        parsed = {
+            "keterangan": "makan siang meeting",
+            "jenis": "Pengeluaran",
+            "kategori": "Makan",
+            "sifat": "Need",
+        }
+        out = apply_context_rules(parsed, "makan siang meeting 80rb")
+        self.assertEqual(out["kategori"], "Makan")
+
+    def test_grabfood_jajan_bukan_transport(self) -> None:
+        hit = classify_from_text(
+            "Tanggal 4:7/2026 jajan di grabfood 60k beli kue soesweet bali happy"
+        )
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Jajan")
+        self.assertEqual(hit["sifat"], "Wants")
+        self.assertNotEqual(hit["kategori"], "Transport")
+
+    def test_grab_ojek_tetap_transport(self) -> None:
+        self.assertClass("grab ke kantor 28rb", "Pengeluaran", "Transport")
+
+    def test_correct_ai_transport_grabfood(self) -> None:
+        parsed = {
+            "keterangan": "Jajan di Grabfood beli kue Soesweet Bali",
+            "jenis": "Pengeluaran",
+            "kategori": "Transport",
+            "sifat": "Need",
+        }
+        out = apply_context_rules(
+            parsed,
+            "jajan di grabfood 60k beli kue soesweet bali happy",
+        )
+        self.assertEqual(out["kategori"], "Jajan")
+        self.assertEqual(out["sifat"], "Wants")
 
 
 if __name__ == "__main__":

@@ -19,7 +19,7 @@ return [
         'jajan', 'kopi', 'coffee', 'cafe', 'restoran', 'restaurant', 'nongkrong', 'healing',
         'liburan', 'staycation', 'bioskop', 'konser', 'hobi', 'hadiah', 'donasi', 'sedekah',
         'persembahan', 'perpuluhan', 'streaming', 'gaming', 'fashion', 'skincare', 'skin care',
-        'make up', 'gadget', 'fomo', 'subscription', 'langganan', 'netflix', 'spotify',
+        'make up', 'fomo', 'subscription', 'langganan', 'netflix', 'spotify',
     ],
     'essential_context_keywords' => [
         'hp rusak', 'handphone rusak', 'ganti hp', 'hp pecah', 'layar pecah', 'hp mati',

@@ -83,6 +83,13 @@ class CategoryAutoRegisterService
         'reksadana' => 'Reksadana',
         'lain-lain' => 'Jajan',
         'lain lain' => 'Jajan',
+        'elektronik' => 'Elektronik',
+        'gadget' => 'Elektronik',
+        'headset' => 'Elektronik',
+        'earphone' => 'Elektronik',
+        'laptop' => 'Elektronik',
+        'hp' => 'Elektronik',
+        'handphone' => 'Elektronik',
         'dipinjam' => 'Social',
     ];
 

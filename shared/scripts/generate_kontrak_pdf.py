@@ -110,8 +110,8 @@ def main():
     pdf.ln(2)
     pdf.p(
         "Perjanjian untuk membangun sistem bot keuangan pribadi berbasis Telegram, "
-        "website company profile, lisensi SaaS, pembayaran Midtrans, Google Sheets, "
-        "dan remote dashboard control."
+        "website company profile, lisensi SaaS, pembayaran Midtrans, "
+        "dan dashboard web pengguna (portal transaksi & analitik)."
     )
     pdf.p(
         f"Pada hari ini, {hari} tanggal {today.day:02d} bulan {bulan} tahun {today.year}, "
@@ -143,12 +143,13 @@ def main():
         "Input teks natural language (contoh: makan malam 50rb)",
         "AI parsing menggunakan Claude AI (Anthropic)",
         "Fallback parser lokal jika AI gagal / kuota habis",
-        "Kategori & sub-kategori otomatis selaras dropdown Google Sheet YFD",
+        "Kategori & sub-kategori otomatis sesuai aturan YFD",
         "Tagging sifat (Need/Wants/Saving/Donation), mood, dan impulsif",
         "OCR / pembacaan foto struk via Claude AI Vision + konfirmasi user",
-        "Perintah: /start, /activate, /catat, /sheet, /hariini, /hapuskilat",
+        "Perintah: /start, /activate, /catat, /hariini, /hapuskilat, /kuota, /web",
         "Onboarding nama panggilan setelah aktivasi lisensi",
-        "Penyimpanan transaksi ke Google Sheets (tab Transaksi, append row)",
+        "Penyimpanan transaksi ke database MySQL via API Laravel (bukan Google Sheets)",
+        "Link masuk dashboard web otomatis via /web",
     ]:
         pdf.bullet(item)
 
@@ -157,27 +158,27 @@ def main():
         "Sistem aktivasi lisensi (/activate) mengikat 1 kode ke 1 akun Telegram",
         "Checkout website + integrasi pembayaran Midtrans (webhook settlement)",
         "Pembuatan lisensi otomatis setelah pembayaran lunas",
-        "Email delivery: kode lisensi, link bot Telegram, link Google Sheet",
+        "Email/WA delivery: kode lisensi, link bot Telegram, akses dashboard web",
         "Integrasi WA opsional (Fonnte) jika dikonfigurasi oleh PIHAK PERTAMA",
-        "Provision Google Sheet otomatis (copy template master per order)",
     ]:
         pdf.bullet(item)
 
-    pdf.p("C. Website, Admin & Ecosystem", bold=True)
+    pdf.p("C. Website, Portal User, Admin & Ecosystem", bold=True)
     for item in [
         "Website company profile (home, tentang, layanan, paket, penasihat, produk, Wealthpedia, informasi)",
+        "Portal pengguna (dashboard web): transaksi, dashboard keuangan, perilaku/emosi, baseline/diagnostik",
+        "Import CSV transaksi (opsional) dari file eksternal ke portal",
         "CMS admin: settings, paket, layanan, tim dokter, FAQ, artikel, produk digital",
-        "Manajemen orders (lihat status, provision/reshare sheet, resend email)",
-        "Remote dashboard control: sync tab Dashboard dari master ke sheet user aktif",
-        "Monitoring status AI Claude di admin (sukses / rate limit / fallback)",
-        "Struktur monorepo modular (bot Python + Laravel + shared DB)",
+        "Manajemen orders (status, resend email/delivery)",
+        "Monitoring status AI Claude di admin (sukses / rate limit / fallback / kuota)",
+        "Struktur monorepo modular (bot Python + Laravel + MySQL bersama)",
     ]:
         pdf.bullet(item)
 
     pdf.p("D. Keamanan & Infrastruktur", bold=True)
     for item in [
         "Setup / hardening dasar di VPS (Nginx, SSL, systemd untuk bot & queue)",
-        "Setup database MySQL bersama",
+        "Setup database MySQL bersama (bot + website + portal)",
         "Dokumentasi setup & operasi (.env.example, deployment guide)",
         "Pengamanan secret via environment variables",
     ]:
@@ -185,11 +186,11 @@ def main():
 
     pdf.p("E. Yang tidak termasuk dalam kontrak ini", bold=True)
     for item in [
-        "Voice note / speech-to-text produksi (fitur dinonaktifkan; dapat add-on)",
+        "Voice note / speech-to-text produksi (dapat add-on)",
         "Aplikasi mobile native (iOS/Android)",
         "Multi-seat lisensi (1 kode untuk banyak user Telegram)",
-        "Custom kategori per user di luar dropdown Sheet",
-        "Insight/coaching AI mingguan otomatis",
+        "Integrasi Google Sheets sebagai penyimpanan utama (sistem sudah full web)",
+        "Insight/coaching AI mingguan otomatis di luar fitur portal yang sudah ada",
         "Biaya VPS, domain, Claude AI API, Midtrans fee, SMTP, WA, dan layanan pihak ketiga",
         "Maintenance bulanan setelah masa support berakhir",
     ]:
@@ -221,11 +222,11 @@ def main():
     pdf.p("Estimasi pengerjaan total: +/- 6 minggu (dapat menyesuaikan jika scope sudah sebagian selesai / UAT).")
     pdf.p("Milestone indikatif:")
     for item in [
-        "Minggu 1: Setup VPS/database, fondasi bot Telegram, arsitektur dasar",
-        "Minggu 2: AI parsing, kategori Sheet, Google Sheets integration",
-        "Minggu 3: Midtrans, lisensi otomatis, email delivery, provision sheet",
+        "Minggu 1: Setup VPS/database MySQL, fondasi bot Telegram, arsitektur dasar",
+        "Minggu 2: AI Claude parsing, kategori, simpan transaksi ke API/web DB",
+        "Minggu 3: Midtrans, lisensi otomatis, email/WA delivery",
         "Minggu 4: Website company profile + CMS admin + orders",
-        "Minggu 5: Remote dashboard sync + monitoring AI Claude health",
+        "Minggu 5: Portal user (dashboard web) + monitoring AI Claude",
         "Minggu 6: QA, bug fixing, final deployment, launching, handover",
     ]:
         pdf.bullet(item)
@@ -269,9 +270,10 @@ def main():
     pdf.p("Estimasi (Hostinger VPS KVM 2, berdasarkan checkout aktual Juli 2026):")
     for item in [
         "Paket KVM 2 durasi 12 bulan: Rp 2.170.800",
-        "Domain: Rp 0 (gratis di checkout tahun berjalan)",
-        "Pajak: Rp 238.788",
-        "Total dibayar tahun ini: Rp 2.409.588 (setara +/- Rp 201.000/bulan)",
+        "Pajak VPS: Rp 238.788",
+        "Domain: Rp 250.000 / tahun",
+        "Total tahun ini (VPS + pajak + domain): Rp 2.659.588",
+        "Setara VPS+pajak: +/- Rp 201.000/bulan",
         "SSL Let's Encrypt: gratis",
         "API Claude AI (Anthropic): mengikuti penggunaan / paket yang dipilih",
         "Midtrans fee: mengikuti ketentuan Midtrans per transaksi",

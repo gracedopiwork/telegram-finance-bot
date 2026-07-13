@@ -150,13 +150,13 @@ class CategoryBucketMappingsController extends Controller
                     'category' => $row['category'],
                     'sub_category' => $row['sub_category'] ?? null,
                     'transaction_type' => $row['transaction_type'] ?? 'expense',
+                    'bucket' => $row['bucket'],
+                    'sort_order' => (int) ($row['sort_order'] ?? $index),
                 ],
                 [
-                    'bucket' => $row['bucket'],
                     'nature' => $row['nature'] ?? null,
                     'match_keywords' => $row['match_keywords'] ?? null,
                     'reason' => $row['reason'] ?? null,
-                    'sort_order' => (int) ($row['sort_order'] ?? $index),
                     'is_active' => true,
                 ],
             );

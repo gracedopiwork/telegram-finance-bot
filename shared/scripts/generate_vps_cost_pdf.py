@@ -1,4 +1,4 @@
-"""Generate PDF estimasi biaya VPS Hostinger - angka sesuai checkout aktual klien."""
+"""PDF: estimasi biaya VPS Hostinger saat user bertambah hingga 1 juta."""
 
 from pathlib import Path
 
@@ -7,24 +7,33 @@ from fpdf.enums import XPos, YPos
 
 OUT = Path(__file__).resolve().parents[1] / "docs" / "ESTIMASI_BIAYA_VPS_HOSTINGER.pdf"
 
+FONT_REG = r"C:\Windows\Fonts\arial.ttf"
+FONT_BOLD = r"C:\Windows\Fonts\arialbd.ttf"
+
 
 class PDF(FPDF):
+    def __init__(self):
+        super().__init__()
+        self.add_font("A", "", FONT_REG)
+        self.add_font("A", "B", FONT_BOLD)
+        self.set_auto_page_break(auto=True, margin=16)
+
     def header(self):
-        self.set_font("Helvetica", "B", 11)
+        self.set_font("A", "B", 11)
         self.set_text_color(30, 30, 30)
         self.cell(
             0,
             6,
-            "YFD Finance Bot - Estimasi Biaya Operasional VPS",
+            "YFD Finance Bot - Estimasi Biaya VPS",
             new_x=XPos.LMARGIN,
             new_y=YPos.NEXT,
         )
-        self.set_font("Helvetica", "", 8)
+        self.set_font("A", "", 8)
         self.set_text_color(100, 100, 100)
         self.cell(
             0,
             5,
-            "Provider: Hostinger VPS KVM 2 | Berdasarkan checkout aktual | Juli 2026",
+            "Hostinger VPS | Skala hingga 1.000.000 user | Juli 2026",
             new_x=XPos.LMARGIN,
             new_y=YPos.NEXT,
         )
@@ -35,42 +44,40 @@ class PDF(FPDF):
 
     def footer(self):
         self.set_y(-12)
-        self.set_font("Helvetica", "I", 8)
+        self.set_font("A", "", 8)
         self.set_text_color(120, 120, 120)
         self.cell(
             0,
             8,
-            f"Halaman {self.page_no()}/{{nb}} - Harga Hostinger dapat berubah saat perpanjangan",
+            f"Halaman {self.page_no()}/{{nb}}",
             align="C",
         )
 
     def section(self, title: str):
-        self.set_font("Helvetica", "B", 12)
+        self.set_font("A", "B", 12)
         self.set_text_color(20, 90, 50)
         self.cell(0, 8, title, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         self.set_text_color(30, 30, 30)
         self.ln(1)
 
     def body(self, text: str):
-        self.set_font("Helvetica", "", 10)
-        self.multi_cell(0, 5.5, text)
+        self.set_x(self.l_margin)
+        self.set_font("A", "", 10)
+        self.multi_cell(self.epw, 5.4, text)
         self.ln(2)
 
     def table(self, headers, rows, widths):
-        self.set_font("Helvetica", "B", 9)
+        self.set_font("A", "B", 8)
         self.set_fill_color(230, 245, 235)
         for h, w in zip(headers, widths):
-            self.cell(w, 7, h, border=1, fill=True, align="C")
+            self.cell(w, 6.5, h, border=1, fill=True, align="C")
         self.ln()
-        self.set_font("Helvetica", "", 8)
+        self.set_font("A", "", 7.5)
         for i, row in enumerate(rows):
-            if i % 2:
-                self.set_fill_color(248, 248, 248)
-            else:
-                self.set_fill_color(255, 255, 255)
+            self.set_fill_color(248, 248, 248) if i % 2 else self.set_fill_color(255, 255, 255)
             for cell, w in zip(row, widths):
                 align = "L" if w == widths[0] else "C"
-                self.cell(w, 6.5, str(cell), border=1, fill=True, align=align)
+                self.cell(w, 6.2, str(cell), border=1, fill=True, align=align)
             self.ln()
         self.ln(3)
 
@@ -78,91 +85,51 @@ class PDF(FPDF):
 def main():
     pdf = PDF()
     pdf.alias_nb_pages()
-    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
-    pdf.section("1. Ringkasan")
-    pdf.body(
-        "Dokumen ini merinci biaya VPS Hostinger untuk menjalankan YFD Finance Bot "
-        "(website Laravel + bot Telegram Python + MySQL + Nginx). "
-        "Angka di bawah mengikuti checkout Hostinger aktual untuk tahun berjalan. "
-        "Biaya ini DILUAR kontrak pengembangan Rp 10.000.000 dan ditanggung pemilik produk."
-    )
-
-    pdf.section("2. Paket yang dipilih")
+    pdf.section("1. Biaya tahun berjalan")
     pdf.table(
-        ["Item", "Detail"],
+        ["Item", "Nilai"],
         [
-            ["Provider", "Hostinger"],
-            ["Paket", "VPS KVM 2 (2 vCPU / 8 GB RAM / 100 GB NVMe)"],
-            ["Durasi", "12 bulan"],
-            ["Cocok untuk", "Website + bot Telegram + MySQL (produksi)"],
+            ["Provider / paket", "Hostinger VPS KVM 2"],
+            ["Spesifikasi", "2 vCPU / 8 GB RAM / 100 GB NVMe"],
+            ["Durasi VPS", "12 bulan"],
+            ["Paket KVM 2", "Rp 2.170.800"],
+            ["Pajak VPS", "Rp 238.788"],
+            ["Domain", "Rp 250.000 / tahun"],
+            ["TOTAL TAHUN INI (VPS + pajak + domain)", "Rp 2.659.588"],
+            ["Setara VPS+pajak / bulan", "Rp 201.000"],
+            ["Setara domain / bulan", "Rp 20.833"],
         ],
-        [45, 145],
+        [95, 95],
     )
 
-    pdf.section("3. Rincian pembayaran tahun ini (checkout Hostinger)")
+    pdf.section("2. Estimasi VPS saat user bertambah (hingga 1 juta)")
     pdf.table(
-        ["Komponen", "Harga coret", "Yang dibayar"],
+        ["User (perkiraan)", "Infrastruktur", "Estimasi /bulan", "Estimasi /tahun"],
         [
-            ["Paket KVM 2 (12 bulan)", "Rp 4.094.000", "Rp 2.170.800"],
-            ["Nama Domain", "Rp 1.059.900", "Rp 0 (gratis)"],
-            ["Proteksi Privasi Domain WHOIS", "-", "Rp 0"],
-            ["Pajak", "-", "Rp 238.788"],
-            ["TOTAL DIBAYAR TAHUN INI", "Rp 5.153.400*", "Rp 2.409.588"],
+            ["1 - 500", "Hostinger KVM 2", "Rp 201.000", "Rp 2.4 jt"],
+            ["500 - 2.000", "Hostinger KVM 4", "Rp 250rb - 470rb", "Rp 3 - 5.6 jt"],
+            ["2.000 - 10.000", "Hostinger KVM 8", "Rp 430rb - 850rb", "Rp 5 - 10 jt"],
+            ["10.000 - 50.000", "VPS besar / 2 server", "Rp 1.5 - 4 jt", "Rp 18 - 48 jt"],
+            ["50.000 - 200.000", "Multi-server + DB terpisah", "Rp 5 - 15 jt", "Rp 60 - 180 jt"],
+            ["200.000 - 1.000.000", "Cluster / cloud scale-out", "Rp 20 - 80 jt+", "Rp 240 jt - 1 M+"],
         ],
-        [75, 50, 65],
+        [40, 55, 45, 50],
     )
     pdf.body(
-        "*Harga coret total sebelum diskon (referensi tampilan checkout). "
-        "Yang dibayar aktual tahun ini: Rp 2.409.588 untuk 12 bulan."
+        "Di atas KVM 8, biasanya tidak cukup 1 VPS saja. "
+        "Perlu app server + database server + load balancer + backup. "
+        "Renewal Hostinger setelah tahun pertama bisa lebih tinggi dari harga promo."
     )
 
-    pdf.section("4. Setara per bulan (tahun pertama)")
-    pdf.table(
-        ["Perhitungan", "Jumlah"],
-        [
-            ["VPS saja (Rp 2.170.800 / 12)", "Rp 180.900 / bulan"],
-            ["Total termasuk pajak (Rp 2.409.588 / 12)", "Rp 200.799 / bulan"],
-            ["Dibulatkan untuk komunikasi ke klien", "+/- Rp 201.000 / bulan"],
-        ],
-        [115, 75],
-    )
-
-    pdf.section("5. Estimasi operasional bulanan lengkap")
-    pdf.table(
-        ["Komponen", "Estimasi", "Keterangan"],
-        [
-            ["VPS Hostinger KVM 2 + pajak*", "Rp 201.000", "Rata-rata tahun 1 (12 bln)"],
-            ["Domain", "Rp 0", "Gratis di checkout tahun ini"],
-            ["SSL Let's Encrypt", "Rp 0", "Gratis"],
-            ["Claude AI API (Anthropic)", "Sesuai pemakaian", "Ditanggung pemilik produk"],
-            ["Email SMTP", "Rp 0-50.000", "Opsional"],
-            ["Fonnte WA (opsional)", "Sesuai paket", "Jika notifikasi WA dipakai"],
-            ["Midtrans fee", "Per transaksi", "Dari penjualan end-user"],
-        ],
-        [60, 40, 90],
-    )
+    pdf.section("3. Catatan kapasitas")
     pdf.body(
-        "*Setelah tahun pertama, harga perpanjangan Hostinger biasanya lebih tinggi "
-        "dari harga promo. Siapkan cadangan budget saat renew."
-    )
-
-    pdf.section("6. Ringkasan untuk keputusan klien")
-    pdf.body(
-        "1) Kontrak pengembangan sistem: Rp 10.000.000 (sekali / fixed fee).\n"
-        "2) Biaya Hostinger tahun ini (KVM 2, 12 bulan + pajak): Rp 2.409.588.\n"
-        "3) Setara sekitar Rp 201.000/bulan di tahun pertama.\n"
-        "4) Domain termasuk gratis di checkout ini.\n"
-        "5) Biaya Claude AI API, Midtrans fee, dan WA (jika dipakai) dihitung terpisah.\n"
-        "6) Setup & deploy awal sudah termasuk dalam nilai pengembangan Rp 10.000.000."
-    )
-
-    pdf.section("7. Catatan")
-    pdf.body(
-        "- Dokumen ini mengikuti rincian checkout Hostinger yang ditunjukkan klien/developer.\n"
-        "- Bukan invoice resmi Hostinger; simpan bukti pembayaran Hostinger sebagai dokumen formal.\n"
-        "- Maintenance bulanan (jika diminta) adalah add-on terpisah dari kontrak pengembangan."
+        "1) Beban server mengikuti user AKTIF yang sering catat, bukan hanya akun terdaftar.\n"
+        "2) Bot + portal web + MySQL berjalan di server yang sama pada KVM 2/4/8.\n"
+        "3) Saat user besar, database biasanya dipisah dari aplikasi.\n"
+        "4) Domain tetap +/- Rp 250.000 / tahun (terpisah dari upgrade VPS).\n"
+        "5) Biaya Claude AI API dihitung terpisah sesuai pemakaian."
     )
 
     OUT.parent.mkdir(parents=True, exist_ok=True)

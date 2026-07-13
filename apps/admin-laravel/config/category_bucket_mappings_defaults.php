@@ -27,8 +27,8 @@ return [
 
     // Essential Living — konteks prioritas
     ['category' => 'Makan', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'starbucks,meeting,kerja,rapat,klien,ngopi meeting', 'reason' => 'Kopi/pertemuan kerja — esensial', 'sort_order' => 25],
-    ['category' => 'Jajan', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'hp rusak,handphone rusak,ganti hp,hp pecah,layar pecah,hp mati', 'reason' => 'Penggantian HP utama rusak', 'sort_order' => 26],
-    ['category' => 'Jajan', 'sub_category' => '-', 'bucket' => 'Future Building', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'laptop kerja,laptop produktif,alat kerja,untuk kerja,modal kerja', 'reason' => 'Alat produktif / laptop kerja', 'sort_order' => 27],
+    ['category' => 'Elektronik', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'hp rusak,handphone rusak,ganti hp,hp pecah,layar pecah,hp mati', 'reason' => 'Penggantian HP utama rusak', 'sort_order' => 26],
+    ['category' => 'Elektronik', 'sub_category' => '-', 'bucket' => 'Future Building', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'laptop kerja,laptop produktif,alat kerja,untuk kerja,modal kerja', 'reason' => 'Alat produktif / laptop kerja', 'sort_order' => 27],
     ['category' => 'Jajan', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'fomo,healing,upgrade karena', 'reason' => 'Belanja impulsif / FOMO', 'sort_order' => 28],
 
     // Essential Living
@@ -48,6 +48,7 @@ return [
 
     // Flexible + Social
     ['category' => 'Jajan', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'kopi,coffee,jajan,snack,boba', 'reason' => 'Jajan & kopi', 'sort_order' => 50],
+    ['category' => 'Elektronik', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'headset,earphone,earbuds,airpods,gadget,charger,powerbank,mouse,keyboard,speaker,monitor,tablet,laptop,hp,handphone,iphone,smartphone', 'reason' => 'Gadget & elektronik (bukan jajan)', 'sort_order' => 54],
     ['category' => 'Skincare', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'skincare,skin care,serum,moisturizer', 'reason' => 'Perawatan diri', 'sort_order' => 51],
     ['category' => 'Subscription', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'subscription,langganan,netflix,spotify,youtube premium', 'reason' => 'Langganan digital', 'sort_order' => 52],
     ['category' => 'Social', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'hadiah,amplop,sedekah,persembahan,ibadah,donasi,zakat', 'reason' => 'Sosial & donasi', 'sort_order' => 53],

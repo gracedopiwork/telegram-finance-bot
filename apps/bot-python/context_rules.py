@@ -231,25 +231,43 @@ _SUBSCRIPTION = (
     "canva pro",
 )
 
-_TRANSPORT = (
-    "ojek",
-    "grab",
-    "gojek",
-    "maxim",
-    "angkot",
-    "bensin",
-    "pertamax",
-    "pertalite",
-    "solar",
-    "tol",
-    "parkir",
-    "transport",
-    "kereta",
-    "krl",
-    "mrt",
-    "lrt",
-    "tiket pesawat",
-    "boarding",
+_TRANSPORT_PATTERNS = tuple(
+    re.compile(p, re.IGNORECASE)
+    for p in (
+        r"\bojek\b",
+        # grab ojek/car — jangan cocokkan grabfood / grabmart
+        r"\bgrab(?!food|mart)\b",
+        r"\bgojek\b",
+        r"\bmaxim\b",
+        r"\bangkot\b",
+        r"\bbensin\b",
+        r"\bpertamax\b",
+        r"\bpertalite\b",
+        r"\bsolar\b",
+        r"\btol\b",
+        r"\bparkir\b",
+        r"\btransport\b",
+        r"\bkereta\b",
+        r"\bkrl\b",
+        r"\bmrt\b",
+        r"\blrt\b",
+        r"\btiket\s+pesawat\b",
+        r"\bboarding\b",
+    )
+)
+
+_FOOD_DELIVERY = (
+    "grabfood",
+    "grab food",
+    "grabmart",
+    "grab mart",
+    "gofood",
+    "go food",
+    "gojek food",
+    "shopeefood",
+    "shopee food",
+    "foodpanda",
+    "maxim food",
 )
 
 _SERVIS_KENDARAAN = (
@@ -301,6 +319,11 @@ _KOPI_JAJAN = (
     "cemilan",
     "bubble tea",
     "boba",
+    "kue",
+    "cake",
+    "dessert",
+    "donat",
+    "croissant",
 )
 
 _SOCIAL = (
@@ -408,8 +431,35 @@ _ELEKTRONIK_PATTERNS = tuple(
         r"\bkamera\b",
         r"\bcharger\b",
         r"\bearphone\b",
+        r"\bearbuds?\b",
         r"\bheadset\b",
+        r"\bairpods?\b",
+        r"\bpowerbank\b",
+        r"\bpower\s*bank\b",
+        r"\bmouse\b",
+        r"\bkeyboard\b",
+        r"\bspeaker\b",
+        r"\bmonitor\b",
+        r"\bssd\b",
+        r"\bflashdisk\b",
+        r"\bharddisk\b",
+        r"\bsmartwatch\b",
+        r"\bkabel\s*data\b",
     )
+)
+
+_ELEKTRONIK_NEED_HINTS = (
+    "rusak",
+    "pecah",
+    "mati",
+    "ganti hp",
+    "ganti handphone",
+    "untuk kerja",
+    "laptop kerja",
+    "laptop produktif",
+    "alat kerja",
+    "modal kerja",
+    "kebutuhan kerja",
 )
 
 
@@ -441,8 +491,27 @@ def is_water_expense(text: str) -> bool:
     return _match_any(text, _AIR_PATTERNS)
 
 
+def is_food_delivery(text: str) -> bool:
+    return _contains(text, _FOOD_DELIVERY)
+
+
+def is_transport_ride(text: str) -> bool:
+    """Ojek/bensin/dll — bukan GrabFood/GoFood."""
+    if is_food_delivery(text):
+        return False
+    return _match_any(text, _TRANSPORT_PATTERNS)
+
+
 def is_electronics_expense(text: str) -> bool:
     return _match_any(text, _ELEKTRONIK_PATTERNS)
+
+
+def electronics_sifat(text: str) -> str:
+    """Need jika perbaikan/alat kerja; selain itu Wants (bukan jajan)."""
+    lower = text.lower()
+    if any(hint in lower for hint in _ELEKTRONIK_NEED_HINTS):
+        return "Need"
+    return "Wants"
 
 
 def infer_saving_label(text: str) -> str | None:
@@ -529,7 +598,7 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Listrik", "sifat": "Need"}
     if is_water_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Air", "sifat": "Need"}
-    if _contains(lower, _SERVIS_KENDARAAN) or _contains(lower, _TRANSPORT):
+    if _contains(lower, _SERVIS_KENDARAAN) or is_transport_ride(lower):
         return {"jenis": "Pengeluaran", "kategori": "Transport", "sifat": "Need"}
     if _contains(lower, _KESEHATAN):
         return {"jenis": "Pengeluaran", "kategori": "Kesehatan", "sifat": "Need"}
@@ -545,28 +614,90 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Pajak", "sifat": "Need"}
     if _contains(lower, _SOCIAL):
         return {"jenis": "Pengeluaran", "kategori": "Social", "sifat": "Need"}
-    if _contains(lower, _MAKAN):
-        return {"jenis": "Pengeluaran", "kategori": "Makan", "sifat": "Need"}
+    # Jajan dulu (kata "jajan"/kue), baru makan/delivery — hindari GrabFood → Transport.
     if _contains(lower, _KOPI_JAJAN):
         return {"jenis": "Pengeluaran", "kategori": "Jajan", "sifat": "Wants"}
+    if is_food_delivery(lower) or _contains(lower, _MAKAN):
+        return {"jenis": "Pengeluaran", "kategori": "Makan", "sifat": "Need"}
     if is_electronics_expense(lower):
-        return {"jenis": "Pengeluaran", "kategori": "Jajan", "sifat": "Wants"}
+        return {
+            "jenis": "Pengeluaran",
+            "kategori": "Elektronik",
+            "sifat": electronics_sifat(lower),
+        }
 
     return None
 
 
 def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[str, Any]:
-    """Override jenis/kategori/sifat jika rule konteks cocok."""
+    """
+    Koreksi ringan setelah AI.
+
+    AI adalah penentu utama kategori pengeluaran.
+    Rule hanya:
+    - memaksa Pemasukan / Saving yang sering salah konteks, atau
+    - mengoreksi dump ke Jajan untuk kasus jelas (mis. elektronik), atau
+    - mengisi jika AI tidak memberi kategori.
+    """
     combined = f"{parsed.get('keterangan', '')} {source_text}".strip()
     hit = classify_from_text(combined)
     if hit is None:
-        # Juga cek label kategori mentah dari AI.
-        kategori = str(parsed.get("kategori", "")).strip().lower()
-        if kategori:
-            hit = classify_from_text(kategori)
-    if hit is None:
         return parsed
 
+    ai_kat = str(parsed.get("kategori") or "").strip()
+    ai_kat_l = ai_kat.lower()
+
+    # 1) Pemasukan & saving: rule menang (AI sering salah jenis).
+    if hit["jenis"] in {"Pemasukan", "Saving/Investment"}:
+        parsed["jenis"] = hit["jenis"]
+        parsed["kategori"] = hit["kategori"]
+        parsed["sifat"] = hit["sifat"]
+        parsed.pop("sub_kategori", None)
+        return parsed
+
+    # 2) Elektronik yang AI buang ke Jajan/belanja/kosong.
+    if is_electronics_expense(combined) and ai_kat_l in {
+        "",
+        "jajan",
+        "belanja",
+        "lain-lain",
+        "lain lain",
+        "other",
+        "misc",
+        "umum",
+    }:
+        parsed["jenis"] = "Pengeluaran"
+        parsed["kategori"] = "Elektronik"
+        parsed["sifat"] = electronics_sifat(combined)
+        parsed.pop("sub_kategori", None)
+        return parsed
+
+    # 2b) GrabFood/jajan yang AI salah ke Transport.
+    if ai_kat_l == "transport" and (
+        is_food_delivery(combined)
+        or _contains(combined.lower(), _KOPI_JAJAN)
+        or _contains(combined.lower(), _MAKAN)
+    ):
+        parsed["jenis"] = "Pengeluaran"
+        if _contains(combined.lower(), _KOPI_JAJAN):
+            parsed["kategori"] = "Jajan"
+            parsed["sifat"] = "Wants"
+        else:
+            parsed["kategori"] = "Makan"
+            parsed["sifat"] = "Need"
+        parsed.pop("sub_kategori", None)
+        return parsed
+
+    # 2c) Label Jajan dari AI → pastikan Wants.
+    if ai_kat_l == "jajan":
+        parsed["sifat"] = "Wants"
+        return parsed
+
+    # 3) AI sudah punya label → hormati (jangan timpa Makan/Transport/dll).
+    if ai_kat:
+        return parsed
+
+    # 4) AI kosong → pakai rule sebagai cadangan.
     parsed["jenis"] = hit["jenis"]
     parsed["kategori"] = hit["kategori"]
     parsed["sifat"] = hit["sifat"]
@@ -593,9 +724,16 @@ Contoh klasifikasi WAJIB diikuti:
 - "skincare serum 120rb" → Pengeluaran / Skincare / Wants
 - "makan malam 65.700" → Pengeluaran / Makan / Need
 - "grab ke kantor 28rb" → Pengeluaran / Transport / Need
+- "jajan di grabfood 60k beli kue" → Pengeluaran / Jajan / Wants (BUKAN Transport)
+- "gofood nasi padang 45rb" → Pengeluaran / Makan / Need (BUKAN Transport)
 - "bayar sewa kos 1.5jt" → Pengeluaran / Sewa/Tempat Tinggal / Need
 - "terima sewa kontrak 2jt" → Pemasukan / Sewa Masuk / Need
 - "obat demam 45rb" → Pengeluaran / Kesehatan / Need
 - "pulsa 50rb" → Pengeluaran / Komunikasi / Need
 - "cicilan motor 900rb" → Pengeluaran / Cicilan / Need
+- "beli headset 350rb" → Pengeluaran / Elektronik / Wants (BUKAN Jajan)
+- "earphone 150rb" → Pengeluaran / Elektronik / Wants
+- "ganti hp rusak 3jt" → Pengeluaran / Elektronik / Need
+- "laptop kerja 8jt" → Pengeluaran / Elektronik / Need
+- "kopi susu 28rb" → Pengeluaran / Jajan / Wants
 """

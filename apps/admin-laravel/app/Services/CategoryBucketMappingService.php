@@ -85,11 +85,30 @@ class CategoryBucketMappingService
                 return $mapping->bucket;
             }
 
-            if ($mapCategory !== '' && ! $wildcardCategory && $categoryMatch && $subMatch) {
+            // Keyword spesifik menang sebelum match kategori generik.
+            if ($keywordMatch && ($wildcardCategory || $categoryMatch)) {
                 return $mapping->bucket;
             }
 
-            if ($keywordMatch && ($wildcardCategory || $categoryMatch)) {
+            $hasKeywords = $mapping->keywordsList() !== [];
+            if ($mapCategory !== '' && ! $wildcardCategory && $categoryMatch && $subMatch && ! $hasKeywords) {
+                return $mapping->bucket;
+            }
+        }
+
+        // Cadangan: kategori cocok tanpa keyword yang kena (pakai mapping pertama).
+        foreach ($this->activeMappings() as $mapping) {
+            if ($mapping->transaction_type !== $txType && $mapping->transaction_type !== 'transfer') {
+                continue;
+            }
+            if ($mapping->nature && $mapping->nature !== $nature) {
+                continue;
+            }
+            $mapCategory = mb_strtolower(trim($mapping->category));
+            if ($mapCategory === '' || $mapCategory === '*') {
+                continue;
+            }
+            if ($this->categoryKeysMatch($mapCategory, $category)) {
                 return $mapping->bucket;
             }
         }

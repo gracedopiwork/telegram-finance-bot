@@ -158,10 +158,13 @@ def fallback_sub() -> str:
 
 
 def apply_admin_nature(parsed: dict[str, Any]) -> dict[str, Any]:
-    """Terapkan sifat dari aturan admin jika kategori cocok."""
+    """Terapkan sifat dari aturan admin; utamakan rule yang keyword-nya cocok."""
     kategori = str(parsed.get("kategori", ""))
+    notes = str(parsed.get("keterangan", "")).lower()
     rules = get_rules().get("rules") or []
-    matched_nature: str | None = None
+    keyword_nature: str | None = None
+    category_nature: str | None = None
+    wildcard_nature: str | None = None
 
     for rule in rules:
         if not isinstance(rule, dict):
@@ -170,16 +173,31 @@ def apply_admin_nature(parsed: dict[str, Any]) -> dict[str, Any]:
         if not nature:
             continue
         rule_cat = str(rule.get("category") or "")
+        keywords = rule.get("keywords") or []
+        hit_keyword = any(
+            isinstance(kw, str) and kw.strip() and kw.strip().lower() in notes
+            for kw in keywords
+        )
         if rule_cat == "*":
-            if matched_nature is None:
-                matched_nature = str(nature)
+            if wildcard_nature is None:
+                wildcard_nature = str(nature)
             continue
         if rule_cat != kategori:
             continue
-        matched_nature = str(nature)
-        break
+        if hit_keyword and keyword_nature is None:
+            keyword_nature = str(nature)
+        if category_nature is None and not keywords:
+            category_nature = str(nature)
+        elif category_nature is None and not hit_keyword:
+            # Cadangan: mapping kategori tanpa konteks keyword spesifik.
+            category_nature = str(nature)
 
-    if matched_nature:
-        parsed["sifat"] = matched_nature
+    matched = keyword_nature or category_nature or wildcard_nature
+    if matched:
+        # Jangan timpa sifat yang sudah tepat dari context rules
+        # kecuali ada keyword admin yang secara eksplisit cocok.
+        existing = str(parsed.get("sifat") or "").strip()
+        if keyword_nature or existing not in {"Need", "Wants"}:
+            parsed["sifat"] = matched
 
     return parsed
