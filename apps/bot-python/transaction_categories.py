@@ -126,12 +126,7 @@ def _infer_kategori_from_text(text: str) -> str:
 
 
 def _kategori_from_strong_signals(text: str, current: str = "") -> str | None:
-    """Hanya override AI untuk jenis kritis / koreksi dump Jajan → Elektronik."""
-    hit = classify_from_text(text)
-    if hit is None:
-        return None
-    if hit["jenis"] in {"Pemasukan", "Saving/Investment"}:
-        return hit["kategori"]
+    """Jangan timpa kategori AI. Hanya koreksi dump Jajan → Elektronik."""
     current_l = current.strip().lower()
     if is_electronics_expense(text) and current_l in {
         "",
@@ -212,7 +207,9 @@ Aturan:
    - Huruf k di kata biasa (kemarin, snack, stock) BUKAN penanda ribuan.
    - Tagihan (listrik/sewa/BPJS/cicilan) jarang di bawah Rp1000 — jika user tulis "90 br/rb", pakai skala ribuan.
 3) jenis: Pemasukan | Pengeluaran | Saving/Investment.
-   - Pemasukan: gaji, bonus, honor/freelance, affiliate/komisi, bunga investasi, dividen cair, cashback, refund, hasil sewa, hasil jualan.
+   - Jika user menulis "Pengeluaran" / "Pemasukan" / "Saving" di AWAL pesan, jenis WAJIB mengikuti itu (abaikan kata freelance/honor di deskripsi).
+   - Pemasukan: gaji, bonus, honor/freelance yang DITERIMA, affiliate/komisi, bunga investasi, dividen cair, cashback, refund, hasil sewa, hasil jualan.
+   - Bayar/melunasi/pelunasan jasa freelancer = Pengeluaran (BUKAN Pemasukan), meskipun ada kata freelance.
    - Saving/Investment: beli/nabung saham, reksadana, deposito, emas, crypto, dana darurat — BUKAN hasil investasi.
    - Hasil investasi (bunga/dividen cair) = Pemasukan, BUKAN Saving/Investment.
    - Donasi/sedekah/zakat = Pengeluaran + kategori Social.

@@ -1,6 +1,7 @@
 """Rule konteks transaksi YFD — deterministik sebelum/sesudah AI.
 
 Prioritas:
+0) Jenis eksplisit user ("Pengeluaran"/"Pemasukan" di awal) — menang mutlak
 1) Pemasukan khusus (affiliate, bunga, dividen, refund, dll.)
 2) Saving/Investment (beli/nabung instrumen)
 3) Pengeluaran (tagihan, konsumsi, sosial, dll.)
@@ -14,6 +15,11 @@ from typing import Any
 VALID_JENIS = frozenset({"Pemasukan", "Pengeluaran", "Saving/Investment"})
 VALID_SIFAT = frozenset({"Need", "Wants"})
 
+_EXPLICIT_JENIS_RE = re.compile(
+    r"^\s*(pengeluaran|pemasukan|saving(?:\s*/\s*investment)?)\b",
+    re.IGNORECASE,
+)
+
 
 def _contains(text: str, phrases: tuple[str, ...]) -> bool:
     lower = text.lower()
@@ -22,6 +28,22 @@ def _contains(text: str, phrases: tuple[str, ...]) -> bool:
 
 def _match_any(text: str, patterns: tuple[re.Pattern[str], ...]) -> bool:
     return any(pattern.search(text) for pattern in patterns)
+
+
+def detect_explicit_jenis(text: str) -> str | None:
+    """Jenis yang user tulis eksplisit di awal teks (bukan heuristik kategori)."""
+    raw = (text or "").strip()
+    if not raw:
+        return None
+    m = _EXPLICIT_JENIS_RE.match(raw)
+    if not m:
+        return None
+    word = m.group(1).lower().replace(" ", "")
+    if word == "pengeluaran":
+        return "Pengeluaran"
+    if word == "pemasukan":
+        return "Pemasukan"
+    return "Saving/Investment"
 
 
 # ---------------------------------------------------------------------------
@@ -91,17 +113,34 @@ _BONUS = (
     "performance bonus",
 )
 
+# Honor/freelance sebagai PEMASUKAN — jangan pakai bare "freelance(r)" saja:
+# "bayar jasa freelancer" adalah pengeluaran, bukan income.
 _HONOR = (
     "honor",
     "honorarium",
-    "freelance",
-    "freelancer",
+    "honor freelance",
+    "honor freelancer",
+    "terima freelance",
+    "dapat freelance",
+    "fee freelance",
     "fee project",
     "fee proyek",
-    "jasa konsultasi",
     "bayaran project",
-    "pembayaran project",
     "kontrak kerja lepas",
+)
+
+# Sinyal jelas: user MEMBAYAR jasa/freelance (bukan menerima honor).
+_PAYING_FREELANCE = (
+    "bayar jasa",
+    "bayar freelancer",
+    "bayar freelance",
+    "bayar ke freelancer",
+    "bayar ke freelance",
+    "melunasi",
+    "pelunasan",
+    "jasa freelancer",
+    "jasa freelance",
+    "jasa konsultasi",
 )
 
 _CASHBACK = (
@@ -542,39 +581,66 @@ def is_saving_action(text: str) -> bool:
     return False
 
 
+def _is_honor_income(text: str) -> bool:
+    """Honor/freelance masuk HANYA jika bukan pembayaran ke freelancer."""
+    lower = text.lower()
+    if _contains(lower, _PAYING_FREELANCE):
+        return False
+    if detect_explicit_jenis(text) == "Pengeluaran":
+        return False
+    return _contains(lower, _HONOR)
+
+
 def classify_from_text(text: str) -> dict[str, str] | None:
     """Kembalikan {jenis, kategori, sifat} jika rule kuat cocok, else None."""
     lower = text.lower().strip()
     if not lower:
         return None
 
-    # ---- Pemasukan (prioritas tertinggi) ----
-    if is_affiliate_income(lower):
-        return {"jenis": "Pemasukan", "kategori": "Affiliate", "sifat": "Need"}
-    if is_interest_income(lower):
-        return {"jenis": "Pemasukan", "kategori": "Bunga Investasi", "sifat": "Need"}
-    if is_dividend_income(lower):
-        return {"jenis": "Pemasukan", "kategori": "Dividen", "sifat": "Need"}
-    if _contains(lower, _REFUND):
-        return {"jenis": "Pemasukan", "kategori": "Refund", "sifat": "Need"}
-    if _contains(lower, _CASHBACK):
-        return {"jenis": "Pemasukan", "kategori": "Cashback", "sifat": "Need"}
-    if _contains(lower, _GAJI):
-        return {"jenis": "Pemasukan", "kategori": "Gaji", "sifat": "Need"}
-    if _contains(lower, _BONUS):
-        return {"jenis": "Pemasukan", "kategori": "Bonus", "sifat": "Need"}
-    if _contains(lower, _HONOR):
-        return {"jenis": "Pemasukan", "kategori": "Freelance", "sifat": "Need"}
-    if _contains(lower, _PENJUALAN):
-        return {"jenis": "Pemasukan", "kategori": "Penjualan", "sifat": "Need"}
-    if _contains(lower, _SEWA_MASUK):
-        return {"jenis": "Pemasukan", "kategori": "Sewa Masuk", "sifat": "Need"}
-    if _contains(lower, _TRANSFER_MASUK):
-        return {"jenis": "Pemasukan", "kategori": "Transfer Masuk", "sifat": "Need"}
+    explicit = detect_explicit_jenis(text)
+    # User tulis "Pengeluaran …" → jangan pernah paksa Pemasukan dari keyword kategori.
+    skip_income = explicit == "Pengeluaran"
+    # User tulis "Pemasukan …" → tetap izinkan income rules (dan skip expense force).
+    force_income_only = explicit == "Pemasukan"
+
+    # ---- Pemasukan (prioritas tinggi, kecuali jenis eksplisit Pengeluaran) ----
+    if not skip_income:
+        if is_affiliate_income(lower):
+            return {"jenis": "Pemasukan", "kategori": "Affiliate", "sifat": "Need"}
+        if is_interest_income(lower):
+            return {"jenis": "Pemasukan", "kategori": "Bunga Investasi", "sifat": "Need"}
+        if is_dividend_income(lower):
+            return {"jenis": "Pemasukan", "kategori": "Dividen", "sifat": "Need"}
+        if _contains(lower, _REFUND):
+            return {"jenis": "Pemasukan", "kategori": "Refund", "sifat": "Need"}
+        if _contains(lower, _CASHBACK):
+            return {"jenis": "Pemasukan", "kategori": "Cashback", "sifat": "Need"}
+        if _contains(lower, _GAJI):
+            return {"jenis": "Pemasukan", "kategori": "Gaji", "sifat": "Need"}
+        if _contains(lower, _BONUS):
+            return {"jenis": "Pemasukan", "kategori": "Bonus", "sifat": "Need"}
+        if _is_honor_income(lower):
+            return {"jenis": "Pemasukan", "kategori": "Freelance", "sifat": "Need"}
+        if _contains(lower, _PENJUALAN):
+            return {"jenis": "Pemasukan", "kategori": "Penjualan", "sifat": "Need"}
+        if _contains(lower, _SEWA_MASUK):
+            return {"jenis": "Pemasukan", "kategori": "Sewa Masuk", "sifat": "Need"}
+        if _contains(lower, _TRANSFER_MASUK):
+            return {"jenis": "Pemasukan", "kategori": "Transfer Masuk", "sifat": "Need"}
+
+    if force_income_only:
+        return None
 
     # ---- Saving / Investment ----
-    if is_saving_action(lower) or (
-        infer_saving_label(lower) is not None and _contains(lower, _SAVING_ACTION + ("saham", "reksa", "deposito", "crypto", "bitcoin", "sbn", "obligasi"))
+    if explicit != "Pengeluaran" and (
+        is_saving_action(lower)
+        or (
+            infer_saving_label(lower) is not None
+            and _contains(
+                lower,
+                _SAVING_ACTION + ("saham", "reksa", "deposito", "crypto", "bitcoin", "sbn", "obligasi"),
+            )
+        )
     ):
         label = infer_saving_label(lower) or "Tabungan/Investasi"
         # "investasi" generik tanpa aksi beli/nabung & tanpa instrumen jelas → jangan paksa.
@@ -584,10 +650,14 @@ def classify_from_text(text: str) -> dict[str, str] | None:
             return {"jenis": "Saving/Investment", "kategori": label, "sifat": "Need"}
 
     # Dividen reinvest = saving
-    if _contains(lower, _DIVIDEN_REINVEST):
+    if explicit != "Pengeluaran" and _contains(lower, _DIVIDEN_REINVEST):
         return {"jenis": "Saving/Investment", "kategori": "Saham", "sifat": "Need"}
 
     # ---- Pengeluaran ----
+    # Bayar jasa/freelancer dulu — sebelum _MAKAN ("nasi" di dalam "melunasi").
+    if _contains(lower, _PAYING_FREELANCE):
+        return {"jenis": "Pengeluaran", "kategori": "Jasa", "sifat": "Need"}
+
     if _contains(lower, _ASURANSI):
         return {"jenis": "Pengeluaran", "kategori": "Asuransi", "sifat": "Need"}
     if _contains(lower, _SKINCARE):
@@ -626,82 +696,79 @@ def classify_from_text(text: str) -> dict[str, str] | None:
             "sifat": electronics_sifat(lower),
         }
 
+    # User tulis "Pengeluaran …" tanpa kategori spesifik → jenis tetap Pengeluaran.
+    if explicit == "Pengeluaran":
+        return {"jenis": "Pengeluaran", "kategori": "Jasa", "sifat": "Need"}
+
     return None
 
 
 def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[str, Any]:
     """
-    Koreksi ringan setelah AI.
+    Setelah AI parse: JANGAN timpa jenis/kategori yang sudah diisi AI.
 
-    AI adalah penentu utama kategori pengeluaran.
     Rule hanya:
-    - memaksa Pemasukan / Saving yang sering salah konteks, atau
-    - mengoreksi dump ke Jajan untuk kasus jelas (mis. elektronik), atau
-    - mengisi jika AI tidak memberi kategori.
+    - hormati jenis eksplisit yang user tulis di awal pesan ("Pengeluaran …"),
+    - koreksi dump kategori jelas (Elektronik vs Jajan, GrabFood vs Transport),
+    - mengisi field yang AI biarkan kosong.
     """
-    combined = f"{parsed.get('keterangan', '')} {source_text}".strip()
+    combined = f"{source_text} {parsed.get('keterangan', '')}".strip()
+    explicit = detect_explicit_jenis(source_text) or detect_explicit_jenis(combined)
+
+    # Jenis yang user tulis sendiri di awal pesan — bukan heuristik keyword.
+    if explicit and str(parsed.get("jenis") or "").strip() != explicit:
+        parsed["jenis"] = explicit
+
+    ai_jenis = str(parsed.get("jenis") or "").strip()
+    ai_kat = str(parsed.get("kategori") or "").strip()
+    ai_kat_l = ai_kat.lower()
+
+    # AI sudah lengkap → jangan timpa dengan rule income/freelance/dll.
+    if ai_jenis and ai_kat:
+        # Koreksi dump kategori saja (bukan jenis).
+        if is_electronics_expense(combined) and ai_kat_l in {
+            "jajan",
+            "belanja",
+            "lain-lain",
+            "lain lain",
+            "other",
+            "misc",
+            "umum",
+        }:
+            parsed["kategori"] = "Elektronik"
+            parsed["sifat"] = electronics_sifat(combined)
+            parsed.pop("sub_kategori", None)
+            return parsed
+
+        if ai_kat_l == "transport" and (
+            is_food_delivery(combined)
+            or _contains(combined.lower(), _KOPI_JAJAN)
+            or _contains(combined.lower(), _MAKAN)
+        ):
+            if _contains(combined.lower(), _KOPI_JAJAN):
+                parsed["kategori"] = "Jajan"
+                parsed["sifat"] = "Wants"
+            else:
+                parsed["kategori"] = "Makan"
+                parsed["sifat"] = "Need"
+            parsed.pop("sub_kategori", None)
+            return parsed
+
+        if ai_kat_l == "jajan":
+            parsed["sifat"] = "Wants"
+        return parsed
+
     hit = classify_from_text(combined)
     if hit is None:
         return parsed
 
-    ai_kat = str(parsed.get("kategori") or "").strip()
-    ai_kat_l = ai_kat.lower()
-
-    # 1) Pemasukan & saving: rule menang (AI sering salah jenis).
-    if hit["jenis"] in {"Pemasukan", "Saving/Investment"}:
+    # AI kosong sebagian → isi dari rule sebagai cadangan saja.
+    if not ai_jenis:
         parsed["jenis"] = hit["jenis"]
+    if not ai_kat:
         parsed["kategori"] = hit["kategori"]
         parsed["sifat"] = hit["sifat"]
         parsed.pop("sub_kategori", None)
-        return parsed
-
-    # 2) Elektronik yang AI buang ke Jajan/belanja/kosong.
-    if is_electronics_expense(combined) and ai_kat_l in {
-        "",
-        "jajan",
-        "belanja",
-        "lain-lain",
-        "lain lain",
-        "other",
-        "misc",
-        "umum",
-    }:
-        parsed["jenis"] = "Pengeluaran"
-        parsed["kategori"] = "Elektronik"
-        parsed["sifat"] = electronics_sifat(combined)
-        parsed.pop("sub_kategori", None)
-        return parsed
-
-    # 2b) GrabFood/jajan yang AI salah ke Transport.
-    if ai_kat_l == "transport" and (
-        is_food_delivery(combined)
-        or _contains(combined.lower(), _KOPI_JAJAN)
-        or _contains(combined.lower(), _MAKAN)
-    ):
-        parsed["jenis"] = "Pengeluaran"
-        if _contains(combined.lower(), _KOPI_JAJAN):
-            parsed["kategori"] = "Jajan"
-            parsed["sifat"] = "Wants"
-        else:
-            parsed["kategori"] = "Makan"
-            parsed["sifat"] = "Need"
-        parsed.pop("sub_kategori", None)
-        return parsed
-
-    # 2c) Label Jajan dari AI → pastikan Wants.
-    if ai_kat_l == "jajan":
-        parsed["sifat"] = "Wants"
-        return parsed
-
-    # 3) AI sudah punya label → hormati (jangan timpa Makan/Transport/dll).
-    if ai_kat:
-        return parsed
-
-    # 4) AI kosong → pakai rule sebagai cadangan.
-    parsed["jenis"] = hit["jenis"]
-    parsed["kategori"] = hit["kategori"]
-    parsed["sifat"] = hit["sifat"]
-    parsed.pop("sub_kategori", None)
     return parsed
 
 
@@ -719,6 +786,8 @@ Contoh klasifikasi WAJIB diikuti:
 - "refund tiket 100rb" → Pemasukan / Refund / Need
 - "gaji bulan ini 8jt" → Pemasukan / Gaji / Need
 - "honor freelance 1.5jt" → Pemasukan / Freelance / Need
+- "Pengeluaran melunasi jasa freelancer IT Rp 5.750.000" → Pengeluaran / Jasa / Need (BUKAN Pemasukan)
+- "Bayar jasa freelancer web developer 2jt" → Pengeluaran / Jasa / Need (BUKAN Pemasukan)
 - "bayar BPJS 150rb" → Pengeluaran / Asuransi / Need
 - "netflix bulanan 54rb" → Pengeluaran / Subscription / Wants
 - "skincare serum 120rb" → Pengeluaran / Skincare / Wants

@@ -42,6 +42,66 @@ class ContextRulesTests(unittest.TestCase):
     def test_freelance(self) -> None:
         self.assertClass("honor freelance 1500000", "Pemasukan", "Freelance")
 
+    def test_explicit_pengeluaran_freelancer_bukan_pemasukan(self) -> None:
+        text = (
+            "Pengeluaran melunasi jasa freelancer IT dan web developer "
+            "pelunasan buat proyek YFD Rp 5.750.000"
+        )
+        self.assertClass(text, "Pengeluaran", "Jasa")
+
+    def test_bayar_jasa_freelancer_bukan_pemasukan(self) -> None:
+        text = (
+            "Bayar jasa freelancer IT dan web developer pelunasan "
+            "buat proyek YFD Rp 5.750.000"
+        )
+        self.assertClass(text, "Pengeluaran", "Jasa")
+
+    def test_apply_rules_does_not_override_ai_jenis(self) -> None:
+        """AI sudah isi jenis+kategori → rule jangan timpa ke Pemasukan/Freelance."""
+        parsed = {
+            "keterangan": "Pelunasan Jasa Freelancer IT dan Web Developer Proyek YFD",
+            "jenis": "Pengeluaran",
+            "kategori": "Jasa",
+            "sifat": "Need",
+        }
+        out = apply_context_rules(
+            parsed,
+            "Pengeluaran melunasi jasa freelancer IT dan web developer "
+            "pelunasan buat proyek YFD Rp 5.750.000",
+        )
+        self.assertEqual(out["jenis"], "Pengeluaran")
+        self.assertEqual(out["kategori"], "Jasa")
+
+    def test_apply_rules_respects_explicit_user_jenis(self) -> None:
+        """User tulis 'Pengeluaran' di awal → jenis mengikuti user (bukan rule freelance)."""
+        parsed = {
+            "keterangan": "Pelunasan Jasa Freelancer IT Proyek YFD",
+            "jenis": "Pemasukan",
+            "kategori": "Freelance",
+            "sifat": "Need",
+        }
+        out = apply_context_rules(
+            parsed,
+            "Pengeluaran melunasi jasa freelancer IT Rp 5.750.000",
+        )
+        self.assertEqual(out["jenis"], "Pengeluaran")
+
+    def test_apply_rules_does_not_force_income_over_ai(self) -> None:
+        """Tanpa jenis eksplisit: AI Pengeluaran tetap menang meski ada kata freelancer."""
+        parsed = {
+            "keterangan": "Bayar jasa freelancer web developer",
+            "jenis": "Pengeluaran",
+            "kategori": "Jasa",
+            "sifat": "Need",
+        }
+        out = apply_context_rules(
+            parsed,
+            "Bayar jasa freelancer IT dan web developer pelunasan "
+            "buat proyek YFD Rp 5.750.000",
+        )
+        self.assertEqual(out["jenis"], "Pengeluaran")
+        self.assertEqual(out["kategori"], "Jasa")
+
     def test_asuransi(self) -> None:
         self.assertClass("bayar BPJS 150rb", "Pengeluaran", "Asuransi")
 
