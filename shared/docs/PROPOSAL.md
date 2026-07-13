@@ -1,276 +1,341 @@
 # Proposal Pengembangan & Penyediaan  
-**Telegram Finance Bot — Pencatatan Keuangan Pribadi + Lisensi & Admin**
+**YFD Finance Bot — Pencatatan Keuangan Pribadi via Telegram + Lisensi, Admin & Website**
 
-| Dokumen | Versi |
+| Dokumen | Nilai |
 |--------|-------|
-| Tanggal | 6 Mei 2026 |
-| Status | Draft proposal |
-
----
-
-## Keputusan Paket
-
-Dokumen ini mengikuti **Paket 3: Ecosystem (Full Branding & Remote Control)** dengan estimasi harga freelance **Rp 8.500.000** dan durasi implementasi sekitar **6 minggu**.
-
-Ruang lingkup utama Paket 3:
-- Bot Telegram + AI parsing + pencatatan transaksi
-- Lisensi & aktivasi user
-- Admin web untuk operasional
-- Integrasi payment otomatis (Midtrans)
-- Company profile website
-- Sinkron dashboard massal (remote dashboard control) melalui master template/library
+| Produk | Your Financial Doctor (YFD) Finance Bot |
+| Tanggal | 12 Juli 2026 |
+| Status | Proposal resmi |
+| Paket | Ecosystem (Full Branding & Remote Control) |
+| Nilai proyek | **Rp 10.000.000** (sepuluh juta rupiah) |
+| Estimasi pengerjaan | ±6 minggu (sudah terimplementasi / siap serah terima sesuai deliverables) |
 
 ---
 
 ## 1. Ringkasan eksekutif
 
-Diajukan solusi berupa **bot Telegram** yang membantu pengguna mencatat pemasukan dan pengeluaran dari **bahasa natural** (contoh: “makan malam 50rb karena lagi sedih”), dengan bantuan **analisis AI (Gemini)** dan penyimpanan ke **Google Sheets** sesuai format kolom yang disepakati. Untuk model **penjualan / SaaS**, sistem dilengkapi **aktivasi lisensi**, **basis data MySQL**, dan **API admin** untuk pengelolaan kunci lisensi.
+Diajukan solusi produk digital **YFD Finance Bot**: bot Telegram yang membantu pengguna mencatat pemasukan dan pengeluaran dari **bahasa natural** (contoh: *“makan malam 50rb karena lagi sedih”*), dengan bantuan **analisis AI (Google Gemini)** dan penyimpanan terstruktur ke **Google Sheets** milik masing-masing pelanggan.
 
-Roadmap mencakup **panel admin berbasis web**, **input foto struk dengan OCR + konfirmasi pengguna**, serta opsi **pembayaran otomatis** (misalnya Midtrans) sesuai kebutuhan operasional.
+Untuk model **penjualan / SaaS**, sistem dilengkapi:
 
-**RAB (Rencana Anggaran Biaya)** untuk pengembangan dan biaya berkelanjutan disampaikan pada **Lampiran A**.
+- Aktivasi **lisensi** per akun Telegram  
+- **Checkout & pembayaran otomatis** (Midtrans)  
+- **Website company profile** + CMS konten  
+- **Panel admin** operasional  
+- **Provision Google Sheet** otomatis per order  
+- **Remote dashboard control** (sync template Dashboard ke seluruh user)  
+- Monitoring kesehatan AI (kuota / fallback) di admin  
+
+**Nilai investasi pengembangan (fixed fee):** **Rp 10.000.000**  
+Biaya operasional pihak ketiga (VPS, domain, Gemini, Midtrans fee) ditanggung pemilik produk — lihat Lampiran A.
 
 ---
 
 ## 2. Latar belakang & masalah yang diselesaikan
 
-- Pencatatan manual di aplikasi keuangan sering terasa lambat; banyak orang lebih nyaman **chat cepat di Telegram**.
-- Input tidak selalu terstruktur; dibutuhkan **parser/intelijen** yang menormalisasi kategori, nominal, dan konteks emosi/perilaku (misalnya impulsif vs terencana).
-- Untuk produk yang **dijual ke banyak pengguna**, diperlukan **lisensi**, **aktivasi per akun**, dan **administrasi** yang dapat diaudit.
+| Masalah | Solusi YFD |
+|---------|------------|
+| Aplikasi keuangan terasa lambat / ribet | Catat lewat chat Telegram dalam hitungan detik |
+| Input tidak terstruktur | AI menormalisasi nominal, kategori, sifat, mood, impulsif |
+| Sulit menjual ke banyak user | Lisensi + aktivasi + Midtrans + email delivery |
+| Data tersebar / tidak punya template | Google Sheet per user + dashboard terpusat dari master |
+| Perilaku belanja tidak terpantau | Mood + impulsif sebagai sinyal behavioral finance |
 
 ---
 
 ## 3. Tujuan proyek
 
-1. Memberikan cara mencatat transaksi yang **cepat dan natural** lewat Telegram.
-2. Menyimpan data secara **terstruktur** ke Google Sheets (atau ke database saat migrasi).
-3. Menyediakan fondasi **komersial**: lisensi, aktivasi, dan API admin.
-4. Menyiapkan perluasan: **struk foto**, **dashboard web**, **integrasi pembayaran**.
+1. Memberikan cara mencatat transaksi yang **cepat dan natural** lewat Telegram.  
+2. Menyimpan data **terstruktur** ke Google Sheets (tab Transaksi) per pelanggan.  
+3. Menyediakan fondasi **komersial**: checkout, lisensi, aktivasi, admin, email/WA.  
+4. Menyediakan **website branding** + operasional sync dashboard massal.  
+5. Menyiapkan produksi di **VPS** (HTTPS, process manager, dokumentasi).  
 
 ---
 
-## 4. Ruang lingkup solusi
+## 4. Ruang lingkup yang termasuk (Rp 10.000.000)
 
-### 4.1 Yang sudah tersedia (fondasi / MVP teknis)
+### 4.1 Bot Telegram (Python)
 
-- Bot Telegram: perintah `/catat`, input teks biasa, `/hapuskilat`, `/sheet`, `/hariini`.
-- Integrasi Gemini untuk parsing ke struktur transaksi + fallback parser sederhana.
-- Penyimpanan baris ke Google Sheets (service account).
-- Mode lisensi opsional (`LICENSE_REQUIRED`): command `/activate <kode>`.
-- Skema MySQL: `licenses`, `license_activations`, `transactions` (siap untuk laporan & struk).
-- Admin API (Flask): pembuatan, pembacaan, dan pembaruan lisensi (Bearer token).
-- Satu repositori dengan pemisahan layanan: `run.py bot` / `run.py web`.
+| Fitur | Keterangan |
+|-------|------------|
+| Input teks natural | Contoh: `/catat makan 50rb` atau teks biasa |
+| Input foto struk | OCR via Gemini Vision → konfirmasi → simpan |
+| AI parsing (Gemini) | Keterangan, nominal, jenis, kategori, sub-kategori, sifat, mood, impulsif |
+| Fallback parser | Jika AI gagal / kuota habis, bot tetap bisa catat |
+| Konfirmasi sebelum simpan | Tombol Benar / Ulangi |
+| Prompt mood | Jika mood belum terdeteksi dari teks |
+| Perintah | `/start`, `/activate`, `/catat`, `/sheet`, `/hariini`, `/hapuskilat` |
+| Lisensi | Hanya user teraktivasi yang bisa catat (`LICENSE_REQUIRED`) |
+| Nama panggilan | Onboarding singkat setelah aktivasi |
+| Kategori selaras Sheet | Dropdown kategori & sub-kategori sesuai template YFD |
+| Voice note | **Tidak termasuk** (dinonaktifkan; dapat ditawarkan sebagai add-on) |
 
-### 4.2 Direncanakan — Fase berikutnya (Paket 3)
+### 4.2 Google Sheets & Drive
 
-| Fase | Fokus | Output utama |
-|------|--------|--------------|
-| **Fase A** | Panel admin web | UI login, generate lisensi, daftar & filter, suspend/extend |
-| **Fase B** | Pembayaran otomatis | Integrasi Midtrans: webhook → generate/aktivasi lisensi otomatis |
-| **Fase C** | Company profile | Website profil perusahaan + halaman produk/paket |
-| **Fase D** | Remote dashboard control | Update massal dashboard user dari master template/library |
-| **Fase E** | Produksi VPS | Nginx, SSL, process manager, backup DB, monitoring dasar |
-| **Fase F (opsional)** | Foto struk | Unggah foto → OCR → konfirmasi simpan → simpan bukti (URL storage) |
+| Fitur | Keterangan |
+|-------|------------|
+| Sheet per order/user | Copy dari template master saat order lunas |
+| Tab Transaksi | Append baris (tidak menimpa data lama) |
+| Tab Dashboard | Template rumus/chart; sync massal dari master |
+| Share otomatis | Email checkout + service account (viewer/editor sesuai kebijakan) |
+| Tanggal readable | Format teks `dd-mm-yyyy HH:MM:SS` (bukan serial number) |
 
-Ruang lingkup detail tiap fase dapat disesuaikan dalam dokumen **Statement of Work (SOW)** terpisah.
+### 4.3 Website & pembayaran (Laravel)
+
+| Fitur | Keterangan |
+|-------|------------|
+| Company profile | Home, tentang, layanan, paket, penasihat, produk, Wealthpedia, informasi |
+| Checkout | Form order → Midtrans payment link |
+| Webhook Midtrans | Settlement → order paid → buat lisensi |
+| Halaman sukses | Instruksi aktivasi + cek email |
+| Email delivery | Kode lisensi, link bot Telegram, link Google Sheet |
+| WA (opsional) | Integrasi Fonnte jika dikonfigurasi |
+
+### 4.4 Admin panel
+
+| Fitur | Keterangan |
+|-------|------------|
+| Login admin | Autentikasi web |
+| CMS konten | Settings, paket, layanan, tim dokter, FAQ, artikel, produk digital |
+| Orders | Lihat order, status, provision/reshare sheet, resend email |
+| Sync dashboard | Trigger sync master → semua sheet aktif |
+| Status AI Gemini | Monitoring sukses / 429 / fallback + saran upgrade billing |
+
+### 4.5 Infrastruktur & dokumentasi
+
+| Item | Keterangan |
+|------|------------|
+| Monorepo | `apps/bot-python`, `apps/admin-laravel`, `shared/` |
+| Deploy VPS | Nginx, SSL, systemd (`yfd-bot`, `yfd-queue`) |
+| Dokumentasi | README, `.env.example`, DEPLOYMENT, API contract |
+| Skema DB | MySQL bersama bot + Laravel |
 
 ---
 
-## 5. Fitur utama (produk)
+## 5. Yang tidak termasuk (di luar Rp 10 jt)
 
-| Fitur | Deskripsi singkat |
-|-------|-------------------|
-| Catat natural | User mengetik seperti percakapan; sistem mengekstrak nominal dan metadata |
-| AI parsing | Normalisasi kategori/sub-kategori, sifat, mood, indikasi impulsif |
-| Google Sheets | Sinkronisasi ke spreadsheet yang dishare ke service account |
-| Rangkuman harian | Ringkasan transaksi hari yang sama |
-| Lisensi | Satu kode mengikat ke satu Telegram user (sesuai aturan DB); masa aktif & status |
-| Admin API | Operasi lisensi tanpa UI (cocok untuk otomasi nanti) |
-| Midtrans otomatis | Checkout → notifikasi bayar → lisensi aktif |
-| Company profile web | Branding perusahaan + halaman informasi produk |
-| Remote dashboard control | Perubahan dashboard terpusat untuk seluruh user |
-| *(opsional tambahan)* Struk foto | OCR + konfirmasi sebelum commit ke database/sheet |
+Kecuali disepakati add-on terpisah:
+
+- Voice note / speech-to-text produksi  
+- Aplikasi mobile native (iOS/Android)  
+- Multi-seat lisensi (1 kode untuk banyak Telegram user)  
+- Custom kategori per user di luar dropdown Sheet  
+- Coaching AI / insight mingguan otomatis (fitur lanjutan)  
+- Biaya akun pihak ketiga (VPS, domain, Gemini paid, Midtrans fee, email SMTP)  
+- Support & maintenance bulanan setelah masa garansi (lihat pasal 11)  
 
 ---
 
-## 6. Arsitektur teknis (gambaran)
+## 6. Arsitektur teknis
 
 ```
-[Pengguna Telegram] ←→ [Bot Python — long-running]
-                              ↓
-                    [Gemini API] (parsing)
-                              ↓
-                    [Google Sheets API]
+[Pelanggan Telegram]
+        │
+        ▼
+[Bot Python — yfd-bot]
+   ├── Google Gemini (parse teks / foto struk)
+   ├── MySQL (lisensi & mapping sheet)
+   └── Google Sheets API (tab Transaksi)
 
-[Lisensi / aktivasi] ←→ [MySQL]
+[Website yourfinancialdoctor.id — Laravel]
+   ├── Company profile + CMS
+   ├── Checkout → Midtrans
+   ├── Webhook → license + provision Sheet
+   ├── Email / WA delivery
+   └── Admin (orders, sync dashboard, AI health)
 
-[Admin / nanti UI web] ←→ [Flask API — HTTP]
-                              ↓
-                         [MySQL]
-
-*(planned)* [Midtrans Webhook] → [Backend] → [generate/update lisensi]
-*(planned)* [Object Storage] → simpan file gambar struk
+[Google Drive]
+   ├── Template master workbook
+   └── Copy sheet per order (privacy per user)
 ```
 
-**Catatan deployment:** bot dan web admin dalam **satu proyek**, biasanya dijalankan sebagai **dua proses** pada satu VPS (normal untuk stabilitas).
+### Stack
 
----
-
-## 7. Stack teknologi
-
-| Lapisan | Pilihan saat ini |
-|---------|------------------|
-| Bot | Python, `python-telegram-bot` |
-| AI | Google Gemini |
-| Spreadsheet | Google Sheets + service account |
+| Lapisan | Teknologi |
+|---------|-----------|
+| Bot | Python, python-telegram-bot |
+| AI | Google Gemini (Flash family) |
+| Web / Admin | Laravel, AdminLTE, Blade |
 | Database | MySQL |
-| Admin backend | Python Flask |
-| Infrastruktur (disarankan) | VPS Linux, Nginx, SSL (Let’s Encrypt), process manager |
+| Spreadsheet | Google Sheets + Service Account + OAuth |
+| Payment | Midtrans |
+| Deploy | VPS Linux, Nginx, SSL, systemd |
 
 ---
 
-## 8. Model lisensi & bisnis (kerangka)
+## 7. Model lisensi & bisnis (kerangka produk)
 
-- **Paket** dapat berbasis durasi (misalnya 30 hari, 1 tahun) atau lifetime — diatur di field `expires_at` dan kebijakan produk.
-- **Satu lisensi ↔ satu akun Telegram** (sesuai implementasi saat ini); paket multi-seat dapat ditinjau dengan penyesuaian skema.
-- **Manual vs otomatis:** awal operasi bisa manual (transfer → admin generate key); otomasi via gateway pembayaran pada fase lanjutan.
-
----
-
-## 9. Keamanan & privasi (garis besar)
-
-- Rahasia lingkungan (token bot, kunci API, DB) hanya di server / `.env`, tidak di-commit.
-- Admin API dilindungi **Bearer token**; untuk produksi disarankan upgrade ke sesi login + HTTPS saja.
-- Data keuangan bersifat sensitif — akses server, backup, dan log harus dibatasi (detail dapat dimasukkan di dokumen keamanan terpisah).
+- Satu **lisensi** mengikat ke **satu akun Telegram**.  
+- Masa aktif diatur di field `expires_at` (sesuai paket penjualan).  
+- Setelah bayar: customer dapat kode `/activate`, link bot, dan Google Sheet.  
+- Paket produk (contoh: Lite / Pro / Ecosystem) dikelola dari admin CMS.  
 
 ---
 
-## 10. Dependensi & tanggung jawab pihak klien / pemilik produk
+## 8. Keamanan & privasi (garis besar)
 
-- Akun **Telegram Bot** (token dari BotFather).
-- Akun **Google Cloud** + Service Account + spreadsheet yang dishare ke email service account.
-- **Gemini API key** (kuota & billing sesuai kebijakan Google).
-- **MySQL** (hosted atau di VPS yang sama).
-- **Domain + VPS** (jika admin web & webhook pembayaran dipublikasikan).
-- Kebijakan **Midtrans** (jika fase pembayaran otomatis dijalankan).
+- Secret (`TELEGRAM_BOT_TOKEN`, `GEMINI_API_KEY`, OAuth, Midtrans) hanya di `.env` server.  
+- API internal bot ↔ Laravel dilindungi `BOT_INTERNAL_API_TOKEN`.  
+- Data keuangan per user di spreadsheet terpisah.  
+- Rekomendasi produksi: `APP_DEBUG=false`, HTTPS, backup DB berkala, rotasi API key jika bocor.  
 
 ---
 
-## 11. Jadwal indikatif Paket 3 (perlu konfirmasi scope)
+## 9. Tanggung jawab pemilik produk (klien)
 
-| Fase | Perkiraan durasi* |
-|------|-------------------|
-| Finalisasi fondasi + hardening dasar | 1 minggu |
-| Admin web + lisensi | 1 minggu |
-| Midtrans + webhook + notifikasi lisensi | 1 minggu |
-| Company profile web | 1 minggu |
-| Remote dashboard control + uji massal | 1 minggu |
-| Go-live VPS + dokumentasi operasi | 1 minggu |
+Pemilik produk menyediakan / menanggung:
 
-\*Total estimasi ±6 minggu; dapat berubah bergantung revisi fitur dan ketersediaan akses API/testing.
-
----
-
-## 12. Deliverables akhir (target)
-
-- Kode sumber ter-versioning dengan dokumentasi setup (`README`, `.env.example`).
-- Skema database (`database/schema.sql`).
-- Panduan deploy singkat untuk VPS.
-- Admin web operasional untuk lisensi & user sheet.
-- Integrasi pembayaran otomatis (Midtrans webhook flow).
-- Website company profile.
-- Mekanisme remote dashboard control (master -> user sheets).
-- (Opsional) Dokumen SOW dengan acceptance criteria per fase.
+1. Akun **Telegram Bot** (BotFather)  
+2. Akun **Google Cloud** (Service Account + OAuth Sheets/Drive)  
+3. **Gemini API key** + billing jika volume melebihi free tier  
+4. **Domain + VPS** + akses SSH  
+5. Akun **Midtrans** (production keys)  
+6. SMTP email / Fonnte (jika WA dipakai)  
+7. Konten branding (logo, copy, paket harga jual ke end-user)  
 
 ---
 
-## Lampiran A — RAB (Rencana Anggaran Biaya)
+## 10. Jadwal indikatif (referensi pengerjaan)
 
-Dokumen ini berisi **kerangka RAB** untuk proposal. Angka **Rp …** atau kolom kosong sengaja disiapkan agar diisi sesuai **rate internal**, **negosiasi dengan klien**, atau **penawaran resmi** Anda. Tidak termasuk PPN kecuali dicantumkan terpisah.
+| Fase | Fokus | Durasi* |
+|------|--------|---------|
+| 1 | Fondasi bot + lisensi + Sheets | 1 minggu |
+| 2 | Admin web + CMS | 1 minggu |
+| 3 | Midtrans + email delivery + provision sheet | 1 minggu |
+| 4 | Company profile website | 1 minggu |
+| 5 | Remote dashboard sync + AI health | 1 minggu |
+| 6 | Hardening produksi VPS + UAT + dokumentasi | 1 minggu |
 
-### A.1 Biaya pengembangan (sekali bayar / fixed fee per paket)
+\*Total ±6 minggu. Jadwal aktual mengikuti akses akun pihak ketiga dan feedback UAT.
 
-Asumsi kolom **volume** dapat berupa perkiraan **hari kerja** atau **paket tetap** — sesuaikan dengan cara Anda menawarkan.
+---
 
-| No | Uraian pekerjaan | Volume | Satuan | Harga satuan (Rp) | Jumlah (Rp) |
-|----|------------------|--------|--------|-------------------|-------------|
-| 1 | Finalisasi fondasi: lisensi, DB MySQL, admin API, dokumentasi dasar | ___ | hari / paket | ___ | ___ |
-| 2 | Fase A — Panel admin web (login, generate lisensi, daftar, suspend/extend) | ___ | hari / paket | ___ | ___ |
-| 3 | Fase B — Foto struk: upload → OCR → konfirmasi → simpan bukti & catatan | ___ | hari / paket | ___ | ___ |
-| 4 | Fase C — Integrasi pembayaran (Midtrans): checkout & webhook → lisensi otomatis | ___ | hari / paket | ___ | ___ |
-| 5 | Fase D — Go-live VPS: Nginx, SSL, process manager, backup & dokumentasi operasi | ___ | hari / paket | ___ | ___ |
-| 6 | QA, perbaikan bug minor pasca UAT (mis. putaran 1–2) | ___ | hari / paket | ___ | ___ |
-| | **Subtotal pengembangan (A.1)** | | | | **Rp ___** |
+## 11. Deliverables & garansi
 
-**Catatan:** Item 1–6 dapat dibuat **paket bundling** (mis. “Paket Go-live” = item 1+2+D) agar RAB lebih singkat untuk klien.
+### Deliverables
 
-### A.2 Biaya infrastruktur & layanan pihak ketiga (berkelanjutan / tahunan)
+- Kode sumber di repository yang disepakati  
+- Sistem berjalan di VPS klien (domain + SSL)  
+- Dokumentasi setup & operasi singkat  
+- Admin operasional + bot siap dipakai end-user  
+- Template Google Sheet master + flow provision  
 
-Biasanya ditanggung **pemilik produk** atau **klien** sesuai kontrak — dicantumkan agar transparan.
+### Garansi (disarankan dicantumkan di kontrak)
 
-| No | Uraian | Periode | Estimasi (Rp/periode)* | Keterangan |
-|----|--------|---------|-------------------------|------------|
-| 1 | VPS (Linux, contoh 2 vCPU / 2 GB RAM) | /bulan | ___ | Skala naik jika traffic & DB besar |
-| 2 | Domain `.com` / `.id` | /tahun | ___ | Opsional jika pakai IP saja |
-| 3 | Google Gemini API | /bulan | ___ | Tergantung volume pemanggilan |
-| 4 | Google Workspace / Cloud (Sheets API & kuota) | /bulan | ___ | Banyak kasus masih dalam free tier terbatas |
-| 5 | MySQL terkelola (jika tidak di VPS) | /bulan | ___ | Opsional |
-| 6 | Penyimpanan objek struk (S3-compatible / Cloudinary, dll.) | /bulan | ___ | Jika Fase B aktif |
-| 7 | Midtrans fee transaksi | per trx | ___ % / tetap | Mengikuti ketentuan Midtrans |
-| | **Subtotal recurring (indikatif)** | | **Rp ___ / bulan** | *Estimasi, bukan komitmen penyedia |
+- **14–30 hari** perbaikan bug kritis pada fitur yang termasuk scope (bukan fitur baru)  
+- Perubahan requirement di luar pasal 4 = add-on / Change Request  
 
-\*Estimasi mengikuti harga pasar dan dapat berubah; verifikasi ke penyedia masing-masing.
+---
 
-### A.3 Cadangan risiko & perubahan ruang lingkup (opsional)
+## 12. Nilai kontrak & cara bayar (usulan)
 
-| No | Uraian | % dari subtotal A.1 atau nominal tetap | Jumlah (Rp) |
-|----|--------|------------------------------------------|-------------|
-| 1 | Kontingensi perubahan requirement | ___ % | ___ |
-| 2 | Pelatihan singkat admin / video Loom | ___ paket | ___ |
+| Komponen | Jumlah |
+|----------|--------|
+| **Pengembangan & penyediaan Paket Ecosystem** | **Rp 10.000.000** |
+| PPN (jika berlaku) | Sesuai ketentuan |
+| Biaya operasional bulanan pihak ketiga | Di luar kontrak pengembangan (Lampiran A.2) |
 
-### A.4 Ringkasan total RAB
+### Usulan termin pembayaran
 
-| Komponen | Jumlah (Rp) |
-|----------|-------------|
-| Subtotal pengembangan (A.1) | 8.500.000 |
-| Subtotal cadangan (A.3), jika dipakai | ___ |
-| **Total investasi awal (estimasi)** | **Rp 8.500.000** *(belum termasuk cadangan opsional/PPN)* |
-| Estimasi biaya operasional bulanan (A.2) | Rp ___ / bulan |
+| Termin | Persentase | Jumlah | Milestone |
+|--------|------------|--------|-----------|
+| DP | 42,5% | Rp 4.250.000 | Kickoff + akses akun |
+| Pelunasan | 57,5% | Rp 5.750.000 | Go-live produksi + serah terima |
 
-**PPN:** ___ % → **Total termasuk PPN:** Rp ___ *(isi jika berlaku)*
+*(Termin dapat dinegosiasikan.)*
+
+---
+
+## Lampiran A — RAB
+
+### A.1 Biaya pengembangan (fixed fee)
+
+| No | Uraian | Jumlah (Rp) |
+|----|--------|-------------|
+| 1 | Bot Telegram + AI parsing + fallback + kategori Sheet + mood/impulsif | 2.500.000 |
+| 2 | Integrasi Google Sheets/Drive (provision, append, privacy, tanggal) | 1.500.000 |
+| 3 | Lisensi, aktivasi, mapping user ↔ sheet (MySQL) | 1.000.000 |
+| 4 | Website company profile + CMS admin | 1.500.000 |
+| 5 | Checkout Midtrans + webhook + email delivery | 1.500.000 |
+| 6 | Remote dashboard sync + monitoring AI health | 1.000.000 |
+| 7 | Deploy VPS, hardening, dokumentasi, UAT & bugfix minor | 1.000.000 |
+| | **Total pengembangan** | **10.000.000** |
+
+### A.2 Biaya operasional pihak ketiga (estimasi, ditanggung klien)
+
+| No | Uraian | Estimasi | Keterangan |
+|----|--------|----------|------------|
+| 1 | VPS (2 vCPU / 2–4 GB) | Rp 100.000 – 250.000 / bulan | Tergantung provider |
+| 2 | Domain `.id` / `.com` | Rp 100.000 – 200.000 / tahun | |
+| 3 | Google Gemini API (paid) | Rp 0 – 100.000 / bulan* | *Volume kecil biasanya sangat murah; free tier terbatas |
+| 4 | Midtrans fee | Mengikuti Midtrans | Per transaksi end-user |
+| 5 | SMTP / email | Rp 0 – 50.000 / bulan | Atau SMTP provider |
+| 6 | Fonnte WA (opsional) | Sesuai paket Fonnte | |
+
+\*Contoh kasar: ± Rp 10–30 per transaksi teks di paid tier Gemini Flash — detail mengikuti harga Google.
+
+### A.3 Ringkasan
+
+| Komponen | Jumlah |
+|----------|--------|
+| Investasi awal pengembangan | **Rp 10.000.000** |
+| Operasional bulanan (A.2) | **Ditanggung pemilik produk** |
+
+---
+
+## Lampiran B — Add-on (opsional, di luar kontrak utama)
+
+| Add-on | Estimasi (mulai dari) |
+|--------|------------------------|
+| Voice note produksi (speech → transaksi) | Rp 1.500.000 |
+| Insight / laporan mingguan otomatis ke Telegram | Rp 2.000.000 |
+| Multi-seat / akun keluarga | Rp 1.500.000 |
+| Maintenance & support bulanan | Rp 500.000 – 1.000.000 / bulan |
+| Custom fitur baru | Quotation terpisah |
+
+---
+
+## Lampiran C — SOP singkat sync Dashboard
+
+1. Edit rumus/tampilan hanya di **Spreadsheet Master** (tab Dashboard).  
+2. Uji di 1–3 akun dummy.  
+3. Jalankan sync dari admin (atau Apps Script webhook) dengan versi baru.  
+4. Sistem menyalin tab Dashboard ke semua `user_sheets` aktif.  
+5. Tab **Transaksi** tidak diubah.  
+
+---
+
+## Lampiran D — Acceptance criteria (ringkas)
+
+Sistem dianggap selesai jika:
+
+1. User bisa checkout → bayar Midtrans → menerima email lisensi + link sheet + link bot.  
+2. User bisa `/activate` lalu catat transaksi teks & foto struk ke Sheet.  
+3. Admin bisa kelola konten website, lihat order, sync dashboard, lihat status AI.  
+4. Bot menolak user tanpa lisensi aktif.  
+5. Dokumentasi deploy tersedia dan layanan berjalan di VPS klien.  
 
 ---
 
 ## 13. Langkah selanjutnya
 
-1. Menyetujui **scope** fase (minimal: admin UI vs struk vs Midtrans vs semua).
-2. Menetapkan **paket lisensi** dan SLA support.
-3. Menyiapkan akun & akses yang tertera di bagian 10.
-4. Kickoff pengembangan fase yang disepakati.
+1. Menyetujui proposal & nilai **Rp 10.000.000**.  
+2. Menandatangani kontrak / SOW singkat + jadwal termin.  
+3. Menyerahkan akses akun (Telegram, Google, Midtrans, VPS, domain).  
+4. Kickoff & UAT.  
+5. Go-live + serah terima.  
 
 ---
 
-## Lampiran C — SOP Sinkron Dashboard (Opsional)
-
-Tujuan SOP ini adalah agar admin dapat memperbaiki rumus/tampilan dashboard untuk seluruh user tanpa mengubah data transaksi masing-masing.
-
-1. Admin mengubah dashboard hanya di **Spreadsheet Master**.
-2. Lakukan verifikasi cepat di file uji (minimal 1–3 akun dummy).
-3. Jalankan `sync_dashboard.py --version vX.Y --dry-run` untuk validasi target.
-4. Jalankan `sync_dashboard.py --version vX.Y` untuk publish.
-5. Sistem update `dashboard_version` dan `last_synced_at` di tabel `user_sheets`.
-6. Jika terjadi error pada sebagian user, lakukan retry hanya untuk target gagal.
-
-Catatan:
-- Setiap user tetap memakai spreadsheet terpisah (privasi antar user aman).
-- Sync hanya menyentuh tab dashboard template, bukan tab data transaksi.
-
----
-
-## Lampiran B — Kontak & penyesuaian
-
-Bagian ini dapat diisi nama penyedia, kontak, dan nomor revisi dokumen.
+## Lampiran E — Kontak & persetujuan
 
 **Penyedia / pengembang:** _____________________  
 **Klien / pemilik produk:** _____________________  
-**Penyetuju:** _____________________   Tanggal: ___________
+**Nilai disepakati:** Rp 10.000.000  
+**Penyetuju klien:** _____________________  Tanggal: ___________  
+**Penyetuju penyedia:** _____________________  Tanggal: ___________  
+
+---
+
+*Dokumen ini merupakan proposal ruang lingkup dan nilai proyek. Detail teknis operasional tersedia di `README.md`, `shared/docs/DEPLOYMENT.md`, dan `shared/docs/API_CONTRACT.md`.*
