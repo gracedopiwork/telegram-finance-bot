@@ -31,9 +31,30 @@ class CategoryBucketServiceTest extends TestCase
             ['Pendidikan', 'Bayar seminar financial planning'],
             ['Pendidikan', 'Biaya sertifikasi bisnis'],
             ['Buku', 'Beli buku The Psychology of Money'],
+            ['Self Development', 'Bayar les piano bulanan'],
+            ['Self Development', 'Kelas public speaking'],
+            ['Pengembangan Diri', 'Coaching karier bersama mentor'],
         ] as [$category, $notes]) {
             $this->assertBucket(
                 'Future Building',
+                TransactionTaxonomy::TYPE_EXPENSE,
+                $category,
+                'Need',
+                $notes,
+            );
+        }
+    }
+
+    public function test_sport_lessons_are_essential_living(): void
+    {
+        foreach ([
+            ['Olahraga', 'Bayar coaching tenis'],
+            ['Olahraga', 'Bayar les renang'],
+            ['Kesehatan', 'Bayar personal trainer di gym'],
+            ['Olahraga', 'Bayar kelas pilates'],
+        ] as [$category, $notes]) {
+            $this->assertBucket(
+                'Essential Living',
                 TransactionTaxonomy::TYPE_EXPENSE,
                 $category,
                 'Need',

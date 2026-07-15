@@ -14,7 +14,9 @@ return [
         'seminar', 'simposium', 'workshop', 'sertifikasi', 'pelatihan', 'kursus', 'conference',
         'penelitian', 'modal usaha', 'marketing usaha', 'website usaha', 'software usaha',
         'cicilan modal usaha', 'pengembangan diri', 'buku pengembangan diri',
-        'psychology of money', 'psychologi of money',
+        'psychology of money', 'psychologi of money', 'self development', 'les', 'coaching',
+        'mentoring', 'kelas piano', 'les piano', 'kursus piano', 'les musik', 'kelas musik',
+        'les vokal', 'les bahasa', 'kursus bahasa', 'public speaking',
     ],
     'flexible_keywords' => [
         'jajan', 'kopi', 'coffee', 'cafe', 'nongkrong', 'healing',
@@ -25,6 +27,12 @@ return [
     'essential_context_keywords' => [
         'hp rusak', 'handphone rusak', 'ganti hp', 'hp pecah', 'layar pecah', 'hp mati',
         'smartphone rusak', 'ganti handphone',
+        'les olahraga', 'coaching olahraga', 'kursus olahraga', 'personal trainer',
+        'fitness coach', 'kelas gym', 'kelas yoga', 'kelas pilates',
+        'les tenis', 'coaching tenis', 'pelatih tenis', 'kelas tenis',
+        'les renang', 'coaching renang', 'pelatih renang', 'kelas renang',
+        'les badminton', 'les bulu tangkis', 'coaching badminton',
+        'coaching basket', 'coaching sepak bola', 'coaching futsal', 'coaching golf',
     ],
     'future_building_context_keywords' => [
         'laptop kerja', 'laptop produktif', 'alat kerja', 'untuk kerja', 'modal kerja',
@@ -50,5 +58,6 @@ return [
         'Need vs Wants: dengarkan niat fungsional user, bukan sekadar merek premium.',
         'Jenis transaksi dan bucket prescription adalah dua dimensi berbeda: pengeluaran bisnis tetap Pengeluaran, tetapi bucket-nya Future Building.',
         'Bucket ditentukan dari tujuan transaksi: kerja/bisnis/pengembangan diri → Future Building; risiko/asuransi/dana darurat → Protection.',
+        'Semua self-development (les, kursus, coaching, musik, bahasa) → Future Building; khusus les/coaching olahraga → Essential Living.',
     ],
 ];
