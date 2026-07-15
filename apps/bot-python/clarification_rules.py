@@ -20,6 +20,12 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
             "atau hiburan seperti novel/komik?"
         )
 
+    if _is_generic_instrument(text):
+        return (
+            "Alat musik ini untuk belajar/pengembangan diri, kebutuhan profesi, "
+            "kebutuhan wajib sekolah, atau hobi/hiburan?"
+        )
+
     if _is_generic_coffee(text, category):
         return "Kopi/ngopi ini untuk kebutuhan kerja/meeting atau untuk santai/healing?"
 
@@ -48,6 +54,39 @@ def _is_generic_book(text: str, category: str) -> bool:
         "novel",
         "komik",
         "hiburan",
+        "klarifikasi user:",
+    )
+    return not any(marker in text for marker in purpose_markers)
+
+
+def _is_generic_instrument(text: str) -> bool:
+    instruments = (
+        "piano",
+        "gitar",
+        "biola",
+        "violin",
+        "drum",
+        "saxophone",
+        "saksofon",
+        "ukulele",
+        "cello",
+    )
+    if not any(instrument in text for instrument in instruments):
+        return False
+    purpose_markers = (
+        "belajar",
+        "pengembangan diri",
+        "self development",
+        "profesi",
+        "kerja",
+        "manggung",
+        "studio",
+        "sekolah",
+        "kuliah",
+        "wajib",
+        "hobi",
+        "hiburan",
+        "koleksi",
         "klarifikasi user:",
     )
     return not any(marker in text for marker in purpose_markers)

@@ -29,6 +29,20 @@ class ClarificationRulesTests(unittest.TestCase):
         )
         self.assertIn("kerja/meeting", question or "")
 
+    def test_generic_piano_purchase_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Alat Musik", "keterangan": "Beli Piano"},
+            "beli piano 20jt",
+        )
+        self.assertIn("belajar/pengembangan diri", question or "")
+
+    def test_piano_with_clear_hobby_purpose_does_not_ask_again(self) -> None:
+        question = clarification_question(
+            {"kategori": "Alat Musik", "keterangan": "Piano untuk Hobi"},
+            "beli piano 20jt\nKlarifikasi user: untuk hobi",
+        )
+        self.assertIsNone(question)
+
     def test_clear_work_laptop_does_not_require_clarification(self) -> None:
         question = clarification_question(
             {"kategori": "Elektronik", "keterangan": "Laptop Kerja"},

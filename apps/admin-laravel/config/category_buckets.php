@@ -17,6 +17,8 @@ return [
         'psychology of money', 'psychologi of money', 'self development', 'les', 'coaching',
         'mentoring', 'kelas piano', 'les piano', 'kursus piano', 'les musik', 'kelas musik',
         'les vokal', 'les bahasa', 'kursus bahasa', 'public speaking',
+        'belajar piano', 'piano untuk belajar', 'latihan piano', 'alat musik untuk belajar',
+        'alat musik untuk profesi', 'profesi musik', 'untuk manggung', 'studio musik',
     ],
     'flexible_keywords' => [
         'jajan', 'kopi', 'coffee', 'cafe', 'nongkrong', 'healing',

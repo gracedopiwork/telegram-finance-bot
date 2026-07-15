@@ -250,7 +250,11 @@ Aturan:
    - Isi clarification_question dengan satu pertanyaan singkat dan spesifik.
    - Contoh ambigu: "freelance 6jt" (menerima atau membayar), "beli buku 500rb"
      (belajar/wajib/hiburan), "beli kopi 50rb" (kerja/healing), "beli laptop 8jt"
-     (kerja/ganti rusak/upgrade pribadi), "bayar kelas 1jt" (olahraga atau self-development).
+     (kerja/ganti rusak/upgrade pribadi), "bayar kelas 1jt" (olahraga atau self-development),
+     "beli piano 20jt" (belajar/profesi/sekolah/hobi).
+   - Untuk alat musik setelah klarifikasi: gunakan kategori Alat Musik; belajar,
+     pengembangan diri, atau profesi = Need; hobi/hiburan pribadi = Wants.
+     Keterangan WAJIB menyebut tujuan tersebut agar bucket dapat diverifikasi.
    - Tanyakan HANYA informasi yang belum ada; jangan meminta ulang nominal/keterangan
      yang sudah jelas.
    - Jika input memuat "Klarifikasi user:", gunakan jawabannya. Jika jawabannya masih

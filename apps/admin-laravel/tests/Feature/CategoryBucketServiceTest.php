@@ -34,6 +34,7 @@ class CategoryBucketServiceTest extends TestCase
             ['Self Development', 'Bayar les piano bulanan'],
             ['Self Development', 'Kelas public speaking'],
             ['Pengembangan Diri', 'Coaching karier bersama mentor'],
+            ['Alat Musik', 'Beli piano untuk belajar'],
         ] as [$category, $notes]) {
             $this->assertBucket(
                 'Future Building',
@@ -101,6 +102,7 @@ class CategoryBucketServiceTest extends TestCase
             ['Future Building', 'Elektronik', 'Need', 'Beli laptop kerja'],
             ['Essential Living', 'Elektronik', 'Need', 'Ganti HP utama rusak'],
             ['Flexible + Social', 'Elektronik', 'Wants', 'Upgrade iPhone karena FOMO'],
+            ['Flexible + Social', 'Alat Musik', 'Wants', 'Beli piano untuk hobi pribadi'],
         ];
 
         foreach ($cases as [$bucket, $category, $nature, $notes]) {
