@@ -35,6 +35,7 @@ from ai_quota import (
 )
 from portal_link import fetch_portal_login_url
 from category_rules_cache import get_rules, refresh as refresh_category_rules
+from clarification_rules import clarification_question
 from transaction_store import (
     format_prescription_bucket,
     resolve_transaction_bucket,
@@ -94,6 +95,7 @@ VALID_IMPULSIF = {"Yes", "No"}
 PENDING_NAME_USERS: set[int] = set()
 PENDING_MOOD_WAIT: Dict[int, Dict[str, Any]] = {}
 PENDING_CONFIRMATIONS: Dict[int, Dict[str, Any]] = {}
+PENDING_CLARIFICATIONS: Dict[int, Dict[str, Any]] = {}
 
 MOOD_PROMPT_TEXT = (
     "Pilih mood kamu saat transaksi ini:\n"
@@ -517,6 +519,16 @@ def normalize_ai_result(data: Dict[str, Any], source_text: str = "") -> Dict[str
     if data["impulsif"] not in VALID_IMPULSIF:
         raise ValueError("invalid_impulsif")
 
+    raw_clarification = data.get("needs_clarification", False)
+    data["needs_clarification"] = (
+        raw_clarification is True
+        or str(raw_clarification).strip().lower() == "true"
+    )
+    question = str(data.get("clarification_question") or "").strip()
+    data["clarification_question"] = (
+        question if data["needs_clarification"] and question else None
+    )
+
     apply_transaction_date(data, source_text)
     return data
 
@@ -804,6 +816,7 @@ async def process_note_input(
     user_id: int | None = None,
     *,
     mood_resolved: bool = False,
+    clarification_resolved: bool = False,
 ) -> None:
     text = text.strip()
     if user_id is None:
@@ -835,6 +848,24 @@ async def process_note_input(
 
     if basic_mode and user_id:
         await notify_quota_exhausted_if_needed(message, user_id)
+
+    if user_id:
+        question = clarification_question(parsed, text)
+        should_ask = question and (
+            not clarification_resolved
+            or parsed.get("needs_clarification") is True
+        )
+        if should_ask:
+            PENDING_CONFIRMATIONS.pop(user_id, None)
+            PENDING_MOOD_WAIT.pop(user_id, None)
+            PENDING_CLARIFICATIONS[user_id] = {
+                "source_text": text,
+            }
+            await message.reply_text(
+                f"Aku perlu memastikan tujuan transaksinya dulu:\n\n{question}\n\n"
+                "Balas dengan keterangannya, atau ketik batal."
+            )
+            return
 
     if resolved_mood:
         parsed["mood"] = resolved_mood
@@ -1088,6 +1119,23 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 "`/activate KODE-LISENSI-ANDA`",
                 parse_mode="Markdown",
             )
+        return
+
+    if user_id in PENDING_CLARIFICATIONS:
+        pending = PENDING_CLARIFICATIONS.pop(user_id)
+        if text.lower() in {"batal", "cancel", "batalkan"}:
+            await update.message.reply_text("Klarifikasi dibatalkan. Transaksi tidak disimpan.")
+            return
+        combined_input = (
+            f"{pending['source_text']}\n"
+            f"Klarifikasi user: {text}"
+        )
+        await process_note_input(
+            update.message,
+            combined_input,
+            user_id=user_id,
+            clarification_resolved=True,
+        )
         return
 
     if user_id in PENDING_MOOD_WAIT:

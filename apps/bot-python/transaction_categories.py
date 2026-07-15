@@ -186,7 +186,9 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
   "sifat": "Need" | "Wants",
   "mood": "Happy" | "Neutral" | "Sad" | "Stressed" | "Angry" | "Tired",
   "impulsif": "Yes" | "No",
-  "tanggal": "YYYY-MM-DD" | null
+  "tanggal": "YYYY-MM-DD" | null,
+  "needs_clarification": boolean,
+  "clarification_question": string | null
 }}
 
 CATATAN:
@@ -241,6 +243,21 @@ Aturan:
 9) Balas HANYA JSON murni, tanpa markdown.
 10) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
    {{"error":"invalid_input"}}
+11) Pertanyaan balik:
+   - JANGAN menebak jika informasi penting belum jelas.
+   - Set needs_clarification=true jika informasi yang hilang dapat mengubah jenis,
+     kategori, sifat, impulsif, atau bucket prescription.
+   - Isi clarification_question dengan satu pertanyaan singkat dan spesifik.
+   - Contoh ambigu: "freelance 6jt" (menerima atau membayar), "beli buku 500rb"
+     (belajar/wajib/hiburan), "beli kopi 50rb" (kerja/healing), "beli laptop 8jt"
+     (kerja/ganti rusak/upgrade pribadi), "bayar kelas 1jt" (olahraga atau self-development).
+   - Tanyakan HANYA informasi yang belum ada; jangan meminta ulang nominal/keterangan
+     yang sudah jelas.
+   - Jika input memuat "Klarifikasi user:", gunakan jawabannya. Jika jawabannya masih
+     belum cukup jelas, boleh ajukan satu pertanyaan yang lebih spesifik.
+   - Jangan gunakan klarifikasi untuk mood; bot memiliki alur pilihan mood terpisah.
+   - Tanggal transaksi bersifat opsional dan tidak perlu ditanyakan.
+   - Jika tidak ambigu: needs_clarification=false dan clarification_question=null.
 """
 
 
