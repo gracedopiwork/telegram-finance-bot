@@ -31,12 +31,17 @@ class CategoryBucketService
         $notes = mb_strtolower((string) $row->notes);
         $combined = "{$notes} {$category}";
 
-        if ($row->type === TransactionTaxonomy::TYPE_SAVING) {
-            return 'Future Building';
-        }
-
         if ($row->type === TransactionTaxonomy::TYPE_INCOME) {
             return null;
+        }
+
+        // Dana darurat berfungsi sebagai proteksi, walaupun jenis transaksinya Saving/Investment.
+        if ($this->containsAny($combined, config('category_buckets.protection_keywords', []))) {
+            return 'Protection';
+        }
+
+        if ($row->type === TransactionTaxonomy::TYPE_SAVING) {
+            return 'Future Building';
         }
 
         if ($this->containsAny($combined, config('category_buckets.future_building_context_keywords', []))) {
@@ -45,7 +50,7 @@ class CategoryBucketService
         if ($this->containsAny($combined, config('category_buckets.essential_context_keywords', []))) {
             return 'Essential Living';
         }
-        if ($this->matchesCategory($category, ['makan'])
+        if ($this->matchesCategory($category, ['makan', 'jajan'])
             && $this->containsAny($combined, config('category_buckets.essential_meeting_keywords', []))) {
             return 'Essential Living';
         }
@@ -54,9 +59,6 @@ class CategoryBucketService
             return 'Flexible + Social';
         }
 
-        if ($this->containsAny($combined, config('category_buckets.protection_keywords', []))) {
-            return 'Protection';
-        }
         if ($this->containsAny($combined, config('category_buckets.future_building_keywords', []))) {
             return 'Future Building';
         }
@@ -65,9 +67,6 @@ class CategoryBucketService
         }
         if ($this->matchesCategory($category, config('category_buckets.essential_categories', []))) {
             return 'Essential Living';
-        }
-        if ($this->matchesCategory($category, ['listrik', 'air'])) {
-            return 'Protection';
         }
 
         return 'Essential Living';

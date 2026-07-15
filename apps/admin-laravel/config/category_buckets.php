@@ -13,10 +13,11 @@ return [
         'saham', 'reksa', 'obligasi', 'emas', 'deposito', 'crypto', 'investasi', 'nabung',
         'seminar', 'simposium', 'workshop', 'sertifikasi', 'pelatihan', 'kursus', 'conference',
         'penelitian', 'modal usaha', 'marketing usaha', 'website usaha', 'software usaha',
-        'cicilan modal usaha', 'pengembangan diri',
+        'cicilan modal usaha', 'pengembangan diri', 'buku pengembangan diri',
+        'psychology of money', 'psychologi of money',
     ],
     'flexible_keywords' => [
-        'jajan', 'kopi', 'coffee', 'cafe', 'restoran', 'restaurant', 'nongkrong', 'healing',
+        'jajan', 'kopi', 'coffee', 'cafe', 'nongkrong', 'healing',
         'liburan', 'staycation', 'bioskop', 'konser', 'hobi', 'hadiah', 'donasi', 'sedekah',
         'persembahan', 'perpuluhan', 'streaming', 'gaming', 'fashion', 'skincare', 'skin care',
         'make up', 'fomo', 'subscription', 'langganan', 'netflix', 'spotify',
@@ -27,12 +28,18 @@ return [
     ],
     'future_building_context_keywords' => [
         'laptop kerja', 'laptop produktif', 'alat kerja', 'untuk kerja', 'modal kerja',
-        'laptop kantor', 'komputer kerja',
+        'laptop kantor', 'komputer kerja', 'freelancer it', 'jasa freelancer it',
+        'web developer', 'website bisnis', 'website usaha', 'website proyek',
+        'software bisnis', 'software usaha', 'marketing bisnis', 'marketing usaha',
+        'modal usaha', 'proyek bisnis', 'project bisnis', 'proyek yfd',
     ],
     'essential_meeting_keywords' => [
         'starbucks', 'meeting kerja', 'rapat kerja', 'meeting klien', 'ngopi meeting', 'kopi meeting',
     ],
-    'essential_categories' => ['makan', 'transport', 'listrik', 'air', 'gaji'],
+    'essential_categories' => [
+        'makan', 'transport', 'sewa/tempat tinggal', 'listrik', 'air', 'komunikasi',
+        'kesehatan', 'pajak', 'pendidikan', 'cicilan',
+    ],
     'bot_fallback_category' => 'Jajan',
     'bot_fallback_sub' => 'Pengeluaran lain-lain',
     'source_of_truth_note' => [
@@ -41,5 +48,7 @@ return [
         'Kategori baru dari bot/import dibuat otomatis di pemetaan bucket beserta keyword dari catatan transaksi.',
         'Admin boleh menyesuaikan bucket/nature nanti; tidak perlu menambah kategori manual dulu.',
         'Need vs Wants: dengarkan niat fungsional user, bukan sekadar merek premium.',
+        'Jenis transaksi dan bucket prescription adalah dua dimensi berbeda: pengeluaran bisnis tetap Pengeluaran, tetapi bucket-nya Future Building.',
+        'Bucket ditentukan dari tujuan transaksi: kerja/bisnis/pengembangan diri → Future Building; risiko/asuransi/dana darurat → Protection.',
     ],
 ];

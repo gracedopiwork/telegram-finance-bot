@@ -35,7 +35,11 @@ from ai_quota import (
 )
 from portal_link import fetch_portal_login_url
 from category_rules_cache import get_rules, refresh as refresh_category_rules
-from transaction_store import save_transaction_to_api
+from transaction_store import (
+    format_prescription_bucket,
+    resolve_transaction_bucket,
+    save_transaction_to_api,
+)
 from transaction_categories import (
     apply_context_rules,
     build_system_prompt_rules,
@@ -648,7 +652,6 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
         kategori=str(parsed.get("kategori") or ""),
     )
     warn_block = f"\n{warning}\n" if warning else ""
-
     return (
         f"Aku baca transaksi untuk {greeting_name} seperti ini:\n"
         f"{date_line}"
@@ -656,12 +659,26 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
         f"Nominal: Rp{parsed['nominal']:,}\n"
         f"Jenis: {parsed['jenis']}\n"
         f"Kategori: {parsed['kategori']}\n"
+        f"Prescription Bucket: {format_prescription_bucket(parsed)}\n"
         f"Sifat: {parsed['sifat']}\n"
         f"Mood: {parsed['mood']}\n"
         f"Impulsif: {parsed['impulsif']}\n"
         f"{warn_block}\n"
         "Sudah benar?"
     )
+
+
+def attach_prescription_bucket(parsed: Dict[str, Any]) -> bool:
+    """Attach canonical Laravel category/bucket before Telegram confirmation."""
+    ok, result, error = resolve_transaction_bucket(parsed)
+    if not ok:
+        logger.warning("Bucket preview belum tersedia: %s", error)
+        parsed["bucket"] = None if parsed.get("jenis") == "Pemasukan" else "Belum dapat dicek"
+        return False
+
+    parsed["kategori"] = result.get("category") or parsed["kategori"]
+    parsed["bucket"] = result.get("bucket")
+    return True
 
 
 def format_preview_with_mode(
@@ -719,7 +736,12 @@ async def save_transaction(
         recorded_at = parsed.get("recorded_at")
         if recorded_at is None and message is not None:
             recorded_at = getattr(message, "date", None)
-        ok, err = save_transaction_to_api(uid, parsed, source=source, recorded_at=recorded_at)
+        ok, err, canonical = save_transaction_to_api(
+            uid,
+            parsed,
+            source=source,
+            recorded_at=recorded_at,
+        )
         saved_db = ok
         if not ok:
             hint = (
@@ -737,6 +759,8 @@ async def save_transaction(
                 )
             await message.reply_text(body)
             return
+        parsed["kategori"] = canonical.get("category") or parsed["kategori"]
+        parsed["bucket"] = canonical.get("bucket")
 
     if not saved_db:
         await message.reply_text("Gagal menyimpan transaksi. Hubungi admin YFD.")
@@ -759,6 +783,7 @@ async def save_transaction(
         f"Nominal: Rp{parsed['nominal']:,}\n"
         f"Jenis: {parsed['jenis']}\n"
         f"Kategori: {parsed['kategori']}\n"
+        f"Prescription Bucket: {format_prescription_bucket(parsed)}\n"
         f"Sifat: {parsed['sifat']}\n"
         f"Mood: {parsed['mood']}\n"
         f"Impulsif: {parsed['impulsif']}"
@@ -828,6 +853,7 @@ async def process_note_input(
         return
 
     finalize_parsed_transaction(parsed, text, trust_ai_impulsif=not basic_mode)
+    attach_prescription_bucket(parsed)
 
     if user_id:
         PENDING_CONFIRMATIONS.pop(user_id, None)
@@ -1087,6 +1113,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             pending.get("source_text", ""),
             trust_ai_impulsif=not pending.get("basic_mode", True),
         )
+        attach_prescription_bucket(parsed)
         greeting_name = pending["greeting_name"]
         basic_mode = pending.get("basic_mode", False)
         PENDING_CONFIRMATIONS[user_id] = {
@@ -1146,6 +1173,7 @@ async def mood_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         pending.get("source_text", ""),
         trust_ai_impulsif=not pending.get("basic_mode", True),
     )
+    attach_prescription_bucket(parsed)
     greeting_name = pending["greeting_name"]
     basic_mode = pending.get("basic_mode", False)
     PENDING_CONFIRMATIONS[user_id] = {

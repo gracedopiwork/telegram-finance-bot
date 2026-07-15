@@ -83,7 +83,7 @@ class PDF(FPDF):
 
 
 def main():
-    today = date(2026, 7, 13)
+    today = date(2026, 7, 15)
     pdf = PDF()
     pdf.alias_nb_pages()
     pdf.add_page()
@@ -145,7 +145,7 @@ def main():
     pdf.table(
         ["Item", "Nilai"],
         [
-            ["Biaya pengembangan Paket A", "Rp 4.000.000"],
+            ["Biaya pengembangan Paket A", "Rp 3.000.000"],
             ["Durasi", "+/- 2-3 minggu"],
             ["Termin usulan", "DP 50% / Pelunasan 50%"],
         ],
@@ -183,13 +183,15 @@ def main():
     pdf.table(
         ["Paket", "Isi utama", "Biaya"],
         [
-            ["A", "Referral + diskon + saldo + klaim + NPWP/pajak", "Rp 4.000.000"],
+            ["A", "Referral + diskon + saldo + klaim + NPWP/pajak", "Rp 3.000.000"],
             ["B2", "Marketplace digital + wallet + bagi hasil", "Rp 6.000.000"],
-            ["A + B2", "Dikerjakan berurutan (diskon bundling opsional)", "Rp 9.500.000*"],
+            ["A + B2", "Dikerjakan berurutan (bundling)", "Rp 8.500.000*"],
         ],
         [25, 105, 60],
     )
-    pdf.p("*Jika diambil bersamaan, bisa diberi penyesuaian menjadi Rp 9.500.000 (hemat Rp 500.000).")
+    pdf.p(
+        "*Jika A + B2 diambil bersamaan: Rp 8.500.000 (hemat Rp 500.000 dari 3jt + 6jt)."
+    )
 
     pdf.section("5. Yang belum termasuk")
     for item in [
@@ -203,7 +205,7 @@ def main():
         pdf.bullet(item)
 
     pdf.section("6. Dukungan setelah selesai")
-    pdf.p("Bug fixing terkait add-on: 14 hari setelah serah terima paket yang dikerjakan.")
+    pdf.p("Bug fixing terkait add-on: 1 bulan setelah serah terima paket yang dikerjakan.")
 
     pdf.section("7. Hal yang perlu dikonfirmasi klien")
     for item in [
@@ -211,7 +213,7 @@ def main():
         "Pencairan klaim: transfer manual admin atau otomatis",
         "Referral hanya untuk FTSA atau semua produk",
         "Untuk marketplace: % bagi hasil YFD vs seller",
-        "Apakah mulai dari Paket A saja, atau A+B sekaligus",
+        "Mulai dari Paket A saja, atau A+B sekaligus",
     ]:
         pdf.bullet(item)
 

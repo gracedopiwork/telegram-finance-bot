@@ -72,8 +72,10 @@ class CategoryBucketMappingService
                 || ($mapCategory !== '' && $this->categoryKeysMatch($mapCategory, $category));
             $subMatch = $mapSub === '' || $mapSub === '-' || in_array($sub, ['', '-'], true) || $mapSub === $sub;
 
+            $keywords = $mapping->keywordsList();
+            $hasKeywords = $keywords !== [];
             $keywordMatch = false;
-            foreach ($mapping->keywordsList() as $keyword) {
+            foreach ($keywords as $keyword) {
                 $keyword = mb_strtolower($keyword);
                 if ($keyword !== '' && str_contains($combined, $keyword)) {
                     $keywordMatch = true;
@@ -81,7 +83,9 @@ class CategoryBucketMappingService
                 }
             }
 
-            if ($wildcardCategory && $mapping->nature && $mapping->nature === $nature) {
+            // Wildcard tanpa keyword boleh menjadi default untuk nature/type tersebut.
+            // Wildcard kontekstual wajib menunggu keyword agar tidak menimpa semua transaksi.
+            if ($wildcardCategory && ! $hasKeywords) {
                 return $mapping->bucket;
             }
 
@@ -90,29 +94,13 @@ class CategoryBucketMappingService
                 return $mapping->bucket;
             }
 
-            $hasKeywords = $mapping->keywordsList() !== [];
             if ($mapCategory !== '' && ! $wildcardCategory && $categoryMatch && $subMatch && ! $hasKeywords) {
                 return $mapping->bucket;
             }
         }
 
-        // Cadangan: kategori cocok tanpa keyword yang kena (pakai mapping pertama).
-        foreach ($this->activeMappings() as $mapping) {
-            if ($mapping->transaction_type !== $txType && $mapping->transaction_type !== 'transfer') {
-                continue;
-            }
-            if ($mapping->nature && $mapping->nature !== $nature) {
-                continue;
-            }
-            $mapCategory = mb_strtolower(trim($mapping->category));
-            if ($mapCategory === '' || $mapCategory === '*') {
-                continue;
-            }
-            if ($this->categoryKeysMatch($mapCategory, $category)) {
-                return $mapping->bucket;
-            }
-        }
-
+        // Mapping yang punya keyword tidak boleh berubah menjadi default kategori ketika
+        // keyword-nya tidak cocok. Biarkan resolver legacy menentukan dari konteks lain.
         return null;
     }
 

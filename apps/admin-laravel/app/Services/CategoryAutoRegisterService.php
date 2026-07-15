@@ -129,6 +129,26 @@ class CategoryAutoRegisterService
     }
 
     /**
+     * Canonicalize a category for preview without writing a mapping to the database.
+     */
+    public function resolveWithoutRegister(string $categoryInput, string $type): string
+    {
+        $rules = $this->categoryRulesService->export();
+        $categoryInput = trim($categoryInput);
+
+        if ($categoryInput === '') {
+            return $this->defaultCategoryForType($type, $rules);
+        }
+
+        $resolved = $this->resolveExisting($categoryInput, $rules)
+            ?? $this->formatCategoryName($categoryInput);
+
+        return $resolved !== ''
+            ? $resolved
+            : $this->defaultCategoryForType($type, $rules);
+    }
+
+    /**
      * @param  array<string, mixed>  $rules
      */
     private function resolveExisting(string $value, array $rules): ?string
@@ -352,9 +372,9 @@ class CategoryAutoRegisterService
         return array_values(array_unique(array_slice($out, 0, 12)));
     }
 
-  /**
-   * @param  array<string, mixed>  $rules
-   */
+    /**
+     * @param  array<string, mixed>  $rules
+     */
     private function defaultCategoryForType(string $type, array $rules): string
     {
         if ($type === TransactionTaxonomy::TYPE_INCOME) {

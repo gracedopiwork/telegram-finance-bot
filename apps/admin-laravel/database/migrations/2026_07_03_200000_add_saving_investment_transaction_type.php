@@ -13,9 +13,11 @@ return new class extends Migration
             return;
         }
 
-        DB::statement(
-            "ALTER TABLE bot_transactions MODIFY COLUMN type ENUM('Pemasukan', 'Pengeluaran', 'Saving/Investment') NOT NULL"
-        );
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement(
+                "ALTER TABLE bot_transactions MODIFY COLUMN type ENUM('Pemasukan', 'Pengeluaran', 'Saving/Investment') NOT NULL"
+            );
+        }
 
         DB::table('bot_transactions')
             ->whereIn('nature', ['Saving/Investement', 'Saving/Investment'])
@@ -81,8 +83,10 @@ return new class extends Migration
                 'nature' => 'Saving/Investement',
             ]);
 
-        DB::statement(
-            "ALTER TABLE bot_transactions MODIFY COLUMN type ENUM('Pemasukan', 'Pengeluaran') NOT NULL"
-        );
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement(
+                "ALTER TABLE bot_transactions MODIFY COLUMN type ENUM('Pemasukan', 'Pengeluaran') NOT NULL"
+            );
+        }
     }
 };
