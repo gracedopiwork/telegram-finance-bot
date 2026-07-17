@@ -131,7 +131,7 @@ class CompanyProfileSeeder extends Seeder
             // Testimoni Google — isi manual dulu; sync API bisa ditambah nanti dengan Place ID.
             ['key' => 'reviews.title', 'value' => 'Dipercaya Pasien Finansial', 'type' => 'text', 'group' => 'reviews', 'label' => 'Judul section testimoni', 'sort' => 1],
             ['key' => 'reviews.subtitle', 'value' => 'Ulasan dari Google Business Profile — pengalaman nyata setelah screening & konsultasi YFD.', 'type' => 'textarea', 'group' => 'reviews', 'label' => 'Subtitle testimoni', 'sort' => 2],
-            ['key' => 'reviews.google_maps_url', 'value' => '', 'type' => 'text', 'group' => 'reviews', 'label' => 'Link Google Maps / Business Profile', 'sort' => 3],
+            ['key' => 'reviews.google_maps_url', 'value' => 'https://www.google.com/search?q=Your%20Financial%20Doctor&stick=H4sIAAAAAAAAAONgU1I1qDAyTzYzSjQzTzZMS7YwNza1MqhISbNINTQzSU1OS05NtDBMXMQqGplfWqTglpmXmJecmZij4JKfXJJfBABo0kI0QQAAAA&mat=CT8GW_tbUj0c#mpd=~2034873161653880383/customers/reviews', 'type' => 'text', 'group' => 'reviews', 'label' => 'Link Google Reviews / Business Profile', 'sort' => 3],
             ['key' => 'reviews.r1.name', 'value' => '', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 1 — Nama', 'sort' => 10],
             ['key' => 'reviews.r1.text', 'value' => '', 'type' => 'textarea', 'group' => 'reviews', 'label' => 'Review 1 — Isi', 'sort' => 11],
             ['key' => 'reviews.r1.rating', 'value' => '5', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 1 — Rating (1-5)', 'sort' => 12],
