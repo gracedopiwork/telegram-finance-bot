@@ -166,10 +166,27 @@
 
         /* button base */
         .btn {
-            display: inline-flex; align-items: center; gap: .5rem; white-space: nowrap;
+            display: inline-flex; align-items: center; justify-content: center; gap: .5rem; white-space: nowrap;
             padding: .6rem 1.1rem; border-radius: 9999px; font-weight: 600; font-size: 14px;
             transition: transform .15s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease;
-            line-height: 1;
+            line-height: 1; flex-shrink: 0;
+        }
+        .btn .material-symbols-outlined { flex-shrink: 0; }
+
+        /* Header: cegah overlap — compact mode diaktifkan JS jika konten tidak muat */
+        #siteHeaderBar { overflow: hidden; }
+        #siteHeaderBar #desktopNav {
+            flex: 0 0 auto;
+            justify-content: center;
+        }
+        #siteHeaderBar.is-compact #desktopNav,
+        #siteHeaderBar.is-compact .header-cta-extra { display: none !important; }
+        #siteHeaderBar.is-compact #mobileMenuBtn { display: grid !important; }
+        #siteHeaderBar:not(.is-compact) #mobileMenuBtn { display: none !important; }
+        @media (max-width: 1023px) {
+            #siteHeaderBar #desktopNav,
+            #siteHeaderBar .header-cta-extra { display: none !important; }
+            #siteHeaderBar #mobileMenuBtn { display: grid !important; }
         }
         .btn-primary { background: {{ config('yfd_brand.navy') }}; color: #fff; box-shadow: 0 6px 18px rgba(13,43,78,.18); }
         .btn-primary:hover { background: {{ config('yfd_brand.navy_700') }}; transform: translateY(-1px); box-shadow: 0 10px 24px rgba(13,43,78,.25); }
@@ -217,19 +234,19 @@
 
 {{-- ============== TopNavBar ============== --}}
 <header class="sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75 border-b border-outline-variant">
-    <div class="max-w-container-max mx-auto w-full px-margin-mobile md:px-margin-desktop h-16 md:h-20 flex items-center justify-between gap-3 xl:gap-4 min-w-0">
+    <div id="siteHeaderBar" class="max-w-container-max mx-auto w-full px-margin-mobile md:px-margin-desktop h-16 md:h-20 flex items-center justify-between gap-3 lg:gap-4">
 
         {{-- Logo + brand --}}
-        <a href="{{ route('company.home') }}" class="flex items-center gap-3 shrink-0">
+        <a href="{{ route('company.home') }}" class="flex items-center gap-2.5 shrink-0">
             <img alt="{{ $yfd['brand'] }} Logo" class="h-9 md:h-11 w-auto" src="{{ asset($yfd['logo'] ?? 'images/yfd-logo.png') }}">
-            <div class="hidden sm:block leading-tight min-w-0 max-w-[180px] md:max-w-[220px] xl:max-w-none">
-                <div class="text-[15px] md:text-[17px] font-extrabold text-primary-container tracking-tight truncate">{{ $yfd['brand'] }}</div>
-                <div class="text-[11px] md:text-caption text-on-surface-variant brand-tagline">{{ $yfd['tagline'] }}</div>
+            <div class="hidden sm:block leading-tight min-w-0 max-w-[160px] lg:max-w-[200px]">
+                <div class="text-[14px] lg:text-[16px] font-extrabold text-primary-container tracking-tight truncate">{{ $yfd['brand'] }}</div>
+                <div class="hidden xl:block text-[11px] text-on-surface-variant brand-tagline">{{ $yfd['tagline'] }}</div>
             </div>
         </a>
 
         {{-- Desktop nav --}}
-        <nav class="hidden 2xl:flex items-center gap-7 min-w-0" id="desktopNav">
+        <nav class="hidden lg:flex items-center gap-4 xl:gap-6 whitespace-nowrap" id="desktopNav">
             @foreach($nav as $item)
                 @if($item['kind'] === 'dropdown')
                     {{-- Dropdown sederhana 1-kolom (Tentang) --}}
@@ -365,30 +382,31 @@
             @endforeach
         </nav>
 
-        {{-- CTA — sembunyikan tombol sekunder lebih awal agar header tidak kepotong di zoom 100% --}}
-        <div class="flex items-center gap-2 md:gap-3 shrink-0">
+        {{-- CTA: ringkas di header; Login/Booking disembunyikan otomatis jika overflow --}}
+        <div class="flex items-center gap-2 shrink-0">
             <a href="{{ route('portal.login') }}"
-               class="hidden 2xl:inline-flex btn btn-outline-primary">
+               class="header-cta-extra hidden lg:inline-flex btn btn-outline-primary !px-3 !py-2 !text-[13px]">
                 <span class="material-symbols-outlined text-[18px]">dashboard</span>
-                Login Dashboard
+                Login
             </a>
             <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener"
-               class="hidden md:inline-flex btn btn-gold">
+               class="hidden md:inline-flex btn btn-gold !px-3 !py-2 !text-[13px]">
                 <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1;">chat</span>
                 Konsultasi WA
             </a>
-            <a href="{{ route('company.pertemuan') }}" class="hidden 2xl:inline-flex btn btn-primary">
+            <a href="{{ route('company.pertemuan') }}"
+               class="header-cta-extra hidden lg:inline-flex btn btn-primary !px-3 !py-2 !text-[13px]">
                 Booking
                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
             </a>
-            <button id="mobileMenuBtn" type="button" class="2xl:hidden w-10 h-10 grid place-items-center text-primary-container rounded-lg hover:bg-surface-container-low" aria-label="Toggle menu">
+            <button id="mobileMenuBtn" type="button" class="w-10 h-10 grid place-items-center text-primary-container rounded-lg hover:bg-surface-container-low" aria-label="Toggle menu">
                 <span class="material-symbols-outlined">menu</span>
             </button>
         </div>
     </div>
 
-    {{-- Mobile menu --}}
-    <div id="mobileMenu" class="2xl:hidden hidden border-t border-outline-variant bg-white max-h-[calc(100vh-4rem)] overflow-y-auto">
+    {{-- Mobile / compact menu --}}
+    <div id="mobileMenu" class="hidden border-t border-outline-variant bg-white max-h-[calc(100vh-4rem)] overflow-y-auto">
         <nav class="px-margin-mobile py-4 grid gap-1 text-[15px]">
             @foreach($nav as $item)
                 @if($item['kind'] === 'dropdown')
@@ -613,12 +631,30 @@
         // ===== Mobile menu toggle =====
         var btn  = document.getElementById('mobileMenuBtn');
         var menu = document.getElementById('mobileMenu');
+        var bar  = document.getElementById('siteHeaderBar');
         if (btn && menu) {
             btn.addEventListener('click', function () { menu.classList.toggle('hidden'); });
             // Close after tapping a real nav link (not <summary>)
             menu.querySelectorAll('a').forEach(function (a) {
                 a.addEventListener('click', function () { menu.classList.add('hidden'); });
             });
+        }
+
+        // Jika logo+nav+CTA tidak muat, pakai hamburger (cegah overlap Informasi / Login)
+        function fitHeader() {
+            if (!bar) return;
+            bar.classList.remove('is-compact');
+            if (menu) menu.classList.add('hidden');
+            // Force reflow lalu ukur overflow
+            void bar.offsetWidth;
+            if (bar.scrollWidth > bar.clientWidth + 2) {
+                bar.classList.add('is-compact');
+            }
+        }
+        fitHeader();
+        window.addEventListener('resize', fitHeader);
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(fitHeader).catch(function () {});
         }
 
         // ===== Desktop mega-menu (hover + click) =====
