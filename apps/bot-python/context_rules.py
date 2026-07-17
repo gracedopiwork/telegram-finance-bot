@@ -301,7 +301,29 @@ _SUBSCRIPTION = (
     "chatGPT plus",
     "chatgpt plus",
     "canva pro",
+    "capcut",
+    "capcut pro",
 )
+
+_WORK_SOFTWARE_CONTEXT = (
+    "untuk kerja",
+    "kebutuhan kerja",
+    "buat kerja",
+    "pekerjaan",
+    "edit video",
+    "video editing",
+    "desain kerja",
+    "konten kerja",
+    "proyek",
+    "project",
+    "bisnis",
+    "usaha",
+)
+
+
+def is_work_software_expense(text: str) -> bool:
+    lower = text.lower()
+    return _contains(lower, _SUBSCRIPTION) and _contains(lower, _WORK_SOFTWARE_CONTEXT)
 
 _TRANSPORT_PATTERNS = tuple(
     re.compile(p, re.IGNORECASE)
@@ -796,7 +818,11 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     if _contains(lower, _SKINCARE):
         return {"jenis": "Pengeluaran", "kategori": "Skincare", "sifat": "Wants"}
     if _contains(lower, _SUBSCRIPTION):
-        return {"jenis": "Pengeluaran", "kategori": "Subscription", "sifat": "Wants"}
+        return {
+            "jenis": "Pengeluaran",
+            "kategori": "Subscription",
+            "sifat": "Need" if is_work_software_expense(lower) else "Wants",
+        }
     if _contains(lower, _LISTRIK):
         return {"jenis": "Pengeluaran", "kategori": "Listrik", "sifat": "Need"}
     if is_water_expense(lower):
@@ -887,6 +913,11 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
     # AI sudah lengkap → jangan timpa dengan rule income/freelance generik.
     if ai_jenis and ai_kat:
         # Koreksi dump kategori saja (bukan jenis).
+        if ai_kat_l == "subscription" and is_work_software_expense(combined):
+            parsed["sifat"] = "Need"
+            parsed.pop("sub_kategori", None)
+            return parsed
+
         if is_electronics_expense(combined) and ai_kat_l in {
             "jajan",
             "belanja",
@@ -986,6 +1017,7 @@ Contoh klasifikasi WAJIB diikuti:
 - "Bayar jasa freelancer web developer 2jt" → Pengeluaran / Jasa / Need (BUKAN Pemasukan)
 - "bayar BPJS 150rb" → Pengeluaran / Asuransi / Need
 - "netflix bulanan 54rb" → Pengeluaran / Subscription / Wants
+- "langganan capcut untuk kerja edit video 95k" → Pengeluaran / Subscription / Need
 - "skincare serum 120rb" → Pengeluaran / Skincare / Wants
 - "makan malam 65.700" → Pengeluaran / Makan / Need
 - "grab ke kantor 28rb" → Pengeluaran / Transport / Need

@@ -126,6 +126,30 @@ class ContextRulesTests(unittest.TestCase):
     def test_subscription(self) -> None:
         self.assertClass("netflix bulanan 54rb", "Pengeluaran", "Subscription")
 
+    def test_capcut_untuk_kerja_is_need(self) -> None:
+        hit = classify_from_text(
+            "langganan capcut untuk kerja edit video karena akun sebelumnya "
+            "gabisa dipake, tidak terencana, 95k"
+        )
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Subscription")
+        self.assertEqual(hit["sifat"], "Need")
+
+    def test_correct_ai_capcut_work_from_wants_to_need(self) -> None:
+        parsed = {
+            "keterangan": "Langganan CapCut untuk kerja edit video",
+            "jenis": "Pengeluaran",
+            "kategori": "Subscription",
+            "sifat": "Wants",
+        }
+        out = apply_context_rules(
+            parsed,
+            "langganan capcut untuk kerja edit video karena akun sebelumnya gabisa dipake",
+        )
+        self.assertEqual(out["kategori"], "Subscription")
+        self.assertEqual(out["sifat"], "Need")
+
     def test_skincare(self) -> None:
         self.assertClass("skincare serum 120rb", "Pengeluaran", "Skincare")
 

@@ -98,7 +98,7 @@ def refine_sifat_from_context(parsed: dict[str, Any], source_text: str = "") -> 
 
     if has_productivity_framing(combined) and (
         has_functional_food_context(combined)
-        or str(parsed.get("kategori", "")) in {"Jajan", "Makan", "Minuman", "Elektronik"}
+        or str(parsed.get("kategori", "")) in {"Jajan", "Makan", "Minuman", "Elektronik", "Subscription"}
     ):
         parsed["sifat"] = "Need"
         return parsed

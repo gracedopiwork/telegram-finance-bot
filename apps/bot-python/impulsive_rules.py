@@ -21,6 +21,32 @@ EXPLICIT_IMPULSIVE_KEYWORDS = (
     "ngga niat",
     "tidak niat",
     "tanpa rencana",
+    "tidak terencana",
+    "nggak terencana",
+    "ngga terencana",
+    "gak terencana",
+)
+
+# Penggantian alat/akun yang sudah tidak berfungsi adalah kebutuhan korektif,
+# bukan pembelian impulsif, walau muncul mendadak atau "tidak terencana".
+FUNCTIONAL_REPLACEMENT_KEYWORDS = (
+    "karena rusak",
+    "yang rusak",
+    "sudah rusak",
+    "udah rusak",
+    "tidak bisa dipakai",
+    "tidak bisa dipake",
+    "nggak bisa dipakai",
+    "nggak bisa dipake",
+    "ngga bisa dipakai",
+    "ngga bisa dipake",
+    "gak bisa dipakai",
+    "gak bisa dipake",
+    "gabisa dipakai",
+    "gabisa dipake",
+    "tidak berfungsi",
+    "sudah tidak aktif",
+    "akun sebelumnya",
 )
 
 PAYDAY_SPLURGE_KEYWORDS = (
@@ -134,6 +160,10 @@ def is_essential_obligation(parsed: dict[str, Any], combined: str) -> bool:
     return any(keyword in combined for keyword in ESSENTIAL_KEYWORDS)
 
 
+def is_functional_replacement(combined: str) -> bool:
+    return any(keyword in combined for keyword in FUNCTIONAL_REPLACEMENT_KEYWORDS)
+
+
 def resolve_impulsif(
     parsed: dict[str, Any],
     source_text: str = "",
@@ -143,7 +173,7 @@ def resolve_impulsif(
 ) -> str:
     """
     Urutan keputusan:
-    1) Guardrail wajib (acara sosial / tagihan) — override AI
+    1) Guardrail wajib (acara sosial / tagihan / penggantian rusak) — override AI
     2) Sinyal impulsif kuat (spontan / pasca-gajian)
     3) Keputusan AI (jika path Gemini)
     4) Heuristik fallback sempit
@@ -157,6 +187,9 @@ def resolve_impulsif(
         return "No"
 
     if is_essential_obligation(parsed, combined):
+        return "No"
+
+    if is_functional_replacement(combined):
         return "No"
 
     if any(keyword in combined for keyword in EXPLICIT_IMPULSIVE_KEYWORDS):
