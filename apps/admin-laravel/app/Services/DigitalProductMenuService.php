@@ -61,16 +61,32 @@ class DigitalProductMenuService
             $desc = $desc !== '' ? "{$desc} · {$period}" : $period;
         }
 
+        $isSoon = ($product->billing_mode ?? '') === 'soon'
+            || str_contains(strtolower((string) ($product->badge ?? '')), 'soon');
+
+        $badge = $isSoon
+            ? 'Coming Soon'
+            : (trim((string) ($product->badge ?? '')) ?: 'Tersedia');
+
         $item = [
             'key' => $product->code,
             'label' => $product->name,
             'desc' => $desc,
             'icon' => $product->icon ?: 'inventory_2',
-            'badge' => $product->badge,
+            'badge' => $badge,
             'route' => null,
             'url' => null,
             'new_tab' => false,
         ];
+
+        // Pastikan link Coming Soon tidak mengarah ke checkout
+        if ($isSoon && ($product->billing_mode ?? '') !== 'soon') {
+            return array_merge($item, [
+                'route' => null,
+                'url' => route('company.produk'),
+                'new_tab' => false,
+            ]);
+        }
 
         return array_merge($item, $this->resolveLink($product));
     }
@@ -92,7 +108,12 @@ class DigitalProductMenuService
                 'url' => $product->cta_url ?: null,
                 'new_tab' => true,
             ],
-            default => ['route' => null, 'url' => null, 'new_tab' => false],
+            'soon' => [
+                'route' => null,
+                'url' => route('company.produk'),
+                'new_tab' => false,
+            ],
+            default => ['route' => null, 'url' => route('company.produk'), 'new_tab' => false],
         };
     }
 
