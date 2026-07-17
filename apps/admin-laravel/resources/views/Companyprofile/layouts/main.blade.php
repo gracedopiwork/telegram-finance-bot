@@ -203,7 +203,7 @@
         /* nav active underline */
         .nav-link {
             position: relative; padding: 8px 4px; font-weight: 500; color: #475569;
-            transition: color .15s ease;
+            transition: color .15s ease; white-space: nowrap;
         }
         .nav-link:hover { color: {{ config('yfd_brand.navy') }}; }
         .nav-link.active { color: {{ config('yfd_brand.navy') }}; font-weight: 700; }
@@ -246,7 +246,7 @@
         </a>
 
         {{-- Desktop nav --}}
-        <nav class="hidden lg:flex items-center gap-4 xl:gap-6 whitespace-nowrap" id="desktopNav">
+        <nav class="hidden lg:flex items-center gap-4 xl:gap-6" id="desktopNav">
             @foreach($nav as $item)
                 @if($item['kind'] === 'dropdown')
                     {{-- Dropdown sederhana 1-kolom (Tentang) --}}
