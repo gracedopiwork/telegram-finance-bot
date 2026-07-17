@@ -177,6 +177,8 @@
     $googleMapsUrl = $reviews['reviews.google_maps_url']
         ?? ($yfd['google_maps_url'] ?? null)
         ?? 'https://www.google.com/search?q=Your%20Financial%20Doctor&stick=H4sIAAAAAAAAAONgU1I1qDAyTzYzSjQzTzZMS7YwNza1MqhISbNINTQzSU1OS05NtDBMXMQqGplfWqTglpmXmJecmZij4JKfXJJfBABo0kI0QQAAAA&mat=CT8GW_tbUj0c#mpd=~2034873161653880383/customers/reviews';
+    $googleRating = $reviews['reviews.google_rating'] ?? '5.0';
+    $googleCount = $reviews['reviews.google_count'] ?? null;
     $reviewItems = collect([
         [
             'name' => $reviews['reviews.r1.name'] ?? null,
@@ -194,6 +196,11 @@
             'rating' => $reviews['reviews.r3.rating'] ?? '5',
         ],
     ])->filter(fn ($r) => filled($r['name']) && filled($r['text']));
+    $reviewCols = match ($reviewItems->count()) {
+        1 => 'grid-cols-1 max-w-xl mx-auto',
+        2 => 'grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto',
+        default => 'grid-cols-1 md:grid-cols-3',
+    };
 @endphp
 <section class="bg-white py-20 border-b border-outline-variant">
     <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
@@ -202,13 +209,24 @@
             <h2 class="font-heading text-headline-lg text-primary mb-3">
                 {{ $reviews['reviews.title'] ?? 'Dipercaya Pasien Finansial' }}
             </h2>
-            <p class="text-body-md text-on-surface-variant">
+            <p class="text-body-md text-on-surface-variant mb-5">
                 {{ $reviews['reviews.subtitle'] ?? 'Baca pengalaman nyata pasien di Google — screening, konsultasi, dan pendampingan YFD.' }}
             </p>
+            <div class="inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-outline-variant bg-surface-container-low px-4 py-2">
+                <span class="font-heading text-[22px] text-primary leading-none">{{ $googleRating }}</span>
+                <span class="inline-flex items-center gap-0.5 text-tertiary-fixed-dim" aria-hidden="true">
+                    @for($s = 1; $s <= 5; $s++)
+                        <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1;">star</span>
+                    @endfor
+                </span>
+                @if(filled($googleCount))
+                    <span class="text-body-sm text-on-surface-variant">{{ $googleCount }} ulasan di Google</span>
+                @endif
+            </div>
         </div>
 
         @if($reviewItems->isNotEmpty())
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
+            <div class="grid {{ $reviewCols }} gap-5 mb-10">
                 @foreach($reviewItems as $review)
                     <blockquote class="bg-surface-container-low border border-outline-variant rounded-2xl p-6 flex flex-col min-w-0">
                         <div class="flex items-center gap-1 mb-3 text-tertiary-fixed-dim" aria-label="Rating {{ $review['rating'] }} dari 5">
@@ -228,15 +246,6 @@
                         </footer>
                     </blockquote>
                 @endforeach
-            </div>
-        @else
-            <div class="max-w-xl mx-auto mb-10 rounded-2xl border border-outline-variant bg-surface-container-low p-8 text-center">
-                <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-white border border-outline-variant mb-4">
-                    <span class="material-symbols-outlined text-primary-container text-[28px]" style="font-variation-settings:'FILL' 1;">star</span>
-                </div>
-                <p class="text-body-md text-on-surface-variant leading-relaxed">
-                    Lihat rating &amp; ulasan pasien YFD langsung di Google Business Profile.
-                </p>
             </div>
         @endif
 

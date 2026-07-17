@@ -130,12 +130,14 @@ class CompanyProfileSeeder extends Seeder
 
             // Testimoni Google — isi manual dulu; sync API bisa ditambah nanti dengan Place ID.
             ['key' => 'reviews.title', 'value' => 'Dipercaya Pasien Finansial', 'type' => 'text', 'group' => 'reviews', 'label' => 'Judul section testimoni', 'sort' => 1],
-            ['key' => 'reviews.subtitle', 'value' => 'Ulasan dari Google Business Profile — pengalaman nyata setelah screening & konsultasi YFD.', 'type' => 'textarea', 'group' => 'reviews', 'label' => 'Subtitle testimoni', 'sort' => 2],
+            ['key' => 'reviews.subtitle', 'value' => 'Rating 5,0 dari 4 ulasan Google — pengalaman nyata setelah screening & konsultasi YFD.', 'type' => 'textarea', 'group' => 'reviews', 'label' => 'Subtitle testimoni', 'sort' => 2],
             ['key' => 'reviews.google_maps_url', 'value' => 'https://www.google.com/search?q=Your%20Financial%20Doctor&stick=H4sIAAAAAAAAAONgU1I1qDAyTzYzSjQzTzZMS7YwNza1MqhISbNINTQzSU1OS05NtDBMXMQqGplfWqTglpmXmJecmZij4JKfXJJfBABo0kI0QQAAAA&mat=CT8GW_tbUj0c#mpd=~2034873161653880383/customers/reviews', 'type' => 'text', 'group' => 'reviews', 'label' => 'Link Google Reviews / Business Profile', 'sort' => 3],
-            ['key' => 'reviews.r1.name', 'value' => '', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 1 — Nama', 'sort' => 10],
-            ['key' => 'reviews.r1.text', 'value' => '', 'type' => 'textarea', 'group' => 'reviews', 'label' => 'Review 1 — Isi', 'sort' => 11],
+            ['key' => 'reviews.google_rating', 'value' => '5.0', 'type' => 'text', 'group' => 'reviews', 'label' => 'Rating Google (contoh: 5.0)', 'sort' => 4],
+            ['key' => 'reviews.google_count', 'value' => '4', 'type' => 'text', 'group' => 'reviews', 'label' => 'Jumlah ulasan Google', 'sort' => 5],
+            ['key' => 'reviews.r1.name', 'value' => 'K', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 1 — Nama', 'sort' => 10],
+            ['key' => 'reviews.r1.text', 'value' => 'Satisfied with the professional service from Your Financial Doctor. They helped me better understand how to manage my finances in an informative, friendly, and fun way. Highly recommended 👌', 'type' => 'textarea', 'group' => 'reviews', 'label' => 'Review 1 — Isi', 'sort' => 11],
             ['key' => 'reviews.r1.rating', 'value' => '5', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 1 — Rating (1-5)', 'sort' => 12],
-            ['key' => 'reviews.r2.name', 'value' => '', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 2 — Nama', 'sort' => 20],
+            ['key' => 'reviews.r2.name', 'value' => 'Reinaldi Rongrean', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 2 — Nama', 'sort' => 20],
             ['key' => 'reviews.r2.text', 'value' => '', 'type' => 'textarea', 'group' => 'reviews', 'label' => 'Review 2 — Isi', 'sort' => 21],
             ['key' => 'reviews.r2.rating', 'value' => '5', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 2 — Rating (1-5)', 'sort' => 22],
             ['key' => 'reviews.r3.name', 'value' => '', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 3 — Nama', 'sort' => 30],
