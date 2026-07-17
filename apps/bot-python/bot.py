@@ -140,6 +140,9 @@ MOOD_ALIASES = {
     "lelah": "Tired",
     "burnout": "Tired",
     "capek": "Tired",
+    "cape": "Tired",
+    "capekk": "Tired",
+    "kecapean": "Tired",
     "tured": "Tired",
 }
 
@@ -160,7 +163,7 @@ MOOD_KEYWORDS: Dict[str, tuple[str, ...]] = {
     "Sad": ("sedih banget", "kecewa", "kesepian", "sedih", "sad"),
     "Stressed": ("overwhelmed", "overthinking", "cemas", "stress", "stressed", "panik"),
     "Angry": ("frustrasi", "marah", "kesal", "angry", "jengkel"),
-    "Tired": ("burnout", "ngantuk", "lelah", "capek", "tired"),
+    "Tired": ("burnout", "ngantuk", "lelah", "kecapean", "capek", "cape", "tired"),
 }
 
 
@@ -187,8 +190,13 @@ def detect_mood_in_text(text: str) -> str | None:
     if not base:
         return None
     for mood, keywords in MOOD_KEYWORDS.items():
-        if any(keyword in base for keyword in keywords):
-            return mood
+        for keyword in keywords:
+            # Kata pendek (mis. cape, sad) pakai word-boundary agar tidak false-positive.
+            if len(keyword) <= 4:
+                if re.search(rf"(?<!\w){re.escape(keyword)}(?!\w)", base):
+                    return mood
+            elif keyword in base:
+                return mood
     return None
 
 
@@ -620,7 +628,7 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
         mood = "Stressed"
     elif any(keyword in lower_text for keyword in ["marah", "frustrasi", "kesal", "angry"]):
         mood = "Angry"
-    elif any(keyword in lower_text for keyword in ["ngantuk", "lelah", "burnout", "capek", "tired"]):
+    elif any(keyword in lower_text for keyword in ["ngantuk", "lelah", "burnout", "kecapean", "capek", "cape", "tired"]):
         mood = "Tired"
 
     impulsif = resolve_impulsif(

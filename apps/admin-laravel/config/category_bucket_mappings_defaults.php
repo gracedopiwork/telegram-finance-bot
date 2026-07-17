@@ -38,6 +38,7 @@ return [
     ['category' => '*', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'fomo,healing,upgrade karena,ganti iphone tiap tahun', 'reason' => 'Belanja lifestyle / impulsif', 'sort_order' => 27],
 
     // Essential Living
+    ['category' => '*', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'aqua,air minum,air mineral,air galon,galon air,beli galon,le minerale,pristine,cleo,crystalin,equil,kebutuhan hidup,kebutuhan sehari,kebutuhan harian,sembako,kebutuhan pokok', 'reason' => 'Air minum & kebutuhan hidup pokok', 'sort_order' => 28],
     ['category' => 'Makan', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'makan,restoran,nasi,sarapan', 'reason' => 'Kebutuhan makan harian', 'sort_order' => 30],
     ['category' => 'Transport', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'ojek,grab,gojek,angkot,bensin,tol,parkir,servis,bengkel', 'reason' => 'Transportasi harian', 'sort_order' => 31],
     ['category' => 'Sewa/Tempat Tinggal', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'bayar sewa,sewa kos,kontrakan,kpr,cicilan rumah', 'reason' => 'Tempat tinggal', 'sort_order' => 32],

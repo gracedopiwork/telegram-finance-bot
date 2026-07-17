@@ -103,7 +103,7 @@ def refine_sifat_from_context(parsed: dict[str, Any], source_text: str = "") -> 
         parsed["sifat"] = "Need"
         return parsed
 
-    essential_cats = {"Listrik", "Air", "Asuransi", "Transport", "Gaji"}
+    essential_cats = {"Listrik", "Air", "Asuransi", "Transport", "Gaji", "Makan", "Kesehatan", "Komunikasi"}
     if str(parsed.get("kategori", "")) in essential_cats:
         parsed["sifat"] = "Need"
 

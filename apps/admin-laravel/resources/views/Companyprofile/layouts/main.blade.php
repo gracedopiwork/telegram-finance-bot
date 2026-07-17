@@ -203,8 +203,13 @@
         .prose-yfd strong { color: {{ config('yfd_brand.navy') }}; }
         .prose-yfd ul { list-style: disc; padding-left: 1.25rem; }
 
-        /* keep tagline single line */
-        .brand-tagline { white-space: nowrap; }
+        /* keep tagline readable without clipping the header */
+        .brand-tagline {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
     </style>
     @stack('head')
 </head>
@@ -212,19 +217,19 @@
 
 {{-- ============== TopNavBar ============== --}}
 <header class="sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75 border-b border-outline-variant">
-    <div class="max-w-container-max mx-auto w-full px-margin-mobile md:px-margin-desktop h-16 md:h-20 flex items-center justify-between gap-4">
+    <div class="max-w-container-max mx-auto w-full px-margin-mobile md:px-margin-desktop h-16 md:h-20 flex items-center justify-between gap-3 xl:gap-4 min-w-0">
 
         {{-- Logo + brand --}}
         <a href="{{ route('company.home') }}" class="flex items-center gap-3 shrink-0">
             <img alt="{{ $yfd['brand'] }} Logo" class="h-9 md:h-11 w-auto" src="{{ asset($yfd['logo'] ?? 'images/yfd-logo.png') }}">
-            <div class="hidden sm:block leading-tight">
-                <div class="text-[15px] md:text-[17px] font-extrabold text-primary-container tracking-tight">{{ $yfd['brand'] }}</div>
+            <div class="hidden sm:block leading-tight min-w-0 max-w-[180px] md:max-w-[220px] xl:max-w-none">
+                <div class="text-[15px] md:text-[17px] font-extrabold text-primary-container tracking-tight truncate">{{ $yfd['brand'] }}</div>
                 <div class="text-[11px] md:text-caption text-on-surface-variant brand-tagline">{{ $yfd['tagline'] }}</div>
             </div>
         </a>
 
         {{-- Desktop nav --}}
-        <nav class="hidden lg:flex items-center gap-7" id="desktopNav">
+        <nav class="hidden lg:flex items-center gap-5 xl:gap-7 min-w-0" id="desktopNav">
             @foreach($nav as $item)
                 @if($item['kind'] === 'dropdown')
                     {{-- Dropdown sederhana 1-kolom (Tentang) --}}
@@ -360,10 +365,10 @@
             @endforeach
         </nav>
 
-        {{-- CTA --}}
+        {{-- CTA — sembunyikan tombol sekunder lebih awal agar header tidak kepotong di zoom 100% --}}
         <div class="flex items-center gap-2 md:gap-3 shrink-0">
             <a href="{{ route('portal.login') }}"
-               class="hidden md:inline-flex btn btn-outline-primary">
+               class="hidden xl:inline-flex btn btn-outline-primary">
                 <span class="material-symbols-outlined text-[18px]">dashboard</span>
                 Login Dashboard
             </a>
@@ -372,7 +377,7 @@
                 <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1;">chat</span>
                 Konsultasi WA
             </a>
-            <a href="{{ route('company.pertemuan') }}" class="hidden sm:inline-flex btn btn-primary">
+            <a href="{{ route('company.pertemuan') }}" class="hidden xl:inline-flex btn btn-primary">
                 Booking
                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
             </a>

@@ -29,6 +29,7 @@ class LandingController extends Controller
             'active'   => 'home',
             'hero'     => $this->settingsByGroup('hero'),
             'stats'    => $this->settingsByGroup('stats'),
+            'reviews'  => $this->settingsByGroup('reviews'),
             'services' => CpService::active()->orderBy('sort')->take(6)->get(),
         ]);
     }

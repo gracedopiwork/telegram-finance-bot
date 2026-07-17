@@ -23,7 +23,7 @@
                 {{ $hero['hero.eyebrow'] ?? "INDONESIA'S FIRST FINANCIAL HEALTH CENTER" }}
             </span>
 
-            <h1 class="font-display text-[36px] sm:text-[44px] md:text-[56px] lg:text-display-xl font-extrabold leading-[1.05] tracking-tight mt-6">
+            <h1 class="font-display text-[32px] sm:text-[40px] md:text-[48px] lg:text-[56px] font-extrabold leading-[1.08] tracking-tight mt-6 break-words">
                 {{ $hero['hero.title'] ?? 'Tubuh Bisa Sakit, Begitu Juga Dompet —' }}
                 <br class="hidden md:block">
                 <span class="text-secondary-fixed">Saatnya ke Dokter Finansial.</span>
@@ -171,6 +171,76 @@
         </div>
     </div>
 </section>
+
+{{-- ============== Google / Testimoni (antara 6 pilar & CTA bawah) ============== --}}
+@php
+    $googleMapsUrl = $reviews['reviews.google_maps_url'] ?? ($yfd['google_maps_url'] ?? null);
+    $reviewItems = collect([
+        [
+            'name' => $reviews['reviews.r1.name'] ?? null,
+            'text' => $reviews['reviews.r1.text'] ?? null,
+            'rating' => $reviews['reviews.r1.rating'] ?? '5',
+        ],
+        [
+            'name' => $reviews['reviews.r2.name'] ?? null,
+            'text' => $reviews['reviews.r2.text'] ?? null,
+            'rating' => $reviews['reviews.r2.rating'] ?? '5',
+        ],
+        [
+            'name' => $reviews['reviews.r3.name'] ?? null,
+            'text' => $reviews['reviews.r3.text'] ?? null,
+            'rating' => $reviews['reviews.r3.rating'] ?? '5',
+        ],
+    ])->filter(fn ($r) => filled($r['name']) && filled($r['text']));
+@endphp
+@if($reviewItems->isNotEmpty() || filled($googleMapsUrl))
+<section class="bg-white py-20 border-b border-outline-variant">
+    <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+        <div class="text-center mb-12 max-w-2xl mx-auto">
+            <span class="text-label-md text-secondary block mb-3">TESTIMONI</span>
+            <h2 class="font-heading text-headline-lg text-primary mb-3">
+                {{ $reviews['reviews.title'] ?? 'Dipercaya Pasien Finansial' }}
+            </h2>
+            <p class="text-body-md text-on-surface-variant">
+                {{ $reviews['reviews.subtitle'] ?? 'Ulasan dari Google Business Profile — pengalaman nyata setelah screening & konsultasi YFD.' }}
+            </p>
+        </div>
+
+        @if($reviewItems->isNotEmpty())
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                @foreach($reviewItems as $review)
+                    <blockquote class="bg-surface-container-low border border-outline-variant rounded-2xl p-6 flex flex-col">
+                        <div class="flex items-center gap-1 mb-3 text-tertiary-fixed-dim" aria-label="Rating {{ $review['rating'] }} dari 5">
+                            @for($s = 1; $s <= 5; $s++)
+                                <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1;">
+                                    {{ $s <= (int) $review['rating'] ? 'star' : 'star_outline' }}
+                                </span>
+                            @endfor
+                        </div>
+                        <p class="text-body-md text-on-surface flex-grow leading-relaxed">“{{ $review['text'] }}”</p>
+                        <footer class="mt-5 pt-4 border-t border-outline-variant flex items-center justify-between gap-3">
+                            <cite class="not-italic font-semibold text-primary text-[14px]">{{ $review['name'] }}</cite>
+                            <span class="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
+                                <span class="material-symbols-outlined text-[14px]">public</span>
+                                Google
+                            </span>
+                        </footer>
+                    </blockquote>
+                @endforeach
+            </div>
+        @endif
+
+        @if(filled($googleMapsUrl))
+            <div class="text-center mt-10">
+                <a href="{{ $googleMapsUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary">
+                    <span class="material-symbols-outlined text-[18px]">reviews</span>
+                    Lihat semua ulasan di Google
+                </a>
+            </div>
+        @endif
+    </div>
+</section>
+@endif
 
 {{-- ============== Founder Quote / Visi Block ============== --}}
 <section class="relative bg-primary text-on-primary py-24 overflow-hidden">

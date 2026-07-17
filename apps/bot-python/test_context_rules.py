@@ -217,6 +217,30 @@ class ContextRulesTests(unittest.TestCase):
     def test_grab_ojek_tetap_transport(self) -> None:
         self.assertClass("grab ke kantor 28rb", "Pengeluaran", "Transport")
 
+    def test_beli_aqua_essential_bukan_jajan(self) -> None:
+        hit = classify_from_text("beli aqua 1.5L 7k")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Makan")
+        self.assertEqual(hit["sifat"], "Need")
+
+    def test_beli_air_minum_essential(self) -> None:
+        self.assertClass("beli air minum 1.5L 9k kebutuhan hidup", "Pengeluaran", "Makan")
+        hit = classify_from_text("beli air minum 1.5L 9k kebutuhan hidup")
+        assert hit is not None
+        self.assertEqual(hit["sifat"], "Need")
+
+    def test_correct_ai_jajan_aqua_to_makan(self) -> None:
+        parsed = {
+            "keterangan": "beli aqua 1.5L 7k",
+            "jenis": "Pengeluaran",
+            "kategori": "Jajan",
+            "sifat": "Wants",
+        }
+        out = apply_context_rules(parsed, "beli aqua 1.5L 7k")
+        self.assertEqual(out["kategori"], "Makan")
+        self.assertEqual(out["sifat"], "Need")
+
     def test_correct_ai_transport_grabfood(self) -> None:
         parsed = {
             "keterangan": "Jajan di Grabfood beli kue Soesweet Bali",

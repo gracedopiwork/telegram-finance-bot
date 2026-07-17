@@ -19,6 +19,7 @@ from context_rules import (
     is_electronics_expense,
     is_interest_income,
     is_water_expense,
+    is_drinking_water_expense,
     prompt_context_examples,
 )
 
@@ -32,6 +33,7 @@ __all__ = [
     "is_electronics_expense",
     "is_interest_income",
     "is_water_expense",
+    "is_drinking_water_expense",
     "normalize_category_fields",
     "normalize_saving_fields",
 ]
@@ -230,6 +232,7 @@ Aturan:
    - Transport = ojek/grab ride/bensin/parkir, bukan pesanan makanan.
    - Elektronik: headset, earphone, HP, laptop, charger, gadget — BUKAN Jajan.
    - Tumbler / botol minum / peralatan dapur → Peralatan (BUKAN Jajan).
+   - Aqua / air minum / air mineral / galon → Makan / Need (kebutuhan hidup, BUKAN Jajan).
    - Baju/sepatu → Fashion. Buku → Buku. dll.
    Petunjuk bucket (referensi):
 {hints_block}

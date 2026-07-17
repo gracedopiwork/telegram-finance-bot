@@ -364,6 +364,39 @@ _AIR_PATTERNS = tuple(
     )
 )
 
+# Air minum / galon / merek — kebutuhan hidup (bukan PDAM, bukan jajan).
+_AIR_MINUM_PATTERNS = tuple(
+    re.compile(p, re.IGNORECASE)
+    for p in (
+        r"\bair\s+minum\b",
+        r"\bair\s+mineral\b",
+        r"\bair\s+galon\b",
+        r"\bgalon\s+air\b",
+        r"\bbeli\s+galon\b",
+        r"\baqua\b",
+        r"\ble\s*minerale\b",
+        r"\bpristine\b",
+        r"\bcleo\b",
+        r"\bnestle\s+pure\s*life\b",
+        r"\bcrystalin[e]?\b",
+        r"\bequil\b",
+        r"\bair\s+club\b",
+        r"\bair\s+vit\b",
+        r"\bair\s+ades\b",
+        r"\bbeli\s+vit\b",
+        r"\bbeli\s+ades\b",
+    )
+)
+
+_KEBUTUHAN_HIDUP = (
+    "kebutuhan hidup",
+    "kebutuhan sehari",
+    "kebutuhan harian",
+    "sembako",
+    "kebutuhan pokok",
+    "bahan pokok",
+)
+
 _MAKAN = (
     "makan",
     "nasi",
@@ -563,6 +596,17 @@ def is_water_expense(text: str) -> bool:
     return _match_any(text, _AIR_PATTERNS)
 
 
+def is_drinking_water_expense(text: str) -> bool:
+    """Beli aqua/air minum/galon — Essential Living, bukan jajan & bukan tagihan PDAM."""
+    if is_water_expense(text):
+        return False
+    return _match_any(text, _AIR_MINUM_PATTERNS)
+
+
+def has_essential_living_intent(text: str) -> bool:
+    return _contains(text, _KEBUTUHAN_HIDUP)
+
+
 def is_food_delivery(text: str) -> bool:
     return _contains(text, _FOOD_DELIVERY)
 
@@ -757,6 +801,9 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Listrik", "sifat": "Need"}
     if is_water_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Air", "sifat": "Need"}
+    # Air minum/galon sebelum jajan — "beli aqua" sering salah jadi Jajan.
+    if is_drinking_water_expense(lower):
+        return {"jenis": "Pengeluaran", "kategori": "Makan", "sifat": "Need"}
     if _contains(lower, _SERVIS_KENDARAAN) or is_transport_ride(lower):
         return {"jenis": "Pengeluaran", "kategori": "Transport", "sifat": "Need"}
     if _contains(lower, _KESEHATAN):
@@ -773,6 +820,11 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Pajak", "sifat": "Need"}
     if _contains(lower, _SOCIAL):
         return {"jenis": "Pengeluaran", "kategori": "Social", "sifat": "Need"}
+    # Intent "kebutuhan hidup" — Essential Living (bukan Flexible/Wants).
+    if has_essential_living_intent(lower):
+        if _contains(lower, _KOPI_JAJAN) and not is_drinking_water_expense(lower):
+            return {"jenis": "Pengeluaran", "kategori": "Makan", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Makan", "sifat": "Need"}
     # Jajan dulu (kata "jajan"/kue), baru makan/delivery — hindari GrabFood → Transport.
     if _contains(lower, _KOPI_JAJAN):
         return {"jenis": "Pengeluaran", "kategori": "Jajan", "sifat": "Wants"}
@@ -849,12 +901,45 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
             parsed.pop("sub_kategori", None)
             return parsed
 
+        # Air minum/galon sering salah jadi Jajan/Wants → Essential Living / Makan / Need.
+        if is_drinking_water_expense(combined) and ai_kat_l in {
+            "jajan",
+            "belanja",
+            "minuman",
+            "lain-lain",
+            "lain lain",
+            "other",
+            "misc",
+            "umum",
+            "lainnya",
+        }:
+            parsed["kategori"] = "Makan"
+            parsed["sifat"] = "Need"
+            parsed.pop("sub_kategori", None)
+            return parsed
+
+        if has_essential_living_intent(combined) and ai_kat_l in {
+            "jajan",
+            "belanja",
+            "minuman",
+            "lain-lain",
+            "lain lain",
+            "other",
+            "misc",
+            "umum",
+            "lainnya",
+        }:
+            parsed["kategori"] = "Makan"
+            parsed["sifat"] = "Need"
+            parsed.pop("sub_kategori", None)
+            return parsed
+
         if ai_kat_l == "transport" and (
             is_food_delivery(combined)
             or _contains(combined.lower(), _KOPI_JAJAN)
             or _contains(combined.lower(), _MAKAN)
         ):
-            if _contains(combined.lower(), _KOPI_JAJAN):
+            if _contains(combined.lower(), _KOPI_JAJAN) and not is_drinking_water_expense(combined):
                 parsed["kategori"] = "Jajan"
                 parsed["sifat"] = "Wants"
             else:
@@ -916,6 +1001,8 @@ Contoh klasifikasi WAJIB diikuti:
 - "ganti hp rusak 3jt" → Pengeluaran / Elektronik / Need
 - "laptop kerja 8jt" → Pengeluaran / Elektronik / Need
 - "kopi susu 28rb" → Pengeluaran / Jajan / Wants
+- "beli aqua 1.5L 7k" → Pengeluaran / Makan / Need (BUKAN Jajan — air minum kebutuhan hidup)
+- "beli air minum 9k" → Pengeluaran / Makan / Need
 - "beli tumbler 150rb" → Pengeluaran / Peralatan / Wants (BUKAN Jajan)
 - "beli baju 200rb" → Pengeluaran / Fashion / Wants
 """
