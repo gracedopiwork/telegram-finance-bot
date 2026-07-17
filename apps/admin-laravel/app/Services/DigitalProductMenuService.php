@@ -79,13 +79,9 @@ class DigitalProductMenuService
             'new_tab' => false,
         ];
 
-        // Pastikan link Coming Soon tidak mengarah ke checkout
-        if ($isSoon && ($product->billing_mode ?? '') !== 'soon') {
-            return array_merge($item, [
-                'route' => null,
-                'url' => route('company.produk'),
-                'new_tab' => false,
-            ]);
+        // Coming Soon: item tidak bisa diklik sama sekali
+        if ($isSoon) {
+            return $item;
         }
 
         return array_merge($item, $this->resolveLink($product));
@@ -108,11 +104,6 @@ class DigitalProductMenuService
                 'url' => $product->cta_url ?: null,
                 'new_tab' => true,
             ],
-            'soon' => [
-                'route' => null,
-                'url' => route('company.produk'),
-                'new_tab' => false,
-            ],
             default => ['route' => null, 'url' => route('company.produk'), 'new_tab' => false],
         };
     }
@@ -127,7 +118,7 @@ class DigitalProductMenuService
                 'key' => 'produk',
                 'label' => 'YFD First Aid',
                 'desc' => 'Catat keuangan via chat — AI auto-parse ke dashboard web',
-                'route' => 'company.produk',
+                'route' => null,
                 'icon' => 'send',
                 'badge' => 'Coming Soon',
                 'url' => null,
