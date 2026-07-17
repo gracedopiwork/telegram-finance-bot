@@ -229,7 +229,7 @@
         </a>
 
         {{-- Desktop nav --}}
-        <nav class="hidden xl:flex items-center gap-5 2xl:gap-7 min-w-0" id="desktopNav">
+        <nav class="hidden 2xl:flex items-center gap-7 min-w-0" id="desktopNav">
             @foreach($nav as $item)
                 @if($item['kind'] === 'dropdown')
                     {{-- Dropdown sederhana 1-kolom (Tentang) --}}
@@ -381,14 +381,14 @@
                 Booking
                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
             </a>
-            <button id="mobileMenuBtn" type="button" class="xl:hidden w-10 h-10 grid place-items-center text-primary-container rounded-lg hover:bg-surface-container-low" aria-label="Toggle menu">
+            <button id="mobileMenuBtn" type="button" class="2xl:hidden w-10 h-10 grid place-items-center text-primary-container rounded-lg hover:bg-surface-container-low" aria-label="Toggle menu">
                 <span class="material-symbols-outlined">menu</span>
             </button>
         </div>
     </div>
 
     {{-- Mobile menu --}}
-    <div id="mobileMenu" class="xl:hidden hidden border-t border-outline-variant bg-white max-h-[calc(100vh-4rem)] overflow-y-auto">
+    <div id="mobileMenu" class="2xl:hidden hidden border-t border-outline-variant bg-white max-h-[calc(100vh-4rem)] overflow-y-auto">
         <nav class="px-margin-mobile py-4 grid gap-1 text-[15px]">
             @foreach($nav as $item)
                 @if($item['kind'] === 'dropdown')
