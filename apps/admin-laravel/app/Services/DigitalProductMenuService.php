@@ -108,7 +108,7 @@ class DigitalProductMenuService
                 'desc' => 'Catat keuangan via chat — AI auto-parse ke dashboard web',
                 'route' => 'company.produk',
                 'icon' => 'send',
-                'badge' => 'Tersedia',
+                'badge' => 'Coming Soon',
                 'url' => null,
                 'new_tab' => false,
             ],

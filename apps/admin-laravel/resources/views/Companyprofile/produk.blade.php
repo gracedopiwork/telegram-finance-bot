@@ -371,6 +371,10 @@
                     <a href="{{ $p->cta_url }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm justify-center mt-auto">
                         <span class="material-symbols-outlined text-[18px]">open_in_new</span> {{ $p->cta_label ?? 'Buka' }}
                     </a>
+                @elseif($p->billing_mode === 'soon')
+                    <button type="button" disabled class="btn btn-outline-primary btn-sm justify-center mt-auto opacity-60 cursor-not-allowed">
+                        <span class="material-symbols-outlined text-[18px]">schedule</span> Coming Soon
+                    </button>
                 @else
                     <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm justify-center mt-auto">
                         <span class="material-symbols-outlined text-[18px]">notifications_active</span> {{ $p->cta_label ?? 'Notify Saat Launch' }}
