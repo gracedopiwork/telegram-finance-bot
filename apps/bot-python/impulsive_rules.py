@@ -139,6 +139,9 @@ PREMIUM_SPENDING_KEYWORDS = (
 
 NEGATIVE_MOODS_FOR_IMPULSE = frozenset({"Sad", "Stressed", "Angry", "Tired"})
 
+# Belanja kecil (kopi/snack harian) jangan dilabel impulsif hanya karena mood negatif.
+MIN_NOMINAL_FOR_IMPULSE = 50_000
+
 
 def _combined_text(parsed: dict[str, Any], source_text: str) -> str:
     return f"{parsed.get('keterangan', '')} {source_text}".lower()
@@ -164,6 +167,14 @@ def is_functional_replacement(combined: str) -> bool:
     return any(keyword in combined for keyword in FUNCTIONAL_REPLACEMENT_KEYWORDS)
 
 
+def has_explicit_impulse_signal(combined: str) -> bool:
+    return (
+        any(keyword in combined for keyword in EXPLICIT_IMPULSIVE_KEYWORDS)
+        or any(keyword in combined for keyword in PAYDAY_SPLURGE_KEYWORDS)
+        or any(keyword in combined for keyword in REWARD_SPENDING_KEYWORDS)
+    )
+
+
 def resolve_impulsif(
     parsed: dict[str, Any],
     source_text: str = "",
@@ -175,13 +186,14 @@ def resolve_impulsif(
     Urutan keputusan:
     1) Guardrail wajib (acara sosial / tagihan / penggantian rusak) — override AI
     2) Sinyal impulsif kuat (spontan / pasca-gajian)
-    3) Keputusan AI (jika path Gemini)
+    3) Keputusan AI (jika path Gemini) — nominal kecil tetap No kecuali sinyal eksplisit
     4) Heuristik fallback sempit
     """
     if parsed.get("jenis") != "Pengeluaran":
         return "No"
 
     combined = _combined_text(parsed, source_text)
+    nominal = int(parsed.get("nominal", 0) or 0)
 
     if is_planned_social(combined):
         return "No"
@@ -192,14 +204,12 @@ def resolve_impulsif(
     if is_functional_replacement(combined):
         return "No"
 
-    if any(keyword in combined for keyword in EXPLICIT_IMPULSIVE_KEYWORDS):
+    if has_explicit_impulse_signal(combined):
         return "Yes"
 
-    if any(keyword in combined for keyword in PAYDAY_SPLURGE_KEYWORDS):
-        return "Yes"
-
-    if any(keyword in combined for keyword in REWARD_SPENDING_KEYWORDS):
-        return "Yes"
+    # Kopi/snack kecil (mis. 15rb) bukan impulsif meski Tired + healing/Wants.
+    if nominal > 0 and nominal < MIN_NOMINAL_FOR_IMPULSE:
+        return "No"
 
     if trust_ai and ai_suggested in VALID_IMPULSIF:
         return ai_suggested
@@ -216,8 +226,11 @@ def infer_impulsif_fallback(parsed: dict[str, Any], combined: str) -> str:
     is_food_out = kategori in {"Jajan", "Makan"}
     is_premium = any(keyword in combined for keyword in PREMIUM_SPENDING_KEYWORDS)
 
+    if nominal > 0 and nominal < MIN_NOMINAL_FOR_IMPULSE:
+        return "No"
+
     if mood in NEGATIVE_MOODS_FOR_IMPULSE:
-        if sifat == "Wants":
+        if sifat == "Wants" and nominal >= MIN_NOMINAL_FOR_IMPULSE:
             return "Yes"
         if is_food_out and (is_premium or nominal >= 100_000):
             return "Yes"

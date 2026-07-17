@@ -238,9 +238,11 @@ Aturan:
 {hints_block}
 6) {examples}
 7) impulsif — terpisah dari sifat Need/Wants:
-   "Yes" jika spontan / tidak terencana / fomo / mood negatif + belanja diskresioner.
-   "No" jika terencana, tagihan wajib, kebutuhan kerja yang dijelaskan, atau
-   penggantian alat/akun lama yang rusak/tidak bisa dipakai.
+   "Yes" jika spontan / tidak terencana / fomo / mood negatif + belanja diskresioner
+   dengan nominal bermakna (umumnya >= Rp50.000).
+   "No" jika terencana, tagihan wajib, kebutuhan kerja yang dijelaskan,
+   penggantian alat/akun lama yang rusak/tidak bisa dipakai, atau belanja kecil
+   sehari-hari (mis. kopi/snack di bawah Rp50.000) meski mood negatif.
 8) tanggal: opsional. Isi YYYY-MM-DD HANYA jika user menyebut tanggal transaksi
    (contoh: "tgl 2/7", "tanggal 2 juli", "kemarin", "2 hari lalu").
    Format Indonesia biasanya hari/bulan. Jika tidak ada tanggal eksplisit → null.

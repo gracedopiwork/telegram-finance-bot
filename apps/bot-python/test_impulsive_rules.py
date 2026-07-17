@@ -48,6 +48,36 @@ class ImpulsiveRulesTests(unittest.TestCase):
         }
         self.assertEqual(resolve_impulsif(parsed, "tiba-tiba hp rusak"), "No")
 
+    def test_small_tired_coffee_healing_is_not_impulsive(self) -> None:
+        parsed = {
+            "keterangan": "Beli Kopi",
+            "jenis": "Pengeluaran",
+            "kategori": "Jajan",
+            "sifat": "Wants",
+            "mood": "Tired",
+            "nominal": 15_000,
+        }
+        self.assertEqual(
+            resolve_impulsif(
+                parsed,
+                "beli kopi 15 ribu karena capek banget healing",
+                ai_suggested="Yes",
+                trust_ai=True,
+            ),
+            "No",
+        )
+
+    def test_larger_tired_wants_can_still_be_impulsive(self) -> None:
+        parsed = {
+            "keterangan": "Beli kopi specialty",
+            "jenis": "Pengeluaran",
+            "kategori": "Jajan",
+            "sifat": "Wants",
+            "mood": "Tired",
+            "nominal": 75_000,
+        }
+        self.assertEqual(resolve_impulsif(parsed, "beli kopi 75rb karena capek"), "Yes")
+
 
 if __name__ == "__main__":
     unittest.main()
