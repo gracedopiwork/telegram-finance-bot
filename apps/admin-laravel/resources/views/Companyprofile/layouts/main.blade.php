@@ -173,8 +173,8 @@
         }
         .btn .material-symbols-outlined { flex-shrink: 0; }
 
-        /* Header: cegah overlap — compact mode diaktifkan JS jika konten tidak muat */
-        #siteHeaderBar { overflow: hidden; }
+        /* Header: cegah overlap — compact mode diaktifkan JS jika konten tidak muat.
+           JANGAN pakai overflow:hidden di sini — memotong panel dropdown/mega menu. */
         #siteHeaderBar #desktopNav {
             flex: 0 0 auto;
             justify-content: center;
@@ -640,14 +640,23 @@
             });
         }
 
-        // Jika logo+nav+CTA tidak muat, pakai hamburger (cegah overlap Informasi / Login)
+        // Jika logo+nav+CTA tidak muat, pakai hamburger (cegah overlap Informasi / Login).
+        // Ukur jumlah lebar anak langsung (bukan scrollWidth) supaya panel dropdown
+        // absolute yang terbuka tidak ikut terhitung.
         function fitHeader() {
             if (!bar) return;
             bar.classList.remove('is-compact');
             if (menu) menu.classList.add('hidden');
-            // Force reflow lalu ukur overflow
             void bar.offsetWidth;
-            if (bar.scrollWidth > bar.clientWidth + 2) {
+            var needed = 0;
+            var children = bar.children;
+            for (var i = 0; i < children.length; i++) {
+                needed += children[i].offsetWidth;
+            }
+            var styles = window.getComputedStyle(bar);
+            var gap = parseFloat(styles.columnGap || styles.gap) || 0;
+            needed += gap * Math.max(0, children.length - 1);
+            if (needed > bar.clientWidth + 2) {
                 bar.classList.add('is-compact');
             }
         }
