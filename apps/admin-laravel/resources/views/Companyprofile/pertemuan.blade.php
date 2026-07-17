@@ -1,5 +1,9 @@
 @extends('Companyprofile.layouts.main')
 
+@php
+    $isRecovery = ($selectedType ?? 'standard') === 'recovery';
+@endphp
+
 @section('title', $isRecovery ? 'Booking Recovery Program — YFD' : 'Booking Pertemuan — YFD')
 
 @push('head')
@@ -14,7 +18,6 @@
 
 @php
     use App\Support\ConsultationPricing;
-    $isRecovery = ($selectedType ?? 'standard') === 'recovery';
     $serviceLabel = $isRecovery ? 'Financial Recovery Program' : 'Financial Consultation';
     $recoveryFrom = ConsultationPricing::formatRupiah($consultationMeta['recovery_from'] ?? 150_000);
 @endphp

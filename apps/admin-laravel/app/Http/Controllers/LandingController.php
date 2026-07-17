@@ -162,6 +162,7 @@ class LandingController extends Controller
             'selectedStage' => is_string($stageKey) ? $stageKey : null,
             'selectedType' => is_string($consultationType) ? $consultationType : 'standard',
             'selectedTier' => ConsultationPricing::forStage(is_string($stageKey) ? $stageKey : null),
+            'isRecovery' => $consultationType === 'recovery',
         ]);
     }
 
