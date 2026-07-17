@@ -72,6 +72,23 @@
                                class="w-full rounded-xl border-outline-variant focus:border-primary focus:ring-primary text-[14px]"
                                placeholder="@username">
                     </div>
+
+                    @if($referralEnabled ?? false)
+                    <div>
+                        <label class="block text-[12.5px] font-semibold text-on-surface mb-1.5">Kode Referral <span class="text-on-surface-variant font-normal">(opsional)</span></label>
+                        <input type="text" name="referral_code" maxlength="32"
+                               value="{{ old('referral_code', $prefillReferral ?? '') }}"
+                               class="w-full rounded-xl border-outline-variant focus:border-primary focus:ring-primary text-[14px] uppercase @error('referral_code') border-red-400 @enderror"
+                               placeholder="YFD-XXXXXX"
+                               autocomplete="off">
+                        <p class="text-[11px] text-on-surface-variant mt-1">
+                            Pakai kode teman → potongan tambahan
+                            <strong>Rp {{ number_format($referralDiscount ?? 0, 0, ',', '.') }}</strong>
+                            (jika kode valid).
+                        </p>
+                        @error('referral_code') <p class="text-[12px] text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    @endif
                 </div>
 
                 <div class="mt-7 flex flex-wrap gap-3 items-center">
@@ -113,6 +130,12 @@
                         <div class="flex justify-between text-emerald-700">
                             <dt>Diskon ({{ $product->discount_percent }}%)</dt>
                             <dd>− {{ $product->priceLabel($product->price - $product->discount_price) }}</dd>
+                        </div>
+                    @endif
+                    @if(($referralEnabled ?? false) && ($referralDiscount ?? 0) > 0)
+                        <div class="flex justify-between text-emerald-700">
+                            <dt>Potongan referral (jika kode valid)</dt>
+                            <dd>− Rp {{ number_format($referralDiscount, 0, ',', '.') }}</dd>
                         </div>
                     @endif
                 </dl>

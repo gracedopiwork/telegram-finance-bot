@@ -25,9 +25,15 @@ class CheckoutController extends Controller
 
         abort_if($product->billing_mode !== 'midtrans', 404, 'Produk ini belum dapat dibeli.');
 
+        $affiliateService = app(\App\Services\AffiliateService::class);
+        $ref = request('ref');
+
         return view('Companyprofile.checkout', [
             'active'  => 'produk',
             'product' => $product,
+            'referralEnabled' => $affiliateService->enabled() && $affiliateService->isEligibleProduct($product),
+            'referralDiscount' => $affiliateService->discountAmount(),
+            'prefillReferral' => is_string($ref) ? strtoupper(trim($ref)) : '',
         ]);
     }
 
@@ -57,13 +63,23 @@ class CheckoutController extends Controller
             'email'      => ['required', 'email', 'max:190'],
             'phone'      => ['required', 'string', 'max:32'],
             'telegram_username' => ['nullable', 'string', 'max:120'],
+            'referral_code' => ['nullable', 'string', 'max:32'],
         ]);
 
         $product = CpDigitalProduct::active()->where('code', $validated['product'])->firstOrFail();
         abort_if($product->billing_mode !== 'midtrans', 422, 'Produk ini belum dapat dibeli.');
 
-        $finalAmount = $product->effective_price;
-        abort_if($finalAmount <= 0, 422, 'Harga produk belum diatur.');
+        $baseAmount = $product->effective_price;
+        abort_if($baseAmount <= 0, 422, 'Harga produk belum diatur.');
+
+        $affiliateService = app(\App\Services\AffiliateService::class);
+        $pricing = $affiliateService->applyCheckoutDiscount(
+            $product,
+            $baseAmount,
+            $validated['referral_code'] ?? $request->query('ref'),
+            $validated['email'],
+        );
+        $finalAmount = $pricing['final_amount'];
 
         $order = Order::create([
             'order_code'         => 'YFD-'.Str::upper(Str::random(10)),
@@ -71,12 +87,15 @@ class CheckoutController extends Controller
             'email'              => $validated['email'],
             'phone'              => $this->normalizePhone($validated['phone']),
             'telegram_username'  => $validated['telegram_username'] ?? null,
+            'referral_code'      => $pricing['referral_code'],
+            'affiliate_id'       => $pricing['affiliate']?->id,
             'plan'               => $product->code,           // simpan kode juga untuk kompatibilitas
             'digital_product_id' => $product->id,
             'product_name'       => $product->name,
             'amount'             => $finalAmount,
             'original_price'     => (int) $product->price,
-            'discount_amount'    => max(0, (int) $product->price - $finalAmount),
+            'discount_amount'    => $pricing['discount_amount'],
+            'referral_discount'  => $pricing['referral_discount'],
             'currency'           => $product->currency ?? 'IDR',
             'status'             => 'pending',
             'payment_gateway'    => 'midtrans',

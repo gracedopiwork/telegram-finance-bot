@@ -45,6 +45,13 @@
         <span class="flex-1">{{ ($isFtsaOnlyPortalUser ?? false) ? 'HASIL FTSA' : 'BEHAVIORAL FINANCIAL DASHBOARD' }}</span>
     </a>
     @if(!($isFtsaOnlyPortalUser ?? false))
+    <a href="{{ route('portal.affiliate') }}"
+       class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'affiliate' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
+        <span class="material-symbols-outlined text-lg opacity-80">diversity_3</span>
+        <span class="flex-1">REFERRAL & KOMISI</span>
+    </a>
+    @endif
+    @if(!($isFtsaOnlyPortalUser ?? false))
     <a href="{{ route('portal.premium') }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'premium' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">monitor_heart</span>

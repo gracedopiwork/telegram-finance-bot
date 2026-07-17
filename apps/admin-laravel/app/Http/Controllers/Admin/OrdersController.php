@@ -145,6 +145,7 @@ class OrdersController extends Controller
         $order->save();
 
         if ($data['status'] === 'paid' && ! $wasPaid) {
+            app(\App\Services\AffiliateService::class)->creditCommissionForPaidOrder($order->fresh(['digitalProduct', 'affiliate']));
             DeliverPaidOrderJob::dispatchSync($order->id);
         }
 

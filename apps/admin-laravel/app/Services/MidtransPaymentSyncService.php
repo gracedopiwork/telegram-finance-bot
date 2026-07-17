@@ -6,6 +6,7 @@ use App\Jobs\DeliverPaidOrderJob;
 use App\Models\License;
 use App\Models\Order;
 use App\Models\PaymentEvent;
+use App\Services\AffiliateService;
 use App\Services\LicenseProvisioningService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -112,6 +113,8 @@ class MidtransPaymentSyncService
                 $order->license_id = $license->id;
                 $order->status = 'paid';
                 $order->paid_at = $order->paid_at ?? now();
+
+                app(AffiliateService::class)->creditCommissionForPaidOrder($order);
             } elseif ($isFailed) {
                 $order->status = 'failed';
             }

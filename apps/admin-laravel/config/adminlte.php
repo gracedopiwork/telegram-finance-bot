@@ -384,6 +384,16 @@ return [
             'route' => 'admin.orders.index',
             'icon' => 'fas fa-fw fa-receipt',
         ],
+        [
+            'text' => 'Affiliate',
+            'route' => 'admin.affiliates.index',
+            'icon' => 'fas fa-fw fa-handshake',
+        ],
+        [
+            'text' => 'Klaim Affiliate',
+            'route' => 'admin.affiliates.claims',
+            'icon' => 'fas fa-fw fa-money-check-alt',
+        ],
 
         ['header' => 'Eksternal'],
 

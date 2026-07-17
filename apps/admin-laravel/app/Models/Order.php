@@ -14,12 +14,15 @@ class Order extends Model
         'email',
         'phone',
         'telegram_username',
+        'referral_code',
+        'affiliate_id',
         'plan',
         'digital_product_id',
         'product_name',
         'amount',
         'original_price',
         'discount_amount',
+        'referral_discount',
         'currency',
         'status',
         'payment_gateway',
@@ -37,11 +40,17 @@ class Order extends Model
         'amount'                    => 'integer',
         'original_price'            => 'integer',
         'discount_amount'           => 'integer',
+        'referral_discount'         => 'integer',
     ];
 
     public function license(): BelongsTo
     {
         return $this->belongsTo(License::class);
+    }
+
+    public function affiliate(): BelongsTo
+    {
+        return $this->belongsTo(Affiliate::class);
     }
 
     public function digitalProduct(): BelongsTo

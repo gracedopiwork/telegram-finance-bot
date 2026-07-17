@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\FtsaQuestionsController;
 use App\Http\Controllers\Admin\FtsaResultsController;
 use App\Http\Controllers\Admin\DigitalProductsController;
 use App\Http\Controllers\Admin\FaqsController;
+use App\Http\Controllers\Admin\AffiliatesController;
 use App\Http\Controllers\Admin\OrdersController;
 use App\Http\Controllers\Admin\PackagesController;
 use App\Http\Controllers\Admin\ServicesController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PublicCheckupController;
+use App\Http\Controllers\Portal\AffiliateController as PortalAffiliateController;
 use App\Http\Controllers\Portal\AuthController as PortalAuthController;
 use App\Http\Controllers\Portal\BaselineController as PortalBaselineController;
 use App\Http\Controllers\Portal\CheckoutController as PortalCheckoutController;
@@ -152,6 +154,13 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('orders/{order}/resend-delivery-email', [OrdersController::class, 'resendDeliveryEmail'])->name('orders.resendDeliveryEmail');
     Route::post('orders/{order}/purge-customer-data', [OrdersController::class, 'purgeCustomerData'])->name('orders.purgeCustomerData');
     Route::delete('orders/{order}',     [OrdersController::class, 'destroy'])->name('orders.destroy');
+
+    Route::get('affiliates', [AffiliatesController::class, 'index'])->name('affiliates.index');
+    Route::get('affiliates/claims', [AffiliatesController::class, 'claims'])->name('affiliates.claims');
+    Route::post('affiliates/claims/{claim}', [AffiliatesController::class, 'processClaim'])->name('affiliates.claims.process');
+    Route::get('affiliates/commissions', [AffiliatesController::class, 'commissions'])->name('affiliates.commissions');
+    Route::get('affiliates/{affiliate}', [AffiliatesController::class, 'show'])->name('affiliates.show');
+    Route::post('affiliates/{affiliate}/toggle', [AffiliatesController::class, 'toggle'])->name('affiliates.toggle');
 });
 
 /*
@@ -199,6 +208,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
 
         Route::middleware('portal.bot')->group(function () {
             Route::get('/premium', [PortalDashboardController::class, 'premium'])->name('premium');
+            Route::get('/referral', [PortalAffiliateController::class, 'index'])->name('affiliate');
+            Route::post('/referral/klaim', [PortalAffiliateController::class, 'claim'])->name('affiliate.claim');
             Route::get('/transaksi', [PortalDashboardController::class, 'transactions'])->name('transactions');
             Route::get('/transaksi/template', [PortalTransactionsController::class, 'importTemplate'])->name('transactions.template');
             Route::post('/transaksi/import', [PortalTransactionsController::class, 'import'])->name('transactions.import');

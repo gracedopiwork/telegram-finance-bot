@@ -22,6 +22,8 @@ class SettingsController extends Controller
         'mission'  => ['label' => 'Misi (8 poin)', 'icon' => 'fas fa-list-ol'],
         'values'   => ['label' => 'Core Values (6)', 'icon' => 'fas fa-heart'],
         'bot'      => ['label' => 'Integrasi Bot & Email', 'icon' => 'fab fa-telegram'],
+        'affiliate'=> ['label' => 'Referral / Affiliate', 'icon' => 'fas fa-handshake'],
+        'reviews'  => ['label' => 'Testimoni Homepage', 'icon' => 'fas fa-star'],
     ];
 
     public function index(Request $request)
