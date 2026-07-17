@@ -84,6 +84,26 @@
                         </td>
                         <td class="text-center">{{ $p->sort }}</td>
                         <td class="text-right text-nowrap">
+                            @if($p->billing_mode === 'soon')
+                                <form method="post" action="{{ route('admin.digital-products.billing-mode', $p) }}" class="d-inline">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="billing_mode" value="midtrans">
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Aktifkan jual (Midtrans)">
+                                        <i class="fas fa-store"></i>
+                                    </button>
+                                </form>
+                            @else
+                                <form method="post" action="{{ route('admin.digital-products.billing-mode', $p) }}" class="d-inline"
+                                      onsubmit="return confirm('Set produk ini menjadi Coming Soon? Tombol beli di website akan dinonaktifkan.');">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="billing_mode" value="soon">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Set Coming Soon">
+                                        <i class="fas fa-clock"></i>
+                                    </button>
+                                </form>
+                            @endif
                             <a href="{{ route('admin.digital-products.edit', $p) }}" class="btn btn-sm btn-outline-success">
                                 <i class="fas fa-edit"></i>
                             </a>

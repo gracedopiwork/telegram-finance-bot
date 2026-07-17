@@ -123,6 +123,8 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::resource('faqs',             FaqsController::class)->except(['show']);
     Route::resource('articles',         ArticlesController::class)->except(['show']);
     Route::resource('digital-products', DigitalProductsController::class)->except(['show']);
+    Route::patch('digital-products/{digital_product}/billing-mode', [DigitalProductsController::class, 'updateBillingMode'])
+        ->name('digital-products.billing-mode');
     Route::resource('category-bucket-mappings', CategoryBucketMappingsController::class)->except(['show']);
     Route::post('category-bucket-mappings/sync-defaults', [CategoryBucketMappingsController::class, 'syncDefaults'])
         ->name('category-bucket-mappings.sync');

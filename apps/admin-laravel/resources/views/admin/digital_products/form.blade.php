@@ -162,20 +162,23 @@
                 <div class="card-body">
                     <div class="form-group">
                         <label>Cara Beli<span class="text-danger">*</span></label>
-                        <select name="billing_mode" class="form-control">
+                        <select name="billing_mode" id="billingMode" class="form-control">
                             @foreach([
                                 'midtrans' => 'Midtrans (otomatis)',
                                 'wa'       => 'Arahkan ke WhatsApp',
                                 'url'      => 'Link Eksternal',
-                                'soon'     => 'Coming Soon (display only)',
+                                'soon'     => 'Coming Soon — tampil di website, tidak bisa dibeli',
                             ] as $val => $label)
                                 <option value="{{ $val }}" @selected(old('billing_mode', $product->billing_mode) === $val)>{{ $label }}</option>
                             @endforeach
                         </select>
+                        <small class="form-text text-muted">
+                            Pilih <strong>Coming Soon</strong> untuk menampilkan produk tanpa tombol checkout.
+                        </small>
                     </div>
                     <div class="form-group">
                         <label>CTA Label</label>
-                        <input type="text" name="cta_label" class="form-control"
+                        <input type="text" name="cta_label" id="ctaLabel" class="form-control"
                                value="{{ old('cta_label', $product->cta_label ?? 'Beli Sekarang') }}">
                     </div>
                     <div class="form-group mb-0">
@@ -203,8 +206,15 @@
                     <div class="form-row">
                         <div class="form-group col-md-6">
                             <label>Badge</label>
-                            <input type="text" name="badge" class="form-control" maxlength="60"
+                            <input type="text" name="badge" id="productBadge" class="form-control" maxlength="60"
+                                   list="badgePresets"
                                    value="{{ old('badge', $product->badge) }}" placeholder="Tersedia / Coming Soon">
+                            <datalist id="badgePresets">
+                                <option value="Tersedia"></option>
+                                <option value="Coming Soon"></option>
+                                <option value="Baru"></option>
+                                <option value="Promo"></option>
+                            </datalist>
                         </div>
                         <div class="form-group col-md-6">
                             <label>Sort</label>
@@ -265,6 +275,22 @@ $(function() {
         var name = this.files[0] ? this.files[0].name : 'Pilih file…';
         $(this).next('.custom-file-label').text(name);
     });
+
+    function syncComingSoonLabels() {
+        if ($('#billingMode').val() !== 'soon') {
+            return;
+        }
+        var badge = ($('#productBadge').val() || '').trim().toLowerCase();
+        var cta = ($('#ctaLabel').val() || '').trim().toLowerCase();
+        if (!badge || badge === 'tersedia') {
+            $('#productBadge').val('Coming Soon');
+        }
+        if (!cta || cta === 'beli sekarang' || cta === 'beli') {
+            $('#ctaLabel').val('Coming Soon');
+        }
+    }
+
+    $('#billingMode').on('change', syncComingSoonLabels);
 });
 </script>
 @stop

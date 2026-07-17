@@ -58,6 +58,35 @@ class DigitalProductsController extends Controller
                          ->with('success', 'Produk digital berhasil diperbarui.');
     }
 
+    public function updateBillingMode(Request $request, CpDigitalProduct $digital_product)
+    {
+        $data = $request->validate([
+            'billing_mode' => 'required|in:midtrans,wa,url,soon',
+        ]);
+
+        $payload = ['billing_mode' => $data['billing_mode']];
+
+        if ($data['billing_mode'] === 'soon') {
+            $payload['badge'] = 'Coming Soon';
+            $payload['cta_label'] = 'Coming Soon';
+        } elseif ($digital_product->billing_mode === 'soon') {
+            // Kembali jual: bersihkan label Coming Soon default
+            if (strtolower(trim((string) $digital_product->badge)) === 'coming soon') {
+                $payload['badge'] = 'Tersedia';
+            }
+            if (strtolower(trim((string) $digital_product->cta_label)) === 'coming soon') {
+                $payload['cta_label'] = 'Beli Sekarang';
+            }
+        }
+
+        $digital_product->update($payload);
+
+        $label = $data['billing_mode'] === 'soon' ? 'Coming Soon' : strtoupper($data['billing_mode']);
+
+        return redirect()->route('admin.digital-products.index')
+            ->with('success', "Mode \"{$digital_product->name}\" diubah ke {$label}.");
+    }
+
     public function destroy(CpDigitalProduct $digital_product)
     {
         if ($digital_product->image_url && Str::startsWith($digital_product->image_url, '/storage/')) {
@@ -116,6 +145,15 @@ class DigitalProductsController extends Controller
         $data['sort']                 = (int) ($data['sort'] ?? 0);
         $data['cta_label']            = $data['cta_label'] ?: 'Beli Sekarang';
         $data['demo_video_url']       = filled($data['demo_video_url'] ?? null) ? trim($data['demo_video_url']) : null;
+
+        if (($data['billing_mode'] ?? '') === 'soon') {
+            if (! filled($data['badge'] ?? null) || strtolower(trim((string) $data['badge'])) === 'tersedia') {
+                $data['badge'] = 'Coming Soon';
+            }
+            if (! filled($data['cta_label'] ?? null) || in_array(strtolower(trim((string) $data['cta_label'])), ['beli sekarang', 'beli'], true)) {
+                $data['cta_label'] = 'Coming Soon';
+            }
+        }
 
         // Discount tidak boleh ada kalau price 0
         if (($data['price'] ?? 0) <= 0) {
