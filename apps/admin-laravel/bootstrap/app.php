@@ -29,6 +29,12 @@ return Application::configure(basePath: dirname(__DIR__))
             ->when(fn () => now($tz)->isLastOfMonth())
             ->withoutOverlapping()
             ->onOneServer();
+
+        $schedule->command('google-reviews:sync')
+            ->dailyAt('06:30')
+            ->timezone($tz)
+            ->withoutOverlapping()
+            ->onOneServer();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [

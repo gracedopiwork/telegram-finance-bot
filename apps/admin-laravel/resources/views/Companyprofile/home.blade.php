@@ -2,6 +2,30 @@
 
 @section('title', 'Your Financial Doctor — Indonesia\'s First Financial Health Center')
 
+@php
+    $googleMapsUrl = $reviews['reviews.google_maps_url']
+        ?? ($yfd['google_maps_url'] ?? null)
+        ?? 'https://www.google.com/search?q=Your%20Financial%20Doctor&stick=H4sIAAAAAAAAAONgU1I1qDAyTzYzSjQzTzZMS7YwNza1MqhISbNINTQzSU1OS05NtDBMXMQqGplfWqTglpmXmJecmZij4JKfXJJfBABo0kI0QQAAAA&mat=CT8GW_tbUj0c#mpd=~2034873161653880383/customers/reviews';
+    $googleRating = $reviews['reviews.google_rating'] ?? '5.0';
+    $googleCount = $reviews['reviews.google_count'] ?? null;
+    $synced = isset($syncedReviews) ? collect($syncedReviews) : collect();
+    if ($synced->isNotEmpty()) {
+        $reviewItems = $synced->map(fn ($r) => [
+            'name' => $r->reviewer_name,
+            'text' => $r->comment,
+            'rating' => (string) $r->rating,
+        ])->values();
+    } else {
+        $reviewItems = collect(range(1, 6))->map(function ($i) use ($reviews) {
+            return [
+                'name' => $reviews["reviews.r{$i}.name"] ?? null,
+                'text' => $reviews["reviews.r{$i}.text"] ?? null,
+                'rating' => $reviews["reviews.r{$i}.rating"] ?? '5',
+            ];
+        })->filter(fn ($r) => filled($r['name']) && filled($r['text']))->values();
+    }
+@endphp
+
 @section('content')
 
 {{-- ============== Hero Section ============== --}}
@@ -172,36 +196,7 @@
     </div>
 </section>
 
-{{-- ============== Google / Testimoni (antara 6 pilar & CTA bawah) ============== --}}
-@php
-    $googleMapsUrl = $reviews['reviews.google_maps_url']
-        ?? ($yfd['google_maps_url'] ?? null)
-        ?? 'https://www.google.com/search?q=Your%20Financial%20Doctor&stick=H4sIAAAAAAAAAONgU1I1qDAyTzYzSjQzTzZMS7YwNza1MqhISbNINTQzSU1OS05NtDBMXMQqGplfWqTglpmXmJecmZij4JKfXJJfBABo0kI0QQAAAA&mat=CT8GW_tbUj0c#mpd=~2034873161653880383/customers/reviews';
-    $googleRating = $reviews['reviews.google_rating'] ?? '5.0';
-    $googleCount = $reviews['reviews.google_count'] ?? null;
-    $reviewItems = collect([
-        [
-            'name' => $reviews['reviews.r1.name'] ?? null,
-            'text' => $reviews['reviews.r1.text'] ?? null,
-            'rating' => $reviews['reviews.r1.rating'] ?? '5',
-        ],
-        [
-            'name' => $reviews['reviews.r2.name'] ?? null,
-            'text' => $reviews['reviews.r2.text'] ?? null,
-            'rating' => $reviews['reviews.r2.rating'] ?? '5',
-        ],
-        [
-            'name' => $reviews['reviews.r3.name'] ?? null,
-            'text' => $reviews['reviews.r3.text'] ?? null,
-            'rating' => $reviews['reviews.r3.rating'] ?? '5',
-        ],
-    ])->filter(fn ($r) => filled($r['name']) && filled($r['text']));
-    $reviewCols = match ($reviewItems->count()) {
-        1 => 'grid-cols-1 max-w-xl mx-auto',
-        2 => 'grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto',
-        default => 'grid-cols-1 md:grid-cols-3',
-    };
-@endphp
+{{-- ============== Google / Testimoni (carousel) ============== --}}
 <section class="bg-white py-20 border-b border-outline-variant">
     <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
         <div class="text-center mb-12 max-w-2xl mx-auto">
@@ -226,26 +221,65 @@
         </div>
 
         @if($reviewItems->isNotEmpty())
-            <div class="grid {{ $reviewCols }} gap-5 mb-10">
-                @foreach($reviewItems as $review)
-                    <blockquote class="bg-surface-container-low border border-outline-variant rounded-2xl p-6 flex flex-col min-w-0">
-                        <div class="flex items-center gap-1 mb-3 text-tertiary-fixed-dim" aria-label="Rating {{ $review['rating'] }} dari 5">
-                            @for($s = 1; $s <= 5; $s++)
-                                <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1;">
-                                    {{ $s <= (int) $review['rating'] ? 'star' : 'star_outline' }}
-                                </span>
-                            @endfor
+            <div
+                id="reviews-carousel"
+                class="relative mb-10 max-w-3xl mx-auto"
+                data-autoplay="6000"
+                aria-roledescription="carousel"
+                aria-label="Ulasan Google Your Financial Doctor"
+            >
+                <div class="overflow-hidden">
+                    <div class="reviews-track flex transition-transform duration-500 ease-out" style="transform: translateX(0);">
+                        @foreach($reviewItems as $idx => $review)
+                            <blockquote
+                                class="reviews-slide shrink-0 w-full px-1 box-border"
+                                data-index="{{ $idx }}"
+                                aria-roledescription="slide"
+                                aria-label="Ulasan {{ $idx + 1 }} dari {{ $reviewItems->count() }}"
+                            >
+                                <div class="bg-surface-container-low border border-outline-variant rounded-2xl p-6 md:p-8 flex flex-col min-w-0 h-full">
+                                    <div class="flex items-center gap-1 mb-3 text-tertiary-fixed-dim" aria-label="Rating {{ $review['rating'] }} dari 5">
+                                        @for($s = 1; $s <= 5; $s++)
+                                            <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1;">
+                                                {{ $s <= (int) $review['rating'] ? 'star' : 'star_outline' }}
+                                            </span>
+                                        @endfor
+                                    </div>
+                                    <p class="text-body-md text-on-surface flex-grow leading-relaxed break-words min-h-[6.5rem]">“{{ $review['text'] }}”</p>
+                                    <footer class="mt-5 pt-4 border-t border-outline-variant flex items-center justify-between gap-3">
+                                        <cite class="not-italic font-semibold text-primary text-[14px]">{{ $review['name'] }}</cite>
+                                        <span class="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
+                                            <span class="material-symbols-outlined text-[14px]">public</span>
+                                            Google
+                                        </span>
+                                    </footer>
+                                </div>
+                            </blockquote>
+                        @endforeach
+                    </div>
+                </div>
+
+                @if($reviewItems->count() > 1)
+                    <div class="flex items-center justify-center gap-3 mt-6">
+                        <button type="button" class="reviews-prev inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant bg-white text-primary hover:bg-surface-container-low transition-colors" aria-label="Ulasan sebelumnya">
+                            <span class="material-symbols-outlined text-[22px]">chevron_left</span>
+                        </button>
+                        <div class="reviews-dots flex items-center gap-2" role="tablist" aria-label="Indikator ulasan">
+                            @foreach($reviewItems as $idx => $review)
+                                <button
+                                    type="button"
+                                    class="reviews-dot h-2.5 rounded-full transition-all {{ $idx === 0 ? 'w-6 bg-primary' : 'w-2.5 bg-outline-variant' }}"
+                                    data-index="{{ $idx }}"
+                                    aria-label="Ke ulasan {{ $idx + 1 }}"
+                                    aria-selected="{{ $idx === 0 ? 'true' : 'false' }}"
+                                ></button>
+                            @endforeach
                         </div>
-                        <p class="text-body-md text-on-surface flex-grow leading-relaxed break-words">“{{ $review['text'] }}”</p>
-                        <footer class="mt-5 pt-4 border-t border-outline-variant flex items-center justify-between gap-3">
-                            <cite class="not-italic font-semibold text-primary text-[14px]">{{ $review['name'] }}</cite>
-                            <span class="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
-                                <span class="material-symbols-outlined text-[14px]">public</span>
-                                Google
-                            </span>
-                        </footer>
-                    </blockquote>
-                @endforeach
+                        <button type="button" class="reviews-next inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant bg-white text-primary hover:bg-surface-container-low transition-colors" aria-label="Ulasan berikutnya">
+                            <span class="material-symbols-outlined text-[22px]">chevron_right</span>
+                        </button>
+                    </div>
+                @endif
             </div>
         @endif
 
@@ -282,3 +316,82 @@
 </section>
 
 @endsection
+
+@push('scripts')
+@if(isset($reviewItems) && $reviewItems->count() > 1)
+<script>
+(function () {
+    var root = document.getElementById('reviews-carousel');
+    if (!root) return;
+
+    var track = root.querySelector('.reviews-track');
+    var slides = Array.prototype.slice.call(root.querySelectorAll('.reviews-slide'));
+    var dots = Array.prototype.slice.call(root.querySelectorAll('.reviews-dot'));
+    var prevBtn = root.querySelector('.reviews-prev');
+    var nextBtn = root.querySelector('.reviews-next');
+    var autoplayMs = parseInt(root.getAttribute('data-autoplay') || '6000', 10);
+    var index = 0;
+    var timer = null;
+    var total = slides.length;
+
+    function goTo(next) {
+        index = ((next % total) + total) % total;
+        track.style.transform = 'translateX(' + (-index * 100) + '%)';
+        dots.forEach(function (dot, i) {
+            var active = i === index;
+            dot.setAttribute('aria-selected', active ? 'true' : 'false');
+            dot.classList.toggle('w-6', active);
+            dot.classList.toggle('bg-primary', active);
+            dot.classList.toggle('w-2.5', !active);
+            dot.classList.toggle('bg-outline-variant', !active);
+        });
+    }
+
+    function next() { goTo(index + 1); }
+    function prev() { goTo(index - 1); }
+
+    function startAutoplay() {
+        stopAutoplay();
+        if (autoplayMs > 0 && total > 1) timer = setInterval(next, autoplayMs);
+    }
+    function stopAutoplay() {
+        if (timer) { clearInterval(timer); timer = null; }
+    }
+
+    if (prevBtn) prevBtn.addEventListener('click', function () { prev(); startAutoplay(); });
+    if (nextBtn) nextBtn.addEventListener('click', function () { next(); startAutoplay(); });
+    dots.forEach(function (dot) {
+        dot.addEventListener('click', function () {
+            goTo(parseInt(dot.getAttribute('data-index') || '0', 10));
+            startAutoplay();
+        });
+    });
+
+    root.addEventListener('mouseenter', stopAutoplay);
+    root.addEventListener('mouseleave', startAutoplay);
+    root.addEventListener('focusin', stopAutoplay);
+    root.addEventListener('focusout', startAutoplay);
+
+    var startX = 0;
+    var deltaX = 0;
+    track.addEventListener('touchstart', function (e) {
+        startX = e.touches[0].clientX;
+        deltaX = 0;
+        stopAutoplay();
+    }, { passive: true });
+    track.addEventListener('touchmove', function (e) {
+        deltaX = e.touches[0].clientX - startX;
+    }, { passive: true });
+    track.addEventListener('touchend', function () {
+        if (Math.abs(deltaX) > 40) {
+            if (deltaX < 0) next(); else prev();
+        }
+        startAutoplay();
+    });
+
+    goTo(0);
+    startAutoplay();
+})();
+</script>
+@endif
+@endpush

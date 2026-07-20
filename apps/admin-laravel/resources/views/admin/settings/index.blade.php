@@ -25,6 +25,10 @@
         </div>
 
         <div class="col-lg-9">
+            @if($activeGroup === 'reviews')
+                @include('admin.settings._google_business_panel')
+            @endif
+
             <div class="card card-outline card-success">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
                     <div>

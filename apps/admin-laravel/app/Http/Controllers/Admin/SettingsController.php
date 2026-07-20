@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Models\GoogleBusinessConnection;
+use App\Models\GoogleBusinessReview;
+use App\Services\GoogleBusinessProfileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -35,10 +38,22 @@ class SettingsController extends Controller
 
         $settings = Setting::where('group', $activeGroup)->orderBy('sort')->get();
 
+        $gbpConfigured = false;
+        $gbpConnection = null;
+        $gbpReviews = collect();
+        if ($activeGroup === 'reviews') {
+            $gbpConfigured = app(GoogleBusinessProfileService::class)->isConfigured();
+            $gbpConnection = GoogleBusinessConnection::current();
+            $gbpReviews = GoogleBusinessReview::query()->orderByDesc('reviewed_at')->orderBy('sort')->get();
+        }
+
         return view('admin.settings.index', [
             'groups'      => self::GROUPS,
             'activeGroup' => $activeGroup,
             'settings'    => $settings,
+            'gbpConfigured' => $gbpConfigured,
+            'gbpConnection' => $gbpConnection,
+            'gbpReviews' => $gbpReviews,
         ]);
     }
 

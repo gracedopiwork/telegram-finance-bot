@@ -68,4 +68,17 @@ return [
 
     'google_site_verification' => env('GOOGLE_SITE_VERIFICATION'),
 
+    /*
+    | Google Business Profile (owner OAuth) — sync semua ulasan ke homepage carousel.
+    | Prasyarat: project disetujui akses GBP API + enable Account Management,
+    | Business Information, dan My Business API. Scope: business.manage
+    | Redirect URI harus cocok dengan OAuth client (web):
+    |   {APP_URL}/admin/google-reviews/callback
+    */
+    'google_business' => [
+        'client_id' => env('GOOGLE_BUSINESS_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_BUSINESS_CLIENT_SECRET'),
+        'redirect_uri' => env('GOOGLE_BUSINESS_REDIRECT_URI', rtrim((string) env('APP_URL', ''), '/').'/admin/google-reviews/callback'),
+    ],
+
 ];

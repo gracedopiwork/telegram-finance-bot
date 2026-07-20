@@ -7,6 +7,8 @@ use App\Models\CpArticle;
 use App\Models\CpDigitalProduct;
 use App\Models\CpFaq;
 use App\Models\CpService;
+use App\Models\GoogleBusinessConnection;
+use App\Models\GoogleBusinessReview;
 use App\Models\Setting;
 use App\Support\ConsultationPricing;
 use Illuminate\Support\Facades\Cache;
@@ -25,11 +27,25 @@ class LandingController extends Controller
 
     public function home()
     {
+        $reviewsSettings = $this->settingsByGroup('reviews');
+        $syncedReviews = GoogleBusinessReview::forHomepage()->get();
+        $connection = GoogleBusinessConnection::current();
+
+        if ($syncedReviews->isNotEmpty()) {
+            if ($connection?->average_rating !== null) {
+                $reviewsSettings['reviews.google_rating'] = (string) $connection->average_rating;
+            }
+            if ($connection?->total_review_count !== null) {
+                $reviewsSettings['reviews.google_count'] = (string) $connection->total_review_count;
+            }
+        }
+
         return view('Companyprofile.home', [
             'active'   => 'home',
             'hero'     => $this->settingsByGroup('hero'),
             'stats'    => $this->settingsByGroup('stats'),
-            'reviews'  => $this->settingsByGroup('reviews'),
+            'reviews'  => $reviewsSettings,
+            'syncedReviews' => $syncedReviews,
             'services' => CpService::active()->orderBy('sort')->take(6)->get(),
         ]);
     }

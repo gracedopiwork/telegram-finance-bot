@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\OrdersController;
 use App\Http\Controllers\Admin\PackagesController;
 use App\Http\Controllers\Admin\ServicesController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\GoogleBusinessReviewsController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\LandingController;
@@ -117,6 +118,15 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     // Settings (key/value)
     Route::get('/settings',  [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+
+    // Google Business Profile reviews (owner OAuth sync)
+    Route::get('/google-reviews/connect', [GoogleBusinessReviewsController::class, 'connect'])->name('google-reviews.connect');
+    Route::get('/google-reviews/callback', [GoogleBusinessReviewsController::class, 'callback'])->name('google-reviews.callback');
+    Route::get('/google-reviews/pick-location', [GoogleBusinessReviewsController::class, 'pickLocationForm'])->name('google-reviews.pick-location');
+    Route::post('/google-reviews/pick-location', [GoogleBusinessReviewsController::class, 'pickLocation'])->name('google-reviews.pick-location.store');
+    Route::post('/google-reviews/sync', [GoogleBusinessReviewsController::class, 'sync'])->name('google-reviews.sync');
+    Route::post('/google-reviews/disconnect', [GoogleBusinessReviewsController::class, 'disconnect'])->name('google-reviews.disconnect');
+    Route::post('/google-reviews/{review}/toggle', [GoogleBusinessReviewsController::class, 'toggle'])->name('google-reviews.toggle');
 
     // CRUD resources
     Route::resource('packages',         PackagesController::class)->except(['show']);

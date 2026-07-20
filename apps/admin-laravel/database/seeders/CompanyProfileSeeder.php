@@ -143,6 +143,15 @@ class CompanyProfileSeeder extends Seeder
             ['key' => 'reviews.r3.name', 'value' => '', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 3 — Nama', 'sort' => 30],
             ['key' => 'reviews.r3.text', 'value' => '', 'type' => 'textarea', 'group' => 'reviews', 'label' => 'Review 3 — Isi', 'sort' => 31],
             ['key' => 'reviews.r3.rating', 'value' => '5', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 3 — Rating (1-5)', 'sort' => 32],
+            ['key' => 'reviews.r4.name', 'value' => '', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 4 — Nama', 'sort' => 40],
+            ['key' => 'reviews.r4.text', 'value' => '', 'type' => 'textarea', 'group' => 'reviews', 'label' => 'Review 4 — Isi', 'sort' => 41],
+            ['key' => 'reviews.r4.rating', 'value' => '5', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 4 — Rating (1-5)', 'sort' => 42],
+            ['key' => 'reviews.r5.name', 'value' => '', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 5 — Nama', 'sort' => 50],
+            ['key' => 'reviews.r5.text', 'value' => '', 'type' => 'textarea', 'group' => 'reviews', 'label' => 'Review 5 — Isi', 'sort' => 51],
+            ['key' => 'reviews.r5.rating', 'value' => '5', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 5 — Rating (1-5)', 'sort' => 52],
+            ['key' => 'reviews.r6.name', 'value' => '', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 6 — Nama', 'sort' => 60],
+            ['key' => 'reviews.r6.text', 'value' => '', 'type' => 'textarea', 'group' => 'reviews', 'label' => 'Review 6 — Isi', 'sort' => 61],
+            ['key' => 'reviews.r6.rating', 'value' => '5', 'type' => 'text', 'group' => 'reviews', 'label' => 'Review 6 — Rating (1-5)', 'sort' => 62],
         ];
 
         foreach ($settings as $s) {
