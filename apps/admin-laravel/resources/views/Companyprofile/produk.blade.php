@@ -62,9 +62,15 @@
                         {{ $featured->tagline }}
                     </p>
                 @endif
-                @php($descriptionText = (string) ($featured->description ?? ''))
+                @php($descriptionText = trim((string) ($featured->description ?? '')))
                 @if($descriptionText !== '')
-                    <p class="text-body-md text-on-surface-variant mb-6 max-w-xl">{{ $descriptionText }}</p>
+                    <div class="text-body-md text-on-surface-variant mb-6 max-w-xl space-y-3">
+                        @foreach(preg_split('/\n\s*\n/', $descriptionText) ?: [] as $paragraph)
+                            @if(trim($paragraph) !== '')
+                                <p>{{ trim($paragraph) }}</p>
+                            @endif
+                        @endforeach
+                    </div>
                 @endif
 
                 @if($featured->price > 0 && $featured->billing_mode !== 'soon' && $featured->period)
@@ -341,7 +347,30 @@
                 </div>
                 <h3 class="font-heading text-[18px] font-bold text-primary mb-2">{{ $p->name }}</h3>
                 @if($p->tagline)
-                    <p class="text-body-md text-on-surface-variant mb-4 flex-grow">{{ $p->tagline }}</p>
+                    <p class="text-body-md font-semibold text-primary mb-3">{{ $p->tagline }}</p>
+                @endif
+                @php($otherDesc = trim((string) ($p->description ?? '')))
+                @if($otherDesc !== '')
+                    <div class="text-body-sm text-on-surface-variant mb-4 flex-grow space-y-2">
+                        @foreach(preg_split('/\n\s*\n/', $otherDesc) ?: [] as $paragraph)
+                            @if(trim($paragraph) !== '')
+                                <p>{{ trim($paragraph) }}</p>
+                            @endif
+                        @endforeach
+                    </div>
+                @elseif($p->tagline)
+                    <div class="mb-4 flex-grow"></div>
+                @endif
+                @if(is_array($p->features) && count($p->features))
+                    <p class="text-[12px] uppercase tracking-wider font-bold text-on-surface-variant mb-2">Yang akan Anda dapatkan</p>
+                    <ul class="space-y-2 mb-4">
+                        @foreach($p->features as $f)
+                            <li class="flex items-start gap-2 text-body-sm text-on-surface">
+                                <span class="material-symbols-outlined text-emerald-600 text-[16px] mt-0.5" style="font-variation-settings:'FILL' 1;">check_circle</span>
+                                <span>{{ $f }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
                 @endif
 
                 @if($p->price > 0 && $p->billing_mode !== 'soon')

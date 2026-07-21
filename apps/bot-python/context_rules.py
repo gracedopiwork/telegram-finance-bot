@@ -469,6 +469,43 @@ _SOCIAL = (
     "wakaf",
 )
 
+_OBLIGATION_SOCIAL = (
+    "sedekah",
+    "zakat",
+    "infaq",
+    "infak",
+    "wakaf",
+    "persembahan",
+    "ibadah",
+)
+
+_BUSINESS_BUILDING = (
+    "konten bisnis",
+    "take konten",
+    "konsumsi meeting",
+    "meeting bisnis",
+    "rapat bisnis",
+    "proyek yfd",
+    "bisnis yfd",
+    "untuk bisnis",
+    "untuk usaha",
+    "modal usaha",
+    "kebutuhan bisnis",
+)
+
+_TIP_PATTERNS = tuple(
+    re.compile(p, re.IGNORECASE)
+    for p in (
+        r"\btips?\b",
+        r"\bmemberikan\s+tips?\b",
+        r"\bkasih\s+tips?\b",
+        r"\bberi\s+tips?\b",
+        r"\buat\s+tips?\b",
+        r"\buang\s+rokok\b",
+        r"\buang\s+terima\s*kasih\b",
+    )
+)
+
 _KESEHATAN = (
     "obat",
     "apotek",
@@ -481,6 +518,15 @@ _KESEHATAN = (
     "cek darah",
     "vitamin",
     "suplemen",
+    "gym",
+    "fitness",
+    "olahraga",
+    "personal training",
+    "personal trainer",
+    "kebugaran",
+    "membership gym",
+    "kelas yoga",
+    "pilates",
 )
 
 _PENDIDIKAN = (
@@ -505,6 +551,15 @@ _KOMUNIKASI = (
     "telkomsel",
     "xl ",
     "axis",
+)
+
+_LAUNDRY = (
+    "laundry",
+    "cuci baju",
+    "cuci kiloan",
+    "setrika kiloan",
+    "dry clean",
+    "dryclean",
 )
 
 _SEWA_KELUAR = (
@@ -631,6 +686,32 @@ def has_essential_living_intent(text: str) -> bool:
 
 def is_food_delivery(text: str) -> bool:
     return _contains(text, _FOOD_DELIVERY)
+
+
+def is_social_giving(text: str) -> bool:
+    """Donasi, sedekah, tip driver/ojek, amplop — bukan makan/transport."""
+    lower = text.lower()
+    if _contains(lower, _SOCIAL):
+        return True
+    return _match_any(lower, _TIP_PATTERNS)
+
+
+def is_discretionary_social_giving(text: str) -> bool:
+    """Hadiah/tip/donasi spontan — Wants & cenderung impulsif (bukan zakat/sedekah wajib)."""
+    lower = text.lower()
+    if _contains(lower, _OBLIGATION_SOCIAL):
+        return False
+    if _contains(lower, ("hadiah",)):
+        return True
+    if _match_any(lower, _TIP_PATTERNS):
+        return True
+    if "donasi" in lower:
+        return True
+    return False
+
+
+def is_business_building_expense(text: str) -> bool:
+    return _contains(text.lower(), _BUSINESS_BUILDING)
 
 
 def is_transport_ride(text: str) -> bool:
@@ -830,6 +911,12 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     # Air minum/galon sebelum jajan — "beli aqua" sering salah jadi Jajan.
     if is_drinking_water_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Makan", "sifat": "Need"}
+    # Tip/donasi ke driver (grab/gojek) — Social, bukan Transport/Makan.
+    if is_social_giving(lower):
+        sifat = "Wants" if is_discretionary_social_giving(lower) else "Need"
+        return {"jenis": "Pengeluaran", "kategori": "Social", "sifat": sifat}
+    if is_business_building_expense(lower):
+        return {"jenis": "Pengeluaran", "kategori": "Makan", "sifat": "Need"}
     if _contains(lower, _SERVIS_KENDARAAN) or is_transport_ride(lower):
         return {"jenis": "Pengeluaran", "kategori": "Transport", "sifat": "Need"}
     if _contains(lower, _KESEHATAN):
@@ -838,6 +925,8 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Pendidikan", "sifat": "Need"}
     if _contains(lower, _KOMUNIKASI):
         return {"jenis": "Pengeluaran", "kategori": "Komunikasi", "sifat": "Need"}
+    if _contains(lower, _LAUNDRY):
+        return {"jenis": "Pengeluaran", "kategori": "Laundry", "sifat": "Need"}
     if _contains(lower, _SEWA_KELUAR):
         return {"jenis": "Pengeluaran", "kategori": "Sewa/Tempat Tinggal", "sifat": "Need"}
     if _contains(lower, _CICILAN):
@@ -846,7 +935,6 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Pajak", "sifat": "Need"}
     if _contains(lower, _SOCIAL):
         return {"jenis": "Pengeluaran", "kategori": "Social", "sifat": "Need"}
-    # Intent "kebutuhan hidup" — Essential Living (bukan Flexible/Wants).
     if has_essential_living_intent(lower):
         if _contains(lower, _KOPI_JAJAN) and not is_drinking_water_expense(lower):
             return {"jenis": "Pengeluaran", "kategori": "Makan", "sifat": "Need"}
@@ -912,6 +1000,29 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
 
     # AI sudah lengkap → jangan timpa dengan rule income/freelance generik.
     if ai_jenis and ai_kat:
+        # Donasi/tip/hadiah spontan sering salah jadi Makan/Transport/Need.
+        if ai_jenis == "Pengeluaran" and is_social_giving(combined):
+            parsed["kategori"] = "Social"
+            parsed["sifat"] = "Wants" if is_discretionary_social_giving(combined) else "Need"
+            parsed.pop("sub_kategori", None)
+            return parsed
+
+        # Gym/olahraga/personal training → Kesehatan.
+        if ai_jenis == "Pengeluaran" and _contains(combined.lower(), _KESEHATAN):
+            if ai_kat_l in {"lainnya", "lain-lain", "lain lain", "subscription", "belanja", "jajan"}:
+                parsed["kategori"] = "Kesehatan"
+                parsed["sifat"] = "Need"
+                parsed.pop("sub_kategori", None)
+                return parsed
+
+        # Konsumsi meeting bisnis/konten → Makan (bucket Future Building di Laravel).
+        if ai_jenis == "Pengeluaran" and is_business_building_expense(combined):
+            if ai_kat_l in {"jajan", "makan", "lainnya", "lain-lain", "lain lain", "belanja"}:
+                parsed["kategori"] = "Makan"
+                parsed["sifat"] = "Need"
+                parsed.pop("sub_kategori", None)
+                return parsed
+
         # Koreksi dump kategori saja (bukan jenis).
         if ai_kat_l == "subscription" and is_work_software_expense(combined):
             parsed["sifat"] = "Need"
@@ -1037,4 +1148,11 @@ Contoh klasifikasi WAJIB diikuti:
 - "beli air minum 9k" → Pengeluaran / Makan / Need
 - "beli tumbler 150rb" → Pengeluaran / Peralatan / Wants (BUKAN Jajan)
 - "beli baju 200rb" → Pengeluaran / Fashion / Wants
+- "donasi ke bapak grab 5k" → Pengeluaran / Social / Wants (BUKAN Makan/Transport)
+- "memberikan tips ke driver grab 5rb" → Pengeluaran / Social / Wants (BUKAN Transport)
+- "kasih tip gojek 10rb" → Pengeluaran / Social / Wants
+- "hadiah atas jasa orang 5k" → Pengeluaran / Social / Wants (impulsif)
+- "bayar olahraga gym bulanan + personal training 455rb" → Pengeluaran / Kesehatan / Need
+- "konsumsi meeting untuk take konten bisnis YFD 127rb" → Pengeluaran / Makan / Need → Future Building
+- "laundry/cuci baju 52.500" → Pengeluaran / Laundry / Need
 """

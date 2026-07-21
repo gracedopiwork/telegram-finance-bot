@@ -279,6 +279,66 @@ class ContextRulesTests(unittest.TestCase):
         self.assertEqual(out["kategori"], "Jajan")
         self.assertEqual(out["sifat"], "Wants")
 
+    def test_donasi_grab_driver_social(self) -> None:
+        self.assertClass("donasi ke bapak grab 5k", "Pengeluaran", "Social")
+
+    def test_tips_grab_driver_social(self) -> None:
+        self.assertClass("memberikan tips ke bapak grab 5k", "Pengeluaran", "Social")
+        hit = classify_from_text("memberikan tips ke bapak grab 5k")
+        assert hit is not None
+        self.assertEqual(hit["sifat"], "Wants")
+
+    def test_apply_rules_donasi_ai_makan_corrected(self) -> None:
+        parsed = {
+            "keterangan": "Donasi ke bapak grab 5k",
+            "jenis": "Pengeluaran",
+            "kategori": "Makan",
+            "sifat": "Need",
+        }
+        out = apply_context_rules(parsed, "donasi ke bapak grab 5k happy")
+        self.assertEqual(out["kategori"], "Social")
+        self.assertEqual(out["sifat"], "Wants")
+
+    def test_laundry_is_need(self) -> None:
+        self.assertClass("laundry/cuci baju 52.500", "Pengeluaran", "Laundry")
+        hit = classify_from_text("laundry/cuci baju 52.500")
+        assert hit is not None
+        self.assertEqual(hit["sifat"], "Need")
+
+    def test_hadiah_jasa_social_wants(self) -> None:
+        self.assertClass("hadiah atas jasa orang 5k", "Pengeluaran", "Social")
+        hit = classify_from_text("hadiah atas jasa orang 5k")
+        assert hit is not None
+        self.assertEqual(hit["sifat"], "Wants")
+
+    def test_gym_personal_training_kesehatan(self) -> None:
+        self.assertClass(
+            "Bayar olahraga gym bulanan + Personal training Rp 455.583",
+            "Pengeluaran",
+            "Kesehatan",
+        )
+
+    def test_konsumsi_meeting_bisnis_makan(self) -> None:
+        self.assertClass(
+            "Konsumsi meeting untuk take konten bisnis YFD Rp 127.050",
+            "Pengeluaran",
+            "Makan",
+        )
+
+    def test_apply_rules_meeting_bisnis_jajan_to_makan(self) -> None:
+        parsed = {
+            "keterangan": "Konsumsi meeting untuk take konten bisnis YFD",
+            "jenis": "Pengeluaran",
+            "kategori": "Jajan",
+            "sifat": "Wants",
+        }
+        out = apply_context_rules(
+            parsed,
+            "Konsumsi meeting untuk take konten bisnis YFD Rp 127.050 neutral",
+        )
+        self.assertEqual(out["kategori"], "Makan")
+        self.assertEqual(out["sifat"], "Need")
+
 
 if __name__ == "__main__":
     unittest.main()

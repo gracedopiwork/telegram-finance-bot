@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from context_rules import is_discretionary_social_giving
+
 VALID_IMPULSIF = frozenset({"Yes", "No"})
 
 EXPLICIT_IMPULSIVE_KEYWORDS = (
@@ -197,6 +199,9 @@ def resolve_impulsif(
 
     if is_planned_social(combined):
         return "No"
+
+    if is_discretionary_social_giving(combined):
+        return "Yes"
 
     if is_essential_obligation(parsed, combined):
         return "No"

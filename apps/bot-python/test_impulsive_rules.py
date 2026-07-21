@@ -78,6 +78,17 @@ class ImpulsiveRulesTests(unittest.TestCase):
         }
         self.assertEqual(resolve_impulsif(parsed, "beli kopi 75rb karena capek"), "Yes")
 
+    def test_hadiah_spontan_impulsif(self) -> None:
+        parsed = {
+            "keterangan": "Hadiah atas jasa orang 5k",
+            "jenis": "Pengeluaran",
+            "kategori": "Social",
+            "sifat": "Wants",
+            "mood": "Happy",
+            "nominal": 5_000,
+        }
+        self.assertEqual(resolve_impulsif(parsed, "hadiah atas jasa orang 5k happy"), "Yes")
+
 
 if __name__ == "__main__":
     unittest.main()

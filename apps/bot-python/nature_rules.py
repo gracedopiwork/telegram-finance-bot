@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from context_rules import is_discretionary_social_giving
+
 VALID_SIFAT = frozenset({"Need", "Wants"})
 
 PRODUCTIVITY_NEED_KEYWORDS = (
@@ -91,6 +93,10 @@ def refine_sifat_from_context(parsed: dict[str, Any], source_text: str = "") -> 
         return parsed
 
     combined = _combined_text(parsed, source_text)
+
+    if is_discretionary_social_giving(combined):
+        parsed["sifat"] = "Wants"
+        return parsed
 
     if has_discretionary_framing(combined) and not has_productivity_framing(combined):
         parsed["sifat"] = "Wants"
