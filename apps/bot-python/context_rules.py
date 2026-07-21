@@ -458,7 +458,6 @@ _SOCIAL = (
     "amplop",
     "ultah",
     "ulang tahun",
-    "konser",
     "sedekah",
     "persembahan",
     "ibadah",
@@ -467,6 +466,20 @@ _SOCIAL = (
     "infaq",
     "infak",
     "wakaf",
+)
+
+_HIBURAN = (
+    "konser",
+    "tiket konser",
+    "bioskop",
+    "nonton",
+    "movie",
+    "netflix",
+    "spotify",
+    "gaming",
+    "game",
+    "playstation",
+    "hiburan",
 )
 
 _OBLIGATION_SOCIAL = (
@@ -898,6 +911,8 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Asuransi", "sifat": "Need"}
     if _contains(lower, _SKINCARE):
         return {"jenis": "Pengeluaran", "kategori": "Skincare", "sifat": "Wants"}
+    if _contains(lower, _HIBURAN):
+        return {"jenis": "Pengeluaran", "kategori": "Hiburan", "sifat": "Wants"}
     if _contains(lower, _SUBSCRIPTION):
         return {
             "jenis": "Pengeluaran",
@@ -1000,6 +1015,12 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
 
     # AI sudah lengkap → jangan timpa dengan rule income/freelance generik.
     if ai_jenis and ai_kat:
+        # Jaga supaya kategori konsumsi/jajan tidak masuk jenis Pemasukan.
+        if ai_jenis == "Pemasukan" and ai_kat_l in {"jajan", "makan", "hiburan", "social", "transport", "transportasi"}:
+            if detect_cashflow_direction(combined) != "Pemasukan":
+                parsed["jenis"] = "Pengeluaran"
+                ai_jenis = "Pengeluaran"
+
         # Donasi/tip/hadiah spontan sering salah jadi Makan/Transport/Need.
         if ai_jenis == "Pengeluaran" and is_social_giving(combined):
             parsed["kategori"] = "Social"
@@ -1089,6 +1110,18 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
                 parsed["sifat"] = "Need"
             parsed.pop("sub_kategori", None)
             return parsed
+
+        # AI sering memberi "Jajan" untuk makan utama.
+        if ai_kat_l == "jajan":
+            if (
+                _contains(combined.lower(), _MAKAN)
+                and not _contains(combined.lower(), _KOPI_JAJAN)
+                and not is_food_delivery(combined)
+            ):
+                parsed["kategori"] = "Makan"
+                parsed["sifat"] = "Need"
+                parsed.pop("sub_kategori", None)
+                return parsed
 
         if ai_kat_l == "jajan" and ai_jenis == "Pengeluaran":
             parsed["sifat"] = "Wants"

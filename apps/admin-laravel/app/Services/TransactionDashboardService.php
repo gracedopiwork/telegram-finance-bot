@@ -234,7 +234,7 @@ class TransactionDashboardService
         }
 
         return $expenses
-            ->groupBy('category')
+            ->groupBy(fn (BotTransaction $row) => $this->normalizeDashboardCategory((string) $row->category))
             ->map(function (Collection $items, string $category) use ($total) {
                 $amount = (int) $items->sum('amount');
 
@@ -533,7 +533,7 @@ class TransactionDashboardService
         }
 
         $bySource = $incomeRows
-            ->groupBy('category')
+            ->groupBy(fn (BotTransaction $row) => $this->normalizeIncomeSourceLabel((string) $row->category))
             ->map(function (Collection $items, string $category) use ($totalIncome) {
                 $amount = (int) $items->sum('amount');
 
@@ -559,6 +559,34 @@ class TransactionDashboardService
             'by_source' => $bySource,
             'stability' => $stability,
         ];
+    }
+
+    private function normalizeDashboardCategory(string $category): string
+    {
+        $raw = trim($category);
+        if ($raw === '' || $raw === '-') {
+            return 'Lainnya';
+        }
+
+        $lower = mb_strtolower($raw);
+        return match ($lower) {
+            'transportasi', 'transport' => 'Transport',
+            'jajan', 'makanan', 'makanan & minuman', 'makanan dan minuman', 'minuman' => 'Makan',
+            default => $raw,
+        };
+    }
+
+    private function normalizeIncomeSourceLabel(string $category): string
+    {
+        $normalized = $this->normalizeDashboardCategory($category);
+        $expenseLike = [
+            'Makan', 'Transport', 'Social', 'Hiburan', 'Skincare', 'Laundry', 'Kesehatan',
+            'Komunikasi', 'Peralatan', 'Subscription', 'Pendidikan', 'Cicilan', 'Pajak',
+        ];
+
+        return in_array($normalized, $expenseLike, true)
+            ? 'Lainnya Pemasukan'
+            : $normalized;
     }
 
     /**

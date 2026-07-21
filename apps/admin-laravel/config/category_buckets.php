@@ -50,7 +50,7 @@ return [
         'makan', 'transport', 'sewa/tempat tinggal', 'listrik', 'air', 'komunikasi',
         'kesehatan', 'pajak', 'pendidikan', 'cicilan',
     ],
-    'bot_fallback_category' => 'Jajan',
+    'bot_fallback_category' => 'Makan',
     'bot_fallback_sub' => 'Pengeluaran lain-lain',
     'source_of_truth_note' => [
         'Taxonomy terbuka: AI boleh membuat label kategori baru sesuai barang/jasa (contoh: Peralatan, Fashion, Hobi).',

@@ -156,6 +156,9 @@ class ContextRulesTests(unittest.TestCase):
     def test_makan(self) -> None:
         self.assertClass("makan malam 65700", "Pengeluaran", "Makan")
 
+    def test_konser_masuk_hiburan_bukan_social(self) -> None:
+        self.assertClass("beli tiket konser 450rb", "Pengeluaran", "Hiburan")
+
     def test_transport(self) -> None:
         self.assertClass("grab ke kantor 28rb", "Pengeluaran", "Transport")
 
@@ -338,6 +341,16 @@ class ContextRulesTests(unittest.TestCase):
         )
         self.assertEqual(out["kategori"], "Makan")
         self.assertEqual(out["sifat"], "Need")
+
+    def test_ai_income_jajan_corrected_to_expense(self) -> None:
+        parsed = {
+            "keterangan": "makan malam 20k",
+            "jenis": "Pemasukan",
+            "kategori": "Jajan",
+            "sifat": "Wants",
+        }
+        out = apply_context_rules(parsed, "makan malam 20k")
+        self.assertEqual(out["jenis"], "Pengeluaran")
 
 
 if __name__ == "__main__":

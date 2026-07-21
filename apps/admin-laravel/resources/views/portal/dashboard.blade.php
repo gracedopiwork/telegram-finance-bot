@@ -6,6 +6,21 @@
 @section('content')
 @php
     $fmt = fn (int $n) => 'Rp ' . number_format($n, 0, ',', '.');
+    $cleanText = function (?string $text): string {
+        $v = trim((string) $text);
+        if ($v === '') {
+            return '';
+        }
+        $v = preg_replace('/(?<=\d)\s*[mM]\b/u', ' jt', $v) ?? $v;
+        $v = str_ireplace(['financial pulse', 'pulse score', 'kpi pulse'], 'ringkasan keuangan', $v);
+        return $v;
+    };
+    $bucketGuides = [
+        'Essential Living' => 'maksimal 50%',
+        'Future Building' => 'minimum 30%',
+        'Protection' => 'minimum 10%',
+        'Flexible + Social' => 'maksimal 10%',
+    ];
     $note = $summary['doctors_note'];
     $noteRecommendations = is_array($note) ? ($note['findings'] ?? []) : [];
     $notePriority = is_array($note) ? trim((string) ($note['priority'] ?? '')) : '';
@@ -44,11 +59,11 @@
             @if($noteRecommendations !== [])
                 <ul class="space-y-2 text-sm text-slate-700 leading-relaxed mb-3">
                     @foreach($noteRecommendations as $recommendation)
-                        <li class="flex gap-2"><span class="text-gold-500 font-bold">•</span><span>{{ $recommendation }}</span></li>
+                        <li class="flex gap-2"><span class="text-gold-500 font-bold">•</span><span>{{ $cleanText((string) $recommendation) }}</span></li>
                     @endforeach
                 </ul>
             @elseif($notePriority !== '')
-                <p class="text-sm text-slate-700 leading-relaxed mb-3">{{ $notePriority }}</p>
+                <p class="text-sm text-slate-700 leading-relaxed mb-3">{{ $cleanText($notePriority) }}</p>
             @endif
             @if($doctorsGeneratedAt)
                 <p class="text-xs text-slate-500">Terakhir dibuat: {{ $doctorsGeneratedAt->format('d/m/Y H:i') }}</p>
@@ -68,12 +83,12 @@
     <div class="bg-white rounded-xl border border-slate-200 p-5">
         <div class="text-sm font-semibold text-navy-800 mb-3">Clinical Summary / Akumulasi minggu ke-{{ $clinicalWeek }}</div>
         @if(!empty($summary['clinical_summary']['headline']))
-            <p class="text-base font-semibold text-navy-800 mb-2">{{ $summary['clinical_summary']['headline'] }}</p>
+            <p class="text-base font-semibold text-navy-800 mb-2">{{ $cleanText((string) $summary['clinical_summary']['headline']) }}</p>
         @endif
         @if(!empty($summary['clinical_summary']['findings']))
             <ul class="space-y-1 text-sm text-slate-700">
                 @foreach($summary['clinical_summary']['findings'] as $finding)
-                    <li class="flex gap-2"><span>–</span><span>{{ $finding }}</span></li>
+                    <li class="flex gap-2"><span>–</span><span>{{ $cleanText((string) $finding) }}</span></li>
                 @endforeach
             </ul>
         @else
@@ -101,7 +116,12 @@
                     <tr class="border-b border-slate-100">
                         <td class="py-2 text-navy-800">{{ $bucket['bucket'] }}</td>
                         <td class="py-2 text-right">{{ $bucket['share'] }}%</td>
-                        <td class="py-2 text-right text-slate-600">{{ $bucket['ideal'] }}%</td>
+                        <td class="py-2 text-right text-slate-600">
+                            {{ $bucket['ideal'] }}%
+                            @if(isset($bucketGuides[$bucket['bucket']]))
+                                <span class="block text-[11px] text-slate-400">{{ $bucketGuides[$bucket['bucket']] }}</span>
+                            @endif
+                        </td>
                     </tr>
                 @endforeach
                 </tbody>
