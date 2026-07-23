@@ -96,7 +96,6 @@ PENDING_NAME_USERS: set[int] = set()
 PENDING_MOOD_WAIT: Dict[int, Dict[str, Any]] = {}
 PENDING_CONFIRMATIONS: Dict[int, Dict[str, Any]] = {}
 PENDING_CLARIFICATIONS: Dict[int, Dict[str, Any]] = {}
-PENDING_EDITS: Dict[int, Dict[str, Any]] = {}
 
 MOOD_PROMPT_TEXT = (
     "Pilih mood kamu saat transaksi ini:\n"
@@ -321,7 +320,7 @@ def build_confirmation_keyboard() -> InlineKeyboardMarkup:
     buttons = [
         [
             InlineKeyboardButton("✅ Benar, simpan", callback_data="confirm:yes"),
-            InlineKeyboardButton("✏️ Edit jawaban", callback_data="confirm:edit"),
+            InlineKeyboardButton("✏️ Salah, ulangi", callback_data="confirm:no"),
         ]
     ]
     return InlineKeyboardMarkup(buttons)
@@ -712,71 +711,6 @@ def format_preview_with_mode(
     if basic_mode:
         preview += "\n\n_(mode biasa — kuota AI habis)_"
     return preview
-
-
-def _edit_guidance_text() -> str:
-    return (
-        "Silakan edit jawaban transaksi.\n\n"
-        "Format (boleh satu atau beberapa baris):\n"
-        "keterangan: ...\n"
-        "nominal: 127050\n"
-        "jenis: Pengeluaran | Pemasukan | Saving/Investment\n"
-        "kategori: Makan | Social | Kesehatan | Laundry | dll\n"
-        "sifat: Need | Wants\n"
-        "mood: Happy | Neutral | Sad | Stressed | Angry | Tired\n"
-        "impulsif: Yes | No\n\n"
-        "Contoh:\n"
-        "kategori: Makan\n"
-        "keterangan: Konsumsi meeting untuk konten bisnis YFD\n"
-        "sifat: Need\n\n"
-        "Bucket yang dipakai sistem: Essential Living, Future Building, Protection, Flexible + Social.\n"
-        "Ketik `batal` jika tidak jadi edit."
-    )
-
-
-def apply_manual_edits(parsed: Dict[str, Any], edit_text: str) -> Dict[str, Any]:
-    updates: Dict[str, Any] = {}
-    for raw_line in edit_text.splitlines():
-        line = raw_line.strip()
-        if not line or ":" not in line:
-            continue
-        key, value = line.split(":", 1)
-        field = key.strip().lower()
-        val = value.strip()
-        if not val:
-            continue
-
-        if field in {"keterangan", "desc", "deskripsi"}:
-            updates["keterangan"] = val
-        elif field in {"nominal", "amount"}:
-            updates["nominal"] = int(reconcile_nominal(0, val))
-        elif field in {"jenis", "type"}:
-            if val not in VALID_JENIS:
-                raise ValueError("Jenis harus: Pemasukan / Pengeluaran / Saving/Investment.")
-            updates["jenis"] = val
-        elif field in {"kategori", "category"}:
-            updates["kategori"] = val
-        elif field in {"sifat", "nature"}:
-            norm = "Wants" if val.lower() in {"want", "wants"} else "Need" if val.lower() == "need" else None
-            if norm is None:
-                raise ValueError("Sifat harus: Need atau Wants.")
-            updates["sifat"] = norm
-        elif field in {"mood"}:
-            mood = normalize_mood(val)
-            if not mood:
-                raise ValueError("Mood harus salah satu: Happy, Neutral, Sad, Stressed, Angry, Tired.")
-            updates["mood"] = mood
-        elif field in {"impulsif", "impulsive"}:
-            norm = "Yes" if val.lower() in {"yes", "y", "ya"} else "No" if val.lower() in {"no", "n", "tidak"} else None
-            if norm is None:
-                raise ValueError("Impulsif harus: Yes atau No.")
-            updates["impulsif"] = norm
-
-    if not updates:
-        raise ValueError("Format edit tidak terbaca. Contoh: `kategori: Social`")
-
-    parsed.update(updates)
-    return parsed
 
 
 async def notify_quota_exhausted_if_needed(message, user_id: int) -> None:
@@ -1195,28 +1129,6 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
         return
 
-    if user_id in PENDING_EDITS:
-        pending_edit = PENDING_EDITS.pop(user_id)
-        if text.lower() in {"batal", "cancel", "batalkan"}:
-            await update.message.reply_text("Edit dibatalkan. Transaksi tidak disimpan.")
-            return
-        try:
-            parsed = apply_manual_edits(pending_edit["parsed"], text)
-            source_text = pending_edit.get("source_text", "")
-            finalize_parsed_transaction(parsed, source_text, trust_ai_impulsif=not pending_edit.get("basic_mode", False))
-            attach_prescription_bucket(parsed)
-            await update.message.reply_text("Perubahan diterapkan. Menyimpan transaksi...")
-            await save_transaction(
-                update.message,
-                parsed,
-                pending_edit["greeting_name"],
-                telegram_user_id=user_id,
-            )
-        except ValueError as exc:
-            PENDING_EDITS[user_id] = pending_edit
-            await update.message.reply_text(f"{exc}\n\n{_edit_guidance_text()}", parse_mode="Markdown")
-        return
-
     if user_id in PENDING_CLARIFICATIONS:
         pending = PENDING_CLARIFICATIONS.pop(user_id)
         if text.lower() in {"batal", "cancel", "batalkan"}:
@@ -1367,22 +1279,19 @@ async def confirm_callback_handler(update: Update, context: ContextTypes.DEFAULT
         )
         return
 
-    if action == "edit":
-        edit_payload = PENDING_CONFIRMATIONS.pop(user_id, None)
-        if not edit_payload:
-            await query.message.reply_text("Tidak ada transaksi yang bisa diedit.")
-            return
-        PENDING_EDITS[user_id] = {
-            "parsed": edit_payload["parsed"],
-            "greeting_name": edit_payload["greeting_name"],
-            "basic_mode": edit_payload.get("basic_mode", False),
-            "source_text": str(edit_payload["parsed"].get("keterangan", "")),
-        }
+    if action == "no":
+        PENDING_CONFIRMATIONS.pop(user_id, None)
         try:
-            await query.edit_message_text("Mode edit aktif. Kirim perubahan jawaban.")
+            await query.edit_message_text(
+                "Oke, transaksi dibatalkan.\n"
+                "Kirim ulang catatan dengan detail yang lebih jelas."
+            )
         except Exception:
-            pass
-        await query.message.reply_text(_edit_guidance_text(), parse_mode="Markdown")
+            await query.message.reply_text(
+                "Oke, transaksi dibatalkan.\n"
+                "Kirim ulang catatan dengan detail yang lebih jelas."
+            )
+        return
 
 
 async def web_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

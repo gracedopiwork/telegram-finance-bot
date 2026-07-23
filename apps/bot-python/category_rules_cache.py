@@ -17,70 +17,52 @@ _cache: dict[str, Any] | None = None
 _cache_loaded_at: float = 0.0
 _warned_fetch_fail = False
 
-# Fallback statis jika API belum tersedia (sama seperti taxonomy bot lama).
+# Fallback statis jika API belum tersedia — YFD AI Taxonomy v1.0 closed list.
 _STATIC_FALLBACK: dict[str, Any] = {
     "version": "static",
     "source": "static",
     "categories": [
-        "Makan",
-        "Transport",
-        "Listrik",
-        "Air",
-        "Jajan",
-        "Social",
+        "Makanan & Minuman",
+        "Tempat Tinggal",
+        "Transportasi",
+        "Komunikasi",
+        "Kesehatan & Kebersihan Diri",
+        "Pendidikan",
+        "Investasi & Tabungan",
+        "Proteksi",
+        "Lifestyle & Hiburan",
+        "Traveling",
+        "Sosial & Keluarga",
+        "Bisnis & Karir",
+        "Hadiah",
+        "Cicilan & Hutang",
+        "Lain-lain",
         "Gaji",
-        "Elektronik",
-        "Peralatan",
+        "Bonus",
+        "Freelance",
+        "Affiliate",
+        "Dividen",
+        "Bunga Investasi",
+        "Cashback",
+        "Refund",
+        "Penjualan",
+        "Sewa Masuk",
+        "Transfer Masuk",
     ],
-    "sub_categories": [
-        "Listrik",
-        "Pakaian",
-        "Servis Kendaraan",
-        "Nonton Konser",
-        "Pengeluaran lain-lain",
-        "Hadiah / Amplop sosial",
-        "Popok",
-        "Jajan / Makan diluar",
-        "Angkutan Umum",
-        "Skincare",
-        "Mainan Anak",
-        "Ulang Tahun keluarga",
-        "Vitamin",
-        "Alat Kesehatan",
-    ],
-    "category_sub_map": {
-        "Makan": ["Jajan / Makan diluar"],
-        "Jajan": [
-            "Jajan / Makan diluar",
-            "Skincare",
-            "Pakaian",
-            "Popok",
-            "Mainan Anak",
-            "Vitamin",
-            "Alat Kesehatan",
-            "Pengeluaran lain-lain",
-        ],
-        "Transport": ["Angkutan Umum", "Servis Kendaraan"],
-        "Listrik": ["Listrik"],
-        "Air": ["Pengeluaran lain-lain"],
-        "Social": [
-            "Hadiah / Amplop sosial",
-            "Nonton Konser",
-            "Ulang Tahun keluarga",
-        ],
-        "Gaji": ["Pengeluaran lain-lain"],
-    },
+    "sub_categories": [],
+    "category_sub_map": {},
     "rules": [],
-    "fallback_category": "Jajan",
-    "fallback_sub": "Pengeluaran lain-lain",
+    "fallback_category": "Lain-lain",
+    "fallback_sub": "-",
     "natures": ["Need", "Wants"],
     "policy_notes": [
-        "Taxonomy terbuka: AI boleh membuat kategori baru sesuai barang/jasa (Peralatan, Fashion, Hobi, dll).",
-        "Daftar kategori lama hanya referensi — jangan memaksa ke Jajan jika tidak cocok.",
-        "Kategori baru otomatis masuk rule admin beserta keyword dari catatan transaksi.",
-        "Need vs Wants: pertimbangkan niat fungsional user, bukan sekadar merek premium.",
+        "Taxonomy tertutup (YFD AI Taxonomy v1.0): AI HANYA memilih dari 15 kategori resmi (+ kategori pemasukan).",
+        "AI tidak boleh membuat kategori baru. Jika ragu → Lain-lain.",
+        "Layer 1 = Kategori (closed list). Layer 2 = Bucket (otomatis dari mapping sistem).",
+        "Gym/olahraga berbayar → Lifestyle & Hiburan / Flexible + Social / Wants.",
     ],
-    "strict_categories_only": False,
+    "strict_categories_only": True,
+    "aliases": {},
 }
 
 
@@ -160,11 +142,11 @@ def kategori_sub_map() -> dict[str, tuple[str, ...]]:
 
 
 def fallback_kategori() -> str:
-    return str(get_rules().get("fallback_category") or "Jajan")
+    return str(get_rules().get("fallback_category") or "Lain-lain")
 
 
 def fallback_sub() -> str:
-    return str(get_rules().get("fallback_sub") or "Pengeluaran lain-lain")
+    return str(get_rules().get("fallback_sub") or "-")
 
 
 def apply_admin_nature(parsed: dict[str, Any]) -> dict[str, Any]:
@@ -199,13 +181,10 @@ def apply_admin_nature(parsed: dict[str, Any]) -> dict[str, Any]:
         if category_nature is None and not keywords:
             category_nature = str(nature)
         elif category_nature is None and not hit_keyword:
-            # Cadangan: mapping kategori tanpa konteks keyword spesifik.
             category_nature = str(nature)
 
     matched = keyword_nature or category_nature or wildcard_nature
     if matched:
-        # Jangan timpa sifat yang sudah tepat dari context rules
-        # kecuali ada keyword admin yang secara eksplisit cocok.
         existing = str(parsed.get("sifat") or "").strip()
         if keyword_nature or existing not in {"Need", "Wants"}:
             parsed["sifat"] = matched

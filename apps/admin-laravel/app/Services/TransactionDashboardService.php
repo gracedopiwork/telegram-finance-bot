@@ -570,8 +570,14 @@ class TransactionDashboardService
 
         $lower = mb_strtolower($raw);
         return match ($lower) {
-            'transportasi', 'transport' => 'Transport',
-            'jajan', 'makanan', 'makanan & minuman', 'makanan dan minuman', 'minuman' => 'Makan',
+            'transportasi', 'transport' => 'Transportasi',
+            'jajan', 'makan', 'makanan', 'makanan & minuman', 'makanan dan minuman', 'minuman' => 'Makanan & Minuman',
+            'social', 'sosial', 'sosial & keluarga' => 'Sosial & Keluarga',
+            'hiburan', 'lifestyle', 'lifestyle & hiburan', 'elektronik', 'subscription', 'skincare' => 'Lifestyle & Hiburan',
+            'asuransi', 'proteksi' => 'Proteksi',
+            'listrik', 'air', 'sewa/tempat tinggal', 'laundry', 'tempat tinggal' => 'Tempat Tinggal',
+            'kesehatan', 'kesehatan & kebersihan diri' => 'Kesehatan & Kebersihan Diri',
+            'cicilan', 'cicilan & hutang' => 'Cicilan & Hutang',
             default => $raw,
         };
     }
@@ -580,8 +586,9 @@ class TransactionDashboardService
     {
         $normalized = $this->normalizeDashboardCategory($category);
         $expenseLike = [
-            'Makan', 'Transport', 'Social', 'Hiburan', 'Skincare', 'Laundry', 'Kesehatan',
-            'Komunikasi', 'Peralatan', 'Subscription', 'Pendidikan', 'Cicilan', 'Pajak',
+            'Makanan & Minuman', 'Transportasi', 'Sosial & Keluarga', 'Lifestyle & Hiburan',
+            'Tempat Tinggal', 'Kesehatan & Kebersihan Diri', 'Komunikasi', 'Pendidikan',
+            'Proteksi', 'Traveling', 'Bisnis & Karir', 'Hadiah', 'Cicilan & Hutang', 'Lain-lain',
         ];
 
         return in_array($normalized, $expenseLike, true)

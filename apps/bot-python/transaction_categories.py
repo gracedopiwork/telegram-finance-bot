@@ -1,4 +1,4 @@
-"""Daftar kategori resmi YFD — sub-kategori tidak dipakai lagi."""
+"""Daftar kategori resmi YFD — closed list (YFD AI Taxonomy v1.0)."""
 
 from __future__ import annotations
 
@@ -38,28 +38,98 @@ __all__ = [
     "normalize_saving_fields",
 ]
 
+# Closed list selaras docs/YFD_AI_Taxonomy.pdf
+OFFICIAL_EXPENSE_CATEGORIES = (
+    "Makanan & Minuman",
+    "Tempat Tinggal",
+    "Transportasi",
+    "Komunikasi",
+    "Kesehatan & Kebersihan Diri",
+    "Pendidikan",
+    "Investasi & Tabungan",
+    "Proteksi",
+    "Lifestyle & Hiburan",
+    "Traveling",
+    "Sosial & Keluarga",
+    "Bisnis & Karir",
+    "Hadiah",
+    "Cicilan & Hutang",
+    "Lain-lain",
+)
+
+OFFICIAL_INCOME_CATEGORIES = (
+    "Gaji",
+    "Bonus",
+    "Freelance",
+    "Affiliate",
+    "Dividen",
+    "Bunga Investasi",
+    "Cashback",
+    "Refund",
+    "Penjualan",
+    "Sewa Masuk",
+    "Transfer Masuk",
+    "Lain-lain",
+)
+
 
 def _kategori_aliases() -> dict[str, str]:
     fb = fallback_kategori()
-    return {
+    aliases = {
         "lain-lain": fb,
         "lain lain": fb,
+        "lainnya": fb,
         "other": fb,
         "umum": fb,
         "misc": fb,
-        "elektronik": "Elektronik",
-        "gadget": "Elektronik",
-        "headset": "Elektronik",
-        "earphone": "Elektronik",
-        "laptop": "Elektronik",
-        "hp": "Elektronik",
-        "handphone": "Elektronik",
-        "tumbler": "Peralatan",
-        "botol minum": "Peralatan",
-        "peralatan": "Peralatan",
-        "transportasi": "Transport",
-        "transport": "Transport",
-        "hiburan": "Hiburan",
+        "makan": "Makanan & Minuman",
+        "makanan": "Makanan & Minuman",
+        "makanan & minuman": "Makanan & Minuman",
+        "makanan dan minuman": "Makanan & Minuman",
+        "jajan": "Makanan & Minuman",
+        "minuman": "Makanan & Minuman",
+        "transport": "Transportasi",
+        "transportasi": "Transportasi",
+        "listrik": "Tempat Tinggal",
+        "air": "Tempat Tinggal",
+        "sewa/tempat tinggal": "Tempat Tinggal",
+        "sewa": "Tempat Tinggal",
+        "tempat tinggal": "Tempat Tinggal",
+        "komunikasi": "Komunikasi",
+        "kesehatan": "Kesehatan & Kebersihan Diri",
+        "kesehatan & kebersihan diri": "Kesehatan & Kebersihan Diri",
+        "laundry": "Kesehatan & Kebersihan Diri",
+        "cuci baju": "Kesehatan & Kebersihan Diri",
+        "skincare": "Lifestyle & Hiburan",
+        "pendidikan": "Pendidikan",
+        "saham": "Investasi & Tabungan",
+        "reksadana": "Investasi & Tabungan",
+        "emas": "Investasi & Tabungan",
+        "obligasi": "Investasi & Tabungan",
+        "tabungan/investasi": "Investasi & Tabungan",
+        "investasi": "Investasi & Tabungan",
+        "investasi & tabungan": "Investasi & Tabungan",
+        "asuransi": "Proteksi",
+        "proteksi": "Proteksi",
+        "hiburan": "Lifestyle & Hiburan",
+        "lifestyle": "Lifestyle & Hiburan",
+        "lifestyle & hiburan": "Lifestyle & Hiburan",
+        "subscription": "Lifestyle & Hiburan",
+        "elektronik": "Lifestyle & Hiburan",
+        "peralatan": "Lifestyle & Hiburan",
+        "gadget": "Lifestyle & Hiburan",
+        "traveling": "Traveling",
+        "liburan": "Traveling",
+        "social": "Sosial & Keluarga",
+        "sosial": "Sosial & Keluarga",
+        "sosial & keluarga": "Sosial & Keluarga",
+        "bisnis": "Bisnis & Karir",
+        "bisnis & karir": "Bisnis & Karir",
+        "jasa": "Bisnis & Karir",
+        "hadiah": "Hadiah",
+        "cicilan": "Cicilan & Hutang",
+        "cicilan & hutang": "Cicilan & Hutang",
+        "pajak": "Lain-lain",
         "affiliate": "Affiliate",
         "afiliasi": "Affiliate",
         "komisi": "Affiliate",
@@ -68,7 +138,6 @@ def _kategori_aliases() -> dict[str, str]:
         "bunga": "Bunga Investasi",
         "bunga investasi": "Bunga Investasi",
         "interest": "Bunga Investasi",
-        "interest income": "Bunga Investasi",
         "cashback": "Cashback",
         "refund": "Refund",
         "freelance": "Freelance",
@@ -76,27 +145,38 @@ def _kategori_aliases() -> dict[str, str]:
         "honorarium": "Freelance",
         "bonus": "Bonus",
         "thr": "Bonus",
+        "gaji": "Gaji",
+        "dividen": "Dividen",
+        "penjualan": "Penjualan",
+        "sewa masuk": "Sewa Masuk",
+        "transfer masuk": "Transfer Masuk",
     }
+    rules = get_rules()
+    for key, value in (rules.get("aliases") or {}).items():
+        if isinstance(key, str) and isinstance(value, str):
+            aliases[key.strip().lower()] = value
+    return aliases
 
 
 def _enum_join(values: Iterable[str]) -> str:
     return " | ".join(f'"{v}"' for v in values)
 
 
-def _contains_phrase(text: str, phrases: tuple[str, ...]) -> bool:
-    lower = text.lower()
-    return any(phrase in lower for phrase in phrases)
-
-
 def _title_category(value: str) -> str:
     cleaned = re.sub(r"\s+", " ", value.strip())
     if cleaned == "":
         return ""
-    return " ".join(word.capitalize() for word in cleaned.split(" "))
+    # Pertahankan & dan Title Case ringan.
+    return " ".join(
+        word if word == "&" else (word[:1].upper() + word[1:] if word else word)
+        for word in cleaned.split(" ")
+    )
 
 
 def _normalize_alias(value: str, aliases: dict[str, str]) -> str:
     key = value.strip().lower()
+    key = key.replace("_", " ").replace("-", " ")
+    key = re.sub(r"\s+", " ", key).strip()
     return aliases.get(key, value.strip())
 
 
@@ -108,16 +188,16 @@ def normalize_saving_fields(parsed: Dict[str, Any], source_text: str = "") -> Di
         return parsed
 
     combined = f"{parsed.get('keterangan', '')} {source_text}".strip()
-    label = infer_saving_label(combined) or str(parsed.get("kategori") or "Tabungan/Investasi")
-    parsed["kategori"] = label
+    label = infer_saving_label(combined) or str(parsed.get("kategori") or "Investasi & Tabungan")
+    parsed["kategori"] = _canonicalize_category(label, "Saving/Investment")
     parsed.pop("sub_kategori", None)
 
     keterangan = str(parsed.get("keterangan", "")).strip()
-    if keterangan == "" or label.lower() not in keterangan.lower():
+    if keterangan == "" or "investasi" not in keterangan.lower():
         if keterangan:
-            parsed["keterangan"] = f"{label}: {keterangan}"
+            parsed["keterangan"] = f"{parsed['kategori']}: {keterangan}"
         else:
-            parsed["keterangan"] = f"Investasi {label}"
+            parsed["keterangan"] = f"Investasi {parsed['kategori']}"
 
     parsed["sifat"] = "Need"
     return parsed
@@ -125,63 +205,43 @@ def normalize_saving_fields(parsed: Dict[str, Any], source_text: str = "") -> Di
 
 def _infer_kategori_from_text(text: str) -> str:
     hit = classify_from_text(text)
-    if hit is not None:
+    if hit:
         return hit["kategori"]
     return fallback_kategori()
 
 
-def _kategori_from_strong_signals(text: str, current: str = "") -> str | None:
-    """Jangan timpa kategori AI. Hanya koreksi dump Jajan → Elektronik."""
-    current_l = current.strip().lower()
-    if is_electronics_expense(text) and current_l in {
-        "",
-        "jajan",
-        "belanja",
-        "lain-lain",
-        "lain lain",
-        "other",
-        "misc",
-        "umum",
-    }:
-        return "Elektronik"
-    return None
+def _canonicalize_category(value: str, jenis: str = "") -> str:
+    aliases = _kategori_aliases()
+    mapped = _normalize_alias(value, aliases)
+    mapped = _title_category(mapped)
+    allowed = set(valid_kategori()) | set(OFFICIAL_EXPENSE_CATEGORIES) | set(OFFICIAL_INCOME_CATEGORIES)
+
+    # Exact / case-insensitive match
+    for cat in allowed:
+        if cat.lower() == mapped.lower():
+            return cat
+
+    if jenis == "Pemasukan":
+        return "Gaji" if "Gaji" in allowed else fallback_kategori()
+    if jenis == "Saving/Investment":
+        return "Investasi & Tabungan"
+    return fallback_kategori() or "Lain-lain"
 
 
 def build_system_prompt_rules() -> str:
     rules_data = get_rules()
-    categories = list(rules_data.get("categories") or list(valid_kategori()))
-    # Pastikan AI selalu tahu label Elektronik meski belum di-sync admin.
-    for required in ("Elektronik", "Jajan", "Makan", "Transport"):
-        if required not in categories:
-            categories.insert(0, required)
-    fb_cat = rules_data.get("fallback_category") or fallback_kategori()
+    expense_cats = list(OFFICIAL_EXPENSE_CATEGORIES)
+    income_cats = list(OFFICIAL_INCOME_CATEGORIES)
+    fb_cat = rules_data.get("fallback_category") or fallback_kategori() or "Lain-lain"
 
-    admin_hints = []
-    for rule in rules_data.get("rules") or []:
-        if not isinstance(rule, dict):
-            continue
-        cat = rule.get("category")
-        if not cat or cat == "*":
-            continue
-        reason = (rule.get("reason") or "").strip()
-        bucket = (rule.get("bucket") or "").strip()
-        hint = f"   - {cat}"
-        if bucket:
-            hint += f" → {bucket}"
-        if reason:
-            hint += f" ({reason})"
-        admin_hints.append(hint)
-
-    hints_block = "\n".join(admin_hints[:40]) if admin_hints else ""
     policy_lines = rules_data.get("policy_notes") or []
     policy_block = "\n".join(f"   - {line}" for line in policy_lines)
-    known_cats = ", ".join(categories[:24])
-    if len(categories) > 24:
-        known_cats += ", ..."
     examples = prompt_context_examples().strip()
+    expense_list = ", ".join(expense_cats)
+    income_list = ", ".join(income_cats)
 
     return f"""
-Anda adalah parser keuangan pribadi dengan TAXONOMY TERBUKA.
+Anda adalah parser keuangan pribadi dengan TAXONOMY TERTUTUP (YFD AI Taxonomy v1.0).
 Ubah input user menjadi JSON VALID dengan schema berikut:
 {{
   "keterangan": string,
@@ -198,11 +258,11 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
 
 CATATAN:
 {policy_block}
-   Anda BOLEH dan DIANJURKAN membuat label kategori baru yang deskriptif (Bahasa Indonesia, Title Case).
-   Contoh label baru yang valid: Peralatan, Fashion, Hobi, Perawatan Rumah, Buku, dll.
-   Daftar yang sudah ada HANYA referensi (bukan batasan): {known_cats}
-   Jangan memaksa ke {fb_cat} kecuali memang snack/kopi/cemilan.
-   Sistem akan otomatis mendaftarkan kategori baru ke rule admin.
+   KATEGORI adalah CLOSED LIST. Anda TIDAK BOLEH membuat kategori baru.
+   Pengeluaran / Saving — pilih SATU dari: {expense_list}
+   Pemasukan — pilih SATU dari: {income_list}
+   Jika ragu, pakai "{fb_cat}".
+   Bucket ditentukan sistem (bukan Anda).
 
 Aturan:
 1) keterangan: rapikan typo/singkatan agar mudah dibaca, gunakan kapitalisasi wajar.
@@ -212,109 +272,70 @@ Aturan:
    - 1,2jt / 1.2 juta => 1200000.
    - 83800 / 83.800 / 83,800 / 5000 tanpa suffix => nilai apa adanya (BUKAN juta).
    - Huruf k di kata biasa (kemarin, snack, stock) BUKAN penanda ribuan.
-   - Tagihan (listrik/sewa/BPJS/cicilan) jarang di bawah Rp1000 — jika user tulis "90 br/rb", pakai skala ribuan.
 3) jenis: Pemasukan | Pengeluaran | Saving/Investment.
    - UTAMA: lihat KATA KERJA arah uang dulu.
      * Pemasukan: terima, dapat, dapet, uang masuk, cair (hasil).
      * Pengeluaran: bayar, pengeluaran, melunasi, pelunasan, belanja, keluarin.
-   - Jika user menulis "Pengeluaran" / "Pemasukan" / "Saving" di AWAL pesan, jenis WAJIB mengikuti itu.
-   - "terima jasa freelance/freelence 6jt" = Pemasukan / Freelance (BUKAN Pengeluaran, BUKAN Jajan).
-   - "bayar/melunasi jasa freelancer" = Pengeluaran / Jasa (BUKAN Pemasukan), meskipun ada kata freelance.
-   - Pemasukan lain: gaji, bonus, honor yang DITERIMA, affiliate/komisi, bunga investasi, dividen cair, cashback, refund, hasil sewa, hasil jualan.
-   - Saving/Investment: beli/nabung saham, reksadana, deposito, emas, crypto, dana darurat — BUKAN hasil investasi.
+   - Saving/Investment: beli/nabung saham, reksadana, deposito, emas, crypto, dana darurat.
    - Hasil investasi (bunga/dividen cair) = Pemasukan, BUKAN Saving/Investment.
-   - Donasi/sedekah/zakat = Pengeluaran + kategori Social.
-   - Typo "freelence" = freelance.
-4) sifat: HANYA Need atau Wants — dengarkan NIAT & FUNGSI user.
+   - Donasi/sedekah/zakat = Pengeluaran + kategori Sosial & Keluarga.
+4) sifat: HANYA Need atau Wants.
    - Need: kebutuhan hidup/kerja fungsional, tagihan, proteksi, cicilan, hasil/pemasukan.
-   - Wants: diskresioner, reward, hiburan, jajan, belanja gaya hidup tanpa urgensi.
-5) kategori: tentukan dari MAKNA barang/jasa — bebas label baru.
-   - Utamakan label yang tepat; reuse kategori lama HANYA jika benar-benar cocok.
-   - Jajan HANYA: kopi, boba, snack, cemilan, kue, dessert ringan.
-   - GrabFood / GoFood / ShopeeFood = Makan atau Jajan sesuai isinya — BUKAN Transport.
-   - Transport = ojek/grab ride/bensin/parkir, bukan pesanan makanan.
-   - Elektronik: headset, earphone, HP, laptop, charger, gadget — BUKAN Jajan.
-   - Tumbler / botol minum / peralatan dapur → Peralatan (BUKAN Jajan).
-   - Aqua / air minum / air mineral / galon → Makan / Need (kebutuhan hidup, BUKAN Jajan).
-   - Baju/sepatu → Fashion. Buku → Buku. dll.
-   Petunjuk bucket (referensi):
-{hints_block}
+   - Wants: diskresioner, reward, hiburan, jajan, belanja gaya hidup.
+5) kategori (WAJIB dari closed list):
+   - Makanan & Minuman: makan harian, jajan, kopi, boba, GoFood/GrabFood.
+   - Tempat Tinggal: kos, KPR tinggal, listrik, air, gas, laundry rumah.
+   - Transportasi: ojek/grab ride, bensin, parkir (bukan pesanan makanan).
+   - Komunikasi: pulsa, kuota.
+   - Kesehatan & Kebersihan Diri: dokter, obat, sabun, shampo (bukan gym).
+   - Pendidikan: SPP/UKT ATAU seminar/kursus/pengembangan diri.
+   - Investasi & Tabungan: saham, reksadana, emas, dana darurat (jenis Saving/Investment).
+   - Proteksi: BPJS, premi asuransi.
+   - Lifestyle & Hiburan: Netflix, konser, gym, fashion, gadget, skincare premium.
+   - Traveling: liburan, hotel, wisata.
+   - Sosial & Keluarga: donasi, sedekah, bantu keluarga.
+   - Bisnis & Karir: modal usaha, tools kerja, marketing, software bisnis.
+   - Hadiah: kado, parcel, tip.
+   - Cicilan & Hutang: cicilan, paylater, kartu kredit.
+   - Lain-lain: hanya jika benar-benar tidak cocok (maksimal jarang).
 6) {examples}
 7) impulsif — terpisah dari sifat Need/Wants:
    "Yes" jika spontan / tidak terencana / fomo / mood negatif + belanja diskresioner
    dengan nominal bermakna (umumnya >= Rp50.000).
-   "No" jika terencana, tagihan wajib, kebutuhan kerja yang dijelaskan,
-   penggantian alat/akun lama yang rusak/tidak bisa dipakai, atau belanja kecil
-   sehari-hari (mis. kopi/snack di bawah Rp50.000) meski mood negatif.
-8) tanggal: opsional. Isi YYYY-MM-DD HANYA jika user menyebut tanggal transaksi
-   (contoh: "tgl 2/7", "tanggal 2 juli", "kemarin", "2 hari lalu").
-   Format Indonesia biasanya hari/bulan. Jika tidak ada tanggal eksplisit → null.
+   "No" jika terencana, tagihan wajib, atau belanja kecil sehari-hari.
+8) tanggal: opsional. Isi YYYY-MM-DD HANYA jika user menyebut tanggal transaksi.
 9) Balas HANYA JSON murni, tanpa markdown.
 10) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
    {{"error":"invalid_input"}}
-11) Pertanyaan balik:
-   - JANGAN menebak jika informasi penting belum jelas.
-   - Set needs_clarification=true jika informasi yang hilang dapat mengubah jenis,
-     kategori, sifat, impulsif, atau bucket prescription.
-   - Isi clarification_question dengan satu pertanyaan singkat dan spesifik.
-   - Contoh ambigu: "freelance 6jt" (menerima atau membayar), "beli buku 500rb"
-     (belajar/wajib/hiburan), "beli kopi 50rb" (kerja/healing), "beli laptop 8jt"
-     (kerja/ganti rusak/upgrade pribadi), "bayar kelas 1jt" (olahraga atau self-development),
-     "beli piano 20jt" (belajar/profesi/sekolah/hobi).
-   - Untuk alat musik setelah klarifikasi: gunakan kategori Alat Musik; belajar,
-     pengembangan diri, atau profesi = Need; hobi/hiburan pribadi = Wants.
-     Keterangan WAJIB menyebut tujuan tersebut agar bucket dapat diverifikasi.
-   - Tanyakan HANYA informasi yang belum ada; jangan meminta ulang nominal/keterangan
-     yang sudah jelas.
-   - Jika input memuat "Klarifikasi user:", gunakan jawabannya. Jika jawabannya masih
-     belum cukup jelas, boleh ajukan satu pertanyaan yang lebih spesifik.
-   - Jangan gunakan klarifikasi untuk mood; bot memiliki alur pilihan mood terpisah.
-   - Tanggal transaksi bersifat opsional dan tidak perlu ditanyakan.
-   - Jika tidak ambigu: needs_clarification=false dan clarification_question=null.
+11) Grey area (kopi meeting vs healing, HP rusak vs upgrade, subscription kerja vs hiburan):
+   - Set needs_clarification=true dan tanya konteks singkat ke user.
+12) JANGAN menentukan bucket. Sistem yang menghitung bucket.
 """
 
 
 def normalize_category_fields(parsed: Dict[str, Any], source_text: str = "") -> Dict[str, Any]:
-    """Hormati kategori AI; rule hanya koreksi kasus kritis / kosong."""
-    apply_context_rules(parsed, source_text)
+    """Paksa kategori ke closed list resmi YFD."""
+    apply_admin_nature(parsed)
+    jenis = str(parsed.get("jenis", "")).strip()
+    combined = f"{parsed.get('keterangan', '')} {source_text}".strip()
 
-    if str(parsed.get("jenis", "")).strip() == "Saving/Investment":
-        combined = f"{parsed.get('keterangan', '')} {source_text}".strip()
-        label = infer_saving_label(combined) or str(parsed.get("kategori") or "Tabungan/Investasi")
-        parsed["kategori"] = label
+    if jenis == "Saving/Investment":
+        label = infer_saving_label(combined) or str(parsed.get("kategori") or "Investasi & Tabungan")
+        parsed["kategori"] = _canonicalize_category(label, jenis)
         parsed.pop("sub_kategori", None)
-        parsed["sifat"] = "Need"
-        return apply_admin_nature(parsed)
+        return parsed
 
-    if str(parsed.get("jenis", "")).strip() == "Pemasukan":
-        # Jaga kategori pemasukan yang sudah di-set context rules.
+    if jenis == "Pemasukan":
         kategori = str(parsed.get("kategori", "")).strip()
-        if kategori:
-            parsed["kategori"] = _title_category(kategori)
-            parsed.pop("sub_kategori", None)
-            if str(parsed.get("sifat", "")).strip() not in {"Need", "Wants"}:
-                parsed["sifat"] = "Need"
-            return apply_admin_nature(parsed)
+        if not kategori:
+            kategori = _infer_kategori_from_text(combined)
+        parsed["kategori"] = _canonicalize_category(kategori, jenis)
+        parsed.pop("sub_kategori", None)
+        return parsed
 
-    kategori = _normalize_alias(str(parsed.get("kategori", "")), _kategori_aliases())
-    combined = f"{parsed.get('keterangan', '')} {source_text}".strip().lower()
-    valid_cats = valid_kategori()
-    fb_cat = fallback_kategori()
-
-    strong_kategori = _kategori_from_strong_signals(combined, kategori)
-    if strong_kategori is not None:
-        kategori = strong_kategori
-    elif not kategori.strip():
-        inferred = _infer_kategori_from_text(combined)
-        kategori = inferred if inferred else fb_cat
-    elif kategori not in valid_cats:
-        # Biarkan label deskriptif dari AI (auto-register di Laravel).
-        kategori = _title_category(kategori)
-    elif kategori == "Air" and not is_water_expense(combined):
-        inferred = _infer_kategori_from_text(combined)
-        if inferred and inferred != "Air":
-            kategori = inferred if inferred in valid_cats else _title_category(str(parsed.get("kategori", "")) or inferred)
-
-    parsed["kategori"] = _title_category(kategori) or fb_cat
+    kategori = str(parsed.get("kategori", "")).strip()
+    if not kategori:
+        kategori = _infer_kategori_from_text(combined)
+    parsed["kategori"] = _canonicalize_category(kategori, jenis or "Pengeluaran")
     parsed.pop("sub_kategori", None)
-    return apply_admin_nature(parsed)
+    return parsed

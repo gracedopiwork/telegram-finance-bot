@@ -531,6 +531,12 @@ _KESEHATAN = (
     "cek darah",
     "vitamin",
     "suplemen",
+    "fisioterapi",
+    "rehab",
+    "rehabilitasi",
+)
+
+_GYM_LIFESTYLE = (
     "gym",
     "fitness",
     "olahraga",
@@ -540,6 +546,7 @@ _KESEHATAN = (
     "membership gym",
     "kelas yoga",
     "pilates",
+    "crossfit",
 )
 
 _PENDIDIKAN = (
@@ -889,86 +896,87 @@ def classify_from_text(text: str) -> dict[str, str] | None:
             )
         )
     ):
-        label = infer_saving_label(lower) or "Tabungan/Investasi"
+        label = infer_saving_label(lower) or "Investasi & Tabungan"
         # "investasi" generik tanpa aksi beli/nabung & tanpa instrumen jelas → jangan paksa.
         if label == "Investasi" and not _contains(lower, _SAVING_ACTION):
             pass
         else:
-            return {"jenis": "Saving/Investment", "kategori": label, "sifat": "Need"}
+            return {"jenis": "Saving/Investment", "kategori": "Investasi & Tabungan", "sifat": "Need"}
 
     # Dividen reinvest = saving
     if explicit != "Pengeluaran" and direction != "Pengeluaran" and _contains(lower, _DIVIDEN_REINVEST):
-        return {"jenis": "Saving/Investment", "kategori": "Saham", "sifat": "Need"}
+        return {"jenis": "Saving/Investment", "kategori": "Investasi & Tabungan", "sifat": "Need"}
 
     # ---- Pengeluaran ----
     # Bayar jasa/freelancer dulu — sebelum _MAKAN ("nasi" di dalam "melunasi").
     if _contains(lower, _PAYING_FREELANCE) or (
         direction == "Pengeluaran" and _has_freelance_marker(lower)
     ):
-        return {"jenis": "Pengeluaran", "kategori": "Jasa", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Bisnis & Karir", "sifat": "Need"}
 
     if _contains(lower, _ASURANSI):
-        return {"jenis": "Pengeluaran", "kategori": "Asuransi", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Proteksi", "sifat": "Need"}
+    if _contains(lower, _GYM_LIFESTYLE):
+        return {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants"}
     if _contains(lower, _SKINCARE):
-        return {"jenis": "Pengeluaran", "kategori": "Skincare", "sifat": "Wants"}
+        return {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants"}
     if _contains(lower, _HIBURAN):
-        return {"jenis": "Pengeluaran", "kategori": "Hiburan", "sifat": "Wants"}
+        return {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants"}
     if _contains(lower, _SUBSCRIPTION):
         return {
             "jenis": "Pengeluaran",
-            "kategori": "Subscription",
+            "kategori": "Bisnis & Karir" if is_work_software_expense(lower) else "Lifestyle & Hiburan",
             "sifat": "Need" if is_work_software_expense(lower) else "Wants",
         }
-    if _contains(lower, _LISTRIK):
-        return {"jenis": "Pengeluaran", "kategori": "Listrik", "sifat": "Need"}
-    if is_water_expense(lower):
-        return {"jenis": "Pengeluaran", "kategori": "Air", "sifat": "Need"}
+    if _contains(lower, _LISTRIK) or is_water_expense(lower):
+        return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
     # Air minum/galon sebelum jajan — "beli aqua" sering salah jadi Jajan.
     if is_drinking_water_expense(lower):
-        return {"jenis": "Pengeluaran", "kategori": "Makan", "sifat": "Need"}
-    # Tip/donasi ke driver (grab/gojek) — Social, bukan Transport/Makan.
+        return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
+    # Tip/donasi ke driver (grab/gojek) — Sosial, bukan Transport/Makan.
     if is_social_giving(lower):
-        sifat = "Wants" if is_discretionary_social_giving(lower) else "Need"
-        return {"jenis": "Pengeluaran", "kategori": "Social", "sifat": sifat}
+        if _contains(lower, ("hadiah", "kado", "parcel", "tip", "tips")):
+            return {"jenis": "Pengeluaran", "kategori": "Hadiah", "sifat": "Wants"}
+        return {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "sifat": "Wants"}
     if is_business_building_expense(lower):
-        return {"jenis": "Pengeluaran", "kategori": "Makan", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Bisnis & Karir", "sifat": "Need"}
     if _contains(lower, _SERVIS_KENDARAAN) or is_transport_ride(lower):
-        return {"jenis": "Pengeluaran", "kategori": "Transport", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Transportasi", "sifat": "Need"}
     if _contains(lower, _KESEHATAN):
-        return {"jenis": "Pengeluaran", "kategori": "Kesehatan", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need"}
     if _contains(lower, _PENDIDIKAN):
         return {"jenis": "Pengeluaran", "kategori": "Pendidikan", "sifat": "Need"}
     if _contains(lower, _KOMUNIKASI):
         return {"jenis": "Pengeluaran", "kategori": "Komunikasi", "sifat": "Need"}
     if _contains(lower, _LAUNDRY):
-        return {"jenis": "Pengeluaran", "kategori": "Laundry", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
     if _contains(lower, _SEWA_KELUAR):
-        return {"jenis": "Pengeluaran", "kategori": "Sewa/Tempat Tinggal", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
     if _contains(lower, _CICILAN):
-        return {"jenis": "Pengeluaran", "kategori": "Cicilan", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "sifat": "Need"}
     if _contains(lower, _PAJAK):
-        return {"jenis": "Pengeluaran", "kategori": "Pajak", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Lain-lain", "sifat": "Need"}
     if _contains(lower, _SOCIAL):
-        return {"jenis": "Pengeluaran", "kategori": "Social", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "sifat": "Wants"}
     if has_essential_living_intent(lower):
         if _contains(lower, _KOPI_JAJAN) and not is_drinking_water_expense(lower):
-            return {"jenis": "Pengeluaran", "kategori": "Makan", "sifat": "Need"}
-        return {"jenis": "Pengeluaran", "kategori": "Makan", "sifat": "Need"}
+            return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
     # Jajan dulu (kata "jajan"/kue), baru makan/delivery — hindari GrabFood → Transport.
     if _contains(lower, _KOPI_JAJAN):
-        return {"jenis": "Pengeluaran", "kategori": "Jajan", "sifat": "Wants"}
+        return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Wants"}
     if is_food_delivery(lower) or _contains(lower, _MAKAN):
-        return {"jenis": "Pengeluaran", "kategori": "Makan", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
     if is_electronics_expense(lower):
         return {
             "jenis": "Pengeluaran",
-            "kategori": "Elektronik",
+            "kategori": "Lifestyle & Hiburan",
             "sifat": electronics_sifat(lower),
         }
 
     # User tulis "Pengeluaran …" tanpa kategori spesifik → jenis tetap Pengeluaran.
     if explicit == "Pengeluaran" or direction == "Pengeluaran":
-        return {"jenis": "Pengeluaran", "kategori": "Lainnya", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Lain-lain", "sifat": "Need"}
 
     return None
 
@@ -1023,29 +1031,35 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
 
         # Donasi/tip/hadiah spontan sering salah jadi Makan/Transport/Need.
         if ai_jenis == "Pengeluaran" and is_social_giving(combined):
-            parsed["kategori"] = "Social"
-            parsed["sifat"] = "Wants" if is_discretionary_social_giving(combined) else "Need"
+            if _contains(combined.lower(), ("hadiah", "kado", "parcel", "tip", "tips")):
+                parsed["kategori"] = "Hadiah"
+            else:
+                parsed["kategori"] = "Sosial & Keluarga"
+            parsed["sifat"] = "Wants"
             parsed.pop("sub_kategori", None)
             return parsed
 
-        # Gym/olahraga/personal training → Kesehatan.
-        if ai_jenis == "Pengeluaran" and _contains(combined.lower(), _KESEHATAN):
-            if ai_kat_l in {"lainnya", "lain-lain", "lain lain", "subscription", "belanja", "jajan"}:
-                parsed["kategori"] = "Kesehatan"
-                parsed["sifat"] = "Need"
-                parsed.pop("sub_kategori", None)
-                return parsed
+        # Gym/olahraga berbayar → Lifestyle & Hiburan (bukan Essential).
+        if ai_jenis == "Pengeluaran" and _contains(combined.lower(), _GYM_LIFESTYLE):
+            parsed["kategori"] = "Lifestyle & Hiburan"
+            parsed["sifat"] = "Wants"
+            parsed.pop("sub_kategori", None)
+            return parsed
 
-        # Konsumsi meeting bisnis/konten → Makan (bucket Future Building di Laravel).
+        # Konsumsi meeting bisnis/konten → Bisnis & Karir (bucket Future Building).
         if ai_jenis == "Pengeluaran" and is_business_building_expense(combined):
-            if ai_kat_l in {"jajan", "makan", "lainnya", "lain-lain", "lain lain", "belanja"}:
-                parsed["kategori"] = "Makan"
+            if ai_kat_l in {
+                "jajan", "makan", "makanan & minuman", "makanan dan minuman",
+                "lainnya", "lain-lain", "lain lain", "belanja",
+            }:
+                parsed["kategori"] = "Bisnis & Karir"
                 parsed["sifat"] = "Need"
                 parsed.pop("sub_kategori", None)
                 return parsed
 
         # Koreksi dump kategori saja (bukan jenis).
         if ai_kat_l == "subscription" and is_work_software_expense(combined):
+            parsed["kategori"] = "Bisnis & Karir"
             parsed["sifat"] = "Need"
             parsed.pop("sub_kategori", None)
             return parsed
@@ -1057,14 +1071,16 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
             "lain lain",
             "other",
             "misc",
+            "makan",
+            "makanan & minuman",
             "umum",
         }:
-            parsed["kategori"] = "Elektronik"
+            parsed["kategori"] = "Lifestyle & Hiburan"
             parsed["sifat"] = electronics_sifat(combined)
             parsed.pop("sub_kategori", None)
             return parsed
 
-        # Air minum/galon sering salah jadi Jajan/Wants → Essential Living / Makan / Need.
+        # Air minum/galon sering salah jadi Jajan/Wants → Essential Living / Makanan & Minuman / Need.
         if is_drinking_water_expense(combined) and ai_kat_l in {
             "jajan",
             "belanja",
@@ -1076,7 +1092,7 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
             "umum",
             "lainnya",
         }:
-            parsed["kategori"] = "Makan"
+            parsed["kategori"] = "Makanan & Minuman"
             parsed["sifat"] = "Need"
             parsed.pop("sub_kategori", None)
             return parsed
@@ -1092,22 +1108,18 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
             "umum",
             "lainnya",
         }:
-            parsed["kategori"] = "Makan"
+            parsed["kategori"] = "Makanan & Minuman"
             parsed["sifat"] = "Need"
             parsed.pop("sub_kategori", None)
             return parsed
 
-        if ai_kat_l == "transport" and (
+        if ai_kat_l in {"transport", "transportasi"} and (
             is_food_delivery(combined)
             or _contains(combined.lower(), _KOPI_JAJAN)
             or _contains(combined.lower(), _MAKAN)
         ):
-            if _contains(combined.lower(), _KOPI_JAJAN) and not is_drinking_water_expense(combined):
-                parsed["kategori"] = "Jajan"
-                parsed["sifat"] = "Wants"
-            else:
-                parsed["kategori"] = "Makan"
-                parsed["sifat"] = "Need"
+            parsed["kategori"] = "Makanan & Minuman"
+            parsed["sifat"] = "Need" if not _contains(combined.lower(), _KOPI_JAJAN) else "Wants"
             parsed.pop("sub_kategori", None)
             return parsed
 
@@ -1118,13 +1130,19 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
                 and not _contains(combined.lower(), _KOPI_JAJAN)
                 and not is_food_delivery(combined)
             ):
-                parsed["kategori"] = "Makan"
+                parsed["kategori"] = "Makanan & Minuman"
                 parsed["sifat"] = "Need"
                 parsed.pop("sub_kategori", None)
                 return parsed
-
-        if ai_kat_l == "jajan" and ai_jenis == "Pengeluaran":
+            parsed["kategori"] = "Makanan & Minuman"
             parsed["sifat"] = "Wants"
+            return parsed
+
+        if ai_kat_l in {"makan", "makanan & minuman", "makanan dan minuman"} and ai_jenis == "Pengeluaran":
+            if _contains(combined.lower(), _KOPI_JAJAN) and not has_essential_living_intent(combined):
+                parsed["sifat"] = "Wants"
+            return parsed
+
         return parsed
 
     hit = classify_from_text(combined)
@@ -1144,48 +1162,35 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
 def prompt_context_examples() -> str:
     """Contoh untuk system prompt AI — mengurangi salah konteks."""
     return """
-Contoh klasifikasi WAJIB diikuti:
+Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "dapat shopee affiliate 50rb" → Pemasukan / Affiliate / Need
 - "terima bunga investasi sebesar 5000" → Pemasukan / Bunga Investasi / Need (BUKAN Saving)
 - "dividen BBCA cair 200rb" → Pemasukan / Dividen / Need
-- "beli saham BBCA 1jt" → Saving/Investment / Saham / Need
-- "nabung reksadana 500rb" → Saving/Investment / Reksadana / Need
-- "dividen reinvest" → Saving/Investment / Saham / Need
+- "beli saham BBCA 1jt" → Saving/Investment / Investasi & Tabungan / Need
+- "nabung reksadana 500rb" → Saving/Investment / Investasi & Tabungan / Need
 - "cashback marketplace 20rb" → Pemasukan / Cashback / Need
-- "refund tiket 100rb" → Pemasukan / Refund / Need
 - "gaji bulan ini 8jt" → Pemasukan / Gaji / Need
 - "honor freelance 1.5jt" → Pemasukan / Freelance / Need
-- "terima jasa freelence 6 jt" → Pemasukan / Freelance / Need (BUKAN Pengeluaran, BUKAN Jajan)
-- "terima jasa freelance 6jt" → Pemasukan / Freelance / Need
-- "Pengeluaran melunasi jasa freelancer IT Rp 5.750.000" → Pengeluaran / Jasa / Need (BUKAN Pemasukan)
-- "Bayar jasa freelancer web developer 2jt" → Pengeluaran / Jasa / Need (BUKAN Pemasukan)
-- "bayar BPJS 150rb" → Pengeluaran / Asuransi / Need
-- "netflix bulanan 54rb" → Pengeluaran / Subscription / Wants
-- "langganan capcut untuk kerja edit video 95k" → Pengeluaran / Subscription / Need
-- "skincare serum 120rb" → Pengeluaran / Skincare / Wants
-- "makan malam 65.700" → Pengeluaran / Makan / Need
-- "grab ke kantor 28rb" → Pengeluaran / Transport / Need
-- "jajan di grabfood 60k beli kue" → Pengeluaran / Jajan / Wants (BUKAN Transport)
-- "gofood nasi padang 45rb" → Pengeluaran / Makan / Need (BUKAN Transport)
-- "bayar sewa kos 1.5jt" → Pengeluaran / Sewa/Tempat Tinggal / Need
-- "terima sewa kontrak 2jt" → Pemasukan / Sewa Masuk / Need
-- "obat demam 45rb" → Pengeluaran / Kesehatan / Need
+- "Pengeluaran melunasi jasa freelancer IT Rp 5.750.000" → Pengeluaran / Bisnis & Karir / Need
+- "bayar BPJS 150rb" → Pengeluaran / Proteksi / Need
+- "netflix bulanan 54rb" → Pengeluaran / Lifestyle & Hiburan / Wants
+- "langganan capcut untuk kerja edit video 95k" → Pengeluaran / Bisnis & Karir / Need
+- "skincare serum 120rb" → Pengeluaran / Lifestyle & Hiburan / Wants
+- "makan malam 65.700" → Pengeluaran / Makanan & Minuman / Need
+- "grab ke kantor 28rb" → Pengeluaran / Transportasi / Need
+- "jajan di grabfood 60k beli kue" → Pengeluaran / Makanan & Minuman / Wants (BUKAN Transportasi)
+- "gofood nasi padang 45rb" → Pengeluaran / Makanan & Minuman / Need (BUKAN Transportasi)
+- "bayar sewa kos 1.5jt" → Pengeluaran / Tempat Tinggal / Need
+- "obat demam 45rb" → Pengeluaran / Kesehatan & Kebersihan Diri / Need
 - "pulsa 50rb" → Pengeluaran / Komunikasi / Need
-- "cicilan motor 900rb" → Pengeluaran / Cicilan / Need
-- "beli headset 350rb" → Pengeluaran / Elektronik / Wants (BUKAN Jajan)
-- "earphone 150rb" → Pengeluaran / Elektronik / Wants
-- "ganti hp rusak 3jt" → Pengeluaran / Elektronik / Need
-- "laptop kerja 8jt" → Pengeluaran / Elektronik / Need
-- "kopi susu 28rb" → Pengeluaran / Jajan / Wants
-- "beli aqua 1.5L 7k" → Pengeluaran / Makan / Need (BUKAN Jajan — air minum kebutuhan hidup)
-- "beli air minum 9k" → Pengeluaran / Makan / Need
-- "beli tumbler 150rb" → Pengeluaran / Peralatan / Wants (BUKAN Jajan)
-- "beli baju 200rb" → Pengeluaran / Fashion / Wants
-- "donasi ke bapak grab 5k" → Pengeluaran / Social / Wants (BUKAN Makan/Transport)
-- "memberikan tips ke driver grab 5rb" → Pengeluaran / Social / Wants (BUKAN Transport)
-- "kasih tip gojek 10rb" → Pengeluaran / Social / Wants
-- "hadiah atas jasa orang 5k" → Pengeluaran / Social / Wants (impulsif)
-- "bayar olahraga gym bulanan + personal training 455rb" → Pengeluaran / Kesehatan / Need
-- "konsumsi meeting untuk take konten bisnis YFD 127rb" → Pengeluaran / Makan / Need → Future Building
-- "laundry/cuci baju 52.500" → Pengeluaran / Laundry / Need
+- "cicilan motor 900rb" → Pengeluaran / Cicilan & Hutang / Need
+- "beli headset 350rb" → Pengeluaran / Lifestyle & Hiburan / Wants
+- "kopi susu 28rb" → Pengeluaran / Makanan & Minuman / Wants
+- "beli aqua 1.5L 7k" → Pengeluaran / Makanan & Minuman / Need
+- "donasi ke bapak grab 5k" → Pengeluaran / Sosial & Keluarga / Wants
+- "kasih tip gojek 10rb" → Pengeluaran / Hadiah / Wants
+- "beli tiket konser 450rb" → Pengeluaran / Lifestyle & Hiburan / Wants
+- "bayar olahraga gym bulanan + personal training 455rb" → Pengeluaran / Lifestyle & Hiburan / Wants
+- "konsumsi meeting untuk take konten bisnis YFD 127rb" → Pengeluaran / Bisnis & Karir / Need → Future Building
+- "laundry/cuci baju 52.500" → Pengeluaran / Tempat Tinggal / Need
 """

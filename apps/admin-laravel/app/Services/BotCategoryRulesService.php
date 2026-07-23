@@ -61,21 +61,34 @@ class BotCategoryRulesService
         }
 
         $version = md5($mappings->max('updated_at')?->toJSON() ?? '0');
+        $closed = $this->closedCategories();
 
         return [
             'version' => $version,
             'updated_at' => $mappings->max('updated_at')?->toIso8601String(),
-            'categories' => array_values(array_unique($categories)),
+            'categories' => $closed,
             'sub_categories' => array_values(array_unique($subCategories)),
             'category_sub_map' => $categorySubMap,
             'rules' => $rules,
-            'fallback_category' => (string) config('category_buckets.bot_fallback_category', 'Jajan'),
-            'fallback_sub' => (string) config('category_buckets.bot_fallback_sub', 'Pengeluaran lain-lain'),
+            'fallback_category' => (string) config('yfd_taxonomy.fallback_category', 'Lain-lain'),
+            'fallback_sub' => (string) config('category_buckets.bot_fallback_sub', '-'),
             'natures' => ['Need', 'Wants'],
             'source' => 'database',
             'policy_notes' => $this->policyNotes(),
-            'strict_categories_only' => false,
+            'strict_categories_only' => true,
+            'aliases' => (array) config('yfd_taxonomy.aliases', []),
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function closedCategories(): array
+    {
+        return array_values(array_unique(array_merge(
+            (array) config('yfd_taxonomy.expense_categories', []),
+            (array) config('yfd_taxonomy.income_categories', []),
+        )));
     }
 
     /**
@@ -134,16 +147,17 @@ class BotCategoryRulesService
         return [
             'version' => 'config-fallback',
             'updated_at' => null,
-            'categories' => array_values(array_unique($categories)),
+            'categories' => $this->closedCategories(),
             'sub_categories' => array_values(array_unique($subCategories)),
             'category_sub_map' => $categorySubMap,
             'rules' => $rules,
-            'fallback_category' => (string) config('category_buckets.bot_fallback_category', 'Jajan'),
-            'fallback_sub' => (string) config('category_buckets.bot_fallback_sub', 'Pengeluaran lain-lain'),
+            'fallback_category' => (string) config('yfd_taxonomy.fallback_category', 'Lain-lain'),
+            'fallback_sub' => (string) config('category_buckets.bot_fallback_sub', '-'),
             'natures' => ['Need', 'Wants'],
             'source' => 'config',
             'policy_notes' => $this->policyNotes(),
-            'strict_categories_only' => false,
+            'strict_categories_only' => true,
+            'aliases' => (array) config('yfd_taxonomy.aliases', []),
         ];
     }
 }

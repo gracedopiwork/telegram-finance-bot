@@ -36,7 +36,7 @@
             Kolom: tanggal, <strong>jenis</strong> (Pemasukan / Pengeluaran / Saving/Investment), kategori, nominal,
             <strong>sifat</strong> (Need / Wants), mood (atau Mood Spending), impulsif, keterangan.
             File Excel: simpan sebagai <strong>CSV UTF-8</strong> (titik-koma atau koma) — ekstensi .csv / .txt / .xls didukung.
-            Kategori resmi: Makan, Transport, Hiburan, Social, Kesehatan, Laundry, Gaji.
+            Kategori resmi (closed list): Makanan & Minuman, Transportasi, Tempat Tinggal, Lifestyle & Hiburan, Sosial & Keluarga, Bisnis & Karir, Gaji, dll.
             Nominal: angka polos (<code>35000</code>) atau format Indonesia (<code>35.000</code>, <code>35rb</code>).
             Maks. 500 baris per file.
         </p>

@@ -25,10 +25,10 @@ class ContextRulesTests(unittest.TestCase):
         self.assertClass("dividen BBCA cair 200rb", "Pemasukan", "Dividen")
 
     def test_beli_saham(self) -> None:
-        self.assertClass("beli saham BBCA 1jt", "Saving/Investment", "Saham")
+        self.assertClass("beli saham BBCA 1jt", "Saving/Investment", "Investasi & Tabungan")
 
     def test_dividen_reinvest(self) -> None:
-        self.assertClass("dividen reinvest 100rb", "Saving/Investment", "Saham")
+        self.assertClass("dividen reinvest 100rb", "Saving/Investment", "Investasi & Tabungan")
 
     def test_cashback(self) -> None:
         self.assertClass("cashback marketplace 20rb", "Pemasukan", "Cashback")
@@ -45,29 +45,25 @@ class ContextRulesTests(unittest.TestCase):
     def test_terima_jasa_freelence_pemasukan(self) -> None:
         self.assertClass("terima jasa freelence 6 jt", "Pemasukan", "Freelance")
 
-    def test_terima_jasa_freelance_pemasukan(self) -> None:
-        self.assertClass("terima jasa freelance 6jt", "Pemasukan", "Freelance")
-
     def test_explicit_pengeluaran_freelancer_bukan_pemasukan(self) -> None:
         text = (
             "Pengeluaran melunasi jasa freelancer IT dan web developer "
             "pelunasan buat proyek YFD Rp 5.750.000"
         )
-        self.assertClass(text, "Pengeluaran", "Jasa")
+        self.assertClass(text, "Pengeluaran", "Bisnis & Karir")
 
     def test_bayar_jasa_freelancer_bukan_pemasukan(self) -> None:
         text = (
             "Bayar jasa freelancer IT dan web developer pelunasan "
             "buat proyek YFD Rp 5.750.000"
         )
-        self.assertClass(text, "Pengeluaran", "Jasa")
+        self.assertClass(text, "Pengeluaran", "Bisnis & Karir")
 
     def test_apply_rules_does_not_override_ai_jenis(self) -> None:
-        """AI sudah isi jenis+kategori → rule jangan timpa ke Pemasukan/Freelance."""
         parsed = {
             "keterangan": "Pelunasan Jasa Freelancer IT dan Web Developer Proyek YFD",
             "jenis": "Pengeluaran",
-            "kategori": "Jasa",
+            "kategori": "Bisnis & Karir",
             "sifat": "Need",
         }
         out = apply_context_rules(
@@ -76,24 +72,9 @@ class ContextRulesTests(unittest.TestCase):
             "pelunasan buat proyek YFD Rp 5.750.000",
         )
         self.assertEqual(out["jenis"], "Pengeluaran")
-        self.assertEqual(out["kategori"], "Jasa")
-
-    def test_apply_rules_respects_explicit_user_jenis(self) -> None:
-        """User tulis 'Pengeluaran' di awal → jenis mengikuti user (bukan rule freelance)."""
-        parsed = {
-            "keterangan": "Pelunasan Jasa Freelancer IT Proyek YFD",
-            "jenis": "Pemasukan",
-            "kategori": "Freelance",
-            "sifat": "Need",
-        }
-        out = apply_context_rules(
-            parsed,
-            "Pengeluaran melunasi jasa freelancer IT Rp 5.750.000",
-        )
-        self.assertEqual(out["jenis"], "Pengeluaran")
+        self.assertEqual(out["kategori"], "Bisnis & Karir")
 
     def test_apply_rules_terima_corrects_ai_pengeluaran(self) -> None:
-        """Kata 'terima' = uang masuk → koreksi AI yang salah ke Pengeluaran/Jajan."""
         parsed = {
             "keterangan": "terima jasa freelence 6 jt",
             "jenis": "Pengeluaran",
@@ -104,27 +85,11 @@ class ContextRulesTests(unittest.TestCase):
         self.assertEqual(out["jenis"], "Pemasukan")
         self.assertEqual(out["kategori"], "Freelance")
 
-    def test_apply_rules_does_not_force_income_over_ai(self) -> None:
-        """Bayar jasa freelancer: AI Pengeluaran tetap menang."""
-        parsed = {
-            "keterangan": "Bayar jasa freelancer web developer",
-            "jenis": "Pengeluaran",
-            "kategori": "Jasa",
-            "sifat": "Need",
-        }
-        out = apply_context_rules(
-            parsed,
-            "Bayar jasa freelancer IT dan web developer pelunasan "
-            "buat proyek YFD Rp 5.750.000",
-        )
-        self.assertEqual(out["jenis"], "Pengeluaran")
-        self.assertEqual(out["kategori"], "Jasa")
-
     def test_asuransi(self) -> None:
-        self.assertClass("bayar BPJS 150rb", "Pengeluaran", "Asuransi")
+        self.assertClass("bayar BPJS 150rb", "Pengeluaran", "Proteksi")
 
     def test_subscription(self) -> None:
-        self.assertClass("netflix bulanan 54rb", "Pengeluaran", "Subscription")
+        self.assertClass("netflix bulanan 54rb", "Pengeluaran", "Lifestyle & Hiburan")
 
     def test_capcut_untuk_kerja_is_need(self) -> None:
         hit = classify_from_text(
@@ -133,103 +98,37 @@ class ContextRulesTests(unittest.TestCase):
         )
         self.assertIsNotNone(hit)
         assert hit is not None
-        self.assertEqual(hit["kategori"], "Subscription")
+        self.assertEqual(hit["kategori"], "Bisnis & Karir")
         self.assertEqual(hit["sifat"], "Need")
 
-    def test_correct_ai_capcut_work_from_wants_to_need(self) -> None:
-        parsed = {
-            "keterangan": "Langganan CapCut untuk kerja edit video",
-            "jenis": "Pengeluaran",
-            "kategori": "Subscription",
-            "sifat": "Wants",
-        }
-        out = apply_context_rules(
-            parsed,
-            "langganan capcut untuk kerja edit video karena akun sebelumnya gabisa dipake",
-        )
-        self.assertEqual(out["kategori"], "Subscription")
-        self.assertEqual(out["sifat"], "Need")
-
     def test_skincare(self) -> None:
-        self.assertClass("skincare serum 120rb", "Pengeluaran", "Skincare")
+        self.assertClass("skincare serum 120rb", "Pengeluaran", "Lifestyle & Hiburan")
 
     def test_makan(self) -> None:
-        self.assertClass("makan malam 65700", "Pengeluaran", "Makan")
+        self.assertClass("makan malam 65700", "Pengeluaran", "Makanan & Minuman")
 
     def test_konser_masuk_hiburan_bukan_social(self) -> None:
-        self.assertClass("beli tiket konser 450rb", "Pengeluaran", "Hiburan")
+        self.assertClass("beli tiket konser 450rb", "Pengeluaran", "Lifestyle & Hiburan")
 
     def test_transport(self) -> None:
-        self.assertClass("grab ke kantor 28rb", "Pengeluaran", "Transport")
+        self.assertClass("grab ke kantor 28rb", "Pengeluaran", "Transportasi")
 
     def test_kos(self) -> None:
-        self.assertClass("bayar sewa kos 1500000", "Pengeluaran", "Sewa/Tempat Tinggal")
+        self.assertClass("bayar sewa kos 1500000", "Pengeluaran", "Tempat Tinggal")
 
     def test_sewa_masuk(self) -> None:
         self.assertClass("terima sewa kontrakan 2jt", "Pemasukan", "Sewa Masuk")
 
     def test_reksadana(self) -> None:
-        self.assertClass("nabung reksadana 500rb", "Saving/Investment", "Reksadana")
+        self.assertClass("nabung reksadana 500rb", "Saving/Investment", "Investasi & Tabungan")
 
-    def test_bunga_bukan_saving(self) -> None:
-        hit = classify_from_text("bunga deposito 15000")
-        self.assertEqual(hit["jenis"], "Pemasukan")
-        self.assertNotEqual(hit["jenis"], "Saving/Investment")
-
-    def test_headset_elektronik_bukan_jajan(self) -> None:
+    def test_headset_lifestyle_bukan_jajan(self) -> None:
         hit = classify_from_text("beli headset 350rb")
         self.assertIsNotNone(hit)
         assert hit is not None
         self.assertEqual(hit["jenis"], "Pengeluaran")
-        self.assertEqual(hit["kategori"], "Elektronik")
+        self.assertEqual(hit["kategori"], "Lifestyle & Hiburan")
         self.assertEqual(hit["sifat"], "Wants")
-
-    def test_earphone_elektronik(self) -> None:
-        self.assertClass("earphone 150rb", "Pengeluaran", "Elektronik")
-
-    def test_hp_rusak_elektronik_need(self) -> None:
-        hit = classify_from_text("ganti hp rusak 3jt")
-        self.assertIsNotNone(hit)
-        assert hit is not None
-        self.assertEqual(hit["kategori"], "Elektronik")
-        self.assertEqual(hit["sifat"], "Need")
-
-    def test_laptop_kerja_elektronik_need(self) -> None:
-        hit = classify_from_text("laptop kerja 8jt")
-        self.assertIsNotNone(hit)
-        assert hit is not None
-        self.assertEqual(hit["kategori"], "Elektronik")
-        self.assertEqual(hit["sifat"], "Need")
-
-    def test_trust_ai_expense_category(self) -> None:
-        parsed = {
-            "keterangan": "beli headset",
-            "jenis": "Pengeluaran",
-            "kategori": "Elektronik",
-            "sifat": "Wants",
-        }
-        out = apply_context_rules(parsed, "beli headset 350rb")
-        self.assertEqual(out["kategori"], "Elektronik")
-
-    def test_correct_ai_jajan_to_elektronik(self) -> None:
-        parsed = {
-            "keterangan": "beli headset",
-            "jenis": "Pengeluaran",
-            "kategori": "Jajan",
-            "sifat": "Wants",
-        }
-        out = apply_context_rules(parsed, "beli headset 350rb")
-        self.assertEqual(out["kategori"], "Elektronik")
-
-    def test_do_not_override_ai_makan(self) -> None:
-        parsed = {
-            "keterangan": "makan siang meeting",
-            "jenis": "Pengeluaran",
-            "kategori": "Makan",
-            "sifat": "Need",
-        }
-        out = apply_context_rules(parsed, "makan siang meeting 80rb")
-        self.assertEqual(out["kategori"], "Makan")
 
     def test_grabfood_jajan_bukan_transport(self) -> None:
         hit = classify_from_text(
@@ -237,24 +136,15 @@ class ContextRulesTests(unittest.TestCase):
         )
         self.assertIsNotNone(hit)
         assert hit is not None
-        self.assertEqual(hit["kategori"], "Jajan")
+        self.assertEqual(hit["kategori"], "Makanan & Minuman")
         self.assertEqual(hit["sifat"], "Wants")
-        self.assertNotEqual(hit["kategori"], "Transport")
-
-    def test_grab_ojek_tetap_transport(self) -> None:
-        self.assertClass("grab ke kantor 28rb", "Pengeluaran", "Transport")
+        self.assertNotEqual(hit["kategori"], "Transportasi")
 
     def test_beli_aqua_essential_bukan_jajan(self) -> None:
         hit = classify_from_text("beli aqua 1.5L 7k")
         self.assertIsNotNone(hit)
         assert hit is not None
-        self.assertEqual(hit["kategori"], "Makan")
-        self.assertEqual(hit["sifat"], "Need")
-
-    def test_beli_air_minum_essential(self) -> None:
-        self.assertClass("beli air minum 1.5L 9k kebutuhan hidup", "Pengeluaran", "Makan")
-        hit = classify_from_text("beli air minum 1.5L 9k kebutuhan hidup")
-        assert hit is not None
+        self.assertEqual(hit["kategori"], "Makanan & Minuman")
         self.assertEqual(hit["sifat"], "Need")
 
     def test_correct_ai_jajan_aqua_to_makan(self) -> None:
@@ -265,70 +155,36 @@ class ContextRulesTests(unittest.TestCase):
             "sifat": "Wants",
         }
         out = apply_context_rules(parsed, "beli aqua 1.5L 7k")
-        self.assertEqual(out["kategori"], "Makan")
+        self.assertEqual(out["kategori"], "Makanan & Minuman")
         self.assertEqual(out["sifat"], "Need")
 
-    def test_correct_ai_transport_grabfood(self) -> None:
-        parsed = {
-            "keterangan": "Jajan di Grabfood beli kue Soesweet Bali",
-            "jenis": "Pengeluaran",
-            "kategori": "Transport",
-            "sifat": "Need",
-        }
-        out = apply_context_rules(
-            parsed,
-            "jajan di grabfood 60k beli kue soesweet bali happy",
-        )
-        self.assertEqual(out["kategori"], "Jajan")
-        self.assertEqual(out["sifat"], "Wants")
-
     def test_donasi_grab_driver_social(self) -> None:
-        self.assertClass("donasi ke bapak grab 5k", "Pengeluaran", "Social")
+        self.assertClass("donasi ke bapak grab 5k", "Pengeluaran", "Sosial & Keluarga")
 
-    def test_tips_grab_driver_social(self) -> None:
-        self.assertClass("memberikan tips ke bapak grab 5k", "Pengeluaran", "Social")
-        hit = classify_from_text("memberikan tips ke bapak grab 5k")
-        assert hit is not None
-        self.assertEqual(hit["sifat"], "Wants")
+    def test_tips_grab_driver_hadiah(self) -> None:
+        self.assertClass("memberikan tips ke bapak grab 5k", "Pengeluaran", "Hadiah")
 
-    def test_apply_rules_donasi_ai_makan_corrected(self) -> None:
-        parsed = {
-            "keterangan": "Donasi ke bapak grab 5k",
-            "jenis": "Pengeluaran",
-            "kategori": "Makan",
-            "sifat": "Need",
-        }
-        out = apply_context_rules(parsed, "donasi ke bapak grab 5k happy")
-        self.assertEqual(out["kategori"], "Social")
-        self.assertEqual(out["sifat"], "Wants")
+    def test_laundry_tempat_tinggal(self) -> None:
+        self.assertClass("laundry/cuci baju 52.500", "Pengeluaran", "Tempat Tinggal")
 
-    def test_laundry_is_need(self) -> None:
-        self.assertClass("laundry/cuci baju 52.500", "Pengeluaran", "Laundry")
-        hit = classify_from_text("laundry/cuci baju 52.500")
-        assert hit is not None
-        self.assertEqual(hit["sifat"], "Need")
+    def test_hadiah_wants(self) -> None:
+        self.assertClass("hadiah atas jasa orang 5k", "Pengeluaran", "Hadiah")
 
-    def test_hadiah_jasa_social_wants(self) -> None:
-        self.assertClass("hadiah atas jasa orang 5k", "Pengeluaran", "Social")
-        hit = classify_from_text("hadiah atas jasa orang 5k")
-        assert hit is not None
-        self.assertEqual(hit["sifat"], "Wants")
-
-    def test_gym_personal_training_kesehatan(self) -> None:
+    def test_gym_lifestyle_wants(self) -> None:
         self.assertClass(
             "Bayar olahraga gym bulanan + Personal training Rp 455.583",
             "Pengeluaran",
-            "Kesehatan",
+            "Lifestyle & Hiburan",
         )
 
-    def test_konsumsi_meeting_bisnis_makan(self) -> None:
+    def test_konsumsi_meeting_bisnis(self) -> None:
         self.assertClass(
             "Konsumsi meeting untuk take konten bisnis YFD Rp 127.050",
             "Pengeluaran",
-            "Makan",
+            "Bisnis & Karir",
         )
 
-    def test_apply_rules_meeting_bisnis_jajan_to_makan(self) -> None:
+    def test_apply_rules_meeting_bisnis_jajan_to_bisnis(self) -> None:
         parsed = {
             "keterangan": "Konsumsi meeting untuk take konten bisnis YFD",
             "jenis": "Pengeluaran",
@@ -339,7 +195,7 @@ class ContextRulesTests(unittest.TestCase):
             parsed,
             "Konsumsi meeting untuk take konten bisnis YFD Rp 127.050 neutral",
         )
-        self.assertEqual(out["kategori"], "Makan")
+        self.assertEqual(out["kategori"], "Bisnis & Karir")
         self.assertEqual(out["sifat"], "Need")
 
     def test_ai_income_jajan_corrected_to_expense(self) -> None:

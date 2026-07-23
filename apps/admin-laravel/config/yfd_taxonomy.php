@@ -1,0 +1,113 @@
+<?php
+
+/**
+ * YFD AI Taxonomy v1.0 (Juli 2026) — closed list.
+ * AI hanya boleh memilih dari daftar ini; bucket ditentukan sistem.
+ *
+ * @see docs/YFD_AI_Taxonomy.pdf
+ */
+return [
+    'expense_categories' => [
+        'Makanan & Minuman',
+        'Tempat Tinggal',
+        'Transportasi',
+        'Komunikasi',
+        'Kesehatan & Kebersihan Diri',
+        'Pendidikan',
+        'Investasi & Tabungan',
+        'Proteksi',
+        'Lifestyle & Hiburan',
+        'Traveling',
+        'Sosial & Keluarga',
+        'Bisnis & Karir',
+        'Hadiah',
+        'Cicilan & Hutang',
+        'Lain-lain',
+    ],
+
+    'income_categories' => [
+        'Gaji',
+        'Bonus',
+        'Freelance',
+        'Affiliate',
+        'Dividen',
+        'Bunga Investasi',
+        'Cashback',
+        'Refund',
+        'Penjualan',
+        'Sewa Masuk',
+        'Transfer Masuk',
+        'Lain-lain',
+    ],
+
+    'fallback_category' => 'Lain-lain',
+
+    /**
+     * Alias lama / AI variants → kategori resmi.
+     *
+     * @var array<string, string>
+     */
+    'aliases' => [
+        'makan' => 'Makanan & Minuman',
+        'makanan' => 'Makanan & Minuman',
+        'makanan & minuman' => 'Makanan & Minuman',
+        'makanan dan minuman' => 'Makanan & Minuman',
+        'jajan' => 'Makanan & Minuman',
+        'minuman' => 'Makanan & Minuman',
+        'transport' => 'Transportasi',
+        'transportasi' => 'Transportasi',
+        'listrik' => 'Tempat Tinggal',
+        'air' => 'Tempat Tinggal',
+        'sewa/tempat tinggal' => 'Tempat Tinggal',
+        'sewa' => 'Tempat Tinggal',
+        'tempat tinggal' => 'Tempat Tinggal',
+        'komunikasi' => 'Komunikasi',
+        'kesehatan' => 'Kesehatan & Kebersihan Diri',
+        'kesehatan & kebersihan diri' => 'Kesehatan & Kebersihan Diri',
+        'laundry' => 'Kesehatan & Kebersihan Diri',
+        'cuci baju' => 'Kesehatan & Kebersihan Diri',
+        'skincare' => 'Lifestyle & Hiburan',
+        'pendidikan' => 'Pendidikan',
+        'saham' => 'Investasi & Tabungan',
+        'reksadana' => 'Investasi & Tabungan',
+        'emas' => 'Investasi & Tabungan',
+        'obligasi' => 'Investasi & Tabungan',
+        'tabungan/investasi' => 'Investasi & Tabungan',
+        'investasi' => 'Investasi & Tabungan',
+        'investasi & tabungan' => 'Investasi & Tabungan',
+        'asuransi' => 'Proteksi',
+        'proteksi' => 'Proteksi',
+        'hiburan' => 'Lifestyle & Hiburan',
+        'lifestyle' => 'Lifestyle & Hiburan',
+        'lifestyle & hiburan' => 'Lifestyle & Hiburan',
+        'subscription' => 'Lifestyle & Hiburan',
+        'elektronik' => 'Lifestyle & Hiburan',
+        'peralatan' => 'Lifestyle & Hiburan',
+        'traveling' => 'Traveling',
+        'liburan' => 'Traveling',
+        'social' => 'Sosial & Keluarga',
+        'sosial' => 'Sosial & Keluarga',
+        'sosial & keluarga' => 'Sosial & Keluarga',
+        'bisnis' => 'Bisnis & Karir',
+        'bisnis & karir' => 'Bisnis & Karir',
+        'jasa' => 'Bisnis & Karir',
+        'hadiah' => 'Hadiah',
+        'cicilan' => 'Cicilan & Hutang',
+        'cicilan & hutang' => 'Cicilan & Hutang',
+        'pajak' => 'Lain-lain',
+        'lainnya' => 'Lain-lain',
+        'lain-lain' => 'Lain-lain',
+        'lain lain' => 'Lain-lain',
+    ],
+
+    'source_of_truth_note' => [
+        'Taxonomy tertutup (YFD AI Taxonomy v1.0): AI HANYA memilih dari 15 kategori resmi (+ kategori pemasukan).',
+        'AI tidak boleh membuat kategori baru. Jika ragu → Lain-lain.',
+        'Layer 1 = Kategori (closed list). Layer 2 = Bucket (otomatis dari mapping sistem).',
+        'AI tidak menentukan bucket. Bucket dihitung dari sub-konteks + Need/Wants.',
+        'Gym/olahraga berbayar → Lifestyle & Hiburan / Flexible + Social / Wants (bukan Essential).',
+        'Pengembangan diri → Pendidikan / Future Building (Need atau Wants, bucket sama).',
+        'Donasi/sedekah/zakat/hadiah → Sosial & Keluarga atau Hadiah / Flexible + Social.',
+        'Jenis transaksi dan bucket berbeda: biaya bisnis tetap Pengeluaran, bucket Future Building.',
+    ],
+];

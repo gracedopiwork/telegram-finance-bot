@@ -6,96 +6,13 @@ use App\Models\BotTransaction;
 use App\Models\CategoryBucketMapping;
 use App\Support\TransactionTaxonomy;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 
 /**
- * Selesaikan kategori transaksi: cocokkan yang sudah ada, atau buat pemetaan bucket baru otomatis.
+ * Selesaikan kategori transaksi ke closed list YFD AI Taxonomy.
+ * Tidak membuat kategori baru di luar daftar resmi.
  */
 class CategoryAutoRegisterService
 {
-    /** @var array<string, string> */
-    private const CATEGORY_ALIASES = [
-        'makanan' => 'Makan',
-        'makan' => 'Makan',
-        'muen' => 'Makan',
-        'sosial' => 'Social',
-        'hiburan' => 'Hiburan',
-        'networking' => 'Social',
-        'yfd' => 'Social',
-        'admin bank' => 'Jajan',
-        'skin care-beauty' => 'Skincare',
-        'skin care' => 'Skincare',
-        'skincare' => 'Skincare',
-        'beauty' => 'Skincare',
-        'subscription' => 'Subscription',
-        'langganan' => 'Subscription',
-        'asuransi' => 'Asuransi',
-        'premi asuransi' => 'Asuransi',
-        'premi' => 'Asuransi',
-        'bpjs' => 'Asuransi',
-        'dividen' => 'Dividen',
-        'dividend' => 'Dividen',
-        'affiliate' => 'Affiliate',
-        'afiliasi' => 'Affiliate',
-        'komisi' => 'Affiliate',
-        'commission' => 'Affiliate',
-        'referral' => 'Affiliate',
-        'shopee affiliate' => 'Affiliate',
-        'tiktok affiliate' => 'Affiliate',
-        'tokopedia affiliate' => 'Affiliate',
-        'lazada affiliate' => 'Affiliate',
-        'bunga' => 'Bunga Investasi',
-        'bunga investasi' => 'Bunga Investasi',
-        'bunga deposito' => 'Bunga Investasi',
-        'bunga tabungan' => 'Bunga Investasi',
-        'interest' => 'Bunga Investasi',
-        'interest income' => 'Bunga Investasi',
-        'cashback' => 'Cashback',
-        'cash back' => 'Cashback',
-        'refund' => 'Refund',
-        'pengembalian dana' => 'Refund',
-        'freelance' => 'Freelance',
-        'freelancer' => 'Freelance',
-        'honor' => 'Freelance',
-        'honorarium' => 'Freelance',
-        'bonus' => 'Bonus',
-        'thr' => 'Bonus',
-        'penjualan' => 'Penjualan',
-        'hasil jualan' => 'Penjualan',
-        'sewa masuk' => 'Sewa Masuk',
-        'transfer masuk' => 'Transfer Masuk',
-        'kesehatan' => 'Kesehatan',
-        'obat' => 'Kesehatan',
-        'pendidikan' => 'Pendidikan',
-        'spp' => 'Pendidikan',
-        'komunikasi' => 'Komunikasi',
-        'pulsa' => 'Komunikasi',
-        'kuota' => 'Komunikasi',
-        'transportasi' => 'Transport',
-        'transport' => 'Transport',
-        'laundry' => 'Laundry',
-        'cuci baju' => 'Laundry',
-        'cicilan' => 'Cicilan',
-        'angsuran' => 'Cicilan',
-        'pajak' => 'Pajak',
-        'saham' => 'Saham',
-        'reksadana' => 'Reksadana',
-        'lain-lain' => 'Jajan',
-        'lain lain' => 'Jajan',
-        'elektronik' => 'Elektronik',
-        'gadget' => 'Elektronik',
-        'headset' => 'Elektronik',
-        'earphone' => 'Elektronik',
-        'laptop' => 'Elektronik',
-        'hp' => 'Elektronik',
-        'handphone' => 'Elektronik',
-        'tumbler' => 'Peralatan',
-        'botol minum' => 'Peralatan',
-        'peralatan' => 'Peralatan',
-        'rumah tangga' => 'Peralatan',
-        'dipinjam' => 'Social',
-    ];
-
     public function __construct(
         private readonly BotCategoryRulesService $categoryRulesService,
         private readonly CategoryBucketMappingService $mappingService,
@@ -108,28 +25,10 @@ class CategoryAutoRegisterService
         string $nature,
         string $notes = '',
     ): string {
-        $rules = $this->categoryRulesService->export();
-        $categoryInput = trim($categoryInput);
+        $resolved = $this->resolveWithoutRegister($categoryInput, $type);
+        $this->ensureMappingExists($resolved, $type, $nature, $notes);
 
-        if ($categoryInput === '') {
-            return $this->defaultCategoryForType($type, $rules);
-        }
-
-        $existing = $this->resolveExisting($categoryInput, $rules);
-        if ($existing !== null) {
-            $this->registerIfMissing($existing, $type, $nature, $notes);
-
-            return $existing;
-        }
-
-        $newName = $this->formatCategoryName($categoryInput);
-        if ($newName === '') {
-            return $this->defaultCategoryForType($type, $rules);
-        }
-
-        $this->registerIfMissing($newName, $type, $nature, $notes);
-
-        return $newName;
+        return $resolved;
     }
 
     /**
@@ -139,17 +38,18 @@ class CategoryAutoRegisterService
     {
         $rules = $this->categoryRulesService->export();
         $categoryInput = trim($categoryInput);
+        $fallback = (string) ($rules['fallback_category'] ?? config('yfd_taxonomy.fallback_category', 'Lain-lain'));
 
         if ($categoryInput === '') {
-            return $this->defaultCategoryForType($type, $rules);
+            return $this->defaultCategoryForType($type, $fallback);
         }
 
-        $resolved = $this->resolveExisting($categoryInput, $rules)
-            ?? $this->formatCategoryName($categoryInput);
+        $existing = $this->resolveExisting($categoryInput, $rules);
+        if ($existing !== null) {
+            return $existing;
+        }
 
-        return $resolved !== ''
-            ? $resolved
-            : $this->defaultCategoryForType($type, $rules);
+        return $this->defaultCategoryForType($type, $fallback);
     }
 
     /**
@@ -157,54 +57,25 @@ class CategoryAutoRegisterService
      */
     private function resolveExisting(string $value, array $rules): ?string
     {
+        $aliases = array_merge(
+            (array) config('yfd_taxonomy.aliases', []),
+            (array) ($rules['aliases'] ?? []),
+        );
         $normalized = $this->normalizeAliasKey($value);
-        if ($normalized !== '' && isset(self::CATEGORY_ALIASES[$normalized])) {
-            $target = self::CATEGORY_ALIASES[$normalized];
-            foreach ($rules['categories'] as $cat) {
-                if ($this->categoryKeysMatch((string) $cat, $target)) {
-                    return (string) $cat;
-                }
-            }
-
-            return $target;
+        if ($normalized !== '' && isset($aliases[$normalized])) {
+            return (string) $aliases[$normalized];
         }
 
-        foreach ($rules['categories'] as $cat) {
+        foreach ((array) ($rules['categories'] ?? []) as $cat) {
             if ($this->categoryKeysMatch((string) $cat, $value)) {
                 return (string) $cat;
-            }
-        }
-
-        $needle = $this->compactKey($value);
-        if ($needle === '') {
-            return null;
-        }
-
-        /** @var array<string, list<string>> $categorySubMap */
-        $categorySubMap = $rules['category_sub_map'] ?? [];
-        foreach ($categorySubMap as $category => $subs) {
-            foreach ($subs as $sub) {
-                if ($this->categoryKeysMatch((string) $sub, $value)) {
-                    return (string) $category;
-                }
-            }
-        }
-
-        foreach ($rules['rules'] as $rule) {
-            if (! is_array($rule)) {
-                continue;
-            }
-            $sub = trim((string) ($rule['sub_category'] ?? ''));
-            $cat = trim((string) ($rule['category'] ?? ''));
-            if ($sub !== '' && $cat !== '' && $cat !== '*' && $this->categoryKeysMatch($sub, $value)) {
-                return $cat;
             }
         }
 
         return null;
     }
 
-    private function registerIfMissing(string $name, string $type, string $nature, string $notes): void
+    private function ensureMappingExists(string $name, string $type, string $nature, string $notes): void
     {
         if (! Schema::hasTable('category_bucket_mappings')) {
             return;
@@ -231,7 +102,7 @@ class CategoryAutoRegisterService
             'transaction_type' => $txType,
             'nature' => $nature !== '' ? $nature : null,
             'match_keywords' => $this->keywordsForAutoCategory($name, $notes),
-            'reason' => 'Dibuat otomatis dari transaksi/import/bot',
+            'reason' => 'Sinkron taxonomy resmi YFD',
             'sort_order' => $maxSort + 1,
             'is_active' => true,
         ]);
@@ -281,15 +152,9 @@ class CategoryAutoRegisterService
             return $resolved;
         }
 
-        $txType = TransactionTaxonomy::mappingTransactionType($type);
-
-        return match ($txType) {
-            'income' => 'Income',
-            'saving' => 'Future Building',
-            default => $nature === TransactionTaxonomy::NATURE_WANTS
-                ? 'Flexible + Social'
-                : 'Essential Living',
-        };
+        return $nature === TransactionTaxonomy::NATURE_WANTS
+            ? 'Flexible + Social'
+            : 'Essential Living';
     }
 
     private function keywordsForAutoCategory(string $name, string $notes = ''): string
@@ -302,40 +167,6 @@ class CategoryAutoRegisterService
             ],
             $this->keywordsFromNotes($notes),
         ))));
-
-        if ($this->categoryKeysMatch($name, 'Affiliate')) {
-            $keywords = array_values(array_unique(array_merge($keywords, [
-                'affiliate',
-                'afiliasi',
-                'komisi',
-                'commission',
-                'referral',
-                'shopee affiliate',
-                'tiktok affiliate',
-            ])));
-        }
-
-        if ($this->categoryKeysMatch($name, 'Bunga Investasi')) {
-            $keywords = array_values(array_unique(array_merge($keywords, [
-                'bunga',
-                'bunga investasi',
-                'bunga deposito',
-                'bunga tabungan',
-                'terima bunga',
-                'dapat bunga',
-                'interest',
-                'interest income',
-            ])));
-        }
-
-        if ($this->categoryKeysMatch($name, 'Peralatan')) {
-            $keywords = array_values(array_unique(array_merge($keywords, [
-                'tumbler',
-                'botol minum',
-                'peralatan',
-                'rumah tangga',
-            ])));
-        }
 
         return implode(',', array_slice($keywords, 0, 50));
     }
@@ -357,7 +188,6 @@ class CategoryAutoRegisterService
             'beli', 'bayar', 'di', 'ke', 'dari', 'yang', 'untuk', 'dengan', 'dan', 'atau',
             'ini', 'itu', 'ada', 'sudah', 'bisa', 'masuk', 'setelah', 'sebelum', 'karena',
             'hari', 'tanggal', 'tgl', 'bulan', 'tahun', 'rp', 'rupiah', 'nominal', 'harga',
-            'happy', 'senang', 'sedih', 'capek', 'lelah', 'rawat', 'kerja', 'setelah',
         ];
 
         $tokens = preg_split('/\s+/u', $text) ?: [];
@@ -376,26 +206,16 @@ class CategoryAutoRegisterService
         return array_values(array_unique(array_slice($out, 0, 12)));
     }
 
-    /**
-     * @param  array<string, mixed>  $rules
-     */
-    private function defaultCategoryForType(string $type, array $rules): string
+    private function defaultCategoryForType(string $type, string $fallback): string
     {
         if ($type === TransactionTaxonomy::TYPE_INCOME) {
             return 'Gaji';
         }
-
-        return (string) ($rules['fallback_category'] ?? 'Jajan');
-    }
-
-    private function formatCategoryName(string $value): string
-    {
-        $value = trim($value);
-        if ($value === '') {
-            return '';
+        if ($type === TransactionTaxonomy::TYPE_SAVING) {
+            return 'Investasi & Tabungan';
         }
 
-        return Str::title($value);
+        return $fallback !== '' ? $fallback : 'Lain-lain';
     }
 
     private function normalizeAliasKey(string $value): string
