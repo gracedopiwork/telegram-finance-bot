@@ -77,6 +77,36 @@ REWARD_SPENDING_KEYWORDS = (
     "celebratory",
 )
 
+# Belanja karena kondisi emosional (comfort spending) — impulsif meski kategori makan = Need.
+EMOTIONAL_COMFORT_KEYWORDS = (
+    "karena capek",
+    "karena lelah",
+    "karena cape",
+    "karena stres",
+    "karena stress",
+    "karena sedih",
+    "karena cemas",
+    "karena bosan",
+    "karena lonely",
+    "karena kesepian",
+    "healing",
+    "comfort food",
+    "comfort spending",
+    "me time",
+    "buat tenang",
+    "biar tenang",
+    "penghibur",
+    "ngobatin cape",
+    "ngobatin capek",
+    "ngobatin lelah",
+)
+
+FOOD_CATEGORIES = frozenset({
+    "Makanan & Minuman",
+    "Makan",
+    "Jajan",
+})
+
 # Acara sosial terencana — bukan impulsif meski nominal besar / mood Happy.
 PLANNED_SOCIAL_KEYWORDS = (
     "ulang tahun",
@@ -177,6 +207,35 @@ def has_explicit_impulse_signal(combined: str) -> bool:
     )
 
 
+def is_emotional_comfort_spending(parsed: dict[str, Any], combined: str) -> bool:
+    """Makan/belanja karena capek/sedih/stres = comfort spending impulsif."""
+    if not any(keyword in combined for keyword in EMOTIONAL_COMFORT_KEYWORDS):
+        return False
+
+    kategori = str(parsed.get("kategori", ""))
+    sifat = str(parsed.get("sifat", ""))
+    if kategori in FOOD_CATEGORIES or sifat == "Wants":
+        return True
+
+    # Teks jelas tentang makan/jajan meski label kategori masih lama/salah.
+    return any(
+        token in combined
+        for token in (
+            "makan",
+            "makanan",
+            "jajan",
+            "kopi",
+            "boba",
+            "snack",
+            "gofood",
+            "grabfood",
+            "cafe",
+            "resto",
+            "restoran",
+        )
+    )
+
+
 def resolve_impulsif(
     parsed: dict[str, Any],
     source_text: str = "",
@@ -187,8 +246,8 @@ def resolve_impulsif(
     """
     Urutan keputusan:
     1) Guardrail wajib (acara sosial / tagihan / penggantian rusak) — override AI
-    2) Sinyal impulsif kuat (spontan / pasca-gajian)
-    3) Keputusan AI (jika path Gemini) — nominal kecil tetap No kecuali sinyal eksplisit
+    2) Sinyal impulsif kuat (spontan / pasca-gajian / comfort spending emosional)
+    3) Keputusan AI — nominal kecil tetap No kecuali sinyal eksplisit
     4) Heuristik fallback sempit
     """
     if parsed.get("jenis") != "Pengeluaran":
@@ -216,6 +275,10 @@ def resolve_impulsif(
     if nominal > 0 and nominal < MIN_NOMINAL_FOR_IMPULSE:
         return "No"
 
+    # "makan malam 100rb karena capek" → Yes, override AI yang sering bilang Need/No.
+    if is_emotional_comfort_spending(parsed, combined):
+        return "Yes"
+
     if trust_ai and ai_suggested in VALID_IMPULSIF:
         return ai_suggested
 
@@ -228,7 +291,7 @@ def infer_impulsif_fallback(parsed: dict[str, Any], combined: str) -> str:
     nominal = int(parsed.get("nominal", 0) or 0)
     kategori = str(parsed.get("kategori", ""))
     sifat = str(parsed.get("sifat", ""))
-    is_food_out = kategori in {"Jajan", "Makan"}
+    is_food_out = kategori in FOOD_CATEGORIES
     is_premium = any(keyword in combined for keyword in PREMIUM_SPENDING_KEYWORDS)
 
     if nominal > 0 and nominal < MIN_NOMINAL_FOR_IMPULSE:

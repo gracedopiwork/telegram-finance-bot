@@ -78,6 +78,25 @@ class ImpulsiveRulesTests(unittest.TestCase):
         }
         self.assertEqual(resolve_impulsif(parsed, "beli kopi 75rb karena capek"), "Yes")
 
+    def test_tired_dinner_is_impulsive_even_if_need_and_ai_says_no(self) -> None:
+        parsed = {
+            "keterangan": "makan malam 100 rb karena capek",
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Need",
+            "mood": "Tired",
+            "nominal": 100_000,
+        }
+        self.assertEqual(
+            resolve_impulsif(
+                parsed,
+                "makan malam 100 rb karena capek",
+                ai_suggested="No",
+                trust_ai=True,
+            ),
+            "Yes",
+        )
+
     def test_hadiah_spontan_impulsif(self) -> None:
         parsed = {
             "keterangan": "Hadiah atas jasa orang 5k",

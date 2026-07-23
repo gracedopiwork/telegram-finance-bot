@@ -301,7 +301,8 @@ Aturan:
 6) {examples}
 7) impulsif — terpisah dari sifat Need/Wants:
    "Yes" jika spontan / tidak terencana / fomo / mood negatif + belanja diskresioner
-   dengan nominal bermakna (umumnya >= Rp50.000).
+   dengan nominal bermakna (umumnya >= Rp50.000), ATAU belanja makan karena emosi
+   (contoh: "makan malam 100rb karena capek" = Yes meski sifat Need).
    "No" jika terencana, tagihan wajib, atau belanja kecil sehari-hari.
 8) tanggal: opsional. Isi YYYY-MM-DD HANYA jika user menyebut tanggal transaksi.
 9) Balas HANYA JSON murni, tanpa markdown.
