@@ -211,7 +211,7 @@ def normalize_taxonomy(parsed: Dict[str, Any]) -> Dict[str, Any]:
         parsed["sifat"] = "Need"
     elif sifat_lower in {"donation", "donasi", "sedekah", "persembahan"}:
         parsed["jenis"] = "Pengeluaran"
-        parsed["kategori"] = "Social"
+        parsed["kategori"] = "Sosial & Keluarga"
         parsed["sifat"] = "Need"
     elif sifat not in VALID_SIFAT:
         parsed["sifat"] = "Wants" if sifat_lower in {"want", "wants"} else "Need"
