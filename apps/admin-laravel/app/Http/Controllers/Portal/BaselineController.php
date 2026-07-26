@@ -403,11 +403,13 @@ class BaselineController extends Controller
             'cash_savings' => $this->nullableInt($snapshot['cash_savings'] ?? null),
             'total_investment' => $this->nullableInt($snapshot['total_investment'] ?? null),
             'total_asset' => $this->nullableInt($snapshot['total_asset'] ?? null),
+            'asset_details' => $this->normalizeAssetDetails($snapshot['asset_details'] ?? null),
             'total_debt' => $this->nullableInt($snapshot['total_debt'] ?? null),
             'has_bpjs' => (bool) ($snapshot['has_bpjs'] ?? false),
             'has_health_insurance' => (bool) ($snapshot['has_health_insurance'] ?? false),
             'has_income_protection' => (bool) ($snapshot['has_income_protection'] ?? false),
             'has_life_insurance' => (bool) ($snapshot['has_life_insurance'] ?? false),
+            'protection_policies' => $this->normalizeProtectionPolicies($snapshot['protection_policies'] ?? null),
             'ftsa_chd' => $result['ftsa_chd'],
             'ftsa_rvd' => $result['ftsa_rvd'],
             'ftsa_ssd' => $result['ftsa_ssd'],
@@ -420,6 +422,12 @@ class BaselineController extends Controller
             'esd_level' => $result['esd_level'],
             'answers_json' => $result['answers'],
         ];
+
+        $flags = $this->protectionFlagsFromPolicies($payload['protection_policies'] ?? null);
+        $payload['has_bpjs'] = $payload['has_bpjs'] || $flags['has_bpjs'];
+        $payload['has_health_insurance'] = $payload['has_health_insurance'] || $flags['has_health_insurance'];
+        $payload['has_income_protection'] = $payload['has_income_protection'] || $flags['has_income_protection'];
+        $payload['has_life_insurance'] = $payload['has_life_insurance'] || $flags['has_life_insurance'];
 
         if (! $ftsaUnlocked) {
             $payload['ftsa_chd'] = 0;
@@ -450,13 +458,15 @@ class BaselineController extends Controller
             'cash_savings',
             'total_investment',
             'total_asset',
+            'asset_details',
             'total_debt',
             'has_bpjs',
             'has_health_insurance',
             'has_income_protection',
             'has_life_insurance',
+            'protection_policies',
         ] as $field) {
-            if (($payload[$field] === null || $payload[$field] === false) && $existing->{$field} !== null) {
+            if (($payload[$field] === null || $payload[$field] === false || $payload[$field] === []) && $existing->{$field} !== null) {
                 $payload[$field] = $existing->{$field};
             }
         }
@@ -484,7 +494,114 @@ class BaselineController extends Controller
             }
         }
 
+        if (isset($snapshot['asset_details']) && is_array($snapshot['asset_details'])) {
+            foreach (['rumah', 'tanah', 'apartemen', 'mobil', 'lainnya'] as $field) {
+                if (array_key_exists($field, $snapshot['asset_details']) && $snapshot['asset_details'][$field] === '') {
+                    $snapshot['asset_details'][$field] = null;
+                }
+            }
+        }
+
+        if (isset($snapshot['protection_policies']) && is_array($snapshot['protection_policies'])) {
+            foreach ($snapshot['protection_policies'] as $idx => $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+                if (($row['annual_premium'] ?? '') === '') {
+                    $snapshot['protection_policies'][$idx]['annual_premium'] = null;
+                }
+            }
+        }
+
         $request->merge(['snapshot' => $snapshot]);
+    }
+
+    /**
+     * @return array<string, int>|null
+     */
+    private function normalizeAssetDetails(mixed $value): ?array
+    {
+        if (! is_array($value)) {
+            return null;
+        }
+
+        $out = [];
+        foreach (['rumah', 'tanah', 'apartemen', 'mobil', 'lainnya'] as $key) {
+            $amount = $this->nullableInt($value[$key] ?? null);
+            if ($amount !== null && $amount > 0) {
+                $out[$key] = $amount;
+            }
+        }
+
+        return $out === [] ? null : $out;
+    }
+
+    /**
+     * @return list<array{type: string, annual_premium: ?int, coverage: ?string, active_year: ?string, payment_duration: ?string}>|null
+     */
+    private function normalizeProtectionPolicies(mixed $value): ?array
+    {
+        if (! is_array($value)) {
+            return null;
+        }
+
+        $out = [];
+        foreach ($value as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $type = trim((string) ($row['type'] ?? ''));
+            $premium = $this->nullableInt($row['annual_premium'] ?? null);
+            $coverage = trim((string) ($row['coverage'] ?? ''));
+            $activeYear = trim((string) ($row['active_year'] ?? ''));
+            $duration = trim((string) ($row['payment_duration'] ?? ''));
+
+            if ($type === '' && $premium === null && $coverage === '' && $activeYear === '' && $duration === '') {
+                continue;
+            }
+
+            $out[] = [
+                'type' => $type !== '' ? $type : 'Proteksi',
+                'annual_premium' => $premium,
+                'coverage' => $coverage !== '' ? $coverage : null,
+                'active_year' => $activeYear !== '' ? $activeYear : null,
+                'payment_duration' => $duration !== '' ? $duration : null,
+            ];
+        }
+
+        return $out === [] ? null : $out;
+    }
+
+    /**
+     * @param  list<array{type: string}>|null  $policies
+     * @return array{has_bpjs: bool, has_health_insurance: bool, has_income_protection: bool, has_life_insurance: bool}
+     */
+    private function protectionFlagsFromPolicies(?array $policies): array
+    {
+        $flags = [
+            'has_bpjs' => false,
+            'has_health_insurance' => false,
+            'has_income_protection' => false,
+            'has_life_insurance' => false,
+        ];
+
+        foreach ($policies ?? [] as $row) {
+            $type = mb_strtolower((string) ($row['type'] ?? ''));
+            if (str_contains($type, 'bpjs')) {
+                $flags['has_bpjs'] = true;
+            }
+            if (str_contains($type, 'kesehatan') || str_contains($type, 'health')) {
+                $flags['has_health_insurance'] = true;
+            }
+            if (str_contains($type, 'income')) {
+                $flags['has_income_protection'] = true;
+            }
+            if (str_contains($type, 'jiwa') || str_contains($type, 'life')) {
+                $flags['has_life_insurance'] = true;
+            }
+        }
+
+        return $flags;
     }
 
     private function nullableInt(mixed $value): ?int

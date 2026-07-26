@@ -18,7 +18,7 @@
     $bucketGuides = [
         'Essential Living' => 'maksimal 50%',
         'Future Building' => 'minimum 30%',
-        'Protection' => 'minimum 10%',
+        'Protection' => 'maksimal 10%',
         'Flexible + Social' => 'maksimal 10%',
     ];
     $note = $summary['doctors_note'];
@@ -161,6 +161,16 @@
                     @endif
                 </div>
             </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4 sm:col-span-2">
+                <div class="text-sm font-semibold text-navy-800 mb-2">Protection analysis</div>
+                <div class="h-40 flex items-center justify-center">
+                    @if(!empty($summary['protection_analysis']))
+                        <canvas id="protectionChart"></canvas>
+                    @else
+                        <p class="text-xs text-slate-400 text-center px-4">Belum ada transaksi BPJS/asuransi di periode ini. Catat premi lewat bot atau lengkapi tabel proteksi di Baseline.</p>
+                    @endif
+                </div>
+            </div>
         </div>
     </div>
 
@@ -194,6 +204,7 @@ const trend = @json($summary['trend']);
 const buckets = @json($summary['buckets']);
 const incomeSources = @json($summary['income_analysis']['by_source']);
 const savingSources = @json($summary['saving_analysis'] ?? []);
+const protectionSources = @json($summary['protection_analysis'] ?? []);
 const expenseCategories = @json($summary['by_category']);
 const dailyExpenses = @json($summary['daily_expenses'] ?? []);
 
@@ -238,6 +249,7 @@ doughnutChart('bucketChart', buckets.filter(b => b.amount > 0).map(b => b.bucket
 doughnutChart('incomeChart', incomeSources.map(c => c.label), incomeSources.map(c => c.amount));
 doughnutChart('savingChart', savingSources.map(c => c.label), savingSources.map(c => c.amount));
 doughnutChart('expenseChart', expenseCategories.map(c => c.category), expenseCategories.map(c => c.amount));
+doughnutChart('protectionChart', protectionSources.map(c => c.label), protectionSources.map(c => c.amount));
 
 if (dailyExpenses.some(d => d.amount > 0) && document.getElementById('dailyExpenseChart')) {
     new Chart(document.getElementById('dailyExpenseChart'), {

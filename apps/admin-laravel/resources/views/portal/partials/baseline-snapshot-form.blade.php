@@ -62,6 +62,7 @@
                     @endforeach
                 </div>
             </fieldset>
+            @include('portal.partials.baseline-asset-protection-fields', ['existingBaseline' => $existingBaseline ?? null])
             <button type="submit"
                     class="inline-flex items-center gap-2 bg-navy-800 hover:bg-navy-700 text-white font-semibold px-6 py-3 rounded-xl shadow-sm">
                 <span class="material-symbols-outlined">save</span>

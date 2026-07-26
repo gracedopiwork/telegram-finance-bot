@@ -79,7 +79,7 @@ return [
     'bucket_prescription_directions' => [
         'Essential Living' => 'maksimum ≤50% — lebih rendah lebih sehat',
         'Future Building' => 'minimum ≥30% — lebih tinggi lebih sehat',
-        'Protection' => 'minimum ~10% — optimalkan jika di bawah target',
+        'Protection' => 'maksimal ~10% — jangan over-insured; surplus arahkan ke Future Building',
         'Flexible + Social' => 'maksimum ≤10% — jangan melebihi batas',
     ],
 

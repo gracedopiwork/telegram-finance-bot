@@ -112,7 +112,7 @@ php artisan config:clear</code></pre>
             <div class="card-body small">
                 <p><strong>Essential Living</strong> — kebutuhan dasar (makan, transport, tagihan). Target <em>maksimum</em>; semakin rendah % dari income, semakin sehat.</p>
                 <p><strong>Future Building</strong> — investasi & pertumbuhan. Target <em>minimum</em>; semakin tinggi semakin sehat.</p>
-                <p><strong>Protection</strong> — asuransi, dana darurat, utilitas protektif. Target <em>minimum</em>; optimalkan alokasi jika di bawah ideal tahap.</p>
+                <p><strong>Protection</strong> — asuransi, dana darurat, utilitas protektif. Target <em>maksimal</em> 10%; over-insured = kurang sehat.</p>
                 <p><strong>Flexible + Social</strong> — jajan, hiburan, hadiah, sosial. Target maksimum — jangan melebihi ideal tahap finansial.</p>
                 <p class="mb-0"><strong>Income</strong> & <strong>Transfer</strong> tidak masuk perhitungan 4-bucket pengeluaran.</p>
             </div>

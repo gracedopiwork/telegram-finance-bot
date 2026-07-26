@@ -75,6 +75,7 @@ class TransactionDashboardService
         }
         $incomeAnalysis = $this->incomeAnalysis($rows, $income);
         $savingAnalysis = $this->savingAnalysis($rows);
+        $protectionAnalysis = $this->protectionAnalysis($rows, $baseline);
         $dailyExpenses = $this->dailyExpenseTrend($telegramUserId, $month);
         $fallbackClinical = $this->clinicalSummary($income, $expense, $cashflow, $savingRate, $buckets, $baseline, $periodMonths);
         $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $buckets, $baseline);
@@ -123,6 +124,7 @@ class TransactionDashboardService
             'trend' => $trend,
             'income_analysis' => $incomeAnalysis,
             'saving_analysis' => $savingAnalysis,
+            'protection_analysis' => $protectionAnalysis,
             'daily_expenses' => $dailyExpenses,
             'clinical_summary' => $aiGuidance['clinical_summary'],
             'doctors_note' => $aiGuidance['doctors_note'],
@@ -310,8 +312,8 @@ class TransactionDashboardService
     private function bucketStatus(string $bucket, float $share, float $ideal): array
     {
         return match ($bucket) {
-            'Essential Living', 'Flexible + Social' => $this->maxBucketStatus($bucket, $share, $ideal),
-            'Future Building', 'Protection' => $this->minBucketStatus($bucket, $share, $ideal),
+            'Essential Living', 'Flexible + Social', 'Protection' => $this->maxBucketStatus($bucket, $share, $ideal),
+            'Future Building' => $this->minBucketStatus($bucket, $share, $ideal),
             default => abs($share - $ideal) <= 5
               ? ['key' => 'on_target', 'label' => 'Sesuai target']
               : ($share > $ideal
@@ -327,18 +329,9 @@ class TransactionDashboardService
      */
     private function minBucketStatus(string $bucket, float $share, float $ideal): array
     {
-        $underLabel = match ($bucket) {
-            'Protection' => 'Di bawah target proteksi',
-            default => 'Di bawah minimum ideal',
-        };
-        $metLabel = match ($bucket) {
-            'Protection' => 'Memenuhi target proteksi',
-            default => 'Memenuhi minimum',
-        };
-        $nearLabel = match ($bucket) {
-            'Protection' => 'Mendekati target proteksi',
-            default => 'Mendekati minimum',
-        };
+        $underLabel = 'Di bawah minimum ideal';
+        $metLabel = 'Memenuhi minimum';
+        $nearLabel = 'Mendekati minimum';
 
         if ($share < $ideal - 5) {
             return ['key' => 'under_min', 'label' => $underLabel];
@@ -365,6 +358,7 @@ class TransactionDashboardService
         };
         $withinLabel = match ($bucket) {
             'Essential Living' => 'Di bawah maksimum — sehat',
+            'Protection' => 'Dalam batas proteksi',
             default => 'Dalam batas',
         };
 
@@ -561,6 +555,95 @@ class TransactionDashboardService
         ];
     }
 
+    /**
+     * Breakdown proteksi bulanan (BPJS vs asuransi swasta, dll).
+     * Gabungkan transaksi periode + estimasi premi baseline (tahunan/12).
+     *
+     * @return list<array{label: string, amount: int, share: float}>
+     */
+    private function protectionAnalysis(Collection $rows, ?FinancialBaseline $baseline = null): array
+    {
+        $totals = [];
+
+        $protectionRows = $rows->filter(function (BotTransaction $row) {
+            if ($row->type !== TransactionTaxonomy::TYPE_EXPENSE
+                && $row->type !== TransactionTaxonomy::TYPE_SAVING) {
+                return false;
+            }
+
+            $bucket = $this->categoryBuckets->resolve($row);
+            if ($bucket === 'Protection') {
+                return true;
+            }
+
+            $haystack = mb_strtolower(trim(($row->category ?? '').' '.($row->notes ?? '')));
+
+            return str_contains($haystack, 'bpjs')
+                || str_contains($haystack, 'asuransi')
+                || str_contains($haystack, 'proteksi')
+                || str_contains($haystack, 'premi')
+                || str_contains($haystack, 'dana darurat')
+                || str_contains($haystack, 'income protection');
+        });
+
+        foreach ($protectionRows as $row) {
+            $label = $this->protectionAnalysisLabel($row);
+            $totals[$label] = ($totals[$label] ?? 0) + (int) $row->amount;
+        }
+
+        // Jika belum ada transaksi proteksi di periode, pakai estimasi premi baseline.
+        if ($totals === [] && $baseline !== null && is_array($baseline->protection_policies)) {
+            foreach ($baseline->protection_policies as $policy) {
+                if (! is_array($policy)) {
+                    continue;
+                }
+                $annual = (int) ($policy['annual_premium'] ?? 0);
+                if ($annual <= 0) {
+                    continue;
+                }
+                $label = trim((string) ($policy['type'] ?? 'Proteksi'));
+                if ($label === '') {
+                    $label = 'Proteksi';
+                }
+                $monthly = (int) round($annual / 12);
+                $totals[$label] = ($totals[$label] ?? 0) + $monthly;
+            }
+        }
+
+        $total = array_sum($totals);
+        if ($total === 0) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($totals as $label => $amount) {
+            $result[] = [
+                'label' => $label,
+                'amount' => (int) $amount,
+                'share' => round(($amount / $total) * 100, 1),
+            ];
+        }
+
+        usort($result, fn ($a, $b) => $b['amount'] <=> $a['amount']);
+
+        return $result;
+    }
+
+    private function protectionAnalysisLabel(BotTransaction $row): string
+    {
+        $haystack = mb_strtolower(trim(($row->category ?? '').' '.($row->notes ?? '')));
+
+        return match (true) {
+            str_contains($haystack, 'bpjs') => 'BPJS',
+            str_contains($haystack, 'jiwa') => 'Asuransi jiwa',
+            str_contains($haystack, 'income protection') || str_contains($haystack, 'proteksi penghasilan') => 'Income protection',
+            str_contains($haystack, 'kesehatan') || str_contains($haystack, 'health') => 'Asuransi kesehatan',
+            str_contains($haystack, 'dana darurat') || str_contains($haystack, 'emergency') => 'Dana darurat',
+            str_contains($haystack, 'asuransi') || str_contains($haystack, 'premi') || str_contains($haystack, 'proteksi') => 'Asuransi swasta',
+            default => filled(trim((string) $row->category)) ? (string) $row->category : 'Proteksi lain',
+        };
+    }
+
     private function normalizeDashboardCategory(string $category): string
     {
         $raw = trim($category);
@@ -708,8 +791,8 @@ class TransactionDashboardService
                 $hasBucketIssue = true;
             }
 
-            if ($name === 'Protection' && in_array($status, ['under_min', 'under', 'near_min'], true) && $share < $ideal) {
-                $recommendations[] = 'Evaluasi dan optimalkan alokasi proteksi keuangan (asuransi/dana darurat) — saat ini masih di bawah target prescription.';
+            if ($name === 'Protection' && in_array($status, ['over_max', 'over'], true)) {
+                $recommendations[] = 'Proteksi melebihi batas maksimal 10% — evaluasi apakah sudah over-insured dan alihkan surplus ke Future Building.';
                 $hasBucketIssue = true;
             }
 
@@ -759,6 +842,7 @@ class TransactionDashboardService
             'cash_savings' => $baseline->cash_savings,
             'total_investment' => $baseline->total_investment,
             'total_asset' => $baseline->total_asset,
+            'asset_details' => is_array($baseline->asset_details) ? $baseline->asset_details : [],
             'total_debt' => $baseline->total_debt,
             'protection' => [
                 'bpjs' => $baseline->has_bpjs,
@@ -766,6 +850,7 @@ class TransactionDashboardService
                 'income' => $baseline->has_income_protection,
                 'life' => $baseline->has_life_insurance,
             ],
+            'protection_policies' => is_array($baseline->protection_policies) ? $baseline->protection_policies : [],
             'dominant_archetype_label' => $baseline->dominant_archetype_label,
             'assessed_at' => $baseline->assessed_at->format('d M Y'),
             'has_financial_snapshot' => $this->baselineHasFinancialSnapshot($baseline),

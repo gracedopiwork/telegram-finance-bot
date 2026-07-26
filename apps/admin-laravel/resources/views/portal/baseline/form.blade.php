@@ -279,6 +279,7 @@
                         @endforeach
                     </div>
                 </fieldset>
+                @include('portal.partials.baseline-asset-protection-fields', ['existingBaseline' => $existingBaseline ?? null])
             </div>
         </div>
         @endif

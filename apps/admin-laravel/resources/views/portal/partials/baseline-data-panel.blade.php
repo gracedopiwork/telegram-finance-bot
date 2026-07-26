@@ -48,6 +48,59 @@
                 @if($baseline['protection']['life'] ?? false)<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Jiwa</span>@endif
             </div>
         </div>
+        @php
+            $assetDetails = $baseline['asset_details'] ?? [];
+            $assetLabels = [
+                'rumah' => 'Rumah',
+                'tanah' => 'Tanah',
+                'apartemen' => 'Apartemen',
+                'mobil' => 'Mobil',
+                'lainnya' => 'Aset lain',
+            ];
+            $policies = $baseline['protection_policies'] ?? [];
+        @endphp
+        @if(is_array($assetDetails) && collect($assetDetails)->filter(fn ($v) => (int) $v > 0)->isNotEmpty())
+            <div class="sm:col-span-2 lg:col-span-4 rounded-xl bg-slate-50 p-3">
+                <div class="text-xs font-bold text-slate-500 uppercase mb-2">Rincian aset</div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-2">
+                    @foreach($assetLabels as $key => $label)
+                        @if(!empty($assetDetails[$key]))
+                            <div>
+                                <div class="text-[11px] text-slate-500">{{ $label }}</div>
+                                <div class="font-semibold text-navy-800">{{ $fmt((int) $assetDetails[$key]) }}</div>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
+        @endif
+        @if(is_array($policies) && count($policies) > 0)
+            <div class="sm:col-span-2 lg:col-span-4 rounded-xl bg-slate-50 p-3 overflow-x-auto">
+                <div class="text-xs font-bold text-slate-500 uppercase mb-2">Tabel proteksi</div>
+                <table class="min-w-full text-xs">
+                    <thead>
+                        <tr class="text-left text-slate-500">
+                            <th class="pb-1 pr-3 font-medium">Jenis</th>
+                            <th class="pb-1 pr-3 font-medium">Premi/tahun</th>
+                            <th class="pb-1 pr-3 font-medium">Coverage</th>
+                            <th class="pb-1 pr-3 font-medium">Tahun aktif</th>
+                            <th class="pb-1 font-medium">Durasi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach($policies as $policy)
+                        <tr class="border-t border-slate-200 text-navy-800">
+                            <td class="py-1.5 pr-3">{{ $policy['type'] ?? '—' }}</td>
+                            <td class="py-1.5 pr-3">{{ !empty($policy['annual_premium']) ? $fmt((int) $policy['annual_premium']) : '—' }}</td>
+                            <td class="py-1.5 pr-3">{{ $policy['coverage'] ?? '—' }}</td>
+                            <td class="py-1.5 pr-3">{{ $policy['active_year'] ?? '—' }}</td>
+                            <td class="py-1.5">{{ $policy['payment_duration'] ?? '—' }}</td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     </div>
 </div>
 @elseif($baseline)

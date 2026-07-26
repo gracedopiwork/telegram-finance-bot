@@ -222,6 +222,17 @@ class BaselineAssessmentService
             'snapshot.has_health_insurance' => 'sometimes|boolean',
             'snapshot.has_income_protection' => 'sometimes|boolean',
             'snapshot.has_life_insurance' => 'sometimes|boolean',
+            'snapshot.asset_details.rumah' => 'nullable|integer|min:0',
+            'snapshot.asset_details.tanah' => 'nullable|integer|min:0',
+            'snapshot.asset_details.apartemen' => 'nullable|integer|min:0',
+            'snapshot.asset_details.mobil' => 'nullable|integer|min:0',
+            'snapshot.asset_details.lainnya' => 'nullable|integer|min:0',
+            'snapshot.protection_policies' => 'nullable|array|max:12',
+            'snapshot.protection_policies.*.type' => 'nullable|string|max:120',
+            'snapshot.protection_policies.*.annual_premium' => 'nullable|integer|min:0',
+            'snapshot.protection_policies.*.coverage' => 'nullable|string|max:255',
+            'snapshot.protection_policies.*.active_year' => 'nullable|string|max:20',
+            'snapshot.protection_policies.*.payment_duration' => 'nullable|string|max:80',
         ];
     }
 
@@ -232,19 +243,7 @@ class BaselineAssessmentService
      */
     public function validationRulesFtsaSnapshotOnly(): array
     {
-        return [
-            'snapshot.current_goal' => 'nullable|string|max:512',
-            'snapshot.avg_monthly_income' => 'nullable|integer|min:0',
-            'snapshot.emergency_fund' => 'nullable|integer|min:0',
-            'snapshot.cash_savings' => 'nullable|integer|min:0',
-            'snapshot.total_investment' => 'nullable|integer|min:0',
-            'snapshot.total_asset' => 'nullable|integer|min:0',
-            'snapshot.total_debt' => 'nullable|integer|min:0',
-            'snapshot.has_bpjs' => 'sometimes|boolean',
-            'snapshot.has_health_insurance' => 'sometimes|boolean',
-            'snapshot.has_income_protection' => 'sometimes|boolean',
-            'snapshot.has_life_insurance' => 'sometimes|boolean',
-        ];
+        return $this->validationRulesSnapshotOnly();
     }
 
     /**
@@ -269,19 +268,7 @@ class BaselineAssessmentService
      */
     public function validationRulesFtsaOnly(bool $includeFtsa = true): array
     {
-        $rules = [
-            'snapshot.current_goal' => 'nullable|string|max:512',
-            'snapshot.avg_monthly_income' => 'nullable|integer|min:0',
-            'snapshot.emergency_fund' => 'nullable|integer|min:0',
-            'snapshot.cash_savings' => 'nullable|integer|min:0',
-            'snapshot.total_investment' => 'nullable|integer|min:0',
-            'snapshot.total_asset' => 'nullable|integer|min:0',
-            'snapshot.total_debt' => 'nullable|integer|min:0',
-            'snapshot.has_bpjs' => 'sometimes|boolean',
-            'snapshot.has_health_insurance' => 'sometimes|boolean',
-            'snapshot.has_income_protection' => 'sometimes|boolean',
-            'snapshot.has_life_insurance' => 'sometimes|boolean',
-        ];
+        $rules = $this->validationRulesSnapshotOnly();
 
         if ($includeFtsa) {
             for ($i = 1; $i <= 32; $i++) {
