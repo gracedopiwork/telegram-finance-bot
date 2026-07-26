@@ -1004,7 +1004,19 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         parsed["jenis"] = direction
         kat_l = str(parsed.get("kategori") or "").strip().lower()
         if direction == "Pemasukan" and _has_freelance_marker(combined):
-            if kat_l in {"", "jajan", "belanja", "makan", "lain-lain", "lain lain", "jasa", "lainnya"}:
+            if kat_l in {
+                "",
+                "jajan",
+                "belanja",
+                "makan",
+                "makanan & minuman",
+                "makanan dan minuman",
+                "lain-lain",
+                "lain lain",
+                "jasa",
+                "lainnya",
+                "lifestyle & hiburan",
+            }:
                 parsed["kategori"] = "Freelance"
                 parsed["sifat"] = "Need"
                 parsed.pop("sub_kategori", None)
@@ -1012,8 +1024,18 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
             _contains(_normalize_typos(combined), _PAYING_FREELANCE)
             or _has_freelance_marker(combined)
         ):
-            if kat_l in {"", "freelance", "gaji", "bonus", "honor", "jajan"}:
-                parsed["kategori"] = "Jasa"
+            if kat_l in {
+                "",
+                "freelance",
+                "gaji",
+                "bonus",
+                "honor",
+                "jajan",
+                "makan",
+                "makanan & minuman",
+                "jasa",
+            }:
+                parsed["kategori"] = "Bisnis & Karir"
                 parsed["sifat"] = "Need"
                 parsed.pop("sub_kategori", None)
 
@@ -1023,8 +1045,23 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
 
     # AI sudah lengkap → jangan timpa dengan rule income/freelance generik.
     if ai_jenis and ai_kat:
-        # Jaga supaya kategori konsumsi/jajan tidak masuk jenis Pemasukan.
-        if ai_jenis == "Pemasukan" and ai_kat_l in {"jajan", "makan", "hiburan", "social", "transport", "transportasi"}:
+        # Jaga supaya kategori konsumsi tidak masuk jenis Pemasukan.
+        _consumption_cats = {
+            "jajan",
+            "makan",
+            "makanan & minuman",
+            "makanan dan minuman",
+            "minuman",
+            "hiburan",
+            "lifestyle & hiburan",
+            "social",
+            "sosial & keluarga",
+            "transport",
+            "transportasi",
+            "traveling",
+            "hadiah",
+        }
+        if ai_jenis == "Pemasukan" and ai_kat_l in _consumption_cats:
             if detect_cashflow_direction(combined) != "Pemasukan":
                 parsed["jenis"] = "Pengeluaran"
                 ai_jenis = "Pengeluaran"
@@ -1080,22 +1117,27 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
             parsed.pop("sub_kategori", None)
             return parsed
 
-        # Air minum/galon sering salah jadi Jajan/Wants → Essential Living / Makanan & Minuman / Need.
-        if is_drinking_water_expense(combined) and ai_kat_l in {
-            "jajan",
-            "belanja",
-            "minuman",
-            "lain-lain",
-            "lain lain",
-            "other",
-            "misc",
-            "umum",
-            "lainnya",
-        }:
-            parsed["kategori"] = "Makanan & Minuman"
-            parsed["sifat"] = "Need"
-            parsed.pop("sub_kategori", None)
-            return parsed
+        # Air minum/galon sering salah jadi Jajan/Wants → Makanan & Minuman / Need.
+        if ai_jenis == "Pengeluaran" and is_drinking_water_expense(combined):
+            if ai_kat_l in {
+                "jajan",
+                "belanja",
+                "minuman",
+                "makan",
+                "makanan & minuman",
+                "makanan dan minuman",
+                "lain-lain",
+                "lain lain",
+                "other",
+                "misc",
+                "umum",
+                "lainnya",
+                "lifestyle & hiburan",
+            } or str(parsed.get("sifat") or "").strip() != "Need":
+                parsed["kategori"] = "Makanan & Minuman"
+                parsed["sifat"] = "Need"
+                parsed.pop("sub_kategori", None)
+                return parsed
 
         if has_essential_living_intent(combined) and ai_kat_l in {
             "jajan",
