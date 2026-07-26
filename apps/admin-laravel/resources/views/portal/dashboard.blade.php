@@ -15,12 +15,21 @@
         $v = str_ireplace(['financial pulse', 'pulse score', 'kpi pulse'], 'ringkasan keuangan', $v);
         return $v;
     };
-    $bucketGuides = [
-        'Essential Living' => 'maksimal 50%',
-        'Future Building' => 'minimum 30%',
-        'Protection' => 'maksimal 10%',
-        'Flexible + Social' => 'maksimal 10%',
+    $bucketDirections = [
+        'Essential Living' => 'maksimal',
+        'Future Building' => 'minimum',
+        'Protection' => 'maksimal',
+        'Flexible + Social' => 'maksimal',
     ];
+    $bucketGuides = [];
+    foreach ($summary['buckets'] ?? [] as $b) {
+        $name = $b['bucket'] ?? '';
+        $ideal = $b['ideal'] ?? null;
+        $dir = $bucketDirections[$name] ?? null;
+        if ($dir !== null && $ideal !== null) {
+            $bucketGuides[$name] = $dir.' '.$ideal.'%';
+        }
+    }
     $note = $summary['doctors_note'];
     $noteRecommendations = is_array($note) ? ($note['findings'] ?? []) : [];
     $notePriority = is_array($note) ? trim((string) ($note['priority'] ?? '')) : '';

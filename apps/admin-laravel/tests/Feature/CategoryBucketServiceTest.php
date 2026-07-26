@@ -19,7 +19,7 @@ class CategoryBucketServiceTest extends TestCase
         $this->assertBucket(
             'Future Building',
             TransactionTaxonomy::TYPE_EXPENSE,
-            'Jasa',
+            'Bisnis & Karir',
             'Need',
             'Pelunasan jasa freelancer IT dan web developer untuk proyek YFD',
         );
@@ -30,11 +30,11 @@ class CategoryBucketServiceTest extends TestCase
         foreach ([
             ['Pendidikan', 'Bayar seminar financial planning'],
             ['Pendidikan', 'Biaya sertifikasi bisnis'],
-            ['Buku', 'Beli buku The Psychology of Money'],
-            ['Self Development', 'Bayar les piano bulanan'],
-            ['Self Development', 'Kelas public speaking'],
-            ['Pengembangan Diri', 'Coaching karier bersama mentor'],
-            ['Alat Musik', 'Beli piano untuk belajar'],
+            ['Pendidikan', 'Beli buku The Psychology of Money'],
+            ['Pendidikan', 'Bayar les piano bulanan'],
+            ['Pendidikan', 'Kelas public speaking'],
+            ['Pendidikan', 'Coaching karier bersama mentor'],
+            ['Pendidikan', 'Beli piano untuk belajar'],
         ] as [$category, $notes]) {
             $this->assertBucket(
                 'Future Building',
@@ -46,19 +46,19 @@ class CategoryBucketServiceTest extends TestCase
         }
     }
 
-    public function test_sport_lessons_are_essential_living(): void
+    public function test_sport_and_gym_are_flexible_social(): void
     {
         foreach ([
-            ['Olahraga', 'Bayar coaching tenis'],
-            ['Olahraga', 'Bayar les renang'],
-            ['Kesehatan', 'Bayar personal trainer di gym'],
-            ['Olahraga', 'Bayar kelas pilates'],
+            ['Lifestyle & Hiburan', 'Bayar coaching tenis'],
+            ['Lifestyle & Hiburan', 'Bayar les renang'],
+            ['Lifestyle & Hiburan', 'Bayar personal trainer di gym'],
+            ['Lifestyle & Hiburan', 'Bayar kelas pilates'],
         ] as [$category, $notes]) {
             $this->assertBucket(
-                'Essential Living',
+                'Flexible + Social',
                 TransactionTaxonomy::TYPE_EXPENSE,
                 $category,
-                'Need',
+                'Wants',
                 $notes,
             );
         }
@@ -69,7 +69,7 @@ class CategoryBucketServiceTest extends TestCase
         $this->assertBucket(
             'Protection',
             TransactionTaxonomy::TYPE_SAVING,
-            'Dana Darurat',
+            'Investasi & Tabungan',
             'Need',
             'Top up emergency fund bulanan',
         );
@@ -78,11 +78,11 @@ class CategoryBucketServiceTest extends TestCase
     public function test_document_essential_categories_are_essential_living(): void
     {
         foreach ([
-            ['Kesehatan', 'Bayar dokter dan obat'],
-            ['Listrik', 'Bayar token listrik'],
-            ['Air', 'Bayar tagihan air PDAM'],
-            ['Pajak', 'Bayar pajak kendaraan'],
+            ['Kesehatan & Kebersihan Diri', 'Bayar dokter dan obat'],
+            ['Tempat Tinggal', 'Bayar token listrik'],
+            ['Tempat Tinggal', 'Bayar tagihan air PDAM'],
             ['Pendidikan', 'Bayar uang sekolah anak'],
+            ['Cicilan & Hutang', 'Bayar cicilan motor'],
         ] as [$category, $notes]) {
             $this->assertBucket(
                 'Essential Living',
@@ -97,12 +97,12 @@ class CategoryBucketServiceTest extends TestCase
     public function test_context_changes_bucket_without_changing_transaction_type(): void
     {
         $cases = [
-            ['Essential Living', 'Jajan', 'Need', 'Ngopi meeting kerja dengan klien'],
-            ['Flexible + Social', 'Jajan', 'Wants', 'Ngopi untuk healing'],
-            ['Future Building', 'Elektronik', 'Need', 'Beli laptop kerja'],
-            ['Essential Living', 'Elektronik', 'Need', 'Ganti HP utama rusak'],
-            ['Flexible + Social', 'Elektronik', 'Wants', 'Upgrade iPhone karena FOMO'],
-            ['Flexible + Social', 'Alat Musik', 'Wants', 'Beli piano untuk hobi pribadi'],
+            ['Essential Living', 'Makanan & Minuman', 'Need', 'Ngopi meeting kerja dengan klien'],
+            ['Flexible + Social', 'Makanan & Minuman', 'Wants', 'Ngopi untuk healing'],
+            ['Future Building', 'Lifestyle & Hiburan', 'Need', 'Beli laptop kerja'],
+            ['Essential Living', 'Lifestyle & Hiburan', 'Need', 'Ganti HP utama rusak'],
+            ['Flexible + Social', 'Lifestyle & Hiburan', 'Wants', 'Upgrade iPhone karena FOMO'],
+            ['Flexible + Social', 'Lifestyle & Hiburan', 'Wants', 'Beli piano untuk hobi pribadi'],
         ];
 
         foreach ($cases as [$bucket, $category, $nature, $notes]) {
@@ -133,7 +133,7 @@ class CategoryBucketServiceTest extends TestCase
     {
         CategoryBucketMapping::query()->delete();
         CategoryBucketMapping::query()->create([
-            'category' => 'Elektronik',
+            'category' => 'Lifestyle & Hiburan',
             'sub_category' => '-',
             'bucket' => 'Future Building',
             'transaction_type' => 'expense',
@@ -143,7 +143,7 @@ class CategoryBucketServiceTest extends TestCase
             'is_active' => true,
         ]);
         CategoryBucketMapping::query()->create([
-            'category' => 'Elektronik',
+            'category' => 'Lifestyle & Hiburan',
             'sub_category' => '-',
             'bucket' => 'Essential Living',
             'transaction_type' => 'expense',
@@ -157,7 +157,7 @@ class CategoryBucketServiceTest extends TestCase
         $this->assertBucket(
             'Essential Living',
             TransactionTaxonomy::TYPE_EXPENSE,
-            'Elektronik',
+            'Lifestyle & Hiburan',
             'Need',
             'Ganti HP utama rusak',
         );
@@ -175,7 +175,7 @@ class CategoryBucketServiceTest extends TestCase
 
         $response->assertOk()->assertJson([
             'ok' => true,
-            'category' => 'Jasa',
+            'category' => 'Bisnis & Karir',
             'bucket' => 'Future Building',
         ]);
         $this->assertDatabaseCount('bot_transactions', 0);
@@ -252,7 +252,7 @@ class CategoryBucketServiceTest extends TestCase
     {
         return [
             'type' => TransactionTaxonomy::TYPE_EXPENSE,
-            'category' => 'Jasa',
+            'category' => 'Bisnis & Karir',
             'sub_category' => '-',
             'nature' => 'Need',
             'notes' => 'Pelunasan jasa freelancer IT dan web developer untuk proyek YFD',

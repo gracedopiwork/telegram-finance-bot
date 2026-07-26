@@ -12,7 +12,7 @@ def test_coffee_for_productivity_is_need():
         "keterangan": text,
         "nominal": 69000,
         "jenis": "Pengeluaran",
-        "kategori": "Jajan",
+        "kategori": "Makanan & Minuman",
         "sifat": "Wants",
         "mood": "Tired",
     }
@@ -26,7 +26,7 @@ def test_reward_treat_stays_wants():
         "keterangan": text,
         "nominal": 45000,
         "jenis": "Pengeluaran",
-        "kategori": "Jajan",
+        "kategori": "Makanan & Minuman",
         "sifat": "Need",
         "mood": "Happy",
     }

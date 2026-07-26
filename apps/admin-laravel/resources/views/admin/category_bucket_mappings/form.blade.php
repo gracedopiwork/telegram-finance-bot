@@ -20,7 +20,7 @@
                             <label>Kategori <span class="text-danger">*</span></label>
                             <input type="text" name="category" class="form-control" required
                                    value="{{ old('category', $mapping->category) }}"
-                                   placeholder="Makan, Gaji, Jajan, atau * untuk wildcard sifat">
+                                   placeholder="Makanan & Minuman, Gaji, Lifestyle & Hiburan, atau * untuk wildcard">
                             <small class="text-muted">Kategori dibuat otomatis dari transaksi/import. Admin bisa menyesuaikan bucket kapan saja.</small>
                         </div>
                     </div>

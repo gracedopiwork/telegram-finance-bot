@@ -480,7 +480,13 @@ class ImpulsivityAssessmentService
     ];
 
     foreach ($expenses as $row) {
-      $isWant = $row->nature === 'Wants' || $row->category === 'Jajan';
+      $wantCategories = [
+        'Jajan',
+        'Lifestyle & Hiburan',
+        'Traveling',
+        'Hadiah',
+      ];
+      $isWant = $row->nature === 'Wants' || in_array((string) $row->category, $wantCategories, true);
       $isImpulsive = (bool) $row->is_impulsive;
       if ($isWant) {
         $cells[$isImpulsive ? 'want_impulsive' : 'want_planned']['count']++;
@@ -765,8 +771,14 @@ class ImpulsivityAssessmentService
   private function needVsWant(Collection $expenses): array
   {
     $total = max(1, $expenses->count());
+    $wantCategories = [
+      'Jajan',
+      'Lifestyle & Hiburan',
+      'Traveling',
+      'Hadiah',
+    ];
     $wantCount = $expenses->filter(
-      fn (BotTransaction $t) => $t->nature === 'Wants' || $t->category === 'Jajan'
+      fn (BotTransaction $t) => $t->nature === 'Wants' || in_array((string) $t->category, $wantCategories, true)
     )->count();
     $needCount = $expenses->count() - $wantCount;
 

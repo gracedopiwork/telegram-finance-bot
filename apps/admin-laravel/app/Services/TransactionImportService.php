@@ -60,10 +60,10 @@ class TransactionImportService
     {
         $header = 'tanggal,jenis,kategori,nominal,sifat,mood,impulsif,keterangan';
         $examples = [
-            '2026-06-15,Pengeluaran,Makan,35000,Need,Neutral,No,Makan siang kantor',
-            '2026-06-14,Pengeluaran,Transport,15000,Need,Neutral,No,Ojek ke kantor',
-            '2026-06-10,Saving/Investment,Jajan,500000,Need,Neutral,No,Beli saham BBCA',
-            '2026-06-08,Pengeluaran,Social,50000,Need,Neutral,No,Persembahan ibadah',
+            '2026-06-15,Pengeluaran,Makanan & Minuman,35000,Need,Neutral,No,Makan siang kantor',
+            '2026-06-14,Pengeluaran,Transportasi,15000,Need,Neutral,No,Ojek ke kantor',
+            '2026-06-10,Saving/Investment,Investasi & Tabungan,500000,Need,Neutral,No,Beli saham BBCA',
+            '2026-06-08,Pengeluaran,Sosial & Keluarga,50000,Need,Neutral,No,Persembahan ibadah',
             '2026-06-01,Pemasukan,Gaji,5000000,Need,Happy,No,Gaji bulan Juni',
         ];
 

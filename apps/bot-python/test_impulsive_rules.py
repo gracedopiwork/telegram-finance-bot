@@ -23,7 +23,7 @@ class ImpulsiveRulesTests(unittest.TestCase):
         parsed = {
             "keterangan": "Langganan CapCut untuk kerja edit video",
             "jenis": "Pengeluaran",
-            "kategori": "Subscription",
+            "kategori": "Lifestyle & Hiburan",
             "sifat": "Need",
             "mood": "Sad",
             "nominal": 95_000,
@@ -41,7 +41,7 @@ class ImpulsiveRulesTests(unittest.TestCase):
         parsed = {
             "keterangan": "Ganti HP utama yang rusak",
             "jenis": "Pengeluaran",
-            "kategori": "Elektronik",
+            "kategori": "Lifestyle & Hiburan",
             "sifat": "Need",
             "mood": "Tired",
             "nominal": 3_000_000,
@@ -52,7 +52,7 @@ class ImpulsiveRulesTests(unittest.TestCase):
         parsed = {
             "keterangan": "Beli Kopi",
             "jenis": "Pengeluaran",
-            "kategori": "Jajan",
+            "kategori": "Makanan & Minuman",
             "sifat": "Wants",
             "mood": "Tired",
             "nominal": 15_000,
@@ -71,7 +71,7 @@ class ImpulsiveRulesTests(unittest.TestCase):
         parsed = {
             "keterangan": "Beli kopi specialty",
             "jenis": "Pengeluaran",
-            "kategori": "Jajan",
+            "kategori": "Makanan & Minuman",
             "sifat": "Wants",
             "mood": "Tired",
             "nominal": 75_000,

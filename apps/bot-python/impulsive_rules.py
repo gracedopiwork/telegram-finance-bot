@@ -105,6 +105,7 @@ FOOD_CATEGORIES = frozenset({
     "Makanan & Minuman",
     "Makan",
     "Jajan",
+    "Minuman",
 })
 
 # Acara sosial terencana — bukan impulsif meski nominal besar / mood Happy.

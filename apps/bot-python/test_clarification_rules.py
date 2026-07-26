@@ -24,7 +24,7 @@ class ClarificationRulesTests(unittest.TestCase):
 
     def test_generic_coffee_requires_clarification(self) -> None:
         question = clarification_question(
-            {"kategori": "Jajan", "keterangan": "Beli Kopi"},
+            {"kategori": "Makanan & Minuman", "keterangan": "Beli Kopi"},
             "beli kopi 50rb",
         )
         self.assertIn("kerja/meeting", question or "")
@@ -45,7 +45,7 @@ class ClarificationRulesTests(unittest.TestCase):
 
     def test_clear_work_laptop_does_not_require_clarification(self) -> None:
         question = clarification_question(
-            {"kategori": "Elektronik", "keterangan": "Laptop Kerja"},
+            {"kategori": "Lifestyle & Hiburan", "keterangan": "Laptop Kerja"},
             "beli laptop untuk kerja 8jt",
         )
         self.assertIsNone(question)

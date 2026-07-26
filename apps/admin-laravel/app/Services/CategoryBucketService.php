@@ -50,12 +50,12 @@ class CategoryBucketService
         if ($this->containsAny($combined, config('category_buckets.essential_context_keywords', []))) {
             return 'Essential Living';
         }
-        if ($this->matchesCategory($category, ['makan', 'jajan'])
+        if ($this->matchesCategory($category, ['makan', 'jajan', 'makanan & minuman'])
             && $this->containsAny($combined, config('category_buckets.essential_meeting_keywords', []))) {
             return 'Essential Living';
         }
 
-        if ($category === 'social') {
+        if ($this->matchesCategory($category, ['social', 'sosial & keluarga', 'hadiah', 'lifestyle & hiburan', 'traveling'])) {
             return 'Flexible + Social';
         }
 

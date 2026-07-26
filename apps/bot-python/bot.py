@@ -590,7 +590,7 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
 
     lower_text = text.lower()
     jenis = "Pengeluaran"
-    kategori = "Jajan"
+    kategori = "Lain-lain"
     sifat = "Wants"
     mood = "Neutral"
 
@@ -600,7 +600,7 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
         kategori = context_hit["kategori"]
         sifat = context_hit["sifat"]
     elif any(keyword in lower_text for keyword in ["kopi", "coffee", "starbucks", "espresso", "americano", "kafein"]):
-        kategori = "Jajan"
+        kategori = "Makanan & Minuman"
         sifat = (
             "Need"
             if any(keyword in lower_text for keyword in [
@@ -612,7 +612,7 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
     elif any(keyword in lower_text for keyword in PAYDAY_SPLURGE_KEYWORDS + REWARD_SPENDING_KEYWORDS) and any(
         keyword in lower_text for keyword in ["makan", "nasi", "sarapan", "lunch", "dinner", "restaurant", "restoran"]
     ):
-        kategori = "Makan"
+        kategori = "Makanan & Minuman"
         sifat = "Wants"
 
     detected_mood = detect_mood_in_text(text)

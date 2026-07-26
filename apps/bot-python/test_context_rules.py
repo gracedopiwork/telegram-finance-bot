@@ -78,7 +78,7 @@ class ContextRulesTests(unittest.TestCase):
         parsed = {
             "keterangan": "terima jasa freelence 6 jt",
             "jenis": "Pengeluaran",
-            "kategori": "Jajan",
+            "kategori": "Makanan & Minuman",
             "sifat": "Wants",
         }
         out = apply_context_rules(parsed, "terima jasa freelence 6 jt")
@@ -151,7 +151,7 @@ class ContextRulesTests(unittest.TestCase):
         parsed = {
             "keterangan": "beli aqua 1.5L 7k",
             "jenis": "Pengeluaran",
-            "kategori": "Jajan",
+            "kategori": "Makanan & Minuman",
             "sifat": "Wants",
         }
         out = apply_context_rules(parsed, "beli aqua 1.5L 7k")
@@ -188,7 +188,7 @@ class ContextRulesTests(unittest.TestCase):
         parsed = {
             "keterangan": "Konsumsi meeting untuk take konten bisnis YFD",
             "jenis": "Pengeluaran",
-            "kategori": "Jajan",
+            "kategori": "Makanan & Minuman",
             "sifat": "Wants",
         }
         out = apply_context_rules(
@@ -202,7 +202,7 @@ class ContextRulesTests(unittest.TestCase):
         parsed = {
             "keterangan": "makan malam 20k",
             "jenis": "Pemasukan",
-            "kategori": "Jajan",
+            "kategori": "Makanan & Minuman",
             "sifat": "Wants",
         }
         out = apply_context_rules(parsed, "makan malam 20k")

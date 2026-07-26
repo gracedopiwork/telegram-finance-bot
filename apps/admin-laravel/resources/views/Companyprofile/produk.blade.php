@@ -220,7 +220,7 @@
                                 </div>
                                 <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[12px]">
                                     <span class="text-white/60">Nominal</span><span class="font-semibold" style="color: {{ config('yfd_brand.gold') }}">Rp 79.000</span>
-                                    <span class="text-white/60">Kategori</span><span>Jajan</span>
+                                    <span class="text-white/60">Kategori</span><span>Makanan & Minuman</span>
                                     <span class="text-white/60">Mood</span><span>Tired</span>
                                     <span class="text-white/60">Sifat</span><span class="font-semibold" style="color: {{ config('yfd_brand.gold') }}">Wants</span>
                                 </div>

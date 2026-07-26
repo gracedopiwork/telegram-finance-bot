@@ -104,12 +104,36 @@ def refine_sifat_from_context(parsed: dict[str, Any], source_text: str = "") -> 
 
     if has_productivity_framing(combined) and (
         has_functional_food_context(combined)
-        or str(parsed.get("kategori", "")) in {"Jajan", "Makan", "Minuman", "Elektronik", "Subscription"}
+        or str(parsed.get("kategori", "")) in {
+            "Jajan",
+            "Makan",
+            "Makanan & Minuman",
+            "Minuman",
+            "Elektronik",
+            "Lifestyle & Hiburan",
+            "Subscription",
+            "Bisnis & Karir",
+        }
     ):
         parsed["sifat"] = "Need"
         return parsed
 
-    essential_cats = {"Listrik", "Air", "Asuransi", "Transport", "Gaji", "Makan", "Kesehatan", "Komunikasi"}
+    essential_cats = {
+        "Listrik",
+        "Air",
+        "Asuransi",
+        "Proteksi",
+        "Transport",
+        "Transportasi",
+        "Tempat Tinggal",
+        "Gaji",
+        "Makan",
+        "Makanan & Minuman",
+        "Kesehatan",
+        "Kesehatan & Kebersihan Diri",
+        "Komunikasi",
+        "Cicilan & Hutang",
+    }
     if str(parsed.get("kategori", "")) in essential_cats:
         parsed["sifat"] = "Need"
 
