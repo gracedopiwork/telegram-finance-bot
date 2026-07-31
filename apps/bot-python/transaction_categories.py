@@ -38,7 +38,7 @@ __all__ = [
     "normalize_saving_fields",
 ]
 
-# Closed list selaras docs/YFD_AI_Taxonomy.pdf
+# Closed list selaras docs/YFD_AI_Taxonomy_PALING FINAL_REVISED.pdf
 OFFICIAL_EXPENSE_CATEGORIES = (
     "Makanan & Minuman",
     "Tempat Tinggal",
@@ -54,6 +54,7 @@ OFFICIAL_EXPENSE_CATEGORIES = (
     "Bisnis & Karir",
     "Hadiah",
     "Cicilan & Hutang",
+    "Pakaian & Aksesoris",
     "Lain-lain",
 )
 
@@ -100,7 +101,12 @@ def _kategori_aliases() -> dict[str, str]:
         "kesehatan & kebersihan diri": "Kesehatan & Kebersihan Diri",
         "laundry": "Kesehatan & Kebersihan Diri",
         "cuci baju": "Kesehatan & Kebersihan Diri",
-        "skincare": "Lifestyle & Hiburan",
+        "dry clean": "Kesehatan & Kebersihan Diri",
+        "skincare": "Kesehatan & Kebersihan Diri",
+        "serum": "Kesehatan & Kebersihan Diri",
+        "make up": "Kesehatan & Kebersihan Diri",
+        "makeup": "Kesehatan & Kebersihan Diri",
+        "parfum": "Kesehatan & Kebersihan Diri",
         "pendidikan": "Pendidikan",
         "saham": "Investasi & Tabungan",
         "reksadana": "Investasi & Tabungan",
@@ -129,6 +135,14 @@ def _kategori_aliases() -> dict[str, str]:
         "hadiah": "Hadiah",
         "cicilan": "Cicilan & Hutang",
         "cicilan & hutang": "Cicilan & Hutang",
+        "pakaian": "Pakaian & Aksesoris",
+        "pakaian & aksesoris": "Pakaian & Aksesoris",
+        "fashion": "Pakaian & Aksesoris",
+        "baju": "Pakaian & Aksesoris",
+        "sepatu": "Pakaian & Aksesoris",
+        "tas": "Pakaian & Aksesoris",
+        "aksesoris": "Pakaian & Aksesoris",
+        "seragam": "Pakaian & Aksesoris",
         "pajak": "Lain-lain",
         "affiliate": "Affiliate",
         "afiliasi": "Affiliate",
@@ -284,19 +298,20 @@ Aturan:
    - Wants: diskresioner, reward, hiburan, jajan, belanja gaya hidup.
 5) kategori (WAJIB dari closed list):
    - Makanan & Minuman: makan harian, jajan, kopi, boba, GoFood/GrabFood.
-   - Tempat Tinggal: kos, KPR tinggal, listrik, air, gas, laundry rumah.
-   - Transportasi: ojek/grab ride, bensin, parkir (bukan pesanan makanan).
+   - Tempat Tinggal: kos, KPR tinggal, listrik, air, gas, perlengkapan rumah.
+   - Transportasi: ojek/grab ride, bensin, parkir (bukan pesanan makanan); bucket mengikuti tujuan.
    - Komunikasi: pulsa, kuota.
-   - Kesehatan & Kebersihan Diri: dokter, obat, sabun, shampo (bukan gym).
+   - Kesehatan & Kebersihan Diri: dokter, obat, sabun, shampo, laundry; skincare premium = Wants.
    - Pendidikan: SPP/UKT ATAU seminar/kursus/pengembangan diri.
    - Investasi & Tabungan: saham, reksadana, emas, dana darurat (jenis Saving/Investment).
    - Proteksi: BPJS, premi asuransi.
-   - Lifestyle & Hiburan: Netflix, konser, gym, fashion, gadget, skincare premium.
+   - Lifestyle & Hiburan: Netflix, konser, gym, gadget.
    - Traveling: liburan, hotel, wisata.
    - Sosial & Keluarga: donasi, sedekah, bantu keluarga.
    - Bisnis & Karir: modal usaha, tools kerja, marketing, software bisnis.
    - Hadiah: kado, parcel, tip.
-   - Cicilan & Hutang: cicilan, paylater, kartu kredit.
+   - Cicilan & Hutang: cicilan, paylater; cicilan produktif/KPR investasi → Future Building.
+   - Pakaian & Aksesoris: fashion, baju, sepatu, seragam, tas.
    - Lain-lain: hanya jika benar-benar tidak cocok (maksimal jarang).
 6) {examples}
 7) impulsif — terpisah dari sifat Need/Wants:

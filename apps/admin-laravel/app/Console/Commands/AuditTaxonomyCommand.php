@@ -47,7 +47,7 @@ class AuditTaxonomyCommand extends Command
             }
         }
 
-        foreach (['Makanan & Minuman', 'Lifestyle & Hiburan', 'Proteksi', 'Bisnis & Karir', 'Lain-lain'] as $must) {
+        foreach (['Makanan & Minuman', 'Lifestyle & Hiburan', 'Proteksi', 'Bisnis & Karir', 'Pakaian & Aksesoris', 'Lain-lain'] as $must) {
             if (! in_array($must, $expense, true)) {
                 $this->error("Missing expense category: {$must}");
                 $issues++;

@@ -1,12 +1,14 @@
 <?php
 
 /**
- * Template pemetaan Kategori → Bucket — selaras YFD AI Taxonomy v1.0.
+ * Template pemetaan Kategori → Bucket — YFD AI Taxonomy FINAL REVISED.
  * Sub kategori dipakai internal untuk mapping; dashboard hanya tampilkan kategori.
  */
 return [
     // Saving instruments
     ['category' => '*', 'sub_category' => '-', 'bucket' => 'Protection', 'transaction_type' => 'saving', 'nature' => 'Need', 'match_keywords' => 'dana darurat,emergency fund,top up emergency,topup emergency', 'reason' => 'Dana darurat = proteksi', 'sort_order' => 1],
+    ['category' => '*', 'sub_category' => '-', 'bucket' => 'Future Building', 'transaction_type' => 'saving', 'match_keywords' => 'dp rumah,dp properti,dp kpr,dp ruko,uang muka rumah,uang muka properti', 'reason' => 'DP rumah/properti selalu Future Building', 'sort_order' => 2],
+    ['category' => '*', 'sub_category' => '-', 'bucket' => 'Future Building', 'transaction_type' => 'saving', 'match_keywords' => 'dp mobil,dp motor,dp kendaraan,uang muka mobil,uang muka motor', 'reason' => 'DP kendaraan kebutuhan (konfirmasi AI)', 'sort_order' => 3],
     ['category' => 'Investasi & Tabungan', 'sub_category' => '-', 'bucket' => 'Future Building', 'transaction_type' => 'saving', 'nature' => 'Need', 'match_keywords' => 'saham,reksadana,emas,obligasi,deposito,crypto,nabung,investasi', 'reason' => 'Investasi & tabungan', 'sort_order' => 5],
     ['category' => '*', 'bucket' => 'Future Building', 'transaction_type' => 'saving', 'reason' => 'Default saving', 'sort_order' => 6],
 
@@ -30,26 +32,35 @@ return [
     ['category' => 'Makanan & Minuman', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'meeting kerja,rapat kerja,meeting klien,ngopi meeting,kopi meeting', 'reason' => 'Konsumsi meeting kerja', 'sort_order' => 23],
     ['category' => 'Lifestyle & Hiburan', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'hp utama rusak,hp rusak,handphone rusak,ganti hp,hp pecah,fisioterapi,rehab', 'reason' => 'HP utama rusak / rehab medis', 'sort_order' => 24],
     ['category' => 'Bisnis & Karir', 'sub_category' => '-', 'bucket' => 'Future Building', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'modal usaha,marketing,ads,website,domain,hosting,laptop kerja,tools kerja', 'reason' => 'Bisnis & karir', 'sort_order' => 25],
+    ['category' => 'Bisnis & Karir', 'sub_category' => '-', 'bucket' => 'Future Building', 'transaction_type' => 'expense', 'reason' => 'Default bisnis & karir', 'sort_order' => 26],
+
+    // Cicilan overrides (produktif / investasi sebelum default konsumtif)
+    ['category' => 'Cicilan & Hutang', 'sub_category' => '-', 'bucket' => 'Future Building', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'cicilan modal,modal usaha,kpr investasi,kpr disewakan,kpr dikoskan,properti investasi,cicilan produktif', 'reason' => 'Cicilan produktif / KPR investasi', 'sort_order' => 27],
+    ['category' => 'Transportasi', 'sub_category' => '-', 'bucket' => 'Future Building', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'pesawat meeting,tiket meeting,training kerja,urusan bisnis,meeting klien,perjalanan dinas', 'reason' => 'Transportasi bisnis/kerja jarak jauh', 'sort_order' => 28],
+    ['category' => 'Transportasi', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'match_keywords' => 'grab ke gym,ojek ke gym,ke cafe,nongkrong,healing,mall,wisata,arisan', 'reason' => 'Transportasi leisure/sosial', 'sort_order' => 29],
 
     // Essential Living
     ['category' => 'Makanan & Minuman', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'makan,nasi,sarapan,bahan makanan,air minum,galon', 'reason' => 'Kebutuhan makan harian', 'sort_order' => 30],
-    ['category' => 'Tempat Tinggal', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'kos,kontrakan,kpr,listrik,pln,pdam,gas,ipl,wifi rumah,detergen,laundry,cuci baju', 'reason' => 'Tempat tinggal & utilitas', 'sort_order' => 31],
-    ['category' => 'Transportasi', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'ojek,grab,gojek,bensin,tol,parkir,krl,angkot', 'reason' => 'Transportasi rutin', 'sort_order' => 32],
+    ['category' => 'Tempat Tinggal', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'kos,kontrakan,kpr,listrik,pln,pdam,gas,ipl,wifi rumah,detergen,cairan pel', 'reason' => 'Tempat tinggal & utilitas', 'sort_order' => 31],
+    ['category' => 'Transportasi', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'ojek,grab,gojek,bensin,tol,parkir,krl,angkot,kantor,klinik,apotek,sekolah', 'reason' => 'Transportasi rutin/esensial', 'sort_order' => 32],
     ['category' => 'Komunikasi', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'pulsa,kuota,paket data', 'reason' => 'Komunikasi', 'sort_order' => 33],
-    ['category' => 'Kesehatan & Kebersihan Diri', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'dokter,obat,apotek,lab,medical,vitamin,sabun,shampo,pasta gigi,softex,sunscreen', 'reason' => 'Medis & kebersihan dasar', 'sort_order' => 34],
-    ['category' => 'Cicilan & Hutang', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'cicilan,angsuran,paylater,kartu kredit', 'reason' => 'Cicilan konsumtif / kewajiban', 'sort_order' => 36],
+    ['category' => 'Kesehatan & Kebersihan Diri', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'dokter,obat,apotek,lab,medical,vitamin,sabun,shampo,pasta gigi,softex,sunscreen,handbody,laundry,cuci baju,dry clean,dryclean', 'reason' => 'Medis & kebersihan dasar (laundry = Essential)', 'sort_order' => 34],
+    ['category' => 'Cicilan & Hutang', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'cicilan,angsuran,paylater,kartu kredit,kpr rumah tinggal', 'reason' => 'Cicilan konsumtif / KPR tinggal / kewajiban', 'sort_order' => 36],
+    ['category' => 'Pakaian & Aksesoris', 'sub_category' => '-', 'bucket' => 'Essential Living', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'seragam,sepatu kerja,tas kerja,tas sekolah,sepatu sekolah', 'reason' => 'Perlengkapan kerja/sekolah', 'sort_order' => 37],
 
     // Protection
     ['category' => 'Proteksi', 'sub_category' => '-', 'bucket' => 'Protection', 'transaction_type' => 'expense', 'nature' => 'Need', 'match_keywords' => 'asuransi,premi,bpjs', 'reason' => 'Premi asuransi/BPJS', 'sort_order' => 40],
 
     // Flexible + Social
     ['category' => 'Makanan & Minuman', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'kopi,coffee,jajan,snack,boba,cafe,resto,kuliner', 'reason' => 'Jajan & kuliner', 'sort_order' => 50],
-    ['category' => 'Transportasi', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'taksi bandara,sewa kendaraan wisata', 'reason' => 'Transportasi non-rutin', 'sort_order' => 51],
-    ['category' => 'Lifestyle & Hiburan', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'netflix,spotify,gaming,bioskop,konser,hobi,gym,yoga,pilates,crossfit,fashion,gadget,skincare,make up,parfum', 'reason' => 'Lifestyle & hiburan', 'sort_order' => 52],
+    ['category' => 'Transportasi', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'taksi bandara,sewa kendaraan wisata,liburan,tiket pesawat', 'reason' => 'Transportasi non-rutin / liburan', 'sort_order' => 51],
+    ['category' => 'Lifestyle & Hiburan', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'netflix,spotify,gaming,bioskop,konser,hobi,gym,yoga,pilates,crossfit,gadget', 'reason' => 'Lifestyle & hiburan', 'sort_order' => 52],
     ['category' => 'Lifestyle & Hiburan', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'reason' => 'Default lifestyle wants', 'sort_order' => 57],
-    ['category' => 'Bisnis & Karir', 'sub_category' => '-', 'bucket' => 'Future Building', 'transaction_type' => 'expense', 'reason' => 'Default bisnis & karir', 'sort_order' => 26],
+    ['category' => 'Kesehatan & Kebersihan Diri', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'skincare,serum,toner,facial,make up,makeup,parfum,klinik kecantikan', 'reason' => 'Perawatan & kecantikan', 'sort_order' => 59],
     ['category' => 'Traveling', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'liburan,staycation,hotel,tiket pesawat,wisata', 'reason' => 'Traveling', 'sort_order' => 53],
     ['category' => 'Sosial & Keluarga', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'donasi,sedekah,persembahan,perpuluhan,zakat,bantu keluarga,transfer ortu', 'reason' => 'Sosial & keluarga', 'sort_order' => 54],
     ['category' => 'Hadiah', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'hadiah,kado,parcel,souvenir,tip,tips', 'reason' => 'Hadiah', 'sort_order' => 55],
+    ['category' => 'Pakaian & Aksesoris', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'nature' => 'Wants', 'match_keywords' => 'fashion,baju,celana,sepatu,tas,aksesoris,kaos,sandal', 'reason' => 'Fashion & lifestyle', 'sort_order' => 56],
+    ['category' => 'Pakaian & Aksesoris', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'reason' => 'Default pakaian (grey area → Flexible kecuali Need kerja/sekolah)', 'sort_order' => 58],
     ['category' => 'Lain-lain', 'sub_category' => '-', 'bucket' => 'Flexible + Social', 'transaction_type' => 'expense', 'reason' => 'Tidak terklasifikasi', 'sort_order' => 99],
 ];

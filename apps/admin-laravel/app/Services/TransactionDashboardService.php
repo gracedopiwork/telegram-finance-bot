@@ -656,11 +656,13 @@ class TransactionDashboardService
             'transportasi', 'transport' => 'Transportasi',
             'jajan', 'makan', 'makanan', 'makanan & minuman', 'makanan dan minuman', 'minuman' => 'Makanan & Minuman',
             'social', 'sosial', 'sosial & keluarga' => 'Sosial & Keluarga',
-            'hiburan', 'lifestyle', 'lifestyle & hiburan', 'elektronik', 'subscription', 'skincare' => 'Lifestyle & Hiburan',
+            'hiburan', 'lifestyle', 'lifestyle & hiburan', 'elektronik', 'subscription' => 'Lifestyle & Hiburan',
+            'skincare', 'serum', 'make up', 'makeup', 'parfum' => 'Kesehatan & Kebersihan Diri',
             'asuransi', 'proteksi' => 'Proteksi',
-            'listrik', 'air', 'sewa/tempat tinggal', 'laundry', 'tempat tinggal' => 'Tempat Tinggal',
-            'kesehatan', 'kesehatan & kebersihan diri' => 'Kesehatan & Kebersihan Diri',
+            'listrik', 'air', 'sewa/tempat tinggal', 'tempat tinggal' => 'Tempat Tinggal',
+            'laundry', 'cuci baju', 'kesehatan', 'kesehatan & kebersihan diri' => 'Kesehatan & Kebersihan Diri',
             'cicilan', 'cicilan & hutang' => 'Cicilan & Hutang',
+            'pakaian', 'pakaian & aksesoris', 'fashion', 'baju', 'sepatu', 'aksesoris' => 'Pakaian & Aksesoris',
             default => $raw,
         };
     }
@@ -671,7 +673,8 @@ class TransactionDashboardService
         $expenseLike = [
             'Makanan & Minuman', 'Transportasi', 'Sosial & Keluarga', 'Lifestyle & Hiburan',
             'Tempat Tinggal', 'Kesehatan & Kebersihan Diri', 'Komunikasi', 'Pendidikan',
-            'Proteksi', 'Traveling', 'Bisnis & Karir', 'Hadiah', 'Cicilan & Hutang', 'Lain-lain',
+            'Proteksi', 'Traveling', 'Bisnis & Karir', 'Hadiah', 'Cicilan & Hutang',
+            'Pakaian & Aksesoris', 'Lain-lain',
         ];
 
         return in_array($normalized, $expenseLike, true)

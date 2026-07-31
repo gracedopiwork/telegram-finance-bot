@@ -1,10 +1,10 @@
 <?php
 
 /**
- * YFD AI Taxonomy v1.0 (Juli 2026) — closed list.
+ * YFD AI Taxonomy v1.0 FINAL REVISED (Juli 2026) — closed list.
  * AI hanya boleh memilih dari daftar ini; bucket ditentukan sistem.
  *
- * @see docs/YFD_AI_Taxonomy.pdf
+ * @see docs/YFD_AI_Taxonomy_PALING FINAL_REVISED.pdf
  */
 return [
     'expense_categories' => [
@@ -22,6 +22,7 @@ return [
         'Bisnis & Karir',
         'Hadiah',
         'Cicilan & Hutang',
+        'Pakaian & Aksesoris',
         'Lain-lain',
     ],
 
@@ -84,7 +85,13 @@ return [
         'kesehatan & kebersihan diri' => 'Kesehatan & Kebersihan Diri',
         'laundry' => 'Kesehatan & Kebersihan Diri',
         'cuci baju' => 'Kesehatan & Kebersihan Diri',
-        'skincare' => 'Lifestyle & Hiburan',
+        'dry clean' => 'Kesehatan & Kebersihan Diri',
+        // Perawatan & kecantikan tetap di kategori Kesehatan (bucket Flexible via Wants).
+        'skincare' => 'Kesehatan & Kebersihan Diri',
+        'serum' => 'Kesehatan & Kebersihan Diri',
+        'make up' => 'Kesehatan & Kebersihan Diri',
+        'makeup' => 'Kesehatan & Kebersihan Diri',
+        'parfum' => 'Kesehatan & Kebersihan Diri',
         'pendidikan' => 'Pendidikan',
         'saham' => 'Investasi & Tabungan',
         'reksadana' => 'Investasi & Tabungan',
@@ -112,6 +119,15 @@ return [
         'hadiah' => 'Hadiah',
         'cicilan' => 'Cicilan & Hutang',
         'cicilan & hutang' => 'Cicilan & Hutang',
+        'pakaian' => 'Pakaian & Aksesoris',
+        'pakaian & aksesoris' => 'Pakaian & Aksesoris',
+        'pakaian dan aksesoris' => 'Pakaian & Aksesoris',
+        'fashion' => 'Pakaian & Aksesoris',
+        'baju' => 'Pakaian & Aksesoris',
+        'sepatu' => 'Pakaian & Aksesoris',
+        'tas' => 'Pakaian & Aksesoris',
+        'aksesoris' => 'Pakaian & Aksesoris',
+        'seragam' => 'Pakaian & Aksesoris',
         'pajak' => 'Lain-lain',
         'lainnya' => 'Lain-lain',
         'lain-lain' => 'Lain-lain',
@@ -119,12 +135,16 @@ return [
     ],
 
     'source_of_truth_note' => [
-        'Taxonomy tertutup (YFD AI Taxonomy v1.0): AI HANYA memilih dari 15 kategori resmi (+ kategori pemasukan).',
+        'Taxonomy tertutup (YFD AI Taxonomy FINAL REVISED): AI HANYA memilih dari 16 kategori resmi (+ kategori pemasukan).',
         'AI tidak boleh membuat kategori baru. Jika ragu → Lain-lain.',
         'Layer 1 = Kategori (closed list). Layer 2 = Bucket (otomatis dari mapping sistem).',
         'AI tidak menentukan bucket. Bucket dihitung dari sub-konteks + Need/Wants.',
         'Gym/olahraga berbayar → Lifestyle & Hiburan / Flexible + Social / Wants (bukan Essential).',
+        'Laundry/cuci baju → Kesehatan & Kebersihan Diri / Essential Living.',
+        'Skincare premium / make-up → Kesehatan & Kebersihan Diri / Flexible + Social (Wants).',
+        'Fashion/baju/sepatu → Pakaian & Aksesoris (bukan Lifestyle).',
         'Pengembangan diri → Pendidikan / Future Building (Need atau Wants, bucket sama).',
+        'DP rumah/properti → Saving/Investment / Future Building. Cicilan produktif / KPR investasi → Future Building.',
         'Donasi/sedekah/zakat/hadiah → Sosial & Keluarga atau Hadiah / Flexible + Social.',
         'Jenis transaksi dan bucket berbeda: biaya bisnis tetap Pengeluaran, bucket Future Building.',
     ],

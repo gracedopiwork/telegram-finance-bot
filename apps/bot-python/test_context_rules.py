@@ -102,7 +102,7 @@ class ContextRulesTests(unittest.TestCase):
         self.assertEqual(hit["sifat"], "Need")
 
     def test_skincare(self) -> None:
-        self.assertClass("skincare serum 120rb", "Pengeluaran", "Lifestyle & Hiburan")
+        self.assertClass("skincare serum 120rb", "Pengeluaran", "Kesehatan & Kebersihan Diri")
 
     def test_makan(self) -> None:
         self.assertClass("makan malam 65700", "Pengeluaran", "Makanan & Minuman")
@@ -164,8 +164,11 @@ class ContextRulesTests(unittest.TestCase):
     def test_tips_grab_driver_hadiah(self) -> None:
         self.assertClass("memberikan tips ke bapak grab 5k", "Pengeluaran", "Hadiah")
 
-    def test_laundry_tempat_tinggal(self) -> None:
-        self.assertClass("laundry/cuci baju 52.500", "Pengeluaran", "Tempat Tinggal")
+    def test_laundry_kesehatan_essential(self) -> None:
+        self.assertClass("laundry/cuci baju 52.500", "Pengeluaran", "Kesehatan & Kebersihan Diri")
+
+    def test_fashion_pakaian(self) -> None:
+        self.assertClass("beli baju fashion 250rb", "Pengeluaran", "Pakaian & Aksesoris")
 
     def test_hadiah_wants(self) -> None:
         self.assertClass("hadiah atas jasa orang 5k", "Pengeluaran", "Hadiah")

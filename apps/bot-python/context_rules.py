@@ -582,6 +582,22 @@ _LAUNDRY = (
     "dryclean",
 )
 
+_PAKAIAN = (
+    "fashion",
+    "baju",
+    "celana",
+    "sepatu",
+    "sandal",
+    "tas ",
+    "aksesoris",
+    "seragam",
+    "kaos",
+    "jaket",
+    "hoodie",
+    "dress",
+    "rok",
+)
+
 _SEWA_KELUAR = (
     "bayar sewa",
     "sewa rumah",
@@ -919,7 +935,7 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     if _contains(lower, _GYM_LIFESTYLE):
         return {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants"}
     if _contains(lower, _SKINCARE):
-        return {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants"}
+        return {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Wants"}
     if _contains(lower, _HIBURAN):
         return {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants"}
     if _contains(lower, _SUBSCRIPTION):
@@ -949,7 +965,9 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     if _contains(lower, _KOMUNIKASI):
         return {"jenis": "Pengeluaran", "kategori": "Komunikasi", "sifat": "Need"}
     if _contains(lower, _LAUNDRY):
-        return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
+        return {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need"}
+    if _contains(lower, _PAKAIAN):
+        return {"jenis": "Pengeluaran", "kategori": "Pakaian & Aksesoris", "sifat": "Wants"}
     if _contains(lower, _SEWA_KELUAR):
         return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
     if _contains(lower, _CICILAN):
@@ -1217,7 +1235,7 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "bayar BPJS 150rb" → Pengeluaran / Proteksi / Need
 - "netflix bulanan 54rb" → Pengeluaran / Lifestyle & Hiburan / Wants
 - "langganan capcut untuk kerja edit video 95k" → Pengeluaran / Bisnis & Karir / Need
-- "skincare serum 120rb" → Pengeluaran / Lifestyle & Hiburan / Wants
+- "skincare serum 120rb" → Pengeluaran / Kesehatan & Kebersihan Diri / Wants
 - "makan malam 65.700" → Pengeluaran / Makanan & Minuman / Need
 - "grab ke kantor 28rb" → Pengeluaran / Transportasi / Need
 - "jajan di grabfood 60k beli kue" → Pengeluaran / Makanan & Minuman / Wants (BUKAN Transportasi)
@@ -1234,5 +1252,6 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "beli tiket konser 450rb" → Pengeluaran / Lifestyle & Hiburan / Wants
 - "bayar olahraga gym bulanan + personal training 455rb" → Pengeluaran / Lifestyle & Hiburan / Wants
 - "konsumsi meeting untuk take konten bisnis YFD 127rb" → Pengeluaran / Bisnis & Karir / Need → Future Building
-- "laundry/cuci baju 52.500" → Pengeluaran / Tempat Tinggal / Need
+- "laundry/cuci baju 52.500" → Pengeluaran / Kesehatan & Kebersihan Diri / Need
+- "beli baju fashion 250rb" → Pengeluaran / Pakaian & Aksesoris / Wants
 """

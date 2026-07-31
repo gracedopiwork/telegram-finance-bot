@@ -23,7 +23,7 @@ foreach ([
     'Makanan & Minuman', 'Tempat Tinggal', 'Transportasi', 'Komunikasi',
     'Kesehatan & Kebersihan Diri', 'Pendidikan', 'Investasi & Tabungan', 'Proteksi',
     'Lifestyle & Hiburan', 'Traveling', 'Sosial & Keluarga', 'Bisnis & Karir',
-    'Hadiah', 'Cicilan & Hutang', 'Lain-lain',
+    'Hadiah', 'Cicilan & Hutang', 'Pakaian & Aksesoris', 'Lain-lain',
 ] as $must) {
     if (! in_array($must, $expense, true)) {
         echo "FAIL missing expense: {$must}\n";
@@ -41,6 +41,9 @@ foreach ([
     'social' => 'Sosial & Keluarga',
     'asuransi' => 'Proteksi',
     'subscription' => 'Lifestyle & Hiburan',
+    'laundry' => 'Kesehatan & Kebersihan Diri',
+    'skincare' => 'Kesehatan & Kebersihan Diri',
+    'fashion' => 'Pakaian & Aksesoris',
 ] as $from => $to) {
     $got = $aliases[$from] ?? null;
     if ($got !== $to) {
