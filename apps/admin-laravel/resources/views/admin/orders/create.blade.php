@@ -115,7 +115,7 @@
                         <li>Lisensi digenerate otomatis (atau digabung jika email sudah punya lisensi aktif).</li>
                         <li><strong>Kode referral</strong> = kode affiliate orang yang mereferensikan (bisa dicari dari nama).</li>
                         <li>Kode affiliate milik user baru tetap dibuat otomatis setelah order.</li>
-                        <li>Order gratis biasanya tidak menghasilkan komisi.</li>
+                        <li>Jika ada referral pemberi, komisi standar dikredit ke pemberi (meski order gratis).</li>
                         <li>User bot tetap perlu <code>/activate KODE</code> di Telegram untuk menghubungkan akun.</li>
                 </ul>
             </div>

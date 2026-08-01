@@ -250,22 +250,47 @@
             </div>
         </div>
 
-        @if(!empty($referrerAffiliate) || filled($order->referral_code))
         <div class="card card-outline card-warning">
             <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-user-tag mr-2"></i>Referral Pemberi</h3></div>
-            <div class="card-body text-center">
-                <code class="d-inline-block p-3 bg-light rounded" style="font-size:1.1rem; user-select:all;">
-                    {{ $referrerAffiliate->referral_code ?? $order->referral_code }}
-                </code>
-                @if(!empty($referrerAffiliate))
-                    <div class="small text-muted mt-2">
-                        {{ $referrerAffiliate->name ?: '—' }} · {{ $referrerAffiliate->email }}
-                        · <a href="{{ route('admin.affiliates.show', $referrerAffiliate) }}">Lihat affiliate</a>
+            <div class="card-body">
+                @if(!empty($referrerAffiliate) || filled($order->referral_code))
+                    <div class="text-center mb-3">
+                        <code class="d-inline-block p-3 bg-light rounded" style="font-size:1.1rem; user-select:all;">
+                            {{ $referrerAffiliate->referral_code ?? $order->referral_code }}
+                        </code>
+                        @if(!empty($referrerAffiliate))
+                            <div class="small text-muted mt-2">
+                                {{ $referrerAffiliate->name ?: '—' }} · {{ $referrerAffiliate->email }}
+                                · <a href="{{ route('admin.affiliates.show', $referrerAffiliate) }}">Lihat affiliate</a>
+                            </div>
+                        @endif
                     </div>
+                @else
+                    <p class="small text-muted text-center">Belum ada referral pemberi.</p>
                 @endif
+
+                <form method="POST" action="{{ route('admin.orders.referrer', $order) }}">
+                    @csrf
+                    <label class="small mb-1">Set / ubah kode referral pemberi</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="referral_code"
+                               value="{{ old('referral_code', $referrerAffiliate->referral_code ?? $order->referral_code) }}"
+                               class="form-control text-uppercase" maxlength="32"
+                               placeholder="Contoh: YFD-ISD6QV — kosongkan = hapus">
+                        <div class="input-group-append">
+                            <button class="btn btn-warning" type="submit">Simpan &amp; kredit komisi</button>
+                        </div>
+                    </div>
+                    <input type="hidden" name="credit_commission" value="1">
+                    <small class="text-muted d-block mt-1">
+                        Kalau order sudah lunas dan belum punya komisi, komisi standar akan dikredit ke pemberi.
+                    </small>
+                    @error('referral_code')
+                        <div class="text-danger small mt-1">{{ $message }}</div>
+                    @enderror
+                </form>
             </div>
         </div>
-        @endif
 
         @if(!empty($buyerAffiliate))
         <div class="card card-outline card-info">

@@ -159,6 +159,13 @@ class OrdersController extends Controller
             DeliverPaidOrderJob::dispatchSync($order->id);
         }
 
+        $commission = null;
+        if ($referrer) {
+            $commission = $affiliates->creditCommissionForPaidOrder(
+                $order->fresh(['digitalProduct', 'affiliate'])
+            );
+        }
+
         $buyerAffiliate = $affiliates->ensureForPortalUser(
             (string) $order->email,
             $order->full_name,
@@ -170,6 +177,9 @@ class OrdersController extends Controller
             .' · Kode affiliate pembeli: '.$buyerAffiliate->referral_code;
         if ($referrer) {
             $msg .= ' · Direferensikan oleh: '.$referrer->referral_code;
+            if ($commission) {
+                $msg .= ' · Komisi Rp '.number_format((int) $commission->amount, 0, ',', '.').' dikredit ke pemberi';
+            }
         }
 
         return redirect()
@@ -234,6 +244,52 @@ class OrdersController extends Controller
         );
 
         return back()->with('success', 'Kode affiliate pembeli: '.$affiliate->referral_code);
+    }
+
+    public function upsertReferrer(Request $request, Order $order)
+    {
+        $data = $request->validate([
+            'referral_code' => 'nullable|string|max:32',
+            'credit_commission' => 'nullable|boolean',
+        ]);
+
+        $affiliates = app(\App\Services\AffiliateService::class);
+        $code = $affiliates->normalizeReferralCode($data['referral_code'] ?? null);
+
+        if ($code === null) {
+            $order->referral_code = null;
+            $order->affiliate_id = null;
+            $order->save();
+
+            return back()->with('success', 'Referral pemberi dihapus dari order ini.');
+        }
+
+        $referrer = $affiliates->findActiveByCode($code);
+        if ($referrer === null) {
+            return back()->withErrors(['referral_code' => 'Kode referral tidak valid atau nonaktif.']);
+        }
+
+        if (filled($order->email) && strtolower((string) $referrer->email) === strtolower((string) $order->email)) {
+            return back()->withErrors(['referral_code' => 'Tidak bisa memakai kode referral milik sendiri.']);
+        }
+
+        $order->referral_code = $referrer->referral_code;
+        $order->affiliate_id = $referrer->id;
+        $order->save();
+
+        $msg = 'Referral pemberi diset ke '.$referrer->referral_code;
+        if ($order->status === 'paid' && $request->boolean('credit_commission', true)) {
+            $commission = $affiliates->creditCommissionForPaidOrder(
+                $order->fresh(['digitalProduct', 'affiliate'])
+            );
+            if ($commission) {
+                $msg .= ' · Komisi Rp '.number_format((int) $commission->amount, 0, ',', '.').' dikredit';
+            } else {
+                $msg .= ' · Komisi tidak dikredit (cek pengaturan produk eligible / sudah dikredit sebelumnya)';
+            }
+        }
+
+        return back()->with('success', $msg);
     }
 
     public function syncPayment(Order $order, MidtransPaymentSyncService $sync)

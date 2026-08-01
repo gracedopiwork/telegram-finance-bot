@@ -166,6 +166,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('orders/{order}/resend-delivery-email', [OrdersController::class, 'resendDeliveryEmail'])->name('orders.resendDeliveryEmail');
     Route::post('orders/{order}/purge-customer-data', [OrdersController::class, 'purgeCustomerData'])->name('orders.purgeCustomerData');
     Route::post('orders/{order}/affiliate', [OrdersController::class, 'upsertAffiliate'])->name('orders.affiliate');
+    Route::post('orders/{order}/referrer', [OrdersController::class, 'upsertReferrer'])->name('orders.referrer');
     Route::delete('orders/{order}',     [OrdersController::class, 'destroy'])->name('orders.destroy');
 
     Route::get('affiliates', [AffiliatesController::class, 'index'])->name('affiliates.index');
