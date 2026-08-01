@@ -43,8 +43,13 @@ class OrderDeliveryMessageBuilder
         ];
 
         if ($botUrl !== '') {
+            $botUser = TelegramBotUrl::username();
             $lines[] = '🤖 *YFD First Aid*';
+            $lines[] = 'Buka tautan ini:';
             $lines[] = $botUrl;
+            if ($botUser) {
+                $lines[] = 'Atau di Telegram cari: @'.$botUser.' lalu ketuk Start.';
+            }
             $lines[] = '';
         } else {
             $lines[] = '⚠️ Tautan bot belum diatur di server. Hubungi tim YFD.';
@@ -124,8 +129,13 @@ class OrderDeliveryMessageBuilder
         ];
 
         if ($botUrl !== '') {
+            $botUser = TelegramBotUrl::username();
             $lines[] = '🤖 *YFD First Aid*';
+            $lines[] = 'Buka tautan ini:';
             $lines[] = $botUrl;
+            if ($botUser) {
+                $lines[] = 'Atau di Telegram cari: @'.$botUser.' lalu ketuk Start.';
+            }
             $lines[] = '';
         }
 

@@ -15,18 +15,18 @@
 
     <h2 style="font-size: 1rem; margin-top: 1.75rem;">1) Buka YFD First Aid di Telegram</h2>
     @if(!empty($telegramBotUrl))
-        @if(!empty($telegramBotAppUrl))
-            <p>
-                <a href="{{ $telegramBotAppUrl }}" style="display: inline-block; background: #229ed9; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: 600;">Buka di aplikasi Telegram</a>
-            </p>
-        @endif
+        <p>
+            {{-- Pakai https://t.me/... (bukan tg://) agar bisa diklik di email/WA --}}
+            <a href="{{ $telegramBotUrl }}" style="display: inline-block; background: #229ed9; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: 600;">Buka bot di Telegram</a>
+        </p>
         <p style="font-size: 0.875rem; color: #52525b;">
-            Atau buka tautan ini (disarankan jika tombol di atas tidak jalan):<br>
+            Atau salin/buka tautan ini:<br>
             <a href="{{ $telegramBotUrl }}" style="color: #229ed9; word-break: break-all;">{{ $telegramBotUrl }}</a>
         </p>
         @if(!empty($telegramBotUsername))
             <p style="font-size: 0.8125rem; color: #71717a; margin-top: 0.75rem;">
-                Di Telegram, cari bot <strong>@{{ $telegramBotUsername }}</strong> lalu ketuk <strong>Start</strong>.
+                {{-- Jangan tulis @{{ ... }} — di Blade itu escape literal --}}
+                Di Telegram, cari bot <strong>{{ '@'.$telegramBotUsername }}</strong> lalu ketuk <strong>Start</strong>.
             </p>
         @endif
     @else
