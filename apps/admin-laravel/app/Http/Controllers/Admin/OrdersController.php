@@ -131,9 +131,20 @@ class OrdersController extends Controller
             DeliverPaidOrderJob::dispatchSync($order->id);
         }
 
+        $affiliate = app(\App\Services\AffiliateService::class)->ensureForPortalUser(
+            (string) $order->email,
+            $order->full_name,
+            $order->license_id,
+        );
+
         return redirect()
             ->route('admin.orders.show', $order)
-            ->with('success', 'User gratis dibuat. Order '.$order->order_code.' (bukan bayar). Lisensi: '.($order->license?->license_key ?? '—'));
+            ->with(
+                'success',
+                'User gratis dibuat. Order '.$order->order_code
+                .' · Lisensi: '.($order->license?->license_key ?? '—')
+                .' · Kode affiliate: '.$affiliate->referral_code
+            );
     }
 
     public function show(Order $order)
@@ -145,9 +156,19 @@ class OrdersController extends Controller
             ? $entitlements->licenseEntitlementLabel($order->license)
             : null;
 
+        $buyerAffiliate = null;
+        if (filled($order->email)) {
+            $buyerAffiliate = app(\App\Services\AffiliateService::class)->ensureForPortalUser(
+                (string) $order->email,
+                $order->full_name,
+                $order->license_id,
+            );
+        }
+
         return view('admin.orders.show', [
             'order' => $order,
             'licenseEntitlementLabel' => $licenseEntitlementLabel,
+            'buyerAffiliate' => $buyerAffiliate,
             'telegramBotUrl' => TelegramBotUrl::resolve(),
             'deliveryChannelLabel' => app(OrderDeliveryNotifier::class)->primaryChannelLabel(),
             'midtransNotificationUrl' => app(MidtransService::class)->notificationUrl(),

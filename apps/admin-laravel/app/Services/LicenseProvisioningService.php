@@ -10,6 +10,7 @@ class LicenseProvisioningService
 {
     public function __construct(
         private readonly LicenseEntitlementService $entitlements,
+        private readonly AffiliateService $affiliates,
     ) {}
 
     /**
@@ -22,17 +23,37 @@ class LicenseProvisioningService
         $existing = $this->findExistingLicenseForEmail((string) $order->email);
         if ($existing !== null) {
             $this->syncEntitlementsOntoLicense($order, $existing);
+            $license = $existing->fresh() ?? $existing;
+            $this->ensureAffiliateForOrder($order, $license);
 
-            return $existing->fresh() ?? $existing;
+            return $license;
         }
 
-        return License::create([
+        $license = License::create([
             'license_key' => $this->generateLicenseKey(),
             'plan' => $order->plan ?? ($order->digitalProduct?->code ?? 'manual'),
             'status' => 'active',
             'expires_at' => $this->entitlements->expiresAtForNewLicense($order),
             'max_accounts' => 1,
         ]);
+
+        $this->ensureAffiliateForOrder($order, $license);
+
+        return $license;
+    }
+
+    public function ensureAffiliateForOrder(Order $order, ?License $license = null): void
+    {
+        $email = strtolower(trim((string) $order->email));
+        if ($email === '') {
+            return;
+        }
+
+        $this->affiliates->ensureForPortalUser(
+            $email,
+            $order->full_name ?: null,
+            $license?->id ?? $order->license_id,
+        );
     }
 
     public function findExistingLicenseForEmail(string $email): ?License

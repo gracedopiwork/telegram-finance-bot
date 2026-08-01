@@ -230,6 +230,24 @@
             </div>
         </div>
 
+        @if(!empty($buyerAffiliate))
+        <div class="card card-outline card-info">
+            <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-handshake mr-2"></i>Kode Affiliate Pembeli</h3></div>
+            <div class="card-body text-center">
+                <code class="d-inline-block p-3 bg-light rounded" style="font-size:1.1rem; user-select:all;">{{ $buyerAffiliate->referral_code }}</code>
+                <br>
+                <button type="button" class="btn btn-sm btn-outline-info mt-2"
+                        onclick="navigator.clipboard.writeText('{{ $buyerAffiliate->referral_code }}'); this.innerText='Tersalin!';">
+                    <i class="fas fa-copy mr-1"></i>Copy kode
+                </button>
+                <div class="small text-muted mt-2">
+                    Saldo: Rp {{ number_format($buyerAffiliate->availableBalance(), 0, ',', '.') }}
+                    · <a href="{{ route('admin.affiliates.show', $buyerAffiliate) }}">Lihat di Affiliate</a>
+                </div>
+            </div>
+        </div>
+        @endif
+
         {{-- Pengiriman ringkasan (bot + lisensi) --}}
         @if($order->status === 'paid' && $order->license)
             @php

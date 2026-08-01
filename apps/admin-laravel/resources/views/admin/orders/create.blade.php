@@ -96,10 +96,11 @@
             <div class="card-header"><h3 class="card-title mb-0">Catatan</h3></div>
             <div class="card-body small">
                 <ul class="pl-3 mb-0">
-                    <li>Order dibuat status <strong>Lunas</strong>, gateway <code>admin</code>, nominal <strong>Rp 0</strong>.</li>
-                    <li>Lisensi digenerate otomatis (atau digabung jika email sudah punya lisensi aktif).</li>
-                    <li>Tidak ada komisi affiliate.</li>
-                    <li>User bot tetap perlu <code>/activate KODE</code> di Telegram untuk menghubungkan akun.</li>
+                        <li>Order dibuat status <strong>Lunas</strong>, gateway <code>admin</code>, nominal <strong>Rp 0</strong>.</li>
+                        <li>Lisensi digenerate otomatis (atau digabung jika email sudah punya lisensi aktif).</li>
+                        <li>Kode <strong>affiliate/referral</strong> dibuat otomatis untuk email ini.</li>
+                        <li>Tidak ada komisi affiliate dari order gratis ini.</li>
+                        <li>User bot tetap perlu <code>/activate KODE</code> di Telegram untuk menghubungkan akun.</li>
                 </ul>
             </div>
         </div>
