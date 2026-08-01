@@ -26,9 +26,9 @@
             <p class="text-xs text-slate-500 mt-2">Komisi Rp {{ number_format($commissionAmount, 0, ',', '.') }} / referral sukses.</p>
         </div>
         <div class="rounded-2xl border bg-white p-5">
-            <div class="text-xs uppercase tracking-wider text-slate-500 font-bold">Diskon untuk teman</div>
-            <div class="mt-2 text-2xl font-extrabold text-navy-800">Rp {{ number_format($discountAmount, 0, ',', '.') }}</div>
-            <p class="text-xs text-slate-500 mt-2">Potongan di checkout bila kode dipakai.</p>
+            <div class="text-xs uppercase tracking-wider text-slate-500 font-bold">Referral masuk</div>
+            <div class="mt-2 text-2xl font-extrabold text-navy-800">{{ $referralCount }}</div>
+            <p class="text-xs text-slate-500 mt-2">Orang yang pakai kode {{ $affiliate->referral_code }}.</p>
         </div>
     </div>
 
@@ -43,6 +43,61 @@
                     onclick="navigator.clipboard.writeText(@js($shareUrl))">
                 Salin link
             </button>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">
+            Diskon teman: Rp {{ number_format($discountAmount, 0, ',', '.') }} di checkout bila kode dipakai.
+        </p>
+    </div>
+
+    <div class="rounded-2xl border bg-white overflow-hidden">
+        <div class="px-5 py-4 border-b font-bold text-navy-800 text-sm flex items-center justify-between gap-2">
+            <span>Orang yang Anda referral</span>
+            <span class="text-xs font-semibold text-slate-500">{{ $referralCount }} orang</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
+                    <tr>
+                        <th class="text-left px-4 py-3">Nama / Email</th>
+                        <th class="text-left px-4 py-3">Produk</th>
+                        <th class="text-left px-4 py-3">Status</th>
+                        <th class="text-left px-4 py-3">Tanggal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($referrals as $ref)
+                        <tr class="border-t">
+                            <td class="px-4 py-3">
+                                <div class="font-semibold text-navy-800">{{ $ref->full_name ?: '—' }}</div>
+                                <div class="text-xs text-slate-500">{{ $ref->email }}</div>
+                            </td>
+                            <td class="px-4 py-3">
+                                {{ $ref->digitalProduct?->name ?? $ref->product_name ?? $ref->plan ?? '—' }}
+                            </td>
+                            <td class="px-4 py-3">
+                                @php [$lbl] = $ref->statusBadge(); @endphp
+                                <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                                    {{ $lbl }}
+                                </span>
+                                @if($ref->isAdminComplimentary())
+                                    <span class="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700 ml-1">
+                                        Admin
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-slate-600">
+                                {{ ($ref->paid_at ?? $ref->created_at)?->format('d M Y H:i') }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="px-4 py-8 text-center text-slate-500">
+                                Belum ada orang yang memakai kode Anda.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 

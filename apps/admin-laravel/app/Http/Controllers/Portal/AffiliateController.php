@@ -37,12 +37,34 @@ class AffiliateController extends Controller
 
         $claims = $affiliate->claims()->latest()->limit(20)->get();
 
+        $referrals = $affiliate->referredOrders()
+            ->with(['digitalProduct:id,name,code'])
+            ->latest('id')
+            ->limit(100)
+            ->get([
+                'id',
+                'order_code',
+                'full_name',
+                'email',
+                'phone',
+                'status',
+                'product_name',
+                'plan',
+                'digital_product_id',
+                'paid_at',
+                'created_at',
+                'payment_gateway',
+                'amount',
+            ]);
+
         return view('portal.affiliate', [
             'active' => 'affiliate',
             'affiliate' => $affiliate,
             'balance' => $affiliate->availableBalance(),
             'commissions' => $commissions,
             'claims' => $claims,
+            'referrals' => $referrals,
+            'referralCount' => $affiliate->referredOrders()->count(),
             'shareUrl' => $affiliates->shareUrl($affiliate),
             'commissionAmount' => $affiliates->commissionAmount(),
             'discountAmount' => $affiliates->discountAmount(),
