@@ -87,6 +87,7 @@ class OrdersController extends Controller
             'phone' => 'nullable|string|max:32',
             'telegram_username' => 'nullable|string|max:120',
             'digital_product_id' => 'required|exists:cp_digital_products,id',
+            'referral_code' => 'nullable|string|max:32',
             'admin_note' => 'nullable|string|max:2000',
             'send_delivery' => 'nullable|boolean',
         ]);
@@ -97,7 +98,13 @@ class OrdersController extends Controller
             $note = 'Dibuat admin — bukan bayar';
         }
 
-        $order = DB::transaction(function () use ($data, $product, $note) {
+        $preferredCode = app(\App\Services\AffiliateService::class)
+            ->normalizeReferralCode($data['referral_code'] ?? null);
+        if ($preferredCode !== null) {
+            app(\App\Services\AffiliateService::class)->assertReferralCodeAvailable($preferredCode);
+        }
+
+        $order = DB::transaction(function () use ($data, $product, $note, $preferredCode) {
             $order = Order::query()->create([
                 'order_code' => 'YFD-ADM-'.Str::upper(Str::random(8)),
                 'full_name' => trim($data['full_name']),
@@ -124,6 +131,13 @@ class OrdersController extends Controller
             $order->license_id = $license->id;
             $order->save();
 
+            app(\App\Services\AffiliateService::class)->ensureForPortalUser(
+                (string) $order->email,
+                $order->full_name,
+                $order->license_id,
+                $preferredCode,
+            );
+
             return $order->fresh(['digitalProduct', 'license']);
         });
 
@@ -135,6 +149,7 @@ class OrdersController extends Controller
             (string) $order->email,
             $order->full_name,
             $order->license_id,
+            $preferredCode,
         );
 
         return redirect()

@@ -129,9 +129,15 @@ class AffiliateService
         ];
     }
 
-    public function ensureForPortalUser(string $email, ?string $name = null, ?int $licenseId = null): Affiliate
-    {
+    public function ensureForPortalUser(
+        string $email,
+        ?string $name = null,
+        ?int $licenseId = null,
+        ?string $preferredCode = null,
+    ): Affiliate {
         $email = strtolower(trim($email));
+        $preferredCode = $this->normalizeReferralCode($preferredCode);
+
         $affiliate = Affiliate::query()->where('email', $email)->first();
 
         if ($affiliate) {
@@ -144,6 +150,11 @@ class AffiliateService
                 $affiliate->name = $name;
                 $dirty = true;
             }
+            if ($preferredCode !== null && $preferredCode !== $affiliate->referral_code) {
+                $this->assertReferralCodeAvailable($preferredCode, $affiliate->id);
+                $affiliate->referral_code = $preferredCode;
+                $dirty = true;
+            }
             if ($dirty) {
                 $affiliate->save();
             }
@@ -151,13 +162,55 @@ class AffiliateService
             return $affiliate;
         }
 
+        $code = $preferredCode ?? $this->generateUniqueCode();
+        if ($preferredCode !== null) {
+            $this->assertReferralCodeAvailable($preferredCode);
+        }
+
         return Affiliate::create([
             'email' => $email,
             'name' => $name,
             'license_id' => $licenseId,
-            'referral_code' => $this->generateUniqueCode(),
+            'referral_code' => $code,
             'is_active' => true,
         ]);
+    }
+
+    public function normalizeReferralCode(?string $code): ?string
+    {
+        $code = strtoupper(trim((string) $code));
+        if ($code === '') {
+            return null;
+        }
+
+        return $code;
+    }
+
+    public function assertReferralCodeAvailable(string $code, ?int $ignoreAffiliateId = null): void
+    {
+        $code = $this->normalizeReferralCode($code);
+        if ($code === null) {
+            throw ValidationException::withMessages([
+                'referral_code' => 'Kode affiliate tidak boleh kosong.',
+            ]);
+        }
+
+        if (! preg_match('/^[A-Z0-9][A-Z0-9\-]{2,31}$/', $code)) {
+            throw ValidationException::withMessages([
+                'referral_code' => 'Kode affiliate 3–32 karakter (huruf/angka/tanda -).',
+            ]);
+        }
+
+        $exists = Affiliate::query()
+            ->where('referral_code', $code)
+            ->when($ignoreAffiliateId, fn ($q) => $q->where('id', '!=', $ignoreAffiliateId))
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'referral_code' => 'Kode affiliate sudah dipakai user lain.',
+            ]);
+        }
     }
 
     public function generateUniqueCode(): string

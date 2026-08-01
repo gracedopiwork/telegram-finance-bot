@@ -70,6 +70,14 @@
                     </div>
 
                     <div class="form-group">
+                        <label>Kode affiliate (opsional)</label>
+                        <input type="text" name="referral_code" value="{{ old('referral_code') }}"
+                               class="form-control text-uppercase" maxlength="32"
+                               placeholder="Contoh: YFD-VICTORIA — kosongkan = otomatis">
+                        <small class="text-muted">Huruf/angka/tanda -. Kalau kosong, sistem generate otomatis.</small>
+                    </div>
+
+                    <div class="form-group">
                         <label>Keterangan</label>
                         <textarea name="admin_note" class="form-control" rows="3" maxlength="2000">{{ old('admin_note', $defaultNote) }}</textarea>
                         <small class="text-muted">Default: dibuat admin — bukan bayar. Jumlah order = Rp 0.</small>
@@ -98,7 +106,7 @@
                 <ul class="pl-3 mb-0">
                         <li>Order dibuat status <strong>Lunas</strong>, gateway <code>admin</code>, nominal <strong>Rp 0</strong>.</li>
                         <li>Lisensi digenerate otomatis (atau digabung jika email sudah punya lisensi aktif).</li>
-                        <li>Kode <strong>affiliate/referral</strong> dibuat otomatis untuk email ini.</li>
+                        <li>Kode <strong>affiliate/referral</strong> bisa diisi manual, atau dikosongkan agar otomatis.</li>
                         <li>Tidak ada komisi affiliate dari order gratis ini.</li>
                         <li>User bot tetap perlu <code>/activate KODE</code> di Telegram untuk menghubungkan akun.</li>
                 </ul>
