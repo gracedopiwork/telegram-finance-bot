@@ -27,6 +27,7 @@ class Order extends Model
         'status',
         'payment_gateway',
         'payment_reference',
+        'admin_note',
         'payment_url',
         'payment_token',
         'paid_at',
@@ -81,5 +82,11 @@ class Order extends Model
         return ($this->currency === 'IDR' || ! $this->currency)
             ? 'Rp ' . number_format($this->amount, 0, ',', '.')
             : number_format($this->amount, 0, ',', '.') . ' ' . $this->currency;
+    }
+
+    public function isAdminComplimentary(): bool
+    {
+        return $this->payment_gateway === 'admin'
+            || str_contains(mb_strtolower((string) ($this->admin_note ?? '')), 'dibuat admin');
     }
 }

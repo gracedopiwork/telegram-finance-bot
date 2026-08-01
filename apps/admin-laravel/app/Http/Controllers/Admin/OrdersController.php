@@ -65,6 +65,77 @@ class OrdersController extends Controller
         return view('admin.orders.index', compact('orders', 'stats', 'products'));
     }
 
+    public function create()
+    {
+        $products = CpDigitalProduct::query()
+            ->orderByDesc('is_active')
+            ->orderBy('sort')
+            ->orderBy('name')
+            ->get(['id', 'name', 'code', 'period', 'price', 'discount_price', 'is_active']);
+
+        return view('admin.orders.create', [
+            'products' => $products,
+            'defaultNote' => 'Dibuat admin — bukan bayar',
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'full_name' => 'required|string|max:120',
+            'email' => 'required|email|max:190',
+            'phone' => 'nullable|string|max:32',
+            'telegram_username' => 'nullable|string|max:120',
+            'digital_product_id' => 'required|exists:cp_digital_products,id',
+            'admin_note' => 'nullable|string|max:2000',
+            'send_delivery' => 'nullable|boolean',
+        ]);
+
+        $product = CpDigitalProduct::query()->findOrFail((int) $data['digital_product_id']);
+        $note = trim((string) ($data['admin_note'] ?? ''));
+        if ($note === '') {
+            $note = 'Dibuat admin — bukan bayar';
+        }
+
+        $order = DB::transaction(function () use ($data, $product, $note) {
+            $order = Order::query()->create([
+                'order_code' => 'YFD-ADM-'.Str::upper(Str::random(8)),
+                'full_name' => trim($data['full_name']),
+                'email' => strtolower(trim($data['email'])),
+                'phone' => isset($data['phone']) ? trim((string) $data['phone']) : null,
+                'telegram_username' => isset($data['telegram_username'])
+                    ? ltrim(trim((string) $data['telegram_username']), '@')
+                    : null,
+                'plan' => (string) $product->code,
+                'digital_product_id' => $product->id,
+                'product_name' => $product->name,
+                'amount' => 0,
+                'original_price' => (int) ($product->discount_price ?: $product->price ?: 0),
+                'discount_amount' => (int) ($product->discount_price ?: $product->price ?: 0),
+                'currency' => 'IDR',
+                'status' => 'paid',
+                'payment_gateway' => 'admin',
+                'payment_reference' => 'admin-complimentary',
+                'admin_note' => $note,
+                'paid_at' => now(),
+            ]);
+
+            $license = app(LicenseProvisioningService::class)->resolveLicenseForPaidOrder($order);
+            $order->license_id = $license->id;
+            $order->save();
+
+            return $order->fresh(['digitalProduct', 'license']);
+        });
+
+        if ($request->boolean('send_delivery')) {
+            DeliverPaidOrderJob::dispatchSync($order->id);
+        }
+
+        return redirect()
+            ->route('admin.orders.show', $order)
+            ->with('success', 'User gratis dibuat. Order '.$order->order_code.' (bukan bayar). Lisensi: '.($order->license?->license_key ?? '—'));
+    }
+
     public function show(Order $order)
     {
         $order->load(['digitalProduct', 'license', 'paymentEvents']);
@@ -145,7 +216,9 @@ class OrdersController extends Controller
         $order->save();
 
         if ($data['status'] === 'paid' && ! $wasPaid) {
-            app(\App\Services\AffiliateService::class)->creditCommissionForPaidOrder($order->fresh(['digitalProduct', 'affiliate']));
+            if (! $order->isAdminComplimentary()) {
+                app(\App\Services\AffiliateService::class)->creditCommissionForPaidOrder($order->fresh(['digitalProduct', 'affiliate']));
+            }
             DeliverPaidOrderJob::dispatchSync($order->id);
         }
 

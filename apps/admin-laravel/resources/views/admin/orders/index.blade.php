@@ -1,7 +1,13 @@
 @extends('admin.layouts.page')
 
 @section('page_heading', 'Order & Pembayaran')
-@section('page_subheading', 'Daftar pembelian produk (Midtrans).')
+@section('page_subheading', 'Daftar pembelian produk (Midtrans) & akses gratis admin.')
+
+@section('page_actions')
+<a href="{{ route('admin.orders.create') }}" class="btn btn-success btn-sm">
+    <i class="fas fa-user-plus mr-1"></i> Tambah user gratis
+</a>
+@endsection
 
 @section('main')
 
@@ -107,6 +113,9 @@
                             <br>
                             <small class="text-muted">
                                 <i class="fab fa-cc-stripe"></i> {{ $o->payment_gateway ?? 'midtrans' }}
+                                @if($o->isAdminComplimentary())
+                                    <span class="badge badge-info ml-1">Admin gratis</span>
+                                @endif
                                 @if($o->payment_reference)
                                     · <code class="small">{{ \Illuminate\Support\Str::limit($o->payment_reference, 14) }}</code>
                                 @endif

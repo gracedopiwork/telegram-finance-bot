@@ -157,6 +157,8 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
 
     // Transaksi (read-mostly)
     Route::get('orders',                [OrdersController::class, 'index'])->name('orders.index');
+    Route::get('orders/create',         [OrdersController::class, 'create'])->name('orders.create');
+    Route::post('orders',               [OrdersController::class, 'store'])->name('orders.store');
     Route::get('orders/{order}',        [OrdersController::class, 'show'])->name('orders.show');
     Route::patch('orders/{order}/status', [OrdersController::class, 'updateStatus'])->name('orders.updateStatus');
     Route::post('orders/{order}/sync-payment', [OrdersController::class, 'syncPayment'])->name('orders.syncPayment');

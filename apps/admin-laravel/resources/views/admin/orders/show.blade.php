@@ -25,6 +25,9 @@
                 <div>
                     <h3 class="mb-1">{{ $order->amountLabel() }}</h3>
                     <span class="badge badge-{{ $color }} mr-2">{{ $lbl }}</span>
+                    @if($order->isAdminComplimentary())
+                        <span class="badge badge-info mr-2">Admin gratis — bukan bayar</span>
+                    @endif
                     <small class="text-muted">
                         Dibuat {{ $order->created_at->format('d M Y H:i') }}
                         @if($order->paid_at) · Dibayar {{ $order->paid_at->format('d M Y H:i') }} @endif
@@ -301,6 +304,9 @@
                     <tr><th>Order Code</th><td><code>{{ $order->order_code }}</code></td></tr>
                     @if($order->payment_reference)
                         <tr><th>Trx ID</th><td><code class="small">{{ $order->payment_reference }}</code></td></tr>
+                    @endif
+                    @if($order->admin_note)
+                        <tr><th>Keterangan admin</th><td>{{ $order->admin_note }}</td></tr>
                     @endif
                     @if($order->payment_token)
                         <tr><th>Snap Token</th><td><code class="small">{{ \Illuminate\Support\Str::limit($order->payment_token, 24) }}</code></td></tr>

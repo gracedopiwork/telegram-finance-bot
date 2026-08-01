@@ -385,6 +385,11 @@ return [
             'icon' => 'fas fa-fw fa-receipt',
         ],
         [
+            'text' => 'Tambah User Gratis',
+            'route' => 'admin.orders.create',
+            'icon' => 'fas fa-fw fa-user-plus',
+        ],
+        [
             'text' => 'Affiliate',
             'route' => 'admin.affiliates.index',
             'icon' => 'fas fa-fw fa-handshake',
