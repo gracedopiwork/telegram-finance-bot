@@ -222,6 +222,40 @@ class AffiliateService
         return $code;
     }
 
+    public function suggestCodeFromName(string $name, ?int $ignoreAffiliateId = null): string
+    {
+        $ascii = Str::upper(Str::ascii(trim($name)));
+        $slug = preg_replace('/[^A-Z0-9]+/', '-', $ascii) ?? '';
+        $slug = trim($slug, '-');
+        $parts = array_values(array_filter(explode('-', $slug)));
+        $base = $parts[0] ?? 'USER';
+        if (strlen($base) < 3 && isset($parts[1])) {
+            $base = $base.$parts[1];
+        }
+        $base = substr($base, 0, 24);
+        if ($base === '') {
+            $base = 'USER';
+        }
+
+        $candidate = 'YFD-'.$base;
+        $n = 2;
+        while (
+            Affiliate::query()
+                ->where('referral_code', $candidate)
+                ->when($ignoreAffiliateId, fn ($q) => $q->where('id', '!=', $ignoreAffiliateId))
+                ->exists()
+        ) {
+            $suffix = (string) $n;
+            $candidate = 'YFD-'.substr($base, 0, max(1, 24 - strlen($suffix))).$suffix;
+            $n++;
+            if ($n > 99) {
+                return $this->generateUniqueCode();
+            }
+        }
+
+        return $candidate;
+    }
+
     public function creditCommissionForPaidOrder(Order $order): ?AffiliateCommission
     {
         if (! $this->enabled()) {

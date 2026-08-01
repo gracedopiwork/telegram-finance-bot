@@ -8,6 +8,7 @@ use App\Models\AffiliateClaim;
 use App\Models\AffiliateCommission;
 use App\Models\Order;
 use App\Services\AffiliateService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -41,6 +42,80 @@ class AffiliatesController extends Controller
         return view('admin.affiliates.index', [
             'affiliates' => $affiliates,
             'q' => $q,
+        ]);
+    }
+
+    public function search(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->query('q', ''));
+        if (mb_strlen($q) < 1) {
+            return response()->json(['results' => []]);
+        }
+
+        $affiliates = Affiliate::query()
+            ->where(function ($inner) use ($q) {
+                $inner->where('name', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%")
+                    ->orWhere('referral_code', 'like', "%{$q}%");
+            })
+            ->orderBy('name')
+            ->limit(20)
+            ->get(['id', 'name', 'email', 'referral_code']);
+
+        $results = $affiliates->map(function (Affiliate $a) {
+            $label = trim(($a->name ?: '—').' · '.$a->email.' · '.$a->referral_code);
+
+            return [
+                'id' => $a->referral_code,
+                'text' => $label,
+                'referral_code' => $a->referral_code,
+                'name' => $a->name,
+                'email' => $a->email,
+            ];
+        })->values();
+
+        // Juga cari nama dari order (belum tentu punya affiliate) untuk saran kode.
+        $orderNames = Order::query()
+            ->where(function ($inner) use ($q) {
+                $inner->where('full_name', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%");
+            })
+            ->latest('id')
+            ->limit(15)
+            ->get(['full_name', 'email']);
+
+        $seenEmails = $affiliates->pluck('email')->map(fn ($e) => strtolower((string) $e))->all();
+        $service = app(AffiliateService::class);
+
+        foreach ($orderNames as $order) {
+            $email = strtolower(trim((string) $order->email));
+            if ($email === '' || in_array($email, $seenEmails, true)) {
+                continue;
+            }
+            $seenEmails[] = $email;
+            $suggested = $service->suggestCodeFromName((string) $order->full_name);
+            $results->push([
+                'id' => $suggested,
+                'text' => trim(($order->full_name ?: '—').' · '.$order->email.' · saran: '.$suggested),
+                'referral_code' => $suggested,
+                'name' => $order->full_name,
+                'email' => $order->email,
+                'suggested' => true,
+            ]);
+        }
+
+        return response()->json(['results' => $results->take(25)->values()]);
+    }
+
+    public function suggestCode(Request $request, AffiliateService $affiliates): JsonResponse
+    {
+        $name = trim((string) $request->query('name', ''));
+        if ($name === '') {
+            return response()->json(['code' => null], 422);
+        }
+
+        return response()->json([
+            'code' => $affiliates->suggestCodeFromName($name),
         ]);
     }
 

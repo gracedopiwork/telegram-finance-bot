@@ -170,6 +170,8 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
 
     Route::get('affiliates', [AffiliatesController::class, 'index'])->name('affiliates.index');
     Route::get('affiliates/create', [AffiliatesController::class, 'create'])->name('affiliates.create');
+    Route::get('affiliates/search', [AffiliatesController::class, 'search'])->name('affiliates.search');
+    Route::get('affiliates/suggest-code', [AffiliatesController::class, 'suggestCode'])->name('affiliates.suggest-code');
     Route::post('affiliates', [AffiliatesController::class, 'store'])->name('affiliates.store');
     Route::get('affiliates/claims', [AffiliatesController::class, 'claims'])->name('affiliates.claims');
     Route::post('affiliates/claims/{claim}', [AffiliatesController::class, 'processClaim'])->name('affiliates.claims.process');

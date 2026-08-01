@@ -62,10 +62,20 @@
 
                     <div class="form-group">
                         <label>Kode affiliate (opsional)</label>
-                        <input type="text" name="referral_code" value="{{ old('referral_code') }}"
-                               class="form-control text-uppercase" maxlength="32"
-                               placeholder="Contoh: YFD-VICTORIA — kosongkan = otomatis">
-                        <small class="text-muted">Huruf/angka/tanda -. Kalau email sudah punya affiliate, kode baru akan mengganti yang lama.</small>
+                        <select id="referral_code_picker" class="form-control" style="width:100%;">
+                            @if(old('referral_code'))
+                                <option value="{{ old('referral_code') }}" selected>{{ old('referral_code') }}</option>
+                            @endif
+                        </select>
+                        <input type="hidden" name="referral_code" id="referral_code" value="{{ old('referral_code') }}">
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnSuggestAffiliateFromName">
+                                <i class="fas fa-magic mr-1"></i>Isi dari nama
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            Cari berdasarkan <strong>nama</strong> / email / kode. Bisa ketik kode baru. Kosongkan = otomatis.
+                        </small>
                     </div>
                 </div>
                 <div class="card-footer">
@@ -82,7 +92,7 @@
                 <p class="mb-2"><strong>Cara pakai</strong></p>
                 <ul class="pl-3 mb-0">
                     <li>Pilih user dari daftar, atau ketik email order yang sudah ada.</li>
-                    <li>Isi kode custom, atau kosongkan agar di-generate otomatis.</li>
+                    <li>Cari kode lewat <strong>nama</strong>, atau isi dari nama, atau kosongkan agar otomatis.</li>
                     <li>Bisa juga atur kode langsung dari <strong>Detail Order</strong>.</li>
                 </ul>
             </div>
@@ -95,13 +105,78 @@
 <script>
 (function () {
     var select = document.getElementById('candidate_select');
-    if (!select) return;
-    select.addEventListener('change', function () {
-        var opt = select.options[select.selectedIndex];
-        if (!opt || !opt.value) return;
-        document.getElementById('affiliate_email').value = opt.value;
-        document.getElementById('affiliate_name').value = opt.getAttribute('data-name') || '';
-    });
+    if (select) {
+        select.addEventListener('change', function () {
+            var opt = select.options[select.selectedIndex];
+            if (!opt || !opt.value) return;
+            document.getElementById('affiliate_email').value = opt.value;
+            document.getElementById('affiliate_name').value = opt.getAttribute('data-name') || '';
+        });
+    }
 })();
+
+$(function () {
+    var $picker = $('#referral_code_picker');
+    var $hidden = $('#referral_code');
+    var searchUrl = @json(route('admin.affiliates.search'));
+    var suggestUrl = @json(route('admin.affiliates.suggest-code'));
+
+    function syncHidden(val) {
+        $hidden.val(val ? String(val).toUpperCase() : '');
+    }
+
+    if ($picker.length && $.fn.select2) {
+        $picker.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            allowClear: true,
+            placeholder: 'Cari nama / email / kode…',
+            tags: true,
+            ajax: {
+                url: searchUrl,
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return { q: params.term || '' };
+                },
+                processResults: function (data) {
+                    return { results: data.results || [] };
+                }
+            },
+            createTag: function (params) {
+                var term = $.trim(params.term || '').toUpperCase();
+                if (!term) return null;
+                return { id: term, text: term + ' (kode baru)', referral_code: term };
+            }
+        });
+
+        $picker.on('change', function () {
+            var data = $picker.select2('data')[0];
+            var code = data && (data.referral_code || data.id) ? (data.referral_code || data.id) : '';
+            syncHidden(code);
+            if (data && data.email && !$('#affiliate_email').val()) {
+                $('#affiliate_email').val(data.email);
+            }
+            if (data && data.name && !$('#affiliate_name').val()) {
+                $('#affiliate_name').val(data.name);
+            }
+        });
+    }
+
+    $('#btnSuggestAffiliateFromName').on('click', function () {
+        var name = $.trim($('#affiliate_name').val() || $('input[name="name"]').val() || '');
+        if (!name) {
+            alert('Isi nama dulu, atau pilih user dari daftar.');
+            return;
+        }
+        $.getJSON(suggestUrl, { name: name }).done(function (res) {
+            if (!res || !res.code) return;
+            var code = String(res.code).toUpperCase();
+            var option = new Option(code + ' (dari nama)', code, true, true);
+            $picker.append(option).trigger('change');
+            syncHidden(code);
+        });
+    });
+});
 </script>
 @stop

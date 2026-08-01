@@ -71,10 +71,22 @@
 
                     <div class="form-group">
                         <label>Kode affiliate (opsional)</label>
-                        <input type="text" name="referral_code" value="{{ old('referral_code') }}"
-                               class="form-control text-uppercase" maxlength="32"
-                               placeholder="Contoh: YFD-VICTORIA — kosongkan = otomatis">
-                        <small class="text-muted">Huruf/angka/tanda -. Kalau kosong, sistem generate otomatis.</small>
+                        <div class="input-group">
+                            <select id="referral_code_picker" class="form-control" style="width:100%;">
+                                @if(old('referral_code'))
+                                    <option value="{{ old('referral_code') }}" selected>{{ old('referral_code') }}</option>
+                                @endif
+                            </select>
+                        </div>
+                        <input type="hidden" name="referral_code" id="referral_code" value="{{ old('referral_code') }}">
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnSuggestAffiliateFromName">
+                                <i class="fas fa-magic mr-1"></i>Isi dari nama lengkap
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            Cari berdasarkan <strong>nama</strong> / email / kode. Bisa juga ketik kode baru. Kosongkan = otomatis.
+                        </small>
                     </div>
 
                     <div class="form-group">
@@ -106,7 +118,7 @@
                 <ul class="pl-3 mb-0">
                         <li>Order dibuat status <strong>Lunas</strong>, gateway <code>admin</code>, nominal <strong>Rp 0</strong>.</li>
                         <li>Lisensi digenerate otomatis (atau digabung jika email sudah punya lisensi aktif).</li>
-                        <li>Kode <strong>affiliate/referral</strong> bisa diisi manual, atau dikosongkan agar otomatis.</li>
+                        <li>Kode affiliate bisa <strong>dicari dari nama</strong>, diisi dari nama lengkap, diketik manual, atau dikosongkan (otomatis).</li>
                         <li>Tidak ada komisi affiliate dari order gratis ini.</li>
                         <li>User bot tetap perlu <code>/activate KODE</code> di Telegram untuk menghubungkan akun.</li>
                 </ul>
@@ -116,3 +128,69 @@
 </div>
 
 @endsection
+
+@section('admin_js')
+<script>
+$(function () {
+    var $picker = $('#referral_code_picker');
+    var $hidden = $('#referral_code');
+    var searchUrl = @json(route('admin.affiliates.search'));
+    var suggestUrl = @json(route('admin.affiliates.suggest-code'));
+
+    function syncHidden(val) {
+        $hidden.val(val ? String(val).toUpperCase() : '');
+    }
+
+    if ($picker.length && $.fn.select2) {
+        $picker.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            allowClear: true,
+            placeholder: 'Cari nama / email / kode…',
+            tags: true,
+            ajax: {
+                url: searchUrl,
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return { q: params.term || '' };
+                },
+                processResults: function (data) {
+                    return { results: data.results || [] };
+                }
+            },
+            createTag: function (params) {
+                var term = $.trim(params.term || '').toUpperCase();
+                if (!term) return null;
+                return { id: term, text: term + ' (kode baru)', referral_code: term };
+            }
+        });
+
+        $picker.on('change', function () {
+            var data = $picker.select2('data')[0];
+            var code = data && (data.referral_code || data.id) ? (data.referral_code || data.id) : '';
+            syncHidden(code);
+        });
+
+        if ($hidden.val()) {
+            syncHidden($hidden.val());
+        }
+    }
+
+    $('#btnSuggestAffiliateFromName').on('click', function () {
+        var name = $.trim($('input[name="full_name"]').val() || '');
+        if (!name) {
+            alert('Isi nama lengkap dulu.');
+            return;
+        }
+        $.getJSON(suggestUrl, { name: name }).done(function (res) {
+            if (!res || !res.code) return;
+            var code = String(res.code).toUpperCase();
+            var option = new Option(code + ' (dari nama)', code, true, true);
+            $picker.append(option).trigger('change');
+            syncHidden(code);
+        });
+    });
+});
+</script>
+@stop
