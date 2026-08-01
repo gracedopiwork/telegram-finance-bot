@@ -250,6 +250,23 @@
             </div>
         </div>
 
+        @if(!empty($referrerAffiliate) || filled($order->referral_code))
+        <div class="card card-outline card-warning">
+            <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-user-tag mr-2"></i>Referral Pemberi</h3></div>
+            <div class="card-body text-center">
+                <code class="d-inline-block p-3 bg-light rounded" style="font-size:1.1rem; user-select:all;">
+                    {{ $referrerAffiliate->referral_code ?? $order->referral_code }}
+                </code>
+                @if(!empty($referrerAffiliate))
+                    <div class="small text-muted mt-2">
+                        {{ $referrerAffiliate->name ?: '—' }} · {{ $referrerAffiliate->email }}
+                        · <a href="{{ route('admin.affiliates.show', $referrerAffiliate) }}">Lihat affiliate</a>
+                    </div>
+                @endif
+            </div>
+        </div>
+        @endif
+
         @if(!empty($buyerAffiliate))
         <div class="card card-outline card-info">
             <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-handshake mr-2"></i>Kode Affiliate Pembeli</h3></div>

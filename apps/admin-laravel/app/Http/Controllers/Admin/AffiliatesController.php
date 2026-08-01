@@ -75,33 +75,36 @@ class AffiliatesController extends Controller
         })->values();
 
         // Juga cari nama dari order (belum tentu punya affiliate) untuk saran kode.
-        $orderNames = Order::query()
-            ->where(function ($inner) use ($q) {
-                $inner->where('full_name', 'like', "%{$q}%")
-                    ->orWhere('email', 'like', "%{$q}%");
-            })
-            ->latest('id')
-            ->limit(15)
-            ->get(['full_name', 'email']);
+        // Mode referrer: hanya affiliate existing (untuk input kode pemberi referral).
+        if (! $request->boolean('existing_only')) {
+            $orderNames = Order::query()
+                ->where(function ($inner) use ($q) {
+                    $inner->where('full_name', 'like', "%{$q}%")
+                        ->orWhere('email', 'like', "%{$q}%");
+                })
+                ->latest('id')
+                ->limit(15)
+                ->get(['full_name', 'email']);
 
-        $seenEmails = $affiliates->pluck('email')->map(fn ($e) => strtolower((string) $e))->all();
-        $service = app(AffiliateService::class);
+            $seenEmails = $affiliates->pluck('email')->map(fn ($e) => strtolower((string) $e))->all();
+            $service = app(AffiliateService::class);
 
-        foreach ($orderNames as $order) {
-            $email = strtolower(trim((string) $order->email));
-            if ($email === '' || in_array($email, $seenEmails, true)) {
-                continue;
+            foreach ($orderNames as $order) {
+                $email = strtolower(trim((string) $order->email));
+                if ($email === '' || in_array($email, $seenEmails, true)) {
+                    continue;
+                }
+                $seenEmails[] = $email;
+                $suggested = $service->suggestCodeFromName((string) $order->full_name);
+                $results->push([
+                    'id' => $suggested,
+                    'text' => trim(($order->full_name ?: '—').' · '.$order->email.' · saran: '.$suggested),
+                    'referral_code' => $suggested,
+                    'name' => $order->full_name,
+                    'email' => $order->email,
+                    'suggested' => true,
+                ]);
             }
-            $seenEmails[] = $email;
-            $suggested = $service->suggestCodeFromName((string) $order->full_name);
-            $results->push([
-                'id' => $suggested,
-                'text' => trim(($order->full_name ?: '—').' · '.$order->email.' · saran: '.$suggested),
-                'referral_code' => $suggested,
-                'name' => $order->full_name,
-                'email' => $order->email,
-                'suggested' => true,
-            ]);
         }
 
         return response()->json(['results' => $results->take(25)->values()]);

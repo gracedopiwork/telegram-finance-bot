@@ -98,13 +98,25 @@ class OrdersController extends Controller
             $note = 'Dibuat admin — bukan bayar';
         }
 
-        $preferredCode = app(\App\Services\AffiliateService::class)
-            ->normalizeReferralCode($data['referral_code'] ?? null);
-        if ($preferredCode !== null) {
-            app(\App\Services\AffiliateService::class)->assertReferralCodeAvailable($preferredCode);
+        $affiliates = app(\App\Services\AffiliateService::class);
+        $buyerEmail = strtolower(trim($data['email']));
+        $referrerCode = $affiliates->normalizeReferralCode($data['referral_code'] ?? null);
+        $referrer = null;
+        if ($referrerCode !== null) {
+            $referrer = $affiliates->findActiveByCode($referrerCode);
+            if ($referrer === null) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'referral_code' => 'Kode referral tidak valid atau nonaktif.',
+                ]);
+            }
+            if (strtolower((string) $referrer->email) === $buyerEmail) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'referral_code' => 'Tidak bisa memakai kode referral milik sendiri.',
+                ]);
+            }
         }
 
-        $order = DB::transaction(function () use ($data, $product, $note, $preferredCode) {
+        $order = DB::transaction(function () use ($data, $product, $note, $referrer, $referrerCode, $affiliates) {
             $order = Order::query()->create([
                 'order_code' => 'YFD-ADM-'.Str::upper(Str::random(8)),
                 'full_name' => trim($data['full_name']),
@@ -113,6 +125,8 @@ class OrdersController extends Controller
                 'telegram_username' => isset($data['telegram_username'])
                     ? ltrim(trim((string) $data['telegram_username']), '@')
                     : null,
+                'referral_code' => $referrerCode,
+                'affiliate_id' => $referrer?->id,
                 'plan' => (string) $product->code,
                 'digital_product_id' => $product->id,
                 'product_name' => $product->name,
@@ -131,40 +145,41 @@ class OrdersController extends Controller
             $order->license_id = $license->id;
             $order->save();
 
-            app(\App\Services\AffiliateService::class)->ensureForPortalUser(
+            // Kode affiliate milik pembeli tetap di-generate otomatis (bukan field referral di atas).
+            $affiliates->ensureForPortalUser(
                 (string) $order->email,
                 $order->full_name,
                 $order->license_id,
-                $preferredCode,
             );
 
-            return $order->fresh(['digitalProduct', 'license']);
+            return $order->fresh(['digitalProduct', 'license', 'affiliate']);
         });
 
         if ($request->boolean('send_delivery')) {
             DeliverPaidOrderJob::dispatchSync($order->id);
         }
 
-        $affiliate = app(\App\Services\AffiliateService::class)->ensureForPortalUser(
+        $buyerAffiliate = $affiliates->ensureForPortalUser(
             (string) $order->email,
             $order->full_name,
             $order->license_id,
-            $preferredCode,
         );
+
+        $msg = 'User gratis dibuat. Order '.$order->order_code
+            .' · Lisensi: '.($order->license?->license_key ?? '—')
+            .' · Kode affiliate pembeli: '.$buyerAffiliate->referral_code;
+        if ($referrer) {
+            $msg .= ' · Direferensikan oleh: '.$referrer->referral_code;
+        }
 
         return redirect()
             ->route('admin.orders.show', $order)
-            ->with(
-                'success',
-                'User gratis dibuat. Order '.$order->order_code
-                .' · Lisensi: '.($order->license?->license_key ?? '—')
-                .' · Kode affiliate: '.$affiliate->referral_code
-            );
+            ->with('success', $msg);
     }
 
     public function show(Order $order)
     {
-        $order->load(['digitalProduct', 'license', 'paymentEvents']);
+        $order->load(['digitalProduct', 'license', 'paymentEvents', 'affiliate']);
 
         $entitlements = app(LicenseEntitlementService::class);
         $licenseEntitlementLabel = $order->license
@@ -184,6 +199,7 @@ class OrdersController extends Controller
             'order' => $order,
             'licenseEntitlementLabel' => $licenseEntitlementLabel,
             'buyerAffiliate' => $buyerAffiliate,
+            'referrerAffiliate' => $order->affiliate,
             'telegramBotUrl' => TelegramBotUrl::resolve(),
             'deliveryChannelLabel' => app(OrderDeliveryNotifier::class)->primaryChannelLabel(),
             'midtransNotificationUrl' => app(MidtransService::class)->notificationUrl(),
