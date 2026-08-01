@@ -14,6 +14,9 @@ class Affiliate extends Model
         'name',
         'referral_code',
         'npwp',
+        'bank_name',
+        'bank_account_number',
+        'bank_account_name',
         'is_active',
     ];
 

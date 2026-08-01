@@ -26,6 +26,7 @@
                 <tr>
                     <th>ID</th>
                     <th>Affiliate</th>
+                    <th>Rekening tujuan</th>
                     <th>Gross</th>
                     <th>Pajak</th>
                     <th>Net</th>
@@ -40,8 +41,18 @@
                     <tr>
                         <td>#{{ $claim->id }}</td>
                         <td>
-                            <div>{{ $claim->affiliate?->email }}</div>
+                            <div class="font-weight-bold">{{ $claim->affiliate?->name ?: '—' }}</div>
+                            <div class="small">{{ $claim->affiliate?->email }}</div>
                             <div class="small text-muted">{{ $claim->affiliate?->referral_code }}</div>
+                        </td>
+                        <td class="small">
+                            @if($claim->bank_name || $claim->bank_account_number)
+                                <div><strong>{{ $claim->bank_name ?: '—' }}</strong></div>
+                                <div><code>{{ $claim->bank_account_number ?: '—' }}</code></div>
+                                <div>{{ $claim->bank_account_name ?: '—' }}</div>
+                            @else
+                                <span class="text-danger">Belum ada rekening</span>
+                            @endif
                         </td>
                         <td>Rp {{ number_format($claim->gross_amount, 0, ',', '.') }}</td>
                         <td>Rp {{ number_format($claim->tax_amount, 0, ',', '.') }} ({{ $claim->tax_percent }}%)</td>
@@ -64,7 +75,7 @@
                                 </form>
                             @elseif($claim->status === 'approved')
                                 <form method="POST" action="{{ route('admin.affiliates.claims.process', $claim) }}"
-                                      onsubmit="return confirm('Tandai sudah ditransfer manual?')">
+                                      onsubmit="return confirm('Tandai sudah ditransfer manual ke rekening di atas?')">
                                     @csrf
                                     <input type="hidden" name="status" value="paid">
                                     <button class="btn btn-xs btn-success">Tandai dibayar</button>
@@ -75,7 +86,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="text-center text-muted py-4">Tidak ada klaim.</td></tr>
+                    <tr><td colspan="9" class="text-center text-muted py-4">Tidak ada klaim.</td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -38,6 +38,15 @@
                 <p><strong>Email:</strong> {{ $affiliate->email }}</p>
                 <p><strong>Nama:</strong> {{ $affiliate->name ?: '—' }}</p>
                 <p><strong>NPWP:</strong> {{ $affiliate->npwp ?: '—' }}</p>
+                <p><strong>Rekening:</strong>
+                    @if($affiliate->bank_name || $affiliate->bank_account_number)
+                        <br>{{ $affiliate->bank_name ?: '—' }}
+                        <br><code>{{ $affiliate->bank_account_number ?: '—' }}</code>
+                        <br>{{ $affiliate->bank_account_name ?: '—' }}
+                    @else
+                        —
+                    @endif
+                </p>
                 <p><strong>Lisensi:</strong> {{ $affiliate->license?->license_key ?: '—' }}</p>
                 <p><strong>License ID:</strong> {{ $affiliate->license_id ?: '—' }}</p>
                 <p><strong>Saldo tersedia:</strong> Rp {{ number_format($balance, 0, ',', '.') }}</p>
@@ -171,17 +180,24 @@
             <div class="card-header"><strong>Klaim</strong></div>
             <div class="card-body table-responsive p-0">
                 <table class="table mb-0">
-                    <thead><tr><th>ID</th><th>Net</th><th>Status</th><th>Tanggal</th></tr></thead>
+                    <thead><tr><th>ID</th><th>Net</th><th>Rekening</th><th>Status</th><th>Tanggal</th></tr></thead>
                     <tbody>
                         @forelse($affiliate->claims as $claim)
                             <tr>
                                 <td>#{{ $claim->id }}</td>
                                 <td>Rp {{ number_format($claim->net_amount, 0, ',', '.') }}</td>
+                                <td class="small">
+                                    @if($claim->bank_name)
+                                        {{ $claim->bank_name }} · {{ $claim->bank_account_number }} · {{ $claim->bank_account_name }}
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                                 <td>{{ $claim->status }}</td>
                                 <td>{{ $claim->created_at?->format('d/m/Y H:i') }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="4" class="text-center text-muted py-3">Belum ada klaim.</td></tr>
+                            <tr><td colspan="5" class="text-center text-muted py-3">Belum ada klaim.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

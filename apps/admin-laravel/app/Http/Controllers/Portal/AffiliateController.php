@@ -83,6 +83,9 @@ class AffiliateController extends Controller
 
         $data = $request->validate([
             'npwp' => ['nullable', 'string', 'max:32'],
+            'bank_name' => ['required', 'string', 'max:80'],
+            'bank_account_number' => ['required', 'string', 'max:64'],
+            'bank_account_name' => ['required', 'string', 'max:120'],
         ]);
 
         $affiliate = $affiliates->ensureForPortalUser(
@@ -91,9 +94,15 @@ class AffiliateController extends Controller
             PortalSession::licenseId($request),
         );
 
-        $claim = $affiliates->submitClaim($affiliate, $data['npwp'] ?? null);
+        $claim = $affiliates->submitClaim(
+            $affiliate,
+            $data['npwp'] ?? null,
+            $data['bank_name'],
+            $data['bank_account_number'],
+            $data['bank_account_name'],
+        );
 
         return redirect()->route('portal.affiliate')
-            ->with('success', 'Klaim Rp '.number_format($claim->net_amount, 0, ',', '.').' diajukan. Tim admin akan proses transfer manual.');
+            ->with('success', 'Klaim Rp '.number_format($claim->net_amount, 0, ',', '.').' diajukan ke rekening '.$claim->bank_name.' '.$claim->bank_account_number.'. Tim admin akan proses transfer.');
     }
 }

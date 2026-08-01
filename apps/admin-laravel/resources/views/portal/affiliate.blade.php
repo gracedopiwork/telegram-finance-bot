@@ -108,23 +108,43 @@
                 <p class="text-xs text-slate-500 mt-1">
                     Minimal Rp {{ number_format($minClaim, 0, ',', '.') }}.
                     Pajak: {{ rtrim(rtrim(number_format($taxWithNpwp, 2, '.', ''), '0'), '.') }}% (ada NPWP) /
-                    {{ rtrim(rtrim(number_format($taxWithoutNpwp, 2, '.', ''), '0'), '.') }}% (tanpa NPWP) — bisa diatur admin.
-                    Transfer dilakukan manual oleh admin setelah disetujui.
+                    {{ rtrim(rtrim(number_format($taxWithoutNpwp, 2, '.', ''), '0'), '.') }}% (tanpa NPWP).
+                    Wajib isi rekening tujuan transfer. Admin proses manual setelah disetujui.
                 </p>
             </div>
         </div>
-        <form method="POST" action="{{ route('portal.affiliate.claim') }}" class="flex flex-col sm:flex-row gap-3 items-end">
+        <form method="POST" action="{{ route('portal.affiliate.claim') }}" class="space-y-4">
             @csrf
-            <div class="flex-1 w-full">
-                <label class="block text-xs font-semibold text-slate-600 mb-1">NPWP (opsional)</label>
-                <input type="text" name="npwp" value="{{ old('npwp', $affiliate->npwp) }}" maxlength="32"
-                       class="w-full rounded-xl border-slate-200 text-sm" placeholder="Opsional — memengaruhi % pajak klaim">
+            <div class="grid sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama bank <span class="text-red-500">*</span></label>
+                    <input type="text" name="bank_name" value="{{ old('bank_name', $affiliate->bank_name) }}" required maxlength="80"
+                           class="w-full rounded-xl border-slate-200 text-sm" placeholder="Contoh: BCA / Mandiri / BNI">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nomor rekening <span class="text-red-500">*</span></label>
+                    <input type="text" name="bank_account_number" value="{{ old('bank_account_number', $affiliate->bank_account_number) }}" required maxlength="64"
+                           class="w-full rounded-xl border-slate-200 text-sm" placeholder="Hanya angka">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama pemilik rekening <span class="text-red-500">*</span></label>
+                    <input type="text" name="bank_account_name" value="{{ old('bank_account_name', $affiliate->bank_account_name) }}" required maxlength="120"
+                           class="w-full rounded-xl border-slate-200 text-sm" placeholder="Sesuai buku tabungan">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">NPWP (opsional)</label>
+                    <input type="text" name="npwp" value="{{ old('npwp', $affiliate->npwp) }}" maxlength="32"
+                           class="w-full rounded-xl border-slate-200 text-sm" placeholder="Opsional — memengaruhi % pajak klaim">
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary"
-                    {{ $balance < $minClaim ? 'disabled' : '' }}
-                    onclick="return confirm('Ajukan klaim seluruh saldo tersedia?')">
-                Klaim saldo
-            </button>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <p class="text-xs text-slate-500">Data rekening tersimpan untuk klaim berikutnya.</p>
+                <button type="submit" class="btn btn-primary"
+                        {{ $balance < $minClaim ? 'disabled' : '' }}
+                        onclick="return confirm('Ajukan klaim seluruh saldo ke rekening ini?')">
+                    Klaim saldo
+                </button>
+            </div>
         </form>
     </div>
 
@@ -166,6 +186,7 @@
                         <th class="text-right px-4 py-3">Gross</th>
                         <th class="text-right px-4 py-3">Pajak</th>
                         <th class="text-right px-4 py-3">Net</th>
+                        <th class="text-left px-4 py-3">Rekening</th>
                         <th class="text-left px-4 py-3">Status</th>
                     </tr>
                 </thead>
@@ -176,10 +197,19 @@
                             <td class="px-4 py-3 text-right">Rp {{ number_format($claim->gross_amount, 0, ',', '.') }}</td>
                             <td class="px-4 py-3 text-right">Rp {{ number_format($claim->tax_amount, 0, ',', '.') }} ({{ $claim->tax_percent }}%)</td>
                             <td class="px-4 py-3 text-right font-semibold">Rp {{ number_format($claim->net_amount, 0, ',', '.') }}</td>
+                            <td class="px-4 py-3 text-xs text-slate-600">
+                                @if($claim->bank_name)
+                                    <div class="font-semibold text-slate-800">{{ $claim->bank_name }}</div>
+                                    <div>{{ $claim->bank_account_number }}</div>
+                                    <div>{{ $claim->bank_account_name }}</div>
+                                @else
+                                    —
+                                @endif
+                            </td>
                             <td class="px-4 py-3">{{ $claim->status }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">Belum ada klaim.</td></tr>
+                        <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">Belum ada klaim.</td></tr>
                     @endforelse
                 </tbody>
             </table>

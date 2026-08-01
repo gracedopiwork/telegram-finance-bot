@@ -289,7 +289,13 @@ class AffiliateService
         ]);
     }
 
-    public function submitClaim(Affiliate $affiliate, ?string $npwp = null): AffiliateClaim
+    public function submitClaim(
+        Affiliate $affiliate,
+        ?string $npwp = null,
+        ?string $bankName = null,
+        ?string $bankAccountNumber = null,
+        ?string $bankAccountName = null,
+    ): AffiliateClaim
     {
         $available = $affiliate->commissions()->where('status', 'available')->get();
         $gross = (int) $available->sum('amount');
@@ -308,16 +314,38 @@ class AffiliateService
         }
 
         $npwp = trim((string) ($npwp ?: $affiliate->npwp));
-        if ($npwp !== '') {
-            $affiliate->npwp = $npwp;
-            $affiliate->save();
+        $bankName = trim((string) ($bankName ?: $affiliate->bank_name));
+        $bankAccountNumber = preg_replace('/\s+/', '', trim((string) ($bankAccountNumber ?: $affiliate->bank_account_number))) ?? '';
+        $bankAccountName = trim((string) ($bankAccountName ?: $affiliate->bank_account_name));
+
+        if ($bankName === '' || $bankAccountNumber === '' || $bankAccountName === '') {
+            throw ValidationException::withMessages([
+                'bank_account_number' => 'Lengkapi nama bank, nomor rekening, dan nama pemilik rekening untuk klaim.',
+            ]);
         }
+
+        $affiliate->npwp = $npwp !== '' ? $npwp : $affiliate->npwp;
+        $affiliate->bank_name = $bankName;
+        $affiliate->bank_account_number = $bankAccountNumber;
+        $affiliate->bank_account_name = $bankAccountName;
+        $affiliate->save();
 
         $taxPercent = $this->taxPercent($npwp);
         $taxAmount = (int) round($gross * ($taxPercent / 100));
         $net = max(0, $gross - $taxAmount);
 
-        return DB::transaction(function () use ($affiliate, $available, $gross, $taxPercent, $taxAmount, $net, $npwp) {
+        return DB::transaction(function () use (
+            $affiliate,
+            $available,
+            $gross,
+            $taxPercent,
+            $taxAmount,
+            $net,
+            $npwp,
+            $bankName,
+            $bankAccountNumber,
+            $bankAccountName,
+        ) {
             $claim = AffiliateClaim::create([
                 'affiliate_id' => $affiliate->id,
                 'gross_amount' => $gross,
@@ -325,6 +353,9 @@ class AffiliateService
                 'tax_amount' => $taxAmount,
                 'net_amount' => $net,
                 'npwp_snapshot' => $npwp !== '' ? $npwp : null,
+                'bank_name' => $bankName,
+                'bank_account_number' => $bankAccountNumber,
+                'bank_account_name' => $bankAccountName,
                 'status' => 'pending',
             ]);
 
