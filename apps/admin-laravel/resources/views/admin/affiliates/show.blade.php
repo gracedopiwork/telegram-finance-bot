@@ -41,6 +41,7 @@
                 <p><strong>Lisensi:</strong> {{ $affiliate->license?->license_key ?: '—' }}</p>
                 <p><strong>License ID:</strong> {{ $affiliate->license_id ?: '—' }}</p>
                 <p><strong>Saldo tersedia:</strong> Rp {{ number_format($balance, 0, ',', '.') }}</p>
+                <p><strong>Referral masuk:</strong> {{ $referredCount }} orang</p>
                 <p><strong>Status:</strong> {{ $affiliate->is_active ? 'Aktif' : 'Nonaktif' }}</p>
             </div>
         </div>
@@ -78,19 +79,90 @@
     </div>
     <div class="col-md-8">
         <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Orang yang masuk lewat kode ini</strong>
+                <span class="badge badge-info">{{ $referredCount }}</span>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Nama / Email</th>
+                            <th>Order</th>
+                            <th>Produk</th>
+                            <th>Status</th>
+                            <th>Lisensi</th>
+                            <th>Tanggal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($affiliate->referredOrders as $refOrder)
+                            <tr>
+                                <td>
+                                    <div class="font-weight-bold">{{ $refOrder->full_name ?: '—' }}</div>
+                                    <div class="text-muted small">{{ $refOrder->email }}</div>
+                                    @if($refOrder->phone)
+                                        <div class="text-muted small">{{ $refOrder->phone }}</div>
+                                    @endif
+                                </td>
+                                <td>
+                                    <a href="{{ route('admin.orders.show', $refOrder) }}">
+                                        {{ $refOrder->order_code }}
+                                    </a>
+                                </td>
+                                <td class="small">{{ $refOrder->digitalProduct?->name ?? $refOrder->product_name ?? $refOrder->plan ?? '—' }}</td>
+                                <td>
+                                    @php [$lbl, $color] = $refOrder->statusBadge(); @endphp
+                                    <span class="badge badge-{{ $color }}">{{ $lbl }}</span>
+                                    @if($refOrder->isAdminComplimentary())
+                                        <span class="badge badge-info">Gratis</span>
+                                    @endif
+                                </td>
+                                <td class="small">
+                                    @if($refOrder->license)
+                                        <code>{{ $refOrder->license->license_key }}</code>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                                <td class="small">
+                                    {{ ($refOrder->paid_at ?? $refOrder->created_at)?->format('d/m/Y H:i') }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    Belum ada orang yang masuk pakai kode {{ $affiliate->referral_code }}.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
             <div class="card-header"><strong>Komisi terbaru</strong></div>
             <div class="card-body table-responsive p-0">
                 <table class="table mb-0">
                     <thead><tr><th>Order</th><th>Jumlah</th><th>Status</th><th>Tanggal</th></tr></thead>
                     <tbody>
-                        @foreach($affiliate->commissions as $c)
+                        @forelse($affiliate->commissions as $c)
                             <tr>
-                                <td>{{ $c->order?->order_code }}</td>
+                                <td>
+                                    @if($c->order)
+                                        <a href="{{ route('admin.orders.show', $c->order) }}">{{ $c->order->order_code }}</a>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                                 <td>Rp {{ number_format($c->amount, 0, ',', '.') }}</td>
                                 <td>{{ $c->status }}</td>
                                 <td>{{ $c->created_at?->format('d/m/Y H:i') }}</td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr><td colspan="4" class="text-center text-muted py-3">Belum ada komisi.</td></tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
@@ -101,14 +173,16 @@
                 <table class="table mb-0">
                     <thead><tr><th>ID</th><th>Net</th><th>Status</th><th>Tanggal</th></tr></thead>
                     <tbody>
-                        @foreach($affiliate->claims as $claim)
+                        @forelse($affiliate->claims as $claim)
                             <tr>
                                 <td>#{{ $claim->id }}</td>
                                 <td>Rp {{ number_format($claim->net_amount, 0, ',', '.') }}</td>
                                 <td>{{ $claim->status }}</td>
                                 <td>{{ $claim->created_at?->format('d/m/Y H:i') }}</td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr><td colspan="4" class="text-center text-muted py-3">Belum ada klaim.</td></tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>

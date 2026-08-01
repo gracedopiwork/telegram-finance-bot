@@ -199,11 +199,13 @@ class AffiliatesController extends Controller
             'license',
             'commissions' => fn ($q) => $q->with('order')->latest()->limit(100),
             'claims' => fn ($q) => $q->latest()->limit(50),
+            'referredOrders' => fn ($q) => $q->with(['digitalProduct', 'license'])->latest('id')->limit(100),
         ]);
 
         return view('admin.affiliates.show', [
             'affiliate' => $affiliate,
             'balance' => $affiliate->availableBalance(),
+            'referredCount' => $affiliate->referredOrders()->count(),
         ]);
     }
 

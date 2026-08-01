@@ -36,6 +36,12 @@ class Affiliate extends Model
         return $this->hasMany(AffiliateClaim::class);
     }
 
+    /** Order yang memakai kode referral affiliate ini (orang yang masuk lewat dia). */
+    public function referredOrders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'affiliate_id');
+    }
+
     public function availableBalance(): int
     {
         return (int) $this->commissions()->where('status', 'available')->sum('amount');
