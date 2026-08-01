@@ -19,6 +19,10 @@ EXPLICIT_IMPULSIVE_KEYWORDS = (
     "kepengen",
     "fomo",
     "spontan",
+    "impulsif",
+    "impulsive",
+    "impulse",
+    "belanja impulsif",
     "nggak niat",
     "ngga niat",
     "tidak niat",
@@ -272,13 +276,28 @@ def resolve_impulsif(
     if has_explicit_impulse_signal(combined):
         return "Yes"
 
+    # Comfort spending emosional: jajan/snack karena capek → Yes meski nominal kecil.
+    # Kopi kecil + healing saja tetap No (lihat guardrail nominal di bawah).
+    if is_emotional_comfort_spending(parsed, combined):
+        discretionary_snack = any(
+            token in combined
+            for token in (
+                "jajan",
+                "snack",
+                "cemilan",
+                "ngemil",
+                "brownies",
+                "dessert",
+                "comfort food",
+                "comfort spending",
+            )
+        )
+        if discretionary_snack or nominal <= 0 or nominal >= MIN_NOMINAL_FOR_IMPULSE:
+            return "Yes"
+
     # Kopi/snack kecil (mis. 15rb) bukan impulsif meski Tired + healing/Wants.
     if nominal > 0 and nominal < MIN_NOMINAL_FOR_IMPULSE:
         return "No"
-
-    # "makan malam 100rb karena capek" → Yes, override AI yang sering bilang Need/No.
-    if is_emotional_comfort_spending(parsed, combined):
-        return "Yes"
 
     if trust_ai and ai_suggested in VALID_IMPULSIF:
         return ai_suggested

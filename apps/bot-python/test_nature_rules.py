@@ -32,3 +32,17 @@ def test_reward_treat_stays_wants():
     }
     refine_sifat_from_context(parsed, text)
     assert parsed["sifat"] == "Wants"
+
+
+def test_jajan_brownies_is_wants_not_need():
+    text = "28/07 beli brownies karena cape pengen jajan 13000"
+    parsed = {
+        "keterangan": "Beli brownies",
+        "nominal": 13000,
+        "jenis": "Pengeluaran",
+        "kategori": "Makanan & Minuman",
+        "sifat": "Need",
+        "mood": "Tired",
+    }
+    refine_sifat_from_context(parsed, text)
+    assert parsed["sifat"] == "Wants"

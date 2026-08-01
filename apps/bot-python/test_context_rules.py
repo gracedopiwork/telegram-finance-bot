@@ -113,6 +113,34 @@ class ContextRulesTests(unittest.TestCase):
     def test_transport(self) -> None:
         self.assertClass("grab ke kantor 28rb", "Pengeluaran", "Transportasi")
 
+    def test_grab_ke_gym_tetap_transport(self) -> None:
+        self.assertClass(
+            "Grab dari kos ke gym Imam Bonjol 21000",
+            "Pengeluaran",
+            "Transportasi",
+        )
+
+    def test_grabbike_ke_gym_tetap_transport(self) -> None:
+        self.assertClass(
+            "Tgl 22/07/2026 Transportasi grabbike dari cafe linier ke gym Rp 21.700",
+            "Pengeluaran",
+            "Transportasi",
+        )
+
+    def test_ojek_ke_fitness_tetap_transport(self) -> None:
+        parsed = {
+            "keterangan": "Ojek dari Cafe Linier ke Will Fitness Imbo",
+            "jenis": "Pengeluaran",
+            "kategori": "Lifestyle & Hiburan",
+            "sifat": "Wants",
+        }
+        out = apply_context_rules(
+            parsed,
+            "Tgl 22/07/2026 Ojek dari cafe linier ke will fitness imbo Rp 21.700",
+        )
+        self.assertEqual(out["kategori"], "Transportasi")
+        self.assertEqual(out["sifat"], "Need")
+
     def test_kos(self) -> None:
         self.assertClass("bayar sewa kos 1500000", "Pengeluaran", "Tempat Tinggal")
 

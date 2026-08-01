@@ -330,8 +330,14 @@ _TRANSPORT_PATTERNS = tuple(
     for p in (
         r"\bojek\b",
         # grab ojek/car — jangan cocokkan grabfood / grabmart
+        r"\bgrabbike\b",
+        r"\bgrabcar\b",
+        r"\bgrab\s*bike\b",
+        r"\bgrab\s*car\b",
         r"\bgrab(?!food|mart)\b",
         r"\bgojek\b",
+        r"\bgojek\s*bike\b",
+        r"\bgo\s*ride\b",
         r"\bmaxim\b",
         r"\bangkot\b",
         r"\bbensin\b",
@@ -932,6 +938,17 @@ def classify_from_text(text: str) -> dict[str, str] | None:
 
     if _contains(lower, _ASURANSI):
         return {"jenis": "Pengeluaran", "kategori": "Proteksi", "sifat": "Need"}
+    # Tip/donasi ke driver (grab/gojek) — Sosial, bukan Transport/Makan.
+    if is_social_giving(lower):
+        if _contains(lower, ("hadiah", "kado", "parcel", "tip", "tips")):
+            return {"jenis": "Pengeluaran", "kategori": "Hadiah", "sifat": "Wants"}
+        return {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "sifat": "Wants"}
+    if is_business_building_expense(lower):
+        return {"jenis": "Pengeluaran", "kategori": "Bisnis & Karir", "sifat": "Need"}
+    # Ride Grab/ojek dulu — "grab ke gym" tetap Transportasi (bucket Flexible),
+    # bukan Lifestyle. Bayar membership gym tanpa ride → Lifestyle di bawah.
+    if _contains(lower, _SERVIS_KENDARAAN) or is_transport_ride(lower):
+        return {"jenis": "Pengeluaran", "kategori": "Transportasi", "sifat": "Need"}
     if _contains(lower, _GYM_LIFESTYLE):
         return {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants"}
     if _contains(lower, _SKINCARE):
@@ -949,15 +966,6 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     # Air minum/galon sebelum jajan — "beli aqua" sering salah jadi Jajan.
     if is_drinking_water_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
-    # Tip/donasi ke driver (grab/gojek) — Sosial, bukan Transport/Makan.
-    if is_social_giving(lower):
-        if _contains(lower, ("hadiah", "kado", "parcel", "tip", "tips")):
-            return {"jenis": "Pengeluaran", "kategori": "Hadiah", "sifat": "Wants"}
-        return {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "sifat": "Wants"}
-    if is_business_building_expense(lower):
-        return {"jenis": "Pengeluaran", "kategori": "Bisnis & Karir", "sifat": "Need"}
-    if _contains(lower, _SERVIS_KENDARAAN) or is_transport_ride(lower):
-        return {"jenis": "Pengeluaran", "kategori": "Transportasi", "sifat": "Need"}
     if _contains(lower, _KESEHATAN):
         return {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need"}
     if _contains(lower, _PENDIDIKAN):
@@ -1094,8 +1102,22 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
             parsed.pop("sub_kategori", None)
             return parsed
 
+        # Grab/ojek (termasuk ke gym/cafe) → Transportasi. Jangan diganti Lifestyle
+        # hanya karena ada kata gym/fitness di tujuan.
+        if ai_jenis == "Pengeluaran" and is_transport_ride(combined):
+            if not is_food_delivery(combined) and not is_social_giving(combined):
+                parsed["kategori"] = "Transportasi"
+                parsed["sifat"] = "Need"
+                parsed.pop("sub_kategori", None)
+                return parsed
+
         # Gym/olahraga berbayar → Lifestyle & Hiburan (bukan Essential).
-        if ai_jenis == "Pengeluaran" and _contains(combined.lower(), _GYM_LIFESTYLE):
+        # Hanya jika BUKAN ongkos ride ke lokasi gym.
+        if (
+            ai_jenis == "Pengeluaran"
+            and _contains(combined.lower(), _GYM_LIFESTYLE)
+            and not is_transport_ride(combined)
+        ):
             parsed["kategori"] = "Lifestyle & Hiburan"
             parsed["sifat"] = "Wants"
             parsed.pop("sub_kategori", None)
@@ -1238,6 +1260,8 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "skincare serum 120rb" → Pengeluaran / Kesehatan & Kebersihan Diri / Wants
 - "makan malam 65.700" → Pengeluaran / Makanan & Minuman / Need
 - "grab ke kantor 28rb" → Pengeluaran / Transportasi / Need
+- "grab dari kos ke gym 21rb" → Pengeluaran / Transportasi / Need (bucket Flexible; BUKAN Lifestyle)
+- "grabbike ke fitness 21rb" → Pengeluaran / Transportasi / Need
 - "jajan di grabfood 60k beli kue" → Pengeluaran / Makanan & Minuman / Wants (BUKAN Transportasi)
 - "gofood nasi padang 45rb" → Pengeluaran / Makanan & Minuman / Need (BUKAN Transportasi)
 - "bayar sewa kos 1.5jt" → Pengeluaran / Tempat Tinggal / Need

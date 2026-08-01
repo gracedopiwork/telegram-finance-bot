@@ -61,6 +61,7 @@ _STATIC_FALLBACK: dict[str, Any] = {
         "AI tidak boleh membuat kategori baru. Jika ragu → Lain-lain.",
         "Layer 1 = Kategori (closed list). Layer 2 = Bucket (otomatis dari mapping sistem).",
         "Gym/olahraga berbayar → Lifestyle & Hiburan / Flexible + Social / Wants.",
+        "Grab/ojek ke gym/cafe → tetap Transportasi; bucket Flexible + Social (bukan ganti kategori Lifestyle).",
         "Laundry → Kesehatan & Kebersihan Diri / Essential. Fashion → Pakaian & Aksesoris.",
     ],
     "strict_categories_only": True,

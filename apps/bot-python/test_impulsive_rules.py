@@ -97,6 +97,32 @@ class ImpulsiveRulesTests(unittest.TestCase):
             "Yes",
         )
 
+    def test_small_jajan_karena_capek_is_impulsive(self) -> None:
+        parsed = {
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Need",
+            "nominal": 11000,
+            "mood": "Tired",
+            "keterangan": "Jajan karena capek",
+        }
+        self.assertEqual(
+            resolve_impulsif(parsed, "jajan karena capek 11000", ai_suggested="No", trust_ai=True),
+            "Yes",
+        )
+
+    def test_explicit_word_impulsif_is_yes(self) -> None:
+        parsed = {
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Wants",
+            "nominal": 11000,
+        }
+        self.assertEqual(
+            resolve_impulsif(parsed, "beli snack impulsif 11rb"),
+            "Yes",
+        )
+
     def test_hadiah_spontan_impulsif(self) -> None:
         parsed = {
             "keterangan": "Hadiah atas jasa orang 5k",

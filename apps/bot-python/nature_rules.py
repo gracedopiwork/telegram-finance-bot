@@ -65,6 +65,15 @@ DISCRETIONARY_WANTS_KEYWORDS = (
     "netflix",
     "spotify",
     "hiburan",
+    "jajan",
+    "ngemil",
+    "snack",
+    "cemilan",
+    "brownies",
+    "dessert",
+    "boba",
+    "pengen",
+    "kepengen",
 )
 
 
@@ -134,8 +143,15 @@ def refine_sifat_from_context(parsed: dict[str, Any], source_text: str = "") -> 
         "Komunikasi",
         "Cicilan & Hutang",
     }
-    if str(parsed.get("kategori", "")) in essential_cats:
-        parsed["sifat"] = "Need"
+    kategori = str(parsed.get("kategori", ""))
+    # Jangan paksa Need untuk Makanan bila framing diskresioner (jajan/snack).
+    if kategori in essential_cats:
+        if kategori in {"Makan", "Makanan & Minuman", "Minuman"} and has_discretionary_framing(
+            combined
+        ):
+            parsed["sifat"] = "Wants"
+        else:
+            parsed["sifat"] = "Need"
 
     if parsed.get("sifat") not in VALID_SIFAT:
         parsed["sifat"] = "Need"
