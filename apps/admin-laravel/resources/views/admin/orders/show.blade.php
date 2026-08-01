@@ -179,6 +179,26 @@
     {{-- ============== KANAN: lisensi & meta ============== --}}
     <div class="col-lg-4">
 
+        @php
+            $copySummaryLines = [
+                'Nama: '.($order->full_name ?: '—'),
+                'Email: '.($order->email ?: '—'),
+                'Lisensi: '.($order->license?->license_key ?: '—'),
+                'Kode Affiliate: '.(!empty($buyerAffiliate) ? $buyerAffiliate->referral_code : '—'),
+            ];
+            $copySummary = implode("\n", $copySummaryLines);
+        @endphp
+        <div class="card card-outline card-secondary">
+            <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-clipboard mr-2"></i>Keterangan siap copy</h3></div>
+            <div class="card-body">
+                <textarea id="orderCopySummary" class="form-control font-monospace small" rows="5" readonly
+                          style="resize:none; background:#f8f9fa;">{{ $copySummary }}</textarea>
+                <button type="button" class="btn btn-sm btn-primary btn-block mt-2" id="btnCopyOrderSummary">
+                    <i class="fas fa-copy mr-1"></i>Copy semua
+                </button>
+            </div>
+        </div>
+
         {{-- Lisensi --}}
         <div class="card card-outline card-success">
             <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-key mr-2"></i>Kode Lisensi</h3></div>
@@ -399,6 +419,26 @@ $(function () {
                 $f[0].submit();
             }
         });
+    });
+
+    $('#btnCopyOrderSummary').on('click', function () {
+        var el = document.getElementById('orderCopySummary');
+        var btn = this;
+        if (!el) return;
+        var text = el.value;
+        var done = function () {
+            var prev = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check mr-1"></i>Tersalin!';
+            setTimeout(function () { btn.innerHTML = prev; }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done);
+        } else {
+            el.focus();
+            el.select();
+            document.execCommand('copy');
+            done();
+        }
     });
 });
 </script>

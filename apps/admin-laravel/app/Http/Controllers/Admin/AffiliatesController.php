@@ -118,6 +118,7 @@ class AffiliatesController extends Controller
     public function show(Affiliate $affiliate): View
     {
         $affiliate->load([
+            'license',
             'commissions' => fn ($q) => $q->with('order')->latest()->limit(100),
             'claims' => fn ($q) => $q->latest()->limit(50),
         ]);
