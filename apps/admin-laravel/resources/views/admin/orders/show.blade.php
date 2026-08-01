@@ -244,6 +244,23 @@
                     Saldo: Rp {{ number_format($buyerAffiliate->availableBalance(), 0, ',', '.') }}
                     · <a href="{{ route('admin.affiliates.show', $buyerAffiliate) }}">Lihat di Affiliate</a>
                 </div>
+
+                <hr>
+                <form method="POST" action="{{ route('admin.orders.affiliate', $order) }}" class="text-left">
+                    @csrf
+                    <label class="small mb-1">Ubah / set kode affiliate</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="referral_code" value="{{ old('referral_code', $buyerAffiliate->referral_code) }}"
+                               class="form-control text-uppercase" maxlength="32"
+                               placeholder="Kosongkan = tetap / generate">
+                        <div class="input-group-append">
+                            <button class="btn btn-info" type="submit">Simpan</button>
+                        </div>
+                    </div>
+                    @error('referral_code')
+                        <div class="text-danger small mt-1">{{ $message }}</div>
+                    @enderror
+                </form>
             </div>
         </div>
         @endif

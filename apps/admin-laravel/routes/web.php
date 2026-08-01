@@ -165,13 +165,17 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('orders/{order}/resend-delivery', [OrdersController::class, 'resendDelivery'])->name('orders.resendDelivery');
     Route::post('orders/{order}/resend-delivery-email', [OrdersController::class, 'resendDeliveryEmail'])->name('orders.resendDeliveryEmail');
     Route::post('orders/{order}/purge-customer-data', [OrdersController::class, 'purgeCustomerData'])->name('orders.purgeCustomerData');
+    Route::post('orders/{order}/affiliate', [OrdersController::class, 'upsertAffiliate'])->name('orders.affiliate');
     Route::delete('orders/{order}',     [OrdersController::class, 'destroy'])->name('orders.destroy');
 
     Route::get('affiliates', [AffiliatesController::class, 'index'])->name('affiliates.index');
+    Route::get('affiliates/create', [AffiliatesController::class, 'create'])->name('affiliates.create');
+    Route::post('affiliates', [AffiliatesController::class, 'store'])->name('affiliates.store');
     Route::get('affiliates/claims', [AffiliatesController::class, 'claims'])->name('affiliates.claims');
     Route::post('affiliates/claims/{claim}', [AffiliatesController::class, 'processClaim'])->name('affiliates.claims.process');
     Route::get('affiliates/commissions', [AffiliatesController::class, 'commissions'])->name('affiliates.commissions');
     Route::get('affiliates/{affiliate}', [AffiliatesController::class, 'show'])->name('affiliates.show');
+    Route::patch('affiliates/{affiliate}', [AffiliatesController::class, 'update'])->name('affiliates.update');
     Route::post('affiliates/{affiliate}/toggle', [AffiliatesController::class, 'toggle'])->name('affiliates.toggle');
 });
 

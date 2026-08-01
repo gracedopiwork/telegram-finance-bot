@@ -23,6 +23,37 @@
                 <p><strong>Status:</strong> {{ $affiliate->is_active ? 'Aktif' : 'Nonaktif' }}</p>
             </div>
         </div>
+
+        <div class="card">
+            <div class="card-header"><strong>Ubah kode affiliate</strong></div>
+            <form method="POST" action="{{ route('admin.affiliates.update', $affiliate) }}">
+                @csrf
+                @method('PATCH')
+                <div class="card-body">
+                    @if($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0 pl-3">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                    <div class="form-group">
+                        <label>Nama</label>
+                        <input type="text" name="name" value="{{ old('name', $affiliate->name) }}" class="form-control" maxlength="120">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Kode affiliate</label>
+                        <input type="text" name="referral_code" value="{{ old('referral_code', $affiliate->referral_code) }}"
+                               class="form-control text-uppercase" maxlength="32" required>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary btn-sm">Simpan perubahan</button>
+                </div>
+            </form>
+        </div>
     </div>
     <div class="col-md-8">
         <div class="card">

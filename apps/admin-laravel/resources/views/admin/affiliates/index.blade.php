@@ -11,6 +11,9 @@
     <form method="GET" class="form-inline">
         <input type="text" name="q" value="{{ $q }}" class="form-control mr-2" placeholder="Cari email / kode / nama">
         <button class="btn btn-primary">Cari</button>
+        <a href="{{ route('admin.affiliates.create') }}" class="btn btn-success ml-2">
+            <i class="fas fa-plus mr-1"></i> Tambah Affiliate
+        </a>
         <a href="{{ route('admin.affiliates.claims') }}" class="btn btn-outline-secondary ml-2">Klaim</a>
         <a href="{{ route('admin.affiliates.commissions') }}" class="btn btn-outline-secondary ml-2">Komisi</a>
         <a href="{{ route('admin.settings.index', ['group' => 'affiliate']) }}" class="btn btn-outline-secondary ml-2">Pengaturan</a>

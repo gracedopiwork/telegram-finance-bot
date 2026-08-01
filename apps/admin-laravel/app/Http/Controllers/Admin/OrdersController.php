@@ -190,6 +190,36 @@ class OrdersController extends Controller
         ]);
     }
 
+    public function upsertAffiliate(Request $request, Order $order)
+    {
+        if (! filled($order->email)) {
+            return back()->withErrors(['referral_code' => 'Order ini tidak punya email.']);
+        }
+
+        $data = $request->validate([
+            'referral_code' => 'nullable|string|max:32',
+        ]);
+
+        $affiliates = app(\App\Services\AffiliateService::class);
+        $preferredCode = $affiliates->normalizeReferralCode($data['referral_code'] ?? null);
+        $existing = \App\Models\Affiliate::query()
+            ->where('email', strtolower(trim((string) $order->email)))
+            ->first();
+
+        if ($preferredCode !== null) {
+            $affiliates->assertReferralCodeAvailable($preferredCode, $existing?->id);
+        }
+
+        $affiliate = $affiliates->ensureForPortalUser(
+            (string) $order->email,
+            $order->full_name,
+            $order->license_id,
+            $preferredCode,
+        );
+
+        return back()->with('success', 'Kode affiliate pembeli: '.$affiliate->referral_code);
+    }
+
     public function syncPayment(Order $order, MidtransPaymentSyncService $sync)
     {
         if ($order->status === 'paid') {

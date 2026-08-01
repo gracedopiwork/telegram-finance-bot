@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Affiliate;
 use App\Models\AffiliateClaim;
 use App\Models\AffiliateCommission;
+use App\Models\Order;
 use App\Services\AffiliateService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AffiliatesController extends Controller
@@ -42,6 +44,77 @@ class AffiliatesController extends Controller
         ]);
     }
 
+    public function create(): View
+    {
+        $existingEmails = Affiliate::query()
+            ->pluck('email')
+            ->map(fn ($e) => strtolower((string) $e))
+            ->all();
+
+        $candidates = Order::query()
+            ->where('status', 'paid')
+            ->whereNotNull('email')
+            ->where('email', '!=', '')
+            ->latest('paid_at')
+            ->latest('id')
+            ->limit(400)
+            ->get(['email', 'full_name', 'license_id', 'paid_at'])
+            ->unique(fn (Order $o) => strtolower((string) $o->email))
+            ->reject(fn (Order $o) => in_array(strtolower((string) $o->email), $existingEmails, true))
+            ->values()
+            ->take(100);
+
+        return view('admin.affiliates.create', [
+            'candidates' => $candidates,
+        ]);
+    }
+
+    public function store(Request $request, AffiliateService $affiliates): RedirectResponse
+    {
+        $data = $request->validate([
+            'email' => 'required|email|max:190',
+            'name' => 'nullable|string|max:120',
+            'referral_code' => 'nullable|string|max:32',
+        ]);
+
+        $email = strtolower(trim($data['email']));
+        $order = Order::query()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->orderByRaw("CASE WHEN status = 'paid' THEN 0 ELSE 1 END")
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $order) {
+            throw ValidationException::withMessages([
+                'email' => 'Email tidak ditemukan di order yang sudah ada.',
+            ]);
+        }
+
+        $preferredCode = $affiliates->normalizeReferralCode($data['referral_code'] ?? null);
+        $existing = Affiliate::query()->where('email', $email)->first();
+        if ($preferredCode !== null) {
+            $affiliates->assertReferralCodeAvailable($preferredCode, $existing?->id);
+        }
+
+        $affiliate = $affiliates->ensureForPortalUser(
+            $email,
+            trim((string) ($data['name'] ?? '')) ?: $order->full_name,
+            $order->license_id,
+            $preferredCode,
+        );
+
+        $wasExisting = $existing !== null;
+
+        return redirect()
+            ->route('admin.affiliates.show', $affiliate)
+            ->with(
+                'success',
+                ($wasExisting ? 'Affiliate diperbarui.' : 'Affiliate ditambahkan.')
+                .' Kode: '.$affiliate->referral_code
+            );
+    }
+
     public function show(Affiliate $affiliate): View
     {
         $affiliate->load([
@@ -53,6 +126,30 @@ class AffiliatesController extends Controller
             'affiliate' => $affiliate,
             'balance' => $affiliate->availableBalance(),
         ]);
+    }
+
+    public function update(Request $request, Affiliate $affiliate, AffiliateService $affiliates): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => 'nullable|string|max:120',
+            'referral_code' => 'required|string|max:32',
+        ]);
+
+        $preferredCode = $affiliates->normalizeReferralCode($data['referral_code'] ?? null);
+        if ($preferredCode === null) {
+            throw ValidationException::withMessages([
+                'referral_code' => 'Kode affiliate tidak boleh kosong.',
+            ]);
+        }
+        $affiliates->assertReferralCodeAvailable($preferredCode, $affiliate->id);
+
+        $affiliate->referral_code = $preferredCode;
+        if (array_key_exists('name', $data) && trim((string) $data['name']) !== '') {
+            $affiliate->name = trim((string) $data['name']);
+        }
+        $affiliate->save();
+
+        return back()->with('success', 'Kode affiliate diperbarui menjadi '.$affiliate->referral_code.'.');
     }
 
     public function toggle(Affiliate $affiliate): RedirectResponse
