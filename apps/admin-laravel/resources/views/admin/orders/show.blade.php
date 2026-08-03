@@ -368,24 +368,21 @@
                     @if($deliveryUsesWa)
                         <p class="small text-muted mb-2">Fonnte: <code>{{ config('services.fonnte.token') ? 'token terisi' : 'FONNTE_TOKEN kosong' }}</code></p>
                     @endif
-                    @if($deliveryUsesEmail)
-                        <p class="small text-muted mb-2">MAIL: <code>{{ config('mail.default') }}</code> dari <code>{{ config('mail.from.address') }}</code></p>
-                    @endif
+                    <p class="small text-muted mb-2">MAIL: <code>{{ config('mail.default') }}</code> dari <code>{{ config('mail.from.address') }}</code></p>
                     <form method="post" action="{{ route('admin.orders.resendDelivery', $order) }}" class="js-confirm-form mb-2" data-msg="Kirim ringkasan ke {{ $deliveryTarget }}?">
                         @csrf
                         <button type="submit" class="btn btn-sm btn-info btn-block" @if($deliveryUsesWa && empty($telegramBotUrl)) disabled @endif>
-                            <i class="fas fa-paper-plane mr-1"></i>Kirim / kirim ulang
+                            <i class="fas fa-paper-plane mr-1"></i>Kirim / kirim ulang ({{ $deliveryChannelLabel ?? $deliveryChannel }})
                         </button>
                     </form>
-                    @if($deliveryUsesEmail)
-                        <form method="post" action="{{ route('admin.orders.resendDeliveryEmail', $order) }}" class="js-confirm-form" data-msg="Kirim email saja ke {{ $order->email }}?">
-                            @csrf
-                            <button type="submit" class="btn btn-sm btn-outline-info btn-block">
-                                <i class="fas fa-envelope mr-1"></i>Kirim ulang email saja
-                            </button>
-                        </form>
-                    @endif
+                    <form method="post" action="{{ route('admin.orders.resendDeliveryEmail', $order) }}" class="js-confirm-form" data-msg="Kirim ulang email aktivasi ke {{ $order->email }}?">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-outline-primary btn-block" @disabled(trim((string) $order->email) === '')>
+                            <i class="fas fa-envelope mr-1"></i>Kirim ulang email aktivasi
+                        </button>
+                    </form>
                     <p class="small text-muted mb-0 mt-2">
+                        Email aktivasi berisi tautan bot, kode <code>/activate</code>, dan link portal — ke <strong>{{ $order->email ?: '—' }}</strong>.
                         CLI: <code>php artisan order:send-delivery {{ $order->order_code }} --force</code>
                     </p>
                 </div>

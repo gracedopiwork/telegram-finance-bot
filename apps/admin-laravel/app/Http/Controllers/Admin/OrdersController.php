@@ -397,19 +397,26 @@ class OrdersController extends Controller
     public function resendDeliveryEmail(Order $order, OrderDeliveryNotifier $notifier)
     {
         if ($order->status !== 'paid' || ! $order->license) {
-            return redirect()->route('admin.orders.show', $order)
-                ->with('error', 'Hanya order lunas dengan lisensi yang bisa dikirim email.');
+            return redirect()->back()
+                ->with('error', 'Hanya order lunas dengan lisensi yang bisa dikirim email aktivasi.');
+        }
+
+        if (trim((string) $order->email) === '') {
+            return redirect()->back()
+                ->with('error', 'Order ini belum punya alamat email.');
         }
 
         try {
             $notifier->sendEmailOnly($order);
         } catch (\Throwable $e) {
-            return redirect()->route('admin.orders.show', $order)
-                ->with('error', 'Gagal kirim email: '.$e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Gagal kirim email aktivasi: '.$e->getMessage());
         }
 
-        return redirect()->route('admin.orders.show', $order)
-            ->with('success', 'Email terkirim ke '.$order->email.'.');
+        $order->update(['purchase_delivery_sent_at' => now()]);
+
+        return redirect()->back()
+            ->with('success', 'Email aktivasi terkirim ke '.$order->email.'.');
     }
 
     public function destroy(Order $order, CustomerDataPurgeService $purge)

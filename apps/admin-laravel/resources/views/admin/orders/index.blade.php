@@ -162,9 +162,18 @@
                             @endif
                         </td>
                         <td class="text-right text-nowrap">
-                            <a href="{{ route('admin.orders.show', $o) }}" class="btn btn-sm btn-outline-success">
+                            <a href="{{ route('admin.orders.show', $o) }}" class="btn btn-sm btn-outline-success" title="Detail">
                                 <i class="fas fa-eye"></i>
                             </a>
+                            @if($o->status === 'paid' && $o->license && trim((string) $o->email) !== '')
+                                <form method="post" action="{{ route('admin.orders.resendDeliveryEmail', $o) }}" class="d-inline js-confirm-form"
+                                      data-msg="Kirim ulang email aktivasi ke {{ $o->email }}?">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="Kirim ulang email aktivasi">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                </form>
+                            @endif
                             @if($o->payment_url && $o->status === 'pending')
                                 <a href="{{ $o->payment_url }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Buka link bayar">
                                     <i class="fas fa-external-link-alt"></i>
@@ -193,4 +202,28 @@
     @endif
 </div>
 
+@endsection
+
+@section('admin_js')
+<script>
+$(function () {
+    $(document).on('submit', '.js-confirm-form', function (e) {
+        e.preventDefault();
+        var $f = $(this);
+        Swal.fire({
+            title: 'Konfirmasi',
+            text: $f.data('msg') || 'Lanjutkan?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, kirim',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#28a745',
+        }).then(function (r) {
+            if (r.isConfirmed) {
+                $f[0].submit();
+            }
+        });
+    });
+});
+</script>
 @endsection
