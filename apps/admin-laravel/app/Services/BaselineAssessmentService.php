@@ -40,7 +40,7 @@ class BaselineAssessmentService
                 : ['key' => 'locked', 'label' => null];
         }
 
-        $reviewMonths = (int) config('baseline_assessment.review_months', 6);
+        $reviewMonths = max(1, (int) config('baseline_assessment.review_months', 3));
         $assessedAt = Carbon::now();
 
         return [

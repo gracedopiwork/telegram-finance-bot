@@ -88,11 +88,29 @@ class FinancialBaseline extends Model
 
     public function isReviewDue(): bool
     {
+        $months = max(1, (int) config('baseline_assessment.review_months', 3));
+
+        // Prefer assessed_at + config so changing review_months unlocks earlier assessments.
+        if ($this->assessed_at !== null) {
+            return $this->assessed_at->copy()->addMonths($months)->isPast();
+        }
+
         if ($this->next_review_at === null) {
             return false;
         }
 
         return $this->next_review_at->isPast();
+    }
+
+    public function reviewAvailableAt(): ?Carbon
+    {
+        $months = max(1, (int) config('baseline_assessment.review_months', 3));
+
+        if ($this->assessed_at !== null) {
+            return $this->assessed_at->copy()->addMonths($months);
+        }
+
+        return $this->next_review_at;
     }
 
     public function formatDate(?string $format = null): string
@@ -102,7 +120,7 @@ class FinancialBaseline extends Model
 
     public function formatNextReview(?string $format = null): string
     {
-        return $this->formatTimestamp($this->next_review_at, $format ?? 'd M Y');
+        return $this->formatTimestamp($this->reviewAvailableAt() ?? $this->next_review_at, $format ?? 'd M Y');
     }
 
     private function formatTimestamp(mixed $value, string $format): string

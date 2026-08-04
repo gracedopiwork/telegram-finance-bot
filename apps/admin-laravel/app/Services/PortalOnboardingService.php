@@ -375,6 +375,28 @@ class PortalOnboardingService
         return ! $this->hasFinancialDiagnostic($baseline);
     }
 
+    /**
+     * Evaluasi ulang Financial Health Check-Up / diagnostik tahap setelah masa review (default 3 bulan).
+     */
+    public function userCanRetakeFinancialDiagnostic(string $email, int $telegramUserId): bool
+    {
+        if (! \App\Support\FinancialBaselineSchema::isReady()) {
+            return false;
+        }
+
+        $baseline = $this->resolveBaseline($email, $telegramUserId);
+
+        return $baseline !== null
+            && $this->hasFinancialDiagnostic($baseline)
+            && $baseline->isReviewDue();
+    }
+
+    public function userCanAccessFinancialDiagnostic(string $email, int $telegramUserId): bool
+    {
+        return $this->userNeedsFinancialDiagnostic($email, $telegramUserId)
+            || $this->userCanRetakeFinancialDiagnostic($email, $telegramUserId);
+    }
+
     public function userNeedsFtsa(string $email, int $telegramUserId): bool
     {
         if (! \App\Support\FinancialBaselineSchema::isReady()) {

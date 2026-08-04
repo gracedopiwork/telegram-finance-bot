@@ -43,7 +43,7 @@ return [
         'doctor_notes' => [
             'Jangan terburu-buru “ngejar return” sebelum fondasi proteksi dan dana darurat kuat.',
             'Konsistensi kecil setiap bulan mengalahkan aksi besar sekali-kali lalu hilang lagi.',
-            'Evaluasi ulang baseline setiap 6 bulan — tahap keuangan bisa berubah seiring kebiasaan baru.',
+            'Evaluasi ulang baseline setiap 3 bulan — tahap keuangan bisa berubah seiring kebiasaan baru.',
         ],
     ],
 

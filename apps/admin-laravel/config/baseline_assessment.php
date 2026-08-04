@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'review_months' => 6,
+    'review_months' => 3,
 
     'likert_labels' => [
         1 => 'Sangat Tidak Sesuai',

@@ -61,7 +61,7 @@
                 @else
                     Isi <strong>diagnostik tahap keuangan</strong> dan <strong>snapshot angka keuangan</strong> Anda saat ini.
                 @endif
-                Evaluasi ulang setiap <strong>6 bulan</strong>. Kuesioner FTSA (behavioral) diisi terpisah setelah unlock premium.
+                Evaluasi ulang setiap <strong>3 bulan</strong>. Hasil dikirim ke email Anda. Kuesioner FTSA (behavioral) diisi terpisah setelah unlock premium.
             @endif
         </p>
         @if($showSnapshotSection && ($formMode ?? '') !== 'ftsa_snapshot')
@@ -72,7 +72,7 @@
             </div>
             <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">
                 <div class="font-semibold text-slate-700">Next Review</div>
-                <div class="text-slate-500">Otomatis +6 bulan.</div>
+                <div class="text-slate-500">Otomatis +3 bulan.</div>
             </div>
         </div>
         @endif

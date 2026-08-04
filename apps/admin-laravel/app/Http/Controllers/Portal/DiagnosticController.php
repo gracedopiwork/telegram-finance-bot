@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FinancialBaseline;
 use App\Services\BaselineAssessmentService;
 use App\Services\BaselineClaimService;
+use App\Services\CheckupResultMailer;
 use App\Services\DiagnosticConfigService;
 use App\Services\FtsaAnswerSummaryService;
 use App\Services\PortalAccessService;
@@ -31,10 +32,26 @@ class DiagnosticController extends Controller
         $onboarding = app(PortalOnboardingService::class);
         $access = app(PortalAccessService::class);
 
-        if (! $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)
-            && ! $onboarding->userNeedsSnapshotBaseline($email, $telegramUserId)) {
+        $canDiagnostic = $onboarding->userCanAccessFinancialDiagnostic($email, $telegramUserId);
+        $needsSnapshot = $onboarding->userNeedsSnapshotBaseline($email, $telegramUserId);
+
+        if (! $canDiagnostic && ! $needsSnapshot) {
+            $baseline = $onboarding->resolveBaseline($email, $telegramUserId);
+            $months = max(1, (int) config('baseline_assessment.review_months', 3));
+            $available = $baseline?->reviewAvailableAt()?->format('d M Y')
+                ?? $baseline?->formatNextReview('d M Y')
+                ?? 'nanti';
+
             return redirect()->route($onboarding->portalHomeRouteName($email, $telegramUserId))
-                ->with('info', 'Baseline data Anda sudah tercatat.');
+                ->with(
+                    'info',
+                    "Diagnostik tahap keuangan sudah tercatat. Evaluasi ulang tersedia mulai {$available} (setiap {$months} bulan). Cek email untuk salinan hasil."
+                );
+        }
+
+        if (! $canDiagnostic && $needsSnapshot) {
+            return redirect()->route('portal.baseline.create')
+                ->with('info', 'Diagnostik sudah ada. Lengkapi snapshot angka keuangan di Baseline Data.');
         }
 
         $wizardSteps = app(DiagnosticConfigService::class)->wizardSteps();
@@ -64,6 +81,21 @@ class DiagnosticController extends Controller
                 ->with('warning', 'Sesi portal habis. Silakan login ulang.');
         }
 
+        $onboarding = app(PortalOnboardingService::class);
+        if (! $onboarding->userCanAccessFinancialDiagnostic($email, $telegramUserId)) {
+            $baseline = $onboarding->resolveBaseline($email, $telegramUserId);
+            $available = $baseline?->reviewAvailableAt()?->format('d M Y')
+                ?? $baseline?->formatNextReview('d M Y')
+                ?? 'nanti';
+            $months = max(1, (int) config('baseline_assessment.review_months', 3));
+
+            return redirect()->route($onboarding->portalHomeRouteName($email, $telegramUserId))
+                ->with(
+                    'error',
+                    "Evaluasi ulang diagnostik belum tersedia. Coba lagi mulai {$available} (setiap {$months} bulan)."
+                );
+        }
+
         $service = app(BaselineAssessmentService::class);
         $validated = $request->validate($service->validationRulesFinancialStageOnly());
         $validated['email'] = $email;
@@ -84,10 +116,11 @@ class DiagnosticController extends Controller
 
             if ($existing !== null) {
                 $existing->update($this->buildUpdatePayload($email, $telegramUserId, $result, $existing));
+                $baseline = $existing->fresh();
             } else {
                 $payload = $this->buildGuestPayload($email, $result);
                 $payload['telegram_user_id'] = $telegramUserId;
-                FinancialBaseline::query()->create($payload);
+                $baseline = FinancialBaseline::query()->create($payload);
             }
         } catch (QueryException $e) {
             report($e);
@@ -103,22 +136,33 @@ class DiagnosticController extends Controller
         }
 
         app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+        $baseline = FinancialBaseline::latestForUser($telegramUserId)
+            ?? FinancialBaseline::latestForEmail($email)
+            ?? $baseline;
 
-        $onboarding = app(PortalOnboardingService::class);
+        $mailNote = '';
+        try {
+            app(CheckupResultMailer::class)->send($baseline);
+            $mailNote = ' Salinan hasil dikirim ke '.$email.'.';
+        } catch (\Throwable $e) {
+            report($e);
+            $mailNote = ' Hasil tersimpan; email gagal dikirim.';
+        }
+
         $access = app(PortalAccessService::class);
 
         if ($access->isFtsaOnlyPortalUser($email, $telegramUserId)) {
             return redirect()->route('portal.emotional')
-                ->with('success', 'Diagnostik tahap keuangan tersimpan. Lanjutkan dengan FTSA 1–32.');
+                ->with('success', 'Diagnostik tahap keuangan tersimpan. Lanjutkan dengan FTSA 1–32.'.$mailNote);
         }
 
         if ($onboarding->userNeedsSnapshotBaseline($email, $telegramUserId)) {
             return redirect()->route('portal.baseline.create')
-                ->with('success', 'Diagnostik tersimpan. Lengkapi snapshot di halaman Baseline Data.');
+                ->with('success', 'Diagnostik tersimpan. Lengkapi snapshot di halaman Baseline Data.'.$mailNote);
         }
 
         return redirect()->route($onboarding->portalHomeRouteName($email, $telegramUserId))
-            ->with('success', 'Diagnostik keuangan berhasil disimpan.');
+            ->with('success', 'Diagnostik keuangan berhasil disimpan.'.$mailNote);
     }
 
     /**

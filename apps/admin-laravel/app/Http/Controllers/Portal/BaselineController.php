@@ -7,6 +7,7 @@ use App\Models\FinancialBaseline;
 use App\Services\BaselineAssessmentService;
 use App\Services\BaselineClaimService;
 use App\Services\BucketPrescriptionService;
+use App\Services\CheckupResultMailer;
 use App\Services\FtsaEvaluationService;
 use App\Services\PortalAccessService;
 use App\Services\PortalFeatureService;
@@ -116,7 +117,8 @@ class BaselineController extends Controller
                 ->with('info', 'Baseline data hanya untuk paket YFD First Aid.');
         }
 
-        $needsFinancialDiagnostic = $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId);
+        $needsFinancialDiagnostic = $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)
+            || $onboarding->userCanRetakeFinancialDiagnostic($email, $telegramUserId);
 
         app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
 
@@ -252,12 +254,14 @@ class BaselineController extends Controller
             $existing = FinancialBaseline::latestForUser($telegramUserId);
             $baseline = $existing ?? $onboarding->resolveBaseline($email, $telegramUserId);
 
+            $canRetakeDiagnostic = $onboarding->userCanRetakeFinancialDiagnostic($email, $telegramUserId);
+
             if ($isFtsaOnly) {
                 $rules = $service->validationRulesFtsaQuestionnaire();
                 $validated = $request->validate($rules);
                 $priorFs = $baseline?->answers_json['fs'] ?? [];
                 $validated['fs'] = is_array($priorFs) ? $priorFs : [];
-            } elseif ($onboarding->hasFinancialDiagnostic($baseline)) {
+            } elseif ($onboarding->hasFinancialDiagnostic($baseline) && ! $canRetakeDiagnostic) {
                 $snapshotOnlySave = true;
                 $rules = $service->validationRulesSnapshotOnly();
                 $validated = $request->validate($rules);
@@ -286,8 +290,9 @@ class BaselineController extends Controller
             if ($recordToUpdate !== null) {
                 $payload = $this->mergeExistingSnapshotFields($recordToUpdate, $payload);
                 $recordToUpdate->update($payload);
+                $savedBaseline = $recordToUpdate->fresh();
             } else {
-                FinancialBaseline::query()->create($payload);
+                $savedBaseline = FinancialBaseline::query()->create($payload);
             }
 
             app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
@@ -311,11 +316,22 @@ class BaselineController extends Controller
             );
         }
 
+        $mailNote = '';
+        if (! ($snapshotOnlySave ?? false) && ! ($isFtsaOnly ?? false) && isset($savedBaseline)) {
+            try {
+                app(CheckupResultMailer::class)->send($savedBaseline);
+                $mailNote = ' Salinan hasil dikirim ke '.$email.'.';
+            } catch (\Throwable $e) {
+                report($e);
+                $mailNote = ' Hasil tersimpan; email gagal dikirim.';
+            }
+        }
+
         $successMsg = ($isFtsaOnly ?? false)
             ? 'FTSA berhasil disimpan.'
             : (($snapshotOnlySave ?? false)
                 ? 'Snapshot baseline tersimpan. Dashboard keuangan Anda sudah lengkap.'
-                : 'Baseline data tersimpan (diagnostik + snapshot). Evaluasi ulang setiap 6 bulan.');
+                : 'Baseline data tersimpan (diagnostik + snapshot). Evaluasi ulang setiap 3 bulan.'.$mailNote);
 
         return redirect()
             ->route(($isFtsaOnly ?? false) ? 'portal.emotional' : 'portal.baseline')

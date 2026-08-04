@@ -24,6 +24,6 @@
         @endforeach
     </div>
     <p class="text-xs text-slate-500 mt-4 pt-3 border-t border-slate-100">
-        Evaluasi baseline setiap <strong>6 bulan</strong> · Evaluasi FTSA setiap <strong>12 bulan</strong> setelah unlock premium.
+        Evaluasi baseline setiap <strong>3 bulan</strong> · Evaluasi FTSA setiap <strong>12 bulan</strong> setelah unlock premium.
     </p>
 </div>

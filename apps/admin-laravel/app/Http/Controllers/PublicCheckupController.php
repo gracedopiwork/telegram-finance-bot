@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FinancialBaseline;
 use App\Services\BaselineAssessmentService;
+use App\Services\CheckupResultMailer;
 use App\Services\DiagnosticConfigService;
 use App\Services\FtsaAnswerSummaryService;
 use App\Services\PortalAccessService;
@@ -65,6 +66,18 @@ class PublicCheckupController extends Controller
         if ($existing === null && $email !== '') {
             $existing = FinancialBaseline::latestForEmail($email);
         }
+
+        if ($existing !== null && app(PortalOnboardingService::class)->hasFinancialDiagnostic($existing)
+            && ! $existing->isReviewDue()) {
+            $available = $existing->reviewAvailableAt()?->format('d M Y') ?? $existing->formatNextReview('d M Y');
+            $months = max(1, (int) config('baseline_assessment.review_months', 3));
+
+            return back()->withInput()->with(
+                'error',
+                "Hasil check-up untuk email ini sudah tersimpan. Evaluasi ulang tersedia mulai {$available} (setiap {$months} bulan). Cek email Anda untuk salinan hasil."
+            );
+        }
+
         $ftsaService = app(FtsaAnswerSummaryService::class);
         $includeFtsa = $existing !== null && $ftsaService->hasFtsaAnswers($existing);
 
@@ -103,9 +116,17 @@ class PublicCheckupController extends Controller
             );
         }
 
+        try {
+            app(CheckupResultMailer::class)->send($baseline);
+            $mailNote = ' Salinan hasil juga dikirim ke '.$baseline->email.'.';
+        } catch (\Throwable $e) {
+            report($e);
+            $mailNote = ' Hasil tersimpan, tetapi email gagal dikirim — simpan / screenshot halaman ini.';
+        }
+
         $request->session()->put('checkup.result_id', $baseline->id);
 
-        return redirect()->route('checkup.result');
+        return redirect()->route('checkup.result')->with('success', 'Check-up berhasil.'.$mailNote);
     }
 
     public function result(Request $request): View|RedirectResponse

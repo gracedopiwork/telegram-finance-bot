@@ -70,7 +70,7 @@
                         <span class="checkup-step-badge">{{ $totalSteps + 1 }}</span>
                         <div>
                             <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Simpan hasil check-up</h2>
-                            <p class="text-sm text-slate-700 mt-1">Masukkan email agar hasil bisa dihubungkan saat Anda beli YFD First Aid.</p>
+                            <p class="text-sm text-slate-700 mt-1">Masukkan email Anda — hasil dikirim ke email ini (hanya milik Anda) dan bisa dihubungkan saat beli YFD First Aid. Evaluasi ulang setiap 3 bulan.</p>
                         </div>
                     </div>
                     <input type="email" name="email" id="checkupEmail" required

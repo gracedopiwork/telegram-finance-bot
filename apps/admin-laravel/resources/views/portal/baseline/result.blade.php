@@ -36,8 +36,8 @@
 
 @if($reviewDue)
     <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-3 mb-6">
-        <span>Baseline terakhir: {{ $baseline->formatDate('d M Y') }}. Sudah waktunya evaluasi ulang (6 bulan).</span>
-        <a href="{{ route('portal.baseline.create') }}" class="font-semibold text-amber-800 hover:underline">Isi ulang sekarang →</a>
+        <span>Baseline terakhir: {{ $baseline->formatDate('d M Y') }}. Sudah waktunya evaluasi ulang (3 bulan).</span>
+        <a href="{{ route('portal.diagnostic') }}" class="font-semibold text-amber-800 hover:underline">Isi ulang diagnostik →</a>
     </div>
 @endif
 

@@ -72,7 +72,10 @@
             </div>
 
             <div class="mt-6 rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 text-sm text-sky-900">
-                Hasil disimpan untuk <strong>{{ $baseline->email }}</strong>.
+                Hasil disimpan untuk <strong>{{ $baseline->email }}</strong>
+                dan salinan dikirim ke email tersebut (hanya hasil Anda).
+                Evaluasi ulang tersedia mulai <strong>{{ $baseline->formatNextReview('d M Y') }}</strong> (setiap 3 bulan).
+                Data di dashboard tidak dihapus.
                 @if($fromPortal)
                     @if($isFtsaOnlyPortal ?? false)
                         Data check-up terhubung ke akun FTSA Anda. Lanjutkan ke kuesioner FTSA 1–32 jika belum diisi.
