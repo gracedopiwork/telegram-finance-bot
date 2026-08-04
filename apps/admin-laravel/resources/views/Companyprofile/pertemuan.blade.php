@@ -46,8 +46,8 @@
                 Pendampingan intensif untuk kondisi finansial darurat.
                 Pilih jadwal available, lanjut WhatsApp — admin verifikasi pembayaran untuk mengunci slot.
             @else
-                Konsultasi 1-on-1 dengan dokter YFD. Pilih kursi jadwal yang masih available (format bioskop),
-                lalu lanjut WhatsApp. Admin mengunci jadwal setelah pembayaran diverifikasi.
+                Konsultasi 1-on-1 dengan dokter YFD dilakukan secara <strong>online via WhatsApp</strong>.
+                Pilih dokter dan jadwal yang tersedia, lalu lanjut ke WhatsApp.
                 Belum screening? <a href="{{ $primaryCheckupUrl }}" class="text-primary-container font-semibold underline">Mulai gratis</a>.
             @endif
         </p>
@@ -138,7 +138,7 @@
 
                     {{-- Slot grid --}}
                     <div class="space-y-2">
-                        <label class="font-label-md text-label-md text-on-surface-variant">Pilih Jam (kursi available) *</label>
+                        <label class="font-label-md text-label-md text-on-surface-variant">Pilih Jam *</label>
                         <div id="slotGrid" class="flex flex-wrap gap-2 min-h-[3rem]">
                             <p class="text-sm text-on-surface-variant">Pilih dokter &amp; tanggal untuk melihat slot.</p>
                         </div>
@@ -234,23 +234,24 @@
             <div class="bg-primary-container text-on-primary p-6 rounded-xl sticky top-28 shadow-xl">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="bg-secondary-container text-on-secondary-container w-12 h-12 rounded-full flex items-center justify-center">
-                        <span class="material-symbols-outlined">event_seat</span>
+                        <span class="material-symbols-outlined">support_agent</span>
                     </div>
                     <div>
-                        <p class="font-label-md text-label-md text-secondary-fixed">Cara booking</p>
-                        <p class="font-body-md text-body-md font-bold">Seperti kursi bioskop</p>
+                        <p class="font-label-md text-label-md text-secondary-fixed">Tim YFD</p>
+                        <p class="font-body-md text-body-md font-bold">Online & Siap Bantu</p>
                     </div>
                 </div>
-                <ol class="list-decimal list-inside space-y-2 text-sm opacity-90 mb-6">
-                    <li>Pilih dokter &amp; jam available</li>
-                    <li>Submit — slot di-hold {{ $holdMinutes ?? 45 }} menit</li>
-                    <li>Chat WA otomatis terbuka</li>
-                    <li>Admin verifikasi bayar → jadwal terkunci</li>
-                </ol>
+                <h2 class="font-headline-md text-headline-md mb-3">Kontak Langsung</h2>
                 <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="flex items-center gap-3 hover:text-secondary-fixed-dim mb-4">
                     <span class="material-symbols-outlined">phone_in_talk</span>
                     <span class="font-body-md text-body-md">{{ $yfd['phone'] }}</span>
                 </a>
+                <div class="bg-secondary-container/20 border border-secondary-container/40 p-4 rounded-lg flex gap-3 mb-4">
+                    <span class="material-symbols-outlined text-secondary-fixed">info</span>
+                    <p class="font-caption text-caption opacity-90 leading-relaxed">
+                        Pilih jadwal available, lalu lanjut WhatsApp. Admin akan mengonfirmasi pembayaran untuk mengunci jadwal.
+                    </p>
+                </div>
                 @if(!$isRecovery)
                 <a href="{{ $primaryCheckupUrl }}" class="block text-center py-3 rounded-lg bg-secondary-container text-on-secondary-container font-label-md text-label-md hover:brightness-105 transition-all">
                     Belum Screening? Mulai Gratis
