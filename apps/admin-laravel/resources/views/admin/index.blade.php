@@ -8,7 +8,7 @@
 <div class="card card-outline card-success mb-4">
     <div class="card-body">
         <h4 class="mb-2"><i class="fas fa-stethoscope mr-2"></i>Selamat datang, Admin YFD!</h4>
-        <p class="text-muted mb-3">Kelola konten website dari sidebar — Site Settings, Paket, Layanan, Tim Dokter, FAQ, dan Wealthpedia.</p>
+        <p class="text-muted mb-3">Kelola konten website dari sidebar — Site Settings (teks semua halaman), Paket, Layanan, Tim Dokter, FAQ, dan Wealthpedia.</p>
         <a href="{{ route('admin.settings.index') }}" class="btn btn-success mr-2"><i class="fas fa-sliders-h mr-1"></i> Site Settings</a>
         <a href="{{ route('company.home') }}" class="btn btn-outline-secondary" target="_blank" rel="noopener"><i class="fas fa-external-link-alt mr-1"></i> Lihat Website</a>
     </div>

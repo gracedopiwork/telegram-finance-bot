@@ -8,17 +8,15 @@
 <section class="relative bg-white py-24 overflow-hidden">
     <div class="max-w-container-max mx-auto px-margin-desktop flex flex-col md:flex-row items-center gap-16 relative z-10">
         <div class="w-full md:w-1/2">
-            <span class="text-secondary font-label-md text-label-md tracking-widest block mb-4">TENTANG YFD</span>
+            <span class="text-secondary font-label-md text-label-md tracking-widest block mb-4">{{ ($page['page.tentang.hero_eyebrow'] ?? null) ?: 'TENTANG YFD' }}</span>
             <h1 class="text-display-lg font-display-lg text-primary mb-6 leading-tight">
-                Pusat Kesehatan Finansial Pertama di Indonesia.
+                {{ ($page['page.tentang.hero_title'] ?? null) ?: 'Pusat Kesehatan Finansial Pertama di Indonesia.' }}
             </h1>
             <p class="font-body-lg text-body-lg text-on-surface-variant mb-8 max-w-xl">
-                YFD didirikan oleh dua dokter umum yang melihat bahwa masyarakat tidak hanya butuh
-                kesehatan jasmani, tetapi juga kesehatan finansial yang krusial dalam mendukung
-                stabilitas dan kelangsungan hidup bernegara.
+                {!! nl2br(e(($page['page.tentang.hero_intro'] ?? null) ?: 'YFD didirikan oleh dua dokter umum yang melihat bahwa masyarakat tidak hanya butuh kesehatan jasmani, tetapi juga kesehatan finansial yang krusial dalam mendukung stabilitas dan kelangsungan hidup bernegara.')) !!}
             </p>
             <p class="font-body-md text-body-md text-on-surface-variant italic">
-                "Tidak hanya tubuh yang bisa diserang penyakit, namun dompet yang sakit juga memerlukan dokter."
+                {{ ($page['page.tentang.hero_quote'] ?? null) ?: '"Tidak hanya tubuh yang bisa diserang penyakit, namun dompet yang sakit juga memerlukan dokter."' }}
             </p>
         </div>
         <div class="w-full md:w-1/2 relative">
@@ -30,10 +28,10 @@
             <div class="absolute -bottom-6 -left-6 bg-white p-6 clinical-shadow max-w-[260px]">
                 <div class="flex items-center gap-3 mb-2">
                     <span class="material-symbols-outlined text-secondary text-[32px]">groups</span>
-                    <span class="text-primary font-bold font-headline-md text-headline-md">Herd Financial Immunity</span>
+                    <span class="text-primary font-bold font-headline-md text-headline-md">{{ ($page['page.tentang.hero_card_title'] ?? null) ?: 'Herd Financial Immunity' }}</span>
                 </div>
                 <p class="font-caption text-caption text-on-surface-variant">
-                    Membangun kekebalan komunitas finansial untuk masyarakat mayoritas Indonesia.
+                    {{ ($page['page.tentang.hero_card_desc'] ?? null) ?: 'Membangun kekebalan komunitas finansial untuk masyarakat mayoritas Indonesia.' }}
                 </p>
             </div>
         </div>
@@ -46,7 +44,7 @@
         <div class="grid grid-cols-1 md:grid-cols-12 gap-12">
             <div class="md:col-span-4">
                 <h2 class="font-headline-lg text-headline-lg text-primary gold-border pl-6">
-                    Latar Belakang Berdirinya YFD Indonesia
+                    {{ ($page['page.tentang.bg_section_title'] ?? null) ?: 'Latar Belakang Berdirinya YFD Indonesia' }}
                 </h2>
             </div>
             <div class="md:col-span-8 space-y-6">
@@ -61,12 +59,12 @@
                 @endif
                 <div class="grid grid-cols-2 gap-8 pt-8 border-t border-outline-variant">
                     <div>
-                        <div class="font-display-lg text-display-lg text-primary">2 Dokter</div>
-                        <p class="font-label-md text-label-md text-secondary">Founder Dokter Umum</p>
+                        <div class="font-display-lg text-display-lg text-primary">{{ ($page['page.tentang.stat_1_value'] ?? null) ?: '2 Dokter' }}</div>
+                        <p class="font-label-md text-label-md text-secondary">{{ ($page['page.tentang.stat_1_label'] ?? null) ?: 'Founder Dokter Umum' }}</p>
                     </div>
                     <div>
-                        <div class="font-display-lg text-display-lg text-primary">2035</div>
-                        <p class="font-label-md text-label-md text-secondary">Target Visi YFD</p>
+                        <div class="font-display-lg text-display-lg text-primary">{{ ($page['page.tentang.stat_2_value'] ?? null) ?: '2035' }}</div>
+                        <p class="font-label-md text-label-md text-secondary">{{ ($page['page.tentang.stat_2_label'] ?? null) ?: 'Target Visi YFD' }}</p>
                     </div>
                 </div>
             </div>

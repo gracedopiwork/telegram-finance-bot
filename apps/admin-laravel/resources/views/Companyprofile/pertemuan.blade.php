@@ -107,27 +107,24 @@
     <div class="mb-12 text-center">
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary-container/30 text-on-secondary-container font-label-md text-label-md mb-4">
             <span class="material-symbols-outlined text-[18px]">event_available</span>
-            ONLINE BOOKING
+            {{ ($page['page.pertemuan.hero_badge'] ?? null) ?: 'ONLINE BOOKING' }}
         </span>
         <h1 class="font-display-lg text-display-lg text-primary mb-4">
             @if($isPremarital)
-                Booking Premarital Check Up
+                {{ ($page['page.pertemuan.hero_title_premarital'] ?? null) ?: 'Booking Premarital Check Up' }}
             @elseif($isRecovery)
-                Booking Financial Recovery Program
+                {{ ($page['page.pertemuan.hero_title_recovery'] ?? null) ?: 'Booking Financial Recovery Program' }}
             @else
-                Booking Financial Consultation
+                {{ ($page['page.pertemuan.hero_title_standard'] ?? null) ?: 'Booking Financial Consultation' }}
             @endif
         </h1>
         <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
             @if($isPremarital)
-                Karena 2 orang yang konsultasi, <strong>pilih dokter di awal</strong> agar sesi male, female, dan couple ditangani dokter yang sama.
-                Lalu pilih tanggal &amp; jam available.
+                {!! nl2br(e(($page['page.pertemuan.hero_subtitle_premarital'] ?? null) ?: 'Karena 2 orang yang konsultasi, pilih dokter di awal agar sesi male, female, dan couple ditangani dokter yang sama. Lalu pilih tanggal & jam available.')) !!}
             @elseif($isRecovery)
-                Pendampingan intensif untuk kondisi finansial darurat.
-                Pilih tanggal &amp; jam available, lanjut WhatsApp — admin verifikasi pembayaran untuk mengunci slot.
+                {!! nl2br(e(($page['page.pertemuan.hero_subtitle_recovery'] ?? null) ?: 'Pendampingan intensif untuk kondisi finansial darurat. Pilih tanggal & jam available, lanjut WhatsApp — admin verifikasi pembayaran untuk mengunci slot.')) !!}
             @else
-                Konsultasi 1-on-1 dengan dokter YFD dilakukan secara <strong>online via WhatsApp</strong>.
-                Pilih tanggal &amp; jam yang tersedia, lalu lanjut ke WhatsApp.
+                {!! nl2br(e(($page['page.pertemuan.hero_subtitle_standard'] ?? null) ?: 'Konsultasi 1-on-1 dengan dokter YFD dilakukan secara online via WhatsApp. Pilih tanggal & jam yang tersedia, lalu lanjut ke WhatsApp.')) !!}
                 Belum screening? <a href="{{ $primaryCheckupUrl }}" class="text-primary-container font-semibold underline">Mulai gratis</a>.
             @endif
         </p>

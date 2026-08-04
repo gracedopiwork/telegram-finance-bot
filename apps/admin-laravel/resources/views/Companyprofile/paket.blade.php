@@ -10,19 +10,17 @@
     <header class="text-center mb-16">
         <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container/20 text-secondary text-caption mb-4 border border-secondary/10">
             <span class="material-symbols-outlined text-[16px]">monitor_heart</span>
-            <span class="font-label-md text-label-md tracking-wider">FINANCIAL HEALTH CHECK UP</span>
+            <span class="font-label-md text-label-md tracking-wider">{{ ($page['page.paket.hero_eyebrow'] ?? null) ?: 'FINANCIAL HEALTH CHECK UP' }}</span>
         </span>
-        <h1 class="font-display-lg text-display-lg text-primary mb-4">Screening Gratis Dulu — Konsultasi Setelahnya</h1>
+        <h1 class="font-display-lg text-display-lg text-primary mb-4">{{ ($page['page.paket.hero_title'] ?? null) ?: 'Screening Gratis Dulu — Konsultasi Setelahnya' }}</h1>
         <p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl mx-auto">
-            <strong>Financial Health Check-Up / screening</strong> adalah layanan <strong>gratis</strong> (3–5 menit)
-            untuk mengetahui tahap finansial Anda. Biaya konsultasi dengan tim dokter YFD baru berlaku
-            <strong>setelah screening</strong>, disesuaikan dengan tahap finansial Anda.
+            {!! nl2br(e(($page['page.paket.hero_subtitle'] ?? null) ?: 'Financial Health Check-Up / screening adalah layanan gratis (3–5 menit) untuk mengetahui tahap finansial Anda. Biaya konsultasi dengan tim dokter YFD baru berlaku setelah screening, disesuaikan dengan tahap finansial Anda.')) !!}
         </p>
         <div class="mt-8">
             <a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif
                class="inline-flex items-center gap-2 btn btn-gold btn-lg">
                 <span class="material-symbols-outlined text-[20px]">play_arrow</span>
-                Mulai Screening Gratis
+                {{ ($page['page.paket.cta_checkup'] ?? null) ?: 'Mulai Screening Gratis' }}
             </a>
         </div>
     </header>

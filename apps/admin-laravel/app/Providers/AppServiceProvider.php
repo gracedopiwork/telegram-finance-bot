@@ -73,6 +73,14 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('yfd', $yfd);
                 $view->with('waBookingUrl', $waBookingUrl);
                 $view->with('waDefaultMsg', $waMsg);
+                $view->with('siteNav', [
+                    'cta_wa' => Setting::val('page.nav.cta_wa', 'Konsultasi WA'),
+                    'float_wa' => Setting::val('page.nav.float_wa', 'Chat WhatsApp'),
+                    'footer_blurb' => Setting::val('page.footer.blurb', 'Pusat kesehatan finansial pertama di Indonesia — pendekatan dokter untuk dompet yang lebih sehat.'),
+                    'footer_col_layanan' => Setting::val('page.footer.col_layanan', 'Layanan'),
+                    'footer_col_perusahaan' => Setting::val('page.footer.col_perusahaan', 'Perusahaan'),
+                    'footer_copyright_extra' => Setting::val('page.footer.copyright_extra', 'Founded by dr. Ayuti Bulaan QWP & dr. Catherine QWP.'),
+                ]);
                 // Keep AdminLTE brand/auth/preloader logo in sync with Site Settings.
                 config([
                     'adminlte.logo_img' => $logo,
@@ -102,6 +110,14 @@ class AppServiceProvider extends ServiceProvider
                 ]);
                 $view->with('waBookingUrl', 'https://wa.me/6285111228911');
                 $view->with('waDefaultMsg', '');
+                $view->with('siteNav', [
+                    'cta_wa' => 'Konsultasi WA',
+                    'float_wa' => 'Chat WhatsApp',
+                    'footer_blurb' => 'Pusat kesehatan finansial pertama di Indonesia — pendekatan dokter untuk dompet yang lebih sehat.',
+                    'footer_col_layanan' => 'Layanan',
+                    'footer_col_perusahaan' => 'Perusahaan',
+                    'footer_copyright_extra' => 'Founded by dr. Ayuti Bulaan QWP & dr. Catherine QWP.',
+                ]);
                 config([
                     'adminlte.logo_img' => 'images/yfd-logo.png',
                     'adminlte.auth_logo.img.path' => 'images/yfd-logo.png',

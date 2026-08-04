@@ -14,11 +14,10 @@
     <div class="absolute inset-0 flex items-center">
         <div class="max-w-container-max mx-auto px-margin-desktop w-full">
             <div class="text-on-primary max-w-3xl">
-                <span class="bg-secondary-container text-on-secondary-container inline-block px-3 py-1 font-label-md text-label-md mb-6">PUSAT INFORMASI</span>
-                <h1 class="font-display-lg text-display-lg mb-4">Informasi &amp; Kontak YFD</h1>
+                <span class="bg-secondary-container text-on-secondary-container inline-block px-3 py-1 font-label-md text-label-md mb-6">{{ ($page['page.informasi.hero_eyebrow'] ?? null) ?: 'PUSAT INFORMASI' }}</span>
+                <h1 class="font-display-lg text-display-lg mb-4">{{ ($page['page.informasi.hero_title'] ?? null) ?: 'Informasi & Kontak YFD' }}</h1>
                 <p class="font-body-lg text-body-lg opacity-90 max-w-2xl">
-                    Hubungi kami melalui WhatsApp, email, atau social media. Tim YFD aktif di jam kerja
-                    dan akan merespon segera.
+                    {{ ($page['page.informasi.hero_subtitle'] ?? null) ?: 'Hubungi kami melalui WhatsApp, email, atau social media. Tim YFD aktif di jam kerja dan akan merespon segera.' }}
                 </p>
             </div>
         </div>
@@ -29,7 +28,7 @@
 
     {{-- ============== Kontak Bento ============== --}}
     <section>
-        <h2 class="font-headline-lg text-headline-lg text-primary mb-3">Hubungi Kami</h2>
+        <h2 class="font-headline-lg text-headline-lg text-primary mb-3">{{ ($page['page.informasi.contact_title'] ?? null) ?: 'Hubungi Kami' }}</h2>
         <p class="font-body-md text-body-md text-on-surface-variant mb-10 max-w-2xl">
             Pilih channel paling nyaman buat Anda. Untuk konsultasi langsung, WhatsApp adalah jalur tercepat.
         </p>

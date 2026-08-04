@@ -13,19 +13,18 @@
     </div>
     <div class="relative z-10 px-margin-desktop max-w-container-max mx-auto w-full text-white">
         <div class="max-w-2xl">
-            <span class="inline-block px-3 py-1 bg-secondary-container text-on-secondary-container font-label-md text-label-md rounded-full mb-6">EKOSISTEM LAYANAN YFD</span>
-            <h1 class="font-display-lg text-display-lg mb-6 leading-tight">Tujuh Pilar Layanan Kesehatan Finansial</h1>
+            <span class="inline-block px-3 py-1 bg-secondary-container text-on-secondary-container font-label-md text-label-md rounded-full mb-6">{{ ($page['page.layanan.hero_eyebrow'] ?? null) ?: 'EKOSISTEM LAYANAN YFD' }}</span>
+            <h1 class="font-display-lg text-display-lg mb-6 leading-tight">{{ ($page['page.layanan.hero_title'] ?? null) ?: 'Tujuh Pilar Layanan Kesehatan Finansial' }}</h1>
             <p class="font-body-lg text-body-lg text-on-primary-container opacity-90 mb-8">
-                Mengintegrasikan edukasi, proteksi, pendampingan, dan solusi finansial dalam satu ekosistem
-                untuk membangun <em>Herd Financial Immunity</em>.
+                {{ ($page['page.layanan.hero_subtitle'] ?? null) ?: 'Mengintegrasikan edukasi, proteksi, pendampingan, dan solusi finansial dalam satu ekosistem untuk membangun Herd Financial Immunity.' }}
             </p>
             <div class="flex flex-wrap gap-4">
                 <a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif class="bg-secondary-container text-on-secondary-container px-8 py-3 rounded-lg font-label-md text-label-md hover:brightness-110 transition-all">
-                    Check up sekarang
+                    {{ ($page['page.layanan.cta_primary'] ?? null) ?: 'Check up sekarang' }}
                 </a>
                 <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="border border-white/30 bg-white/10 backdrop-blur-sm text-white px-8 py-3 rounded-lg font-label-md text-label-md hover:bg-white/20 transition-all flex items-center gap-2">
                     <span class="material-symbols-outlined">chat</span>
-                    Konsultasi WA
+                    {{ ($page['page.layanan.cta_secondary'] ?? null) ?: 'Konsultasi WA' }}
                 </a>
             </div>
         </div>
@@ -36,12 +35,12 @@
 <section class="py-16 px-margin-desktop max-w-container-max mx-auto w-full -mt-20 relative z-20">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
         @foreach([
-            ['ic' => 'favorite',   'title' => 'Pulse Check',
-             'desc' => 'Setiap layanan dimulai dari pemeriksaan kesehatan finansial menyeluruh.'],
-            ['ic' => 'medication', 'title' => 'Personalized Plan',
-             'desc' => 'Rekomendasi disusun personal sesuai level dan tujuan keuangan masing-masing klien.'],
-            ['ic' => 'schedule',   'title' => 'Pendampingan',
-             'desc' => 'Bukan sekadar transaksi — tim YFD mendampingi sampai tujuan keuangan tercapai.'],
+            ['ic' => 'favorite',   'title' => ($page['page.layanan.pulse_1_title'] ?? null) ?: 'Pulse Check',
+             'desc' => ($page['page.layanan.pulse_1_desc'] ?? null) ?: 'Setiap layanan dimulai dari pemeriksaan kesehatan finansial menyeluruh.'],
+            ['ic' => 'medication', 'title' => ($page['page.layanan.pulse_2_title'] ?? null) ?: 'Personalized Plan',
+             'desc' => ($page['page.layanan.pulse_2_desc'] ?? null) ?: 'Rekomendasi disusun personal sesuai level dan tujuan keuangan masing-masing klien.'],
+            ['ic' => 'schedule',   'title' => ($page['page.layanan.pulse_3_title'] ?? null) ?: 'Pendampingan',
+             'desc' => ($page['page.layanan.pulse_3_desc'] ?? null) ?: 'Bukan sekadar transaksi — tim YFD mendampingi sampai tujuan keuangan tercapai.'],
         ] as $card)
             <div class="bg-surface-container-lowest border border-outline-variant p-8 rounded-xl shadow-sm shadow-primary-container/5">
                 <div class="flex justify-between items-start mb-4">

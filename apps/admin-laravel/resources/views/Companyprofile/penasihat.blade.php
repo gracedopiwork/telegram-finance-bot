@@ -10,12 +10,11 @@
     <header class="mb-16 text-center max-w-3xl mx-auto">
         <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container/20 text-secondary text-caption mb-4 border border-secondary/10">
             <span class="material-symbols-outlined text-[16px]">stethoscope</span>
-            <span class="font-label-md text-label-md tracking-wider">TIM DOKTER YFD</span>
+            <span class="font-label-md text-label-md tracking-wider">{{ ($page['page.penasihat.hero_eyebrow'] ?? null) ?: 'TIM DOKTER YFD' }}</span>
         </span>
-        <h1 class="font-display-lg text-display-lg text-primary mb-6">Dokter Pertama Untuk Dompet Anda</h1>
+        <h1 class="font-display-lg text-display-lg text-primary mb-6">{{ ($page['page.penasihat.hero_title'] ?? null) ?: 'Dokter Pertama Untuk Dompet Anda' }}</h1>
         <p class="font-body-lg text-body-lg text-on-surface-variant">
-            YFD didirikan oleh dokter umum yang mempelajari manusia secara utuh — bagaimana stres, trauma,
-            dan emosi memengaruhi pengambilan keputusan, termasuk keputusan finansial.
+            {{ ($page['page.penasihat.hero_subtitle'] ?? null) ?: 'YFD didirikan oleh dokter umum yang mempelajari manusia secara utuh — bagaimana stres, trauma, dan emosi memengaruhi pengambilan keputusan, termasuk keputusan finansial.' }}
         </p>
     </header>
 

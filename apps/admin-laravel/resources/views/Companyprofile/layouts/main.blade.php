@@ -393,7 +393,7 @@
             <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener"
                class="hidden md:inline-flex btn btn-gold !px-3 !py-2 !text-[13px]">
                 <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1;">chat</span>
-                Konsultasi WA
+                {{ ($siteNav['cta_wa'] ?? null) ?: 'Konsultasi WA' }}
             </a>
             <a href="{{ route('company.pertemuan') }}"
                class="header-cta-extra hidden lg:inline-flex btn btn-primary !px-3 !py-2 !text-[13px]">
@@ -545,8 +545,7 @@
                 </div>
             </div>
             <p class="text-body-md opacity-80 max-w-md mb-5">
-                Pusat kesehatan finansial pertama di Indonesia. Didirikan oleh dokter umum yang melihat
-                bahwa dompet yang sakit juga butuh dokter.
+                {{ ($siteNav['footer_blurb'] ?? null) ?: 'Pusat kesehatan finansial pertama di Indonesia. Didirikan oleh dokter umum yang melihat bahwa dompet yang sakit juga butuh dokter.' }}
             </p>
             <p class="text-label-md italic text-secondary-fixed">"{{ $yfd['motto'] }}"</p>
 
@@ -571,7 +570,7 @@
         </div>
 
         <div class="md:col-span-3">
-            <h5 class="text-label-md text-secondary-fixed mb-4">Layanan</h5>
+            <h5 class="text-label-md text-secondary-fixed mb-4">{{ ($siteNav['footer_col_layanan'] ?? null) ?: 'Layanan' }}</h5>
             <ul class="space-y-2.5 text-[13.5px] opacity-90">
                 <li><a href="{{ route('checkup.show') }}" class="hover:text-secondary-fixed-dim transition-all">Health Check Up</a></li>
                 <li><a href="{{ route('company.paket') }}" class="hover:text-secondary-fixed-dim transition-all">Tarif Konsultasi</a></li>
@@ -583,7 +582,7 @@
         </div>
 
         <div class="md:col-span-2">
-            <h5 class="text-label-md text-secondary-fixed mb-4">Perusahaan</h5>
+            <h5 class="text-label-md text-secondary-fixed mb-4">{{ ($siteNav['footer_col_perusahaan'] ?? null) ?: 'Perusahaan' }}</h5>
             <ul class="space-y-2.5 text-[13.5px] opacity-90">
                 <li><a href="{{ route('company.tentang') }}" class="hover:text-secondary-fixed-dim transition-all">Tentang YFD</a></li>
                 <li><a href="{{ route('company.penasihat') }}" class="hover:text-secondary-fixed-dim transition-all">Tim Dokter</a></li>
@@ -612,7 +611,7 @@
 
     <div class="relative border-t border-on-primary/10">
         <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-5 flex flex-col sm:flex-row justify-between items-center gap-3 text-caption opacity-70">
-            <span>© {{ date('Y') }} {{ $yfd['brand'] }} Indonesia. Founded by dr. Ayuti Bulaan QWP &amp; dr. Catherine QWP.</span>
+            <span>© {{ date('Y') }} {{ $yfd['brand'] }} Indonesia. {{ ($siteNav['footer_copyright_extra'] ?? null) ?: 'Founded by dr. Ayuti Bulaan QWP & dr. Catherine QWP.' }}</span>
             <div class="flex gap-5">
                 <a href="#" class="hover:text-secondary-fixed-dim">Kebijakan Privasi</a>
                 <a href="#" class="hover:text-secondary-fixed-dim">Syarat &amp; Ketentuan</a>
@@ -625,7 +624,7 @@
 <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener"
    class="fixed bottom-6 right-6 md:bottom-8 md:right-8 btn btn-wa btn-lg shadow-lift z-40">
     <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">chat</span>
-    <span class="hidden sm:inline">Chat WhatsApp</span>
+    <span class="hidden sm:inline">{{ ($siteNav['float_wa'] ?? null) ?: 'Chat WhatsApp' }}</span>
 </a>
 
 <script>

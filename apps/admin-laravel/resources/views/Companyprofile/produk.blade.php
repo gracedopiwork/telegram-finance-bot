@@ -16,14 +16,13 @@
         <div class="max-w-3xl">
             <span class="inline-flex items-center gap-2 bg-secondary-container/95 text-on-secondary-container px-4 py-1.5 rounded-full text-label-md font-semibold">
                 <span class="material-symbols-outlined text-[18px]">auto_awesome</span>
-                PRODUK DIGITAL YFD
+                {{ ($page['page.produk.hero_eyebrow'] ?? null) ?: 'PRODUK DIGITAL YFD' }}
             </span>
             <h1 class="font-display text-[36px] sm:text-[44px] md:text-display-lg font-extrabold leading-[1.1] mt-5">
-                Tools digital untuk <span class="text-secondary-fixed">membentuk kebiasaan finansial sehat</span>.
+                {{ ($page['page.produk.hero_title'] ?? null) ?: 'Tools digital untuk membentuk kebiasaan finansial sehat.' }}
             </h1>
             <p class="text-body-lg text-white/85 mt-5 max-w-2xl">
-                Bukan agen produk asuransi/investasi. Yang kami tawarkan adalah aplikasi & tools digital yang
-                membantu Anda mencatat, memahami, dan mengevaluasi kondisi keuangan harian secara otomatis.
+                {{ ($page['page.produk.hero_subtitle'] ?? null) ?: 'Bukan agen produk asuransi/investasi. Yang kami tawarkan adalah aplikasi & tools digital yang membantu Anda mencatat, memahami, dan mengevaluasi kondisi keuangan harian secara otomatis.' }}
             </p>
         </div>
     </div>

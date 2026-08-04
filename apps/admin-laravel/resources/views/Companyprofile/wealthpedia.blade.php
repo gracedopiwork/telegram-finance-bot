@@ -10,11 +10,10 @@
     <header class="mb-16 text-center">
         <span class="font-label-md text-label-md text-secondary tracking-widest block mb-3">EDUCATION PLATFORM</span>
         <h1 class="font-display-lg text-display-lg text-primary mb-6 max-w-4xl mx-auto">
-            Wealthpedia: Literasi Finansial Adalah Hak, Bukan Privilese.
+            {{ ($page['page.wealthpedia.hero_title'] ?? null) ?: 'Wealthpedia' }}
         </h1>
         <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-8">
-            Pusat edukasi praktis YFD — webinar, e-book, social media education, dan artikel mendalam
-            tentang practical financial literacy &amp; emotional finance.
+            {{ ($page['page.wealthpedia.hero_subtitle'] ?? null) ?: 'Pustaka edukasi kesehatan finansial dari YFD — artikel, insight perilaku, dan panduan praktis.' }}
         </p>
 
         {{-- Search Bar --}}

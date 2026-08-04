@@ -1,7 +1,7 @@
 @extends('admin.layouts.page')
 
 @section('page_heading', 'Site Settings')
-@section('page_subheading', 'Edit teks website di sini — Homepage, Hero, About, Statistik, dll. Setelah simpan, refresh halaman publik.')
+@section('page_subheading', 'Edit semua teks website di sini (Homepage, Hero, Tentang, Layanan, Paket, Bundle, Tarif, Nav/Footer, dll). Setelah simpan, refresh halaman publik.')
 
 @section('main')
 

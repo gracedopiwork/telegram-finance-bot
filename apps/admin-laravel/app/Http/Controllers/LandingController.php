@@ -66,6 +66,7 @@ class LandingController extends Controller
             'vision'   => $this->settingsByGroup('vision'),
             'mission'  => $this->settingsByGroup('mission'),
             'values'   => $this->settingsByGroup('values'),
+            'page'     => $this->settingsByGroup('page_tentang'),
         ]);
     }
 
@@ -75,6 +76,7 @@ class LandingController extends Controller
             'active'   => 'layanan',
             'services' => CpService::active()->orderBy('sort')->get(),
             'partners' => CpPartner::active()->orderBy('sort')->orderBy('id')->get(),
+            'page'     => $this->settingsByGroup('page_layanan'),
         ]);
     }
 
@@ -83,7 +85,8 @@ class LandingController extends Controller
         return view('Companyprofile.paket', [
             'active' => 'paket',
             'consultationTiers' => ConsultationPricing::stages(),
-            'consultationMeta' => config('consultation_pricing'),
+            'consultationMeta' => ConsultationPricing::meta(),
+            'page' => $this->settingsByGroup('page_paket'),
         ]);
     }
 
@@ -93,6 +96,7 @@ class LandingController extends Controller
             'active'   => 'penasihat',
             'advisors' => CpAdvisor::active()->orderBy('sort')->get(),
             'partners' => CpPartner::active()->orderBy('sort')->orderBy('id')->get(),
+            'page'     => $this->settingsByGroup('page_penasihat'),
         ]);
     }
 
@@ -107,6 +111,7 @@ class LandingController extends Controller
             'featured' => $featured,
             'products' => $products,
             'others'   => $others,
+            'page'     => $this->settingsByGroup('page_produk'),
         ]);
     }
 
@@ -119,6 +124,7 @@ class LandingController extends Controller
         }
 
         $homeCopy = $this->settingsByGroup('home');
+        $pageWealthpedia = $this->settingsByGroup('page_wealthpedia');
         $bfDesc = $homeCopy['wealthpedia.cat_bf_desc']
             ?? 'Memahami bagaimana emosi, kebiasaan, bias kognitif, dan proses pengambilan keputusan memengaruhi cara kita menggunakan uang dalam kehidupan sehari-hari.';
         $fhDesc = $homeCopy['wealthpedia.cat_fh_desc']
@@ -195,6 +201,7 @@ class LandingController extends Controller
             'categories' => $categories,
             'activeCategory' => $categoryFilter,
             'homeCopy' => $homeCopy,
+            'page' => $pageWealthpedia,
         ]);
     }
 
@@ -292,7 +299,7 @@ class LandingController extends Controller
         return view('Companyprofile.pertemuan', [
             'active' => $active,
             'consultationTiers' => ConsultationPricing::stages(),
-            'consultationMeta' => config('consultation_pricing'),
+            'consultationMeta' => ConsultationPricing::meta(),
             'selectedStage' => is_string($stageKey) ? $stageKey : null,
             'selectedType' => $consultationType,
             'selectedTier' => ConsultationPricing::forStage(is_string($stageKey) ? $stageKey : null),
@@ -306,6 +313,7 @@ class LandingController extends Controller
             'slotsByDate' => $slotsByDate,
             'calendarMonth' => $calendarMonth->format('Y-m'),
             'holdMinutes' => ConsultationSlot::HOLD_MINUTES,
+            'page' => $this->settingsByGroup('page_pertemuan'),
         ]);
     }
 
@@ -429,6 +437,7 @@ class LandingController extends Controller
         return view('Companyprofile.informasi', [
             'active' => 'informasi',
             'faqs'   => CpFaq::active()->orderBy('sort')->get(),
+            'page'   => $this->settingsByGroup('page_informasi'),
         ]);
     }
 
@@ -440,7 +449,7 @@ class LandingController extends Controller
             'premarital' => 'premarital',
             default => $slug,
         };
-        $bundle = config("yfd_bundles.{$key}");
+        $bundle = \App\Support\YfdBundles::get($key);
         if (! is_array($bundle)) {
             abort(404);
         }
