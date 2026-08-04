@@ -289,6 +289,26 @@ class ContextRulesTests(unittest.TestCase):
         out = apply_context_rules(parsed, "makan malam 20k")
         self.assertEqual(out["jenis"], "Pengeluaran")
 
+    def test_admin_bank_komunikasi(self) -> None:
+        self.assertClass("admin bank 10 rb", "Pengeluaran", "Komunikasi")
+        hit = classify_from_text("admin bank 10 rb")
+        assert hit is not None
+        self.assertEqual(hit["sifat"], "Need")
+
+    def test_biaya_transfer_komunikasi(self) -> None:
+        self.assertClass("biaya transfer BCA 6500", "Pengeluaran", "Komunikasi")
+
+    def test_correct_ai_admin_bank_from_lain_lain(self) -> None:
+        parsed = {
+            "keterangan": "admin bank 10 rb",
+            "jenis": "Pengeluaran",
+            "kategori": "Lain-lain",
+            "sifat": "Need",
+        }
+        out = apply_context_rules(parsed, "admin bank 10 rb")
+        self.assertEqual(out["kategori"], "Komunikasi")
+        self.assertEqual(out["sifat"], "Need")
+
 
 if __name__ == "__main__":
     unittest.main()

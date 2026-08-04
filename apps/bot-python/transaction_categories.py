@@ -303,7 +303,7 @@ Aturan:
    - Makanan & Minuman: makan harian, jajan, kopi, boba, GoFood/GrabFood.
    - Tempat Tinggal: kos, KPR tinggal, listrik, air, gas, perlengkapan rumah.
    - Transportasi: ojek/grab ride, bensin, parkir (bukan pesanan makanan); bucket mengikuti tujuan.
-   - Komunikasi: pulsa, kuota.
+   - Komunikasi: pulsa, kuota, internet, biaya admin bank/ATM/transfer.
    - Kesehatan & Kebersihan Diri: dokter, obat, sabun, shampo, laundry; skincare premium = Wants.
    - Pendidikan: SPP/UKT ATAU seminar/kursus/pengembangan diri.
    - Investasi & Tabungan: saham, reksadana, emas, dana darurat (jenis Saving/Investment).
@@ -315,9 +315,9 @@ Aturan:
    - Hadiah: kado, parcel, tip.
    - Cicilan & Hutang: cicilan, paylater; cicilan produktif/KPR investasi → Future Building.
    - Pakaian & Aksesoris: fashion, baju, sepatu, seragam, tas.
-   - Biaya Legal, Administrasi & Peristiwa Besar: notaris, balik nama, mahar/pernikahan, biaya duka.
+   - Biaya Legal, Administrasi & Peristiwa Besar: notaris, balik nama, mahar/pernikahan, biaya duka (BUKAN admin bank).
    - Lain-lain: hanya jika benar-benar tidak cocok (target < 2%).
-   - Komunikasi juga: biaya admin/transfer bank.
+   - Komunikasi juga: admin bank, biaya admin, biaya transfer antar bank.
 6) {examples}
 7) impulsif — terpisah dari sifat Need/Wants:
    "Yes" jika spontan / tidak terencana / fomo / mood negatif + belanja diskresioner

@@ -67,6 +67,7 @@ _STATIC_FALLBACK: dict[str, Any] = {
         "Laundry → Kesehatan & Kebersihan Diri / Essential. Fashion → Pakaian & Aksesoris.",
         "Makan/ngopi + meeting kerja/klien → Bisnis & Karir / Future Building.",
         "Notaris/mahar/duka → Biaya Legal, Administrasi & Peristiwa Besar.",
+        "Admin bank/biaya transfer → Komunikasi (bukan Lain-lain).",
     ],
     "strict_categories_only": True,
     "aliases": {},

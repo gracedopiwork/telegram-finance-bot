@@ -605,6 +605,32 @@ _KOMUNIKASI = (
     "axis",
 )
 
+# Biaya admin bank/transfer → Komunikasi (alias taxonomy: biaya admin / komunikasi & administrasi).
+# Jangan cocokkan "admin" generik (admin kantor, dll).
+_BANK_ADMIN_FEE = (
+    "admin bank",
+    "biaya admin",
+    "admin transfer",
+    "biaya transfer",
+    "admin mbanking",
+    "admin m-banking",
+    "admin m banking",
+    "admin atm",
+    "biaya admin bank",
+    "biaya admin transfer",
+    "admin bca",
+    "admin mandiri",
+    "admin bri",
+    "admin bni",
+    "admin jenius",
+    "admin seabank",
+    "admin jago",
+    "charge transfer",
+    "biaya rtgs",
+    "biaya kliring",
+    "biaya antar bank",
+)
+
 _LAUNDRY = (
     "laundry",
     "cuci baju",
@@ -786,6 +812,11 @@ def is_drinking_water_expense(text: str) -> bool:
     if is_water_expense(text):
         return False
     return _match_any(text, _AIR_MINUM_PATTERNS)
+
+
+def is_bank_admin_fee(text: str) -> bool:
+    """Biaya admin bank/ATM/transfer — kategori Komunikasi (Need / Essential)."""
+    return _contains(text, _BANK_ADMIN_FEE)
 
 
 def has_essential_living_intent(text: str) -> bool:
@@ -1081,7 +1112,7 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need"}
     if _contains(lower, _PENDIDIKAN):
         return {"jenis": "Pengeluaran", "kategori": "Pendidikan", "sifat": "Need"}
-    if _contains(lower, _KOMUNIKASI):
+    if is_bank_admin_fee(lower) or _contains(lower, _KOMUNIKASI):
         return {"jenis": "Pengeluaran", "kategori": "Komunikasi", "sifat": "Need"}
     if _contains(lower, _LAUNDRY):
         return {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need"}
@@ -1262,6 +1293,27 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
                 parsed.pop("sub_kategori", None)
                 return parsed
 
+        # Biaya admin bank/transfer → Komunikasi (bukan Lain-lain / Legal Administrasi).
+        if ai_jenis == "Pengeluaran" and is_bank_admin_fee(combined):
+            if ai_kat_l in {
+                "",
+                "lain-lain",
+                "lain lain",
+                "lainnya",
+                "other",
+                "misc",
+                "umum",
+                "biaya legal, administrasi & peristiwa besar",
+                "biaya legal",
+                "administrasi",
+                "cicilan & hutang",
+                "investasi & tabungan",
+            } or "komunikasi" not in ai_kat_l:
+                parsed["kategori"] = "Komunikasi"
+                parsed["sifat"] = "Need"
+                parsed.pop("sub_kategori", None)
+                return parsed
+
         # Koreksi dump kategori saja (bukan jenis).
         if ai_kat_l == "subscription" and is_work_software_expense(combined):
             parsed["kategori"] = "Bisnis & Karir"
@@ -1395,6 +1447,8 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "bayar sewa kos 1.5jt" → Pengeluaran / Tempat Tinggal / Need
 - "obat demam 45rb" → Pengeluaran / Kesehatan & Kebersihan Diri / Need
 - "pulsa 50rb" → Pengeluaran / Komunikasi / Need
+- "admin bank 10 rb" → Pengeluaran / Komunikasi / Need (biaya admin/transfer; BUKAN Lain-lain)
+- "biaya transfer BCA 6.500" → Pengeluaran / Komunikasi / Need
 - "cicilan motor 900rb" → Pengeluaran / Cicilan & Hutang / Need
 - "beli headset 350rb" → Pengeluaran / Lifestyle & Hiburan / Wants
 - "kopi susu 28rb" → Pengeluaran / Makanan & Minuman / Wants
