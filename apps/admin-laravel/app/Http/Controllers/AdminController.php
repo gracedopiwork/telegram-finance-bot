@@ -6,6 +6,7 @@ use App\Models\CpAdvisor;
 use App\Models\CpArticle;
 use App\Models\CpFaq;
 use App\Models\CpPackage;
+use App\Models\CpPartner;
 use App\Models\CpService;
 use App\Models\License;
 use App\Models\Order;
@@ -36,6 +37,7 @@ class AdminController extends Controller
                 'services' => CpService::count(),
                 'advisors' => CpAdvisor::count(),
                 'faqs'     => CpFaq::count(),
+                'partners' => CpPartner::count(),
                 'articles' => CpArticle::count(),
             ],
             'aiHealth' => app(AiHealthService::class)->summary(),

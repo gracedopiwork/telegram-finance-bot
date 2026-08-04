@@ -61,10 +61,28 @@ class CompanyProfileSeeder extends Seeder
             ['key' => 'stats.s4.value',      'value' => '8-9%',                                                   'type' => 'text',     'group' => 'stats',   'label' => 'Stat 4 — Angka',       'sort' => 7],
             ['key' => 'stats.s4.label',      'value' => 'Di bawah garis kemiskinan',                              'type' => 'text',     'group' => 'stats',   'label' => 'Stat 4 — Label',       'sort' => 8],
 
+            // ===== Homepage copy (editable di Site Settings → Homepage) =====
+            ['key' => 'home.bg_eyebrow', 'value' => 'LATAR BELAKANG', 'type' => 'text', 'group' => 'home', 'label' => 'Home — Latar Belakang (label)', 'sort' => 1],
+            ['key' => 'home.bg_title', 'value' => 'Indonesia bukan negara termiskin, tapi sebagian besar belum sehat secara finansial.', 'type' => 'textarea', 'group' => 'home', 'label' => 'Home — Latar Belakang (judul)', 'sort' => 2],
+            ['key' => 'home.bg_p1', 'value' => 'Berdasarkan data BPS 2025, 82,2% masyarakat Indonesia merupakan kelompok ekonomi menengah ke bawah. Sedikit guncangan ekonomi saja sudah berdampak luas. Akar masalahnya bukan hanya karena rendahnya literasi keuangan/pengetahuan tapi juga kurangnya regulasi diri/self awareness dalam mengambil keputusan finansial yang sehat.', 'type' => 'textarea', 'group' => 'home', 'label' => 'Home — Latar Belakang (paragraf 1)', 'sort' => 3],
+            ['key' => 'home.bg_p2', 'value' => 'YFD lahir untuk menjadi "dokter dompet" — membantu masyarakat memahami kondisi finansial mereka secara objektif, dan meningkatkan kekebalan komunitas (Herd Financial Immunity).', 'type' => 'textarea', 'group' => 'home', 'label' => 'Home — Latar Belakang (paragraf 2)', 'sort' => 4],
+            ['key' => 'home.bg_cta', 'value' => 'Pelajari filosofi YFD', 'type' => 'text', 'group' => 'home', 'label' => 'Home — Link ke Tentang', 'sort' => 5],
+            ['key' => 'home.services_eyebrow', 'value' => 'EKOSISTEM YFD', 'type' => 'text', 'group' => 'home', 'label' => 'Home — Section layanan (label)', 'sort' => 10],
+            ['key' => 'home.services_title', 'value' => 'Tujuh Layanan Kesehatan Finansial', 'type' => 'text', 'group' => 'home', 'label' => 'Home — Section layanan (judul)', 'sort' => 11],
+            ['key' => 'home.services_subtitle', 'value' => 'Mengintegrasikan edukasi, proteksi, pendampingan, dan solusi finansial dalam satu ekosistem.', 'type' => 'textarea', 'group' => 'home', 'label' => 'Home — Section layanan (deskripsi)', 'sort' => 12],
+            ['key' => 'home.services_cta', 'value' => 'Lihat semua layanan', 'type' => 'text', 'group' => 'home', 'label' => 'Home — Tombol layanan', 'sort' => 13],
+            ['key' => 'home.trust_1', 'value' => 'Dokter umum bersertifikat QWP', 'type' => 'text', 'group' => 'home', 'label' => 'Home — Trust badge 1', 'sort' => 20],
+            ['key' => 'home.trust_2', 'value' => 'Pendekatan medis untuk finansial', 'type' => 'text', 'group' => 'home', 'label' => 'Home — Trust badge 2', 'sort' => 21],
+            ['key' => 'home.trust_3', 'value' => 'Building Financially Healthy Generations', 'type' => 'text', 'group' => 'home', 'label' => 'Home — Trust badge 3', 'sort' => 22],
+            ['key' => 'wealthpedia.cat_title', 'value' => 'Kategori Edukasi', 'type' => 'text', 'group' => 'home', 'label' => 'Wealthpedia — Judul kategori', 'sort' => 40],
+            ['key' => 'wealthpedia.cat_subtitle', 'value' => 'Temukan artikel berdasarkan bidang pembahasan. Setiap kategori dirancang untuk membantu Anda membangun kesehatan finansial secara menyeluruh, mulai dari pola pikir, perilaku, hingga strategi keuangan.', 'type' => 'textarea', 'group' => 'home', 'label' => 'Wealthpedia — Subjudul kategori', 'sort' => 41],
+            ['key' => 'wealthpedia.cat_bf_desc', 'value' => 'Memahami bagaimana emosi, kebiasaan, bias kognitif, dan proses pengambilan keputusan memengaruhi cara kita menggunakan uang dalam kehidupan sehari-hari.', 'type' => 'textarea', 'group' => 'home', 'label' => 'Wealthpedia — Deskripsi Behavioural Finance', 'sort' => 42],
+            ['key' => 'wealthpedia.cat_fh_desc', 'value' => 'Pelajari prinsip-prinsip membangun kondisi finansial yang sehat, stabil, dan berkelanjutan.', 'type' => 'textarea', 'group' => 'home', 'label' => 'Wealthpedia — Deskripsi Financial Health', 'sort' => 43],
+
             // ===== About / Tentang =====
             ['key' => 'about.bg_p1',         'value' => 'Indonesia adalah negara dengan penduduk terbesar ke-4 di dunia dan masyarakat usia produktif terbanyak di Asia Tenggara (68,75% dari total populasi). Bonus demografi ini berpotensi besar — jika dikelola dengan baik.', 'type' => 'textarea', 'group' => 'about', 'label' => 'Latar Belakang — Paragraf 1', 'sort' => 1],
             ['key' => 'about.bg_p2',         'value' => 'Sayangnya berdasarkan data BPS 2025, mayoritas masyarakat Indonesia (82,2%) merupakan kelompok ekonomi menengah ke bawah, dengan 8–9% berada di bawah garis kemiskinan nasional. Indonesia bukan negara paling miskin — namun sebagian besar belum sehat secara finansial.', 'type' => 'textarea', 'group' => 'about', 'label' => 'Latar Belakang — Paragraf 2', 'sort' => 2],
-            ['key' => 'about.bg_p3',         'value' => 'Pendidikan finansial adalah kunci naik kelas dan keluar dari kemiskinan. Sebanyak 49% masyarakat menengah-bawah sedang menuju kelas menengah dan menjadi tulang punggung Indonesia. Masalahnya bukan kemalasan — tapi rendahnya literasi keuangan.', 'type' => 'textarea', 'group' => 'about', 'label' => 'Latar Belakang — Paragraf 3', 'sort' => 3],
+            ['key' => 'about.bg_p3',         'value' => 'Pendidikan finansial adalah kunci naik kelas dan keluar dari kemiskinan. Sebanyak 49% masyarakat menengah-bawah sedang menuju kelas menengah dan menjadi tulang punggung Indonesia. Akar masalahnya bukan hanya karena rendahnya literasi keuangan/pengetahuan tapi juga kurangnya regulasi diri/self awareness dalam mengambil keputusan finansial yang sehat.', 'type' => 'textarea', 'group' => 'about', 'label' => 'Latar Belakang — Paragraf 3', 'sort' => 3],
 
             // ===== Vision & Mission =====
             ['key' => 'vision.text',         'value' => 'Menjadi pelopor dan penggerak pusat kesehatan finansial pertama di Indonesia yang berfokus pada pelayanan perencanaan keuangan yang sehat, sadar, dan terarah melalui pendekatan komunal dan personal — untuk meningkatkan level keuangan setidaknya satu tingkat lebih maju, dan menurunkan persentase masyarakat rentan di bawah garis kemiskinan di tahun 2035.', 'type' => 'textarea', 'group' => 'vision', 'label' => 'Visi YFD',  'sort' => 1],
@@ -339,6 +357,28 @@ class CompanyProfileSeeder extends Seeder
             ],
             [
                 'section' => 'main',
+                'eyebrow' => 'Premarital',
+                'title' => 'Premarital Financial Health Check Up',
+                'description' => 'Kesehatan finansial pasangan adalah pondasi rumah tangga — diperiksa sebelum menikah, bukan disesali sesudahnya.',
+                'icon' => 'diversity_1',
+                'features' => [
+                    'label' => 'Cakupan',
+                    'items' => [
+                        'Analisis kondisi finansial masing-masing individu (male & female terpisah)',
+                        'Diskusi keselarasan tujuan & nilai finansial pasangan',
+                        'Identifikasi red flags finansial sebelum menikah (utang tersembunyi, gaya hidup, kewajiban finansial keluarga)',
+                        'Financial Medical Report (FMR) untuk pasangan',
+                        'Rencana finansial bersama pasca-menikah',
+                        'Sesi follow-up evaluasi kesepakatan',
+                    ],
+                    'footnote' => "Sesi 1-on-1 (male & female): tarif mengikuti tahap finansial masing-masing — lihat tabel tarif konsultasi individu.\nSesi couple (setelah kedua sesi individu selesai): Rp 500.000 (termasuk 1× follow-up).\nKedua sesi individu wajib dengan dokter yang sama.",
+                ],
+                'cta_label' => 'Lihat Premarital Plan',
+                'cta_route' => 'company.bundle.premarital',
+                'sort' => 4,
+            ],
+            [
+                'section' => 'main',
                 'eyebrow' => 'Education',
                 'title' => 'Financial Education Platform',
                 'description' => 'Pusat edukasi kesehatan finansial yang menyediakan artikel, jurnal, webinar, dan materi pembelajaran untuk membantu Anda membuat keputusan finansial yang lebih baik.',
@@ -357,7 +397,7 @@ class CompanyProfileSeeder extends Seeder
                 ],
                 'cta_label' => 'Lihat Platform Edukasi',
                 'cta_route' => 'company.bundle.education',
-                'sort' => 4,
+                'sort' => 5,
             ],
             [
                 'section' => 'main',
@@ -379,7 +419,7 @@ class CompanyProfileSeeder extends Seeder
                 ],
                 'cta_label' => 'Lihat Program Recovery',
                 'cta_route' => 'company.bundle.recovery',
-                'sort' => 5,
+                'sort' => 6,
             ],
             [
                 'section' => 'main',
@@ -400,21 +440,21 @@ class CompanyProfileSeeder extends Seeder
                 ],
                 'cta_label' => 'Hubungi Tim YFD',
                 'cta_route' => 'company.informasi',
-                'sort' => 6,
+                'sort' => 7,
             ],
         ];
 
         foreach ($services as $s) {
-            CpService::updateOrCreate(['sort' => $s['sort']], $s);
+            CpService::updateOrCreate(['title' => $s['title']], $s);
         }
 
-        $activeSorts = collect($services)->pluck('sort')->all();
-        CpService::whereNotIn('sort', $activeSorts)->update(['is_active' => false]);
+        $activeTitles = collect($services)->pluck('title')->all();
+        CpService::whereNotIn('title', $activeTitles)->update(['is_active' => false]);
 
         CpService::whereIn('title', [
             'Digital Financial Monitoring',
             'Financial Health Check Up',
-        ])->whereNotIn('sort', $activeSorts)->update(['is_active' => false]);
+        ])->update(['is_active' => false]);
     }
 
     private function seedFaqs(): void

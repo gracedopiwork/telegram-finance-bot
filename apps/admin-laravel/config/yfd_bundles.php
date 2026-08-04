@@ -7,7 +7,7 @@ return [
     'recovery' => [
         'slug' => 'recovery',
         'active' => 'recovery',
-        'number' => '05',
+        'number' => '06',
         'eyebrow' => 'Recovery',
         'title' => 'Financial Recovery Program',
         'icon' => 'healing',
@@ -33,7 +33,7 @@ return [
     'education' => [
         'slug' => 'education',
         'active' => 'edukasi',
-        'number' => '04',
+        'number' => '05',
         'eyebrow' => 'Education',
         'title' => 'Financial Education Platform',
         'icon' => 'school',
@@ -58,5 +58,44 @@ return [
         'footnote' => 'Paket webinar, kelas, dan e-book akan dijual terpisah. Untuk info jadwal & harga terbaru, hubungi tim YFD.',
         'cta_primary' => ['label' => 'Kunjungi Wealthpedia', 'route' => 'company.wealthpedia'],
         'cta_secondary' => ['label' => 'Tanya Paket Edukasi', 'type' => 'wa', 'wa_topic' => 'Financial Education Platform'],
+    ],
+
+    'premarital' => [
+        'slug' => 'premarital',
+        'active' => 'premarital',
+        'number' => '04',
+        'eyebrow' => 'Premarital',
+        'title' => 'Premarital Financial Health Check Up',
+        'icon' => 'diversity_1',
+        'description' => 'Kesehatan finansial pasangan adalah pondasi rumah tangga — diperiksa sebelum menikah, bukan disesali sesudahnya. Check-up pasangan mencakup sesi individu (male & female) lalu sesi couple + follow-up dengan dokter yang sama.',
+        'features_label' => 'Cakupan',
+        'features' => [
+            'Analisis kondisi finansial masing-masing individu (male & female terpisah)',
+            'Diskusi keselarasan tujuan & nilai finansial pasangan',
+            'Identifikasi red flags finansial sebelum menikah (utang tersembunyi, gaya hidup, kewajiban finansial keluarga)',
+            'Financial Medical Report (FMR) untuk pasangan',
+            'Rencana finansial bersama pasca-menikah',
+            'Sesi follow-up evaluasi kesepakatan',
+        ],
+        'pricing' => [
+            [
+                'label' => 'Sesi 1-on-1 male',
+                'amount' => null,
+                'note' => 'Tarif mengikuti tahap finansial individu — lihat tabel konsultasi',
+            ],
+            [
+                'label' => 'Sesi 1-on-1 female',
+                'amount' => null,
+                'note' => 'Tarif mengikuti tahap finansial individu — lihat tabel konsultasi',
+            ],
+            [
+                'label' => 'Sesi couple + 1× follow-up',
+                'amount' => 500_000,
+                'note' => 'Dijadwalkan setelah kedua sesi individu selesai · dokter yang sama',
+            ],
+        ],
+        'footnote' => 'Kedua sesi individu wajib dengan dokter yang sama, agar sesi couple punya konteks penuh dari kedua individu. Form booking couple plan lengkap (pilih dokter di level atas + slot male/female) menyusul; untuk saat ini hubungi tim YFD via WA.',
+        'cta_primary' => ['label' => 'Tanya Premarital via WA', 'type' => 'wa', 'wa_topic' => 'Premarital Financial Health Check Up'],
+        'cta_secondary' => ['label' => 'Lihat Tarif Konsultasi Individu', 'route' => 'company.paket'],
     ],
 ];

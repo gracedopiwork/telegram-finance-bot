@@ -336,9 +336,19 @@ return [
             'icon' => 'fas fa-fw fa-user-md',
         ],
         [
+            'text' => 'Jadwal Konsultasi',
+            'route' => 'admin.consultation-slots.index',
+            'icon' => 'fas fa-fw fa-calendar-check',
+        ],
+        [
             'text' => 'FAQ',
             'route' => 'admin.faqs.index',
             'icon' => 'fas fa-fw fa-question-circle',
+        ],
+        [
+            'text' => 'Partnership',
+            'route' => 'admin.partners.index',
+            'icon' => 'fas fa-fw fa-handshake',
         ],
         [
             'text' => 'Wealthpedia',

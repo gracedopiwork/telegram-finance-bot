@@ -33,32 +33,38 @@
 
     {{-- ============== Kategori dari artikel aktif ============== --}}
     <section class="mb-20">
-        <div class="flex items-end justify-between mb-8">
-            <div>
-                <h2 class="font-headline-lg text-headline-lg text-primary mb-2">Kategori Edukasi</h2>
-                <p class="font-body-md text-body-md text-on-surface-variant">Kategori mengikuti field kategori saat upload artikel di admin.</p>
+        <div class="flex items-end justify-between mb-8 gap-4">
+            <div class="max-w-3xl">
+                <h2 class="font-headline-lg text-headline-lg text-primary mb-2">{{ $homeCopy['wealthpedia.cat_title'] ?? 'Kategori Edukasi' }}</h2>
+                <p class="font-body-md text-body-md text-on-surface-variant">
+                    {{ $homeCopy['wealthpedia.cat_subtitle'] ?? 'Temukan artikel berdasarkan bidang pembahasan. Setiap kategori dirancang untuk membantu Anda membangun kesehatan finansial secara menyeluruh, mulai dari pola pikir, perilaku, hingga strategi keuangan.' }}
+                </p>
             </div>
             @if(!empty($activeCategory))
-                <a href="{{ route('company.wealthpedia') }}" class="font-label-md text-label-md text-primary-container hover:underline">Lihat semua</a>
+                <a href="{{ route('company.wealthpedia') }}" class="shrink-0 font-label-md text-label-md text-primary-container hover:underline">Lihat semua</a>
             @endif
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
             @forelse(($categories ?? []) as $cat)
+                @php $accent = $cat['color'] ?? '#0d2b4e'; @endphp
                 <a href="{{ route('company.wealthpedia', ['category' => $cat['name']]) }}"
-                   class="group bg-surface-container-lowest border rounded-xl p-6 transition-colors {{ ($activeCategory ?? '') === $cat['name'] ? 'border-primary-container ring-1 ring-primary-container' : 'border-outline-variant hover:border-primary-container' }}">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="w-12 h-12 bg-primary-container/10 rounded-lg flex items-center justify-center">
-                            <span class="material-symbols-outlined text-primary-container">{{ $cat['ic'] }}</span>
+                   class="group bg-surface-container-lowest border rounded-xl p-6 transition-all hover:-translate-y-0.5 {{ ($activeCategory ?? '') === $cat['name'] ? 'ring-2' : 'border-outline-variant' }}"
+                   style="{{ ($activeCategory ?? '') === $cat['name'] ? 'border-color: '.$accent.'; box-shadow: 0 0 0 1px '.$accent.';' : '' }}">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="inline-flex items-center gap-2.5 rounded-full pl-2.5 pr-4 py-1.5"
+                             style="background: {{ $accent }};">
+                            <span class="material-symbols-outlined text-black text-[22px]">{{ $cat['ic'] }}</span>
+                            <span class="font-label-md text-[12px] font-extrabold tracking-wide uppercase text-black">{{ $cat['title'] }}</span>
                         </div>
                         <span class="font-caption text-caption text-on-surface-variant">{{ $cat['count'] }} artikel</span>
                     </div>
-                    <h3 class="font-headline-md text-[18px] font-bold text-primary mb-2 group-hover:text-primary-container transition-colors">{{ $cat['title'] }}</h3>
-                    <p class="font-body-md text-body-md text-on-surface-variant">{{ $cat['desc'] }}</p>
+                    <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">{{ $cat['desc'] }}</p>
                 </a>
             @empty
                 <div class="md:col-span-3 text-center py-8 text-on-surface-variant italic">
-                    Belum ada kategori. Isi field <strong>Kategori</strong> saat upload artikel di admin.
+                    Belum ada kategori. Isi field <strong>Kategori</strong> saat upload artikel di admin
+                    (contoh: <code>Behavioural Finance</code>, <code>Financial Health</code>).
                 </div>
             @endforelse
         </div>

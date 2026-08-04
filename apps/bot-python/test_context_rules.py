@@ -120,6 +120,27 @@ class ContextRulesTests(unittest.TestCase):
             "Transportasi",
         )
 
+    def test_grab_ke_gym_sifat_wants(self) -> None:
+        out = classify_from_text("Grab dari kos ke gym Imam Bonjol 21000")
+        assert out is not None
+        self.assertEqual(out["kategori"], "Transportasi")
+        self.assertEqual(out["sifat"], "Wants")
+
+    def test_apply_ai_lifestyle_grab_gym_to_transport(self) -> None:
+        """AI sering salah ke Lifestyle karena kata gym — paksa Transportasi."""
+        parsed = {
+            "keterangan": "Grab dari kos ke gym Imam Bonjol",
+            "jenis": "Pengeluaran",
+            "kategori": "Lifestyle & Hiburan",
+            "sifat": "Wants",
+        }
+        out = apply_context_rules(
+            parsed,
+            "Grab dari kos ke gym Imam Bonjol 21000",
+        )
+        self.assertEqual(out["kategori"], "Transportasi")
+        self.assertEqual(out["sifat"], "Wants")
+
     def test_grabbike_ke_gym_tetap_transport(self) -> None:
         self.assertClass(
             "Tgl 22/07/2026 Transportasi grabbike dari cafe linier ke gym Rp 21.700",
@@ -139,7 +160,7 @@ class ContextRulesTests(unittest.TestCase):
             "Tgl 22/07/2026 Ojek dari cafe linier ke will fitness imbo Rp 21.700",
         )
         self.assertEqual(out["kategori"], "Transportasi")
-        self.assertEqual(out["sifat"], "Need")
+        self.assertEqual(out["sifat"], "Wants")
 
     def test_kos(self) -> None:
         self.assertClass("bayar sewa kos 1500000", "Pengeluaran", "Tempat Tinggal")
@@ -214,6 +235,35 @@ class ContextRulesTests(unittest.TestCase):
             "Pengeluaran",
             "Bisnis & Karir",
         )
+
+    def test_makan_meeting_kerjaan_future_building(self) -> None:
+        """Ekspektasi klien: makan + meeting kerja → Bisnis & Karir."""
+        self.assertClass(
+            "makan malem sekalian meeting kerjaan 29/07 213.675",
+            "Pengeluaran",
+            "Bisnis & Karir",
+        )
+
+    def test_makan_meeting_untuk_kerja_future_building(self) -> None:
+        self.assertClass(
+            "makan malem sambil meeting untuk kerja 29/07 213.675",
+            "Pengeluaran",
+            "Bisnis & Karir",
+        )
+
+    def test_apply_rules_meeting_kerja_makan_to_bisnis(self) -> None:
+        parsed = {
+            "keterangan": "makan malem sekalian meeting kerjaan",
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Need",
+        }
+        out = apply_context_rules(
+            parsed,
+            "makan malem sekalian meeting kerjaan 29/07 213.675",
+        )
+        self.assertEqual(out["kategori"], "Bisnis & Karir")
+        self.assertEqual(out["sifat"], "Need")
 
     def test_apply_rules_meeting_bisnis_jajan_to_bisnis(self) -> None:
         parsed = {

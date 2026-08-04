@@ -14,7 +14,7 @@
     <div class="relative z-10 px-margin-desktop max-w-container-max mx-auto w-full text-white">
         <div class="max-w-2xl">
             <span class="inline-block px-3 py-1 bg-secondary-container text-on-secondary-container font-label-md text-label-md rounded-full mb-6">EKOSISTEM LAYANAN YFD</span>
-            <h1 class="font-display-lg text-display-lg mb-6 leading-tight">Enam Pilar Layanan Kesehatan Finansial</h1>
+            <h1 class="font-display-lg text-display-lg mb-6 leading-tight">Tujuh Pilar Layanan Kesehatan Finansial</h1>
             <p class="font-body-lg text-body-lg text-on-primary-container opacity-90 mb-8">
                 Mengintegrasikan edukasi, proteksi, pendampingan, dan solusi finansial dalam satu ekosistem
                 untuk membangun <em>Herd Financial Immunity</em>.
@@ -175,18 +175,14 @@
             </p>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            @foreach([
-                ['icon' => 'health_and_safety', 'label' => 'Insurance partner'],
-                ['icon' => 'trending_up', 'label' => 'Manager Investasi'],
-                ['icon' => 'receipt_long', 'label' => 'Tax analyst'],
-                ['icon' => 'favorite', 'label' => 'Wedding organizer'],
-                ['icon' => 'home_work', 'label' => 'Property agency'],
-            ] as $partner)
+            @forelse($partners ?? [] as $partner)
                 <div class="flex items-center gap-3 rounded-xl border border-outline-variant bg-white px-5 py-4">
-                    <span class="material-symbols-outlined text-secondary-container">{{ $partner['icon'] }}</span>
-                    <span class="font-body-md text-body-md text-on-surface">{{ $partner['label'] }}</span>
+                    <span class="material-symbols-outlined text-secondary-container">{{ $partner->icon }}</span>
+                    <span class="font-body-md text-body-md text-on-surface">{{ $partner->title }}</span>
                 </div>
-            @endforeach
+            @empty
+                <p class="font-body-md text-on-surface-variant col-span-full">Daftar mitra sedang diperbarui.</p>
+            @endforelse
         </div>
     </div>
 </section>

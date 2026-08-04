@@ -11,6 +11,14 @@
         .custom-shadow {
             box-shadow: 0 4px 6px -1px rgba(13, 43, 78, 0.08), 0 2px 4px -1px rgba(13, 43, 78, 0.08);
         }
+        .slot-chip {
+            min-width: 5.5rem;
+        }
+        .slot-chip input:checked + span {
+            background: #0d2b4e;
+            color: #fff;
+            border-color: #0d2b4e;
+        }
     </style>
 @endpush
 
@@ -20,11 +28,11 @@
     use App\Support\ConsultationPricing;
     $serviceLabel = $isRecovery ? 'Financial Recovery Program' : 'Financial Consultation';
     $recoveryFrom = ConsultationPricing::formatRupiah($consultationMeta['recovery_from'] ?? 150_000);
+    $hasSlots = ($openSlots ?? collect())->isNotEmpty();
 @endphp
 
 <main class="max-w-container-max mx-auto px-margin-desktop py-12">
 
-    {{-- ============== Hero / Stepper ============== --}}
     <div class="mb-12 text-center">
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary-container/30 text-on-secondary-container font-label-md text-label-md mb-4">
             <span class="material-symbols-outlined text-[18px]">event_available</span>
@@ -35,11 +43,12 @@
         </h1>
         <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
             @if($isRecovery)
-                Pendampingan intensif untuk kondisi finansial darurat — trauma finansial, krisis hutang, burnout, atau adiksi perilaku finansial.
-                Konsultasi awal Recovery mulai <strong>{{ $recoveryFrom }}</strong>/sesi via <strong>WhatsApp</strong>.
+                Pendampingan intensif untuk kondisi finansial darurat.
+                Pilih jadwal available, lanjut WhatsApp — admin verifikasi pembayaran untuk mengunci slot.
             @else
-                Konsultasi 1-on-1 dengan tim dokter YFD dilakukan secara <strong>online via WhatsApp</strong>.
-                Belum tahu tahap finansial Anda? <a href="{{ $primaryCheckupUrl }}" class="text-primary-container font-semibold underline">Mulai screening gratis</a> dulu.
+                Konsultasi 1-on-1 dengan dokter YFD. Pilih kursi jadwal yang masih available (format bioskop),
+                lalu lanjut WhatsApp. Admin mengunci jadwal setelah pembayaran diverifikasi.
+                Belum screening? <a href="{{ $primaryCheckupUrl }}" class="text-primary-container font-semibold underline">Mulai gratis</a>.
             @endif
         </p>
     </div>
@@ -51,53 +60,95 @@
         </div>
     @endif
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+    @if(session('error'))
+        <div class="mb-6 max-w-3xl mx-auto rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-sm text-red-800">
+            {{ session('error') }}
+        </div>
+    @endif
+    @if($errors->any())
+        <div class="mb-6 max-w-3xl mx-auto rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-sm text-red-800">
+            {{ $errors->first() }}
+        </div>
+    @endif
 
-        {{-- ============== Booking Form ============== --}}
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
         <div class="lg:col-span-8">
             <div class="bg-surface-container-lowest border border-outline-variant p-8 rounded-xl custom-shadow">
                 <div class="mb-8">
                     <h2 class="font-headline-lg text-headline-lg text-primary-container mb-2">Informasi Booking</h2>
                     <p class="font-body-md text-body-md text-on-surface-variant">
-                        Form ini menyiapkan pesan WhatsApp otomatis. Tidak ada data yang disimpan di server kami.
+                        Pilih dokter &amp; slot available. Setelah submit, slot di-hold {{ $holdMinutes ?? 45 }} menit
+                        sampai admin verifikasi pembayaran.
                     </p>
                 </div>
 
-                <form id="bookingForm" class="space-y-6" onsubmit="return goToWhatsApp(event)">
+                @if(!$hasSlots)
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 mb-6">
+                        Belum ada jadwal available saat ini. Silakan
+                        <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="underline font-semibold">hubungi WhatsApp YFD</a>
+                        untuk info jadwal, atau coba lagi nanti.
+                    </div>
+                @endif
 
-                    {{-- Layanan --}}
+                <form id="bookingForm" method="POST" action="{{ route('company.pertemuan.book') }}" class="space-y-6">
+                    @csrf
+                    <input type="hidden" name="service_type" value="{{ $isRecovery ? 'recovery' : 'standard' }}">
+
                     <div>
                         <label class="font-label-md text-label-md text-on-surface-variant block mb-3">Layanan</label>
-                        <input type="hidden" name="service" value="{{ $serviceLabel }}">
                         <div class="border-2 border-primary-container rounded-lg p-4 flex items-center gap-3 bg-primary-container/5">
                             <span class="material-symbols-outlined text-primary-container">{{ $isRecovery ? 'healing' : 'stethoscope' }}</span>
                             <div>
                                 <span class="font-body-md text-body-md text-on-surface font-semibold block">{{ $serviceLabel }}</span>
                                 <span class="font-caption text-caption text-on-surface-variant">
                                     @if($isRecovery)
-                                        Konsultasi awal Recovery via WhatsApp — estimasi {{ $recoveryFrom }}/sesi
+                                        Estimasi mulai {{ $recoveryFrom }}/sesi
                                     @else
-                                        Konsultasi 1-on-1 dengan dokter finansial YFD via WhatsApp
+                                        Konsultasi 1-on-1 via WhatsApp
                                     @endif
                                 </span>
                             </div>
                         </div>
-                        @if($isRecovery)
-                            <p class="font-caption text-caption text-on-surface-variant mt-2">
-                                <a href="{{ route('company.bundle.recovery') }}" class="text-primary-container underline">Pelajari program Recovery</a>
-                                · Screening gratis tetap tersedia di
-                                <a href="{{ $primaryCheckupUrl }}" class="text-primary-container underline">/check-up</a>.
-                            </p>
-                        @else
-                            <p class="font-caption text-caption text-on-surface-variant mt-2">
-                                Screening Health Check-Up <strong>gratis</strong> —
-                                <a href="{{ $primaryCheckupUrl }}" class="text-primary-container underline">mulai di sini</a>.
-                            </p>
-                        @endif
+                    </div>
+
+                    {{-- Dokter --}}
+                    <div class="space-y-2">
+                        <label for="advisorSelect" class="font-label-md text-label-md text-on-surface-variant">Pilih Dokter *</label>
+                        <select id="advisorSelect" class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface" {{ $hasSlots ? 'required' : 'disabled' }}>
+                            <option value="">— pilih dokter —</option>
+                            @foreach($advisors as $adv)
+                                @php $advHas = isset($datesByAdvisor[$adv->id]) && count($datesByAdvisor[$adv->id]) > 0; @endphp
+                                <option value="{{ $adv->id }}"
+                                        data-dates='@json($datesByAdvisor[$adv->id] ?? [])'
+                                        {{ !$advHas ? 'disabled' : '' }}
+                                        {{ (string) old('advisor_id') === (string) $adv->id ? 'selected' : '' }}>
+                                    {{ $adv->name }}{{ $advHas ? '' : ' (belum ada slot)' }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Tanggal --}}
+                    <div class="space-y-2">
+                        <label for="dateSelect" class="font-label-md text-label-md text-on-surface-variant">Tanggal *</label>
+                        <select id="dateSelect" class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface" disabled>
+                            <option value="">— pilih dokter dulu —</option>
+                        </select>
+                    </div>
+
+                    {{-- Slot grid --}}
+                    <div class="space-y-2">
+                        <label class="font-label-md text-label-md text-on-surface-variant">Pilih Jam (kursi available) *</label>
+                        <div id="slotGrid" class="flex flex-wrap gap-2 min-h-[3rem]">
+                            <p class="text-sm text-on-surface-variant">Pilih dokter &amp; tanggal untuk melihat slot.</p>
+                        </div>
+                        <input type="hidden" name="slot_id" id="slotIdInput" value="{{ old('slot_id') }}" {{ $hasSlots ? 'required' : '' }}>
+                        <p class="font-caption text-caption text-on-surface-variant">
+                            Slot yang sudah dipilih orang lain tidak muncul. Setelah Anda submit, slot tertutup untuk orang lain selama {{ $holdMinutes ?? 45 }} menit.
+                        </p>
                     </div>
 
                     @if(!$isRecovery)
-                    {{-- Tahap finansial (estimasi tarif konsultasi) --}}
                     <div>
                         <label class="font-label-md text-label-md text-on-surface-variant block mb-3">Tahap Finansial (hasil screening)</label>
                         <select name="stage" id="stageSelect" class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
@@ -105,7 +156,7 @@
                             @foreach($consultationTiers as $stageKey => $tier)
                                 <option value="{{ $stageKey }}"
                                         data-range="{{ ConsultationPricing::formatRange($tier) }}"
-                                        {{ ($selectedStage ?? '') === $stageKey ? 'selected' : '' }}>
+                                        {{ ($selectedStage ?? '') === $stageKey || old('stage') === $stageKey ? 'selected' : '' }}>
                                     {{ $tier['label'] }} — {{ ConsultationPricing::formatRange($tier) }}{{ $consultationMeta['period'] ?? '/sesi' }}
                                 </option>
                             @endforeach
@@ -119,58 +170,55 @@
                         <label for="bf-situation" class="font-label-md text-label-md text-on-surface-variant">Kondisi / Permasalahan Finansial *</label>
                         <select id="bf-situation" name="situation" required class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
                             <option value="">— pilih kondisi terdekat —</option>
-                            <option>Financial trauma / tekanan finansial kronis</option>
-                            <option>Krisis hutang / pinjol / judol</option>
-                            <option>Compulsive spending / adiksi perilaku finansial</option>
-                            <option>Financial burnout</option>
-                            <option>Krisis finansial keluarga</option>
-                            <option>Lainnya (jelaskan di bawah)</option>
+                            @foreach([
+                                'Financial trauma / tekanan finansial kronis',
+                                'Krisis hutang / pinjol / judol',
+                                'Compulsive spending / adiksi perilaku finansial',
+                                'Financial burnout',
+                                'Krisis finansial keluarga',
+                                'Lainnya (jelaskan di bawah)',
+                            ] as $opt)
+                                <option {{ old('situation') === $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                            @endforeach
                         </select>
                     </div>
                     @endif
 
-                    {{-- Nama --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-2">
                             <label for="bf-name" class="font-label-md text-label-md text-on-surface-variant">Nama Lengkap *</label>
-                            <input id="bf-name" type="text" name="name" required placeholder="John Doe"
+                            <input id="bf-name" type="text" name="name" required value="{{ old('name') }}" placeholder="Nama lengkap"
                                    class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
                         </div>
                         <div class="space-y-2">
-                            <label for="bf-age" class="font-label-md text-label-md text-on-surface-variant">Usia (opsional)</label>
-                            <input id="bf-age" type="number" name="age" min="15" max="99" placeholder="contoh: 28"
+                            <label for="bf-phone" class="font-label-md text-label-md text-on-surface-variant">No. WhatsApp (opsional)</label>
+                            <input id="bf-phone" type="text" name="phone" value="{{ old('phone') }}" placeholder="08…"
                                    class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
                         </div>
                     </div>
 
-                    {{-- Kondisi singkat --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label for="bf-age" class="font-label-md text-label-md text-on-surface-variant">Usia (opsional)</label>
+                            <input id="bf-age" type="number" name="age" min="15" max="99" value="{{ old('age') }}" placeholder="contoh: 28"
+                                   class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
+                        </div>
+                    </div>
+
                     <div class="space-y-2">
                         <label for="bf-cond" class="font-label-md text-label-md text-on-surface-variant">
                             {{ $isRecovery ? 'Ceritakan situasi Anda (opsional)' : 'Tujuan / Keluhan Finansial Singkat' }}
                         </label>
                         <textarea id="bf-cond" name="condition" rows="4"
-                                  placeholder="{{ $isRecovery ? 'Contoh: Hutang pinjol menumpuk, sulit kontrol pengeluaran, butuh pendampingan bertahap...' : 'Contoh: Ingin konsultasi setelah screening, fokus perbaikan cashflow dan utang...' }}"
-                                  class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface"></textarea>
-                    </div>
-
-                    {{-- Preferred time --}}
-                    <div class="space-y-2">
-                        <label for="bf-time" class="font-label-md text-label-md text-on-surface-variant">Preferensi Waktu</label>
-                        <select id="bf-time" name="time" class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
-                            <option value="">— bebas / mengikuti jadwal YFD —</option>
-                            <option>Pagi (08.00 - 11.00)</option>
-                            <option>Siang (11.00 - 14.00)</option>
-                            <option>Sore (14.00 - 17.00)</option>
-                            <option>Malam (17.00 - 20.00)</option>
-                            <option>Weekend (Sabtu/Minggu)</option>
-                        </select>
+                                  placeholder="{{ $isRecovery ? 'Contoh: Hutang pinjol menumpuk…' : 'Contoh: Fokus perbaikan cashflow…' }}"
+                                  class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">{{ old('condition') }}</textarea>
                     </div>
 
                     <div class="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4 border-t border-outline-variant">
-                        <button type="submit"
-                                class="bg-[#25D366] text-white px-10 py-4 rounded-lg font-label-md text-label-md flex items-center justify-center gap-3 hover:opacity-90 transition-opacity shadow-md">
+                        <button type="submit" {{ $hasSlots ? '' : 'disabled' }}
+                                class="bg-[#25D366] text-white px-10 py-4 rounded-lg font-label-md text-label-md flex items-center justify-center gap-3 hover:opacity-90 transition-opacity shadow-md disabled:opacity-50">
                             <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat</span>
-                            Lanjut ke WhatsApp YFD
+                            Hold Slot &amp; Lanjut WhatsApp
                             <span class="material-symbols-outlined">arrow_forward</span>
                         </button>
                     </div>
@@ -182,42 +230,27 @@
             </div>
         </div>
 
-        {{-- ============== Sidebar Info ============== --}}
         <aside class="lg:col-span-4">
             <div class="bg-primary-container text-on-primary p-6 rounded-xl sticky top-28 shadow-xl">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="bg-secondary-container text-on-secondary-container w-12 h-12 rounded-full flex items-center justify-center">
-                        <span class="material-symbols-outlined">support_agent</span>
+                        <span class="material-symbols-outlined">event_seat</span>
                     </div>
                     <div>
-                        <p class="font-label-md text-label-md text-secondary-fixed">Tim YFD</p>
-                        <p class="font-body-md text-body-md font-bold">Online & Siap Bantu</p>
+                        <p class="font-label-md text-label-md text-secondary-fixed">Cara booking</p>
+                        <p class="font-body-md text-body-md font-bold">Seperti kursi bioskop</p>
                     </div>
                 </div>
-                <h2 class="font-headline-md text-headline-md mb-3">Kontak Langsung</h2>
-                <div class="space-y-3 mb-6">
-                    <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="flex items-center gap-3 hover:text-secondary-fixed-dim">
-                        <span class="material-symbols-outlined">phone_in_talk</span>
-                        <span class="font-body-md text-body-md">{{ $yfd['phone'] }}</span>
-                    </a>
-                    <a href="mailto:{{ $yfd['email'] }}" class="flex items-center gap-3 hover:text-secondary-fixed-dim">
-                        <span class="material-symbols-outlined">mail</span>
-                        <span class="font-body-md text-body-md break-all">{{ $yfd['email'] }}</span>
-                    </a>
-                </div>
-
-                <div class="bg-secondary-container/20 border border-secondary-container/40 p-4 rounded-lg flex gap-3 mb-4">
-                    <span class="material-symbols-outlined text-secondary-fixed">info</span>
-                    <p class="font-caption text-caption opacity-90 leading-relaxed">
-                        @if($isRecovery)
-                            Konsultasi awal Recovery {{ $recoveryFrom }}/sesi. Tim YFD akan menjelaskan rencana pendampingan setelah sesi pertama.
-                        @else
-                            Screening gratis di <a href="{{ $primaryCheckupUrl }}" class="underline font-semibold">/check-up</a>.
-                            Tarif konsultasi mengikuti tahap finansial hasil screening.
-                        @endif
-                    </p>
-                </div>
-
+                <ol class="list-decimal list-inside space-y-2 text-sm opacity-90 mb-6">
+                    <li>Pilih dokter &amp; jam available</li>
+                    <li>Submit — slot di-hold {{ $holdMinutes ?? 45 }} menit</li>
+                    <li>Chat WA otomatis terbuka</li>
+                    <li>Admin verifikasi bayar → jadwal terkunci</li>
+                </ol>
+                <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="flex items-center gap-3 hover:text-secondary-fixed-dim mb-4">
+                    <span class="material-symbols-outlined">phone_in_talk</span>
+                    <span class="font-body-md text-body-md">{{ $yfd['phone'] }}</span>
+                </a>
                 @if(!$isRecovery)
                 <a href="{{ $primaryCheckupUrl }}" class="block text-center py-3 rounded-lg bg-secondary-container text-on-secondary-container font-label-md text-label-md hover:brightness-105 transition-all">
                     Belum Screening? Mulai Gratis
@@ -234,9 +267,14 @@
 
 @push('scripts')
 <script>
+(function () {
+    const advisorSelect = document.getElementById('advisorSelect');
+    const dateSelect = document.getElementById('dateSelect');
+    const slotGrid = document.getElementById('slotGrid');
+    const slotIdInput = document.getElementById('slotIdInput');
+    const slotsUrl = @json(route('company.pertemuan.slots'));
     const stageSelect = document.getElementById('stageSelect');
     const stageFeeHint = document.getElementById('stageFeeHint');
-    const isRecovery = {{ $isRecovery ? 'true' : 'false' }};
 
     function updateStageHint() {
         if (!stageSelect || !stageFeeHint) return;
@@ -245,7 +283,7 @@
             stageFeeHint.classList.add('hidden');
             return;
         }
-        stageFeeHint.textContent = 'Estimasi tarif konsultasi: ' + (opt.dataset.range || '-') + '/sesi (bisa berbeda sesuai kompleksitas kasus).';
+        stageFeeHint.textContent = 'Estimasi tarif konsultasi: ' + (opt.dataset.range || '-') + '/sesi.';
         stageFeeHint.classList.remove('hidden');
     }
     if (stageSelect) {
@@ -253,56 +291,90 @@
         updateStageHint();
     }
 
-    function goToWhatsApp(event) {
-        event.preventDefault();
-        const form = document.getElementById('bookingForm');
-        const fd = new FormData(form);
-
-        const service = fd.get('service') || '-';
-        const stage = fd.get('stage') || '';
-        const situation = fd.get('situation') || '';
-        const name = fd.get('name') || '-';
-        const age = fd.get('age') || '';
-        const condition = fd.get('condition') || '';
-        const time = fd.get('time') || '';
-
-        let stageLabel = '';
-        if (stage && stageSelect) {
-            const opt = stageSelect.options[stageSelect.selectedIndex];
-            stageLabel = opt ? opt.textContent.trim() : stage;
-        }
-
-        let lines = [];
-        lines.push(isRecovery
-            ? "Halo Tim YFD, saya ingin booking Financial Recovery Program."
-            : "Halo Tim YFD, saya ingin booking konsultasi finansial.");
-        lines.push("");
-        lines.push("*Nama:* " + name);
-        if (age) lines.push("*Usia:* " + age);
-        lines.push("*Layanan:* " + service);
-        if (situation) lines.push("*Kondisi:* " + situation);
-        if (stageLabel) {
-            lines.push("*Tahap finansial (hasil screening):* " + stageLabel);
-        }
-        if (condition) {
-            lines.push("");
-            lines.push("*Cerita / keluhan:*");
-            lines.push(condition);
-        }
-        if (time) {
-            lines.push("");
-            lines.push("*Preferensi waktu:* " + time);
-        }
-        lines.push("");
-        lines.push(isRecovery
-            ? "Mohon info jadwal konsultasi awal & rencana pendampingan. Terima kasih."
-            : "Mohon info jadwal & estimasi biaya sesi. Terima kasih.");
-
-        const text = encodeURIComponent(lines.join("\n"));
-        const url = "https://wa.me/{{ $yfd['wa_number'] }}?text=" + text;
-        window.open(url, '_blank', 'noopener');
-        return false;
+    function clearSlots(msg) {
+        slotGrid.innerHTML = '<p class="text-sm text-on-surface-variant">' + (msg || 'Tidak ada slot.') + '</p>';
+        slotIdInput.value = '';
     }
+
+    function fillDates() {
+        const opt = advisorSelect.options[advisorSelect.selectedIndex];
+        dateSelect.innerHTML = '';
+        if (!opt || !opt.value) {
+            dateSelect.disabled = true;
+            dateSelect.innerHTML = '<option value="">— pilih dokter dulu —</option>';
+            clearSlots('Pilih dokter & tanggal untuk melihat slot.');
+            return;
+        }
+        let dates = [];
+        try { dates = JSON.parse(opt.dataset.dates || '[]'); } catch (e) { dates = []; }
+        if (!dates.length) {
+            dateSelect.disabled = true;
+            dateSelect.innerHTML = '<option value="">Tidak ada tanggal available</option>';
+            clearSlots('Dokter ini belum punya slot open.');
+            return;
+        }
+        dateSelect.disabled = false;
+        dateSelect.innerHTML = '<option value="">— pilih tanggal —</option>';
+        dates.forEach(function (d) {
+            const o = document.createElement('option');
+            o.value = d;
+            o.textContent = d;
+            dateSelect.appendChild(o);
+        });
+        clearSlots('Pilih tanggal untuk melihat jam available.');
+    }
+
+    function loadSlots() {
+        const advisorId = advisorSelect.value;
+        const date = dateSelect.value;
+        if (!advisorId || !date) {
+            clearSlots('Pilih tanggal untuk melihat jam available.');
+            return;
+        }
+        slotGrid.innerHTML = '<p class="text-sm text-on-surface-variant">Memuat slot…</p>';
+        fetch(slotsUrl + '?advisor_id=' + encodeURIComponent(advisorId) + '&date=' + encodeURIComponent(date), {
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                const slots = data.slots || [];
+                if (!slots.length) {
+                    clearSlots('Tidak ada jam available di tanggal ini.');
+                    return;
+                }
+                slotGrid.innerHTML = '';
+                slots.forEach(function (s) {
+                    const label = document.createElement('label');
+                    label.className = 'slot-chip cursor-pointer';
+                    label.innerHTML =
+                        '<input type="radio" name="_slot_choice" value="' + s.id + '" class="sr-only">' +
+                        '<span class="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-outline-variant text-sm font-semibold bg-white hover:border-primary-container">' +
+                        s.label +
+                        '</span>';
+                    label.querySelector('input').addEventListener('change', function () {
+                        slotIdInput.value = s.id;
+                    });
+                    slotGrid.appendChild(label);
+                });
+            })
+            .catch(function () {
+                clearSlots('Gagal memuat slot. Refresh halaman.');
+            });
+    }
+
+    if (advisorSelect) {
+        advisorSelect.addEventListener('change', fillDates);
+        dateSelect.addEventListener('change', loadSlots);
+        fillDates();
+    }
+
+    document.getElementById('bookingForm').addEventListener('submit', function (e) {
+        if (!slotIdInput.value) {
+            e.preventDefault();
+            alert('Pilih jam available terlebih dahulu.');
+        }
+    });
+})();
 </script>
 @endpush
 

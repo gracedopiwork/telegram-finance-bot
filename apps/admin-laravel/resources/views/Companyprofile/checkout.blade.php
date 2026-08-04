@@ -123,25 +123,46 @@
                 </div>
 
                 <dl class="text-[14px] py-5 space-y-2.5">
+                    @php
+                        $listPrice = (int) $product->price;
+                        $salePrice = (int) $product->effective_price;
+                        $promoOff = max(0, $listPrice - $salePrice);
+                        $refDisc = (($referralEnabled ?? false) && ($referralDiscount ?? 0) > 0)
+                            ? (int) $referralDiscount
+                            : 0;
+                        $totalWithReferral = max(0, $salePrice - $refDisc);
+                    @endphp
                     <div class="flex justify-between"><dt class="text-on-surface-variant">Harga normal</dt>
-                        <dd class="@if($product->on_sale) line-through text-on-surface-variant @else font-semibold @endif">{{ $product->priceLabel($product->price) }}</dd>
+                        <dd class="@if($product->on_sale) line-through text-on-surface-variant @else font-semibold @endif">{{ $product->priceLabel($listPrice) }}</dd>
                     </div>
                     @if($product->on_sale)
                         <div class="flex justify-between text-emerald-700">
-                            <dt>Diskon ({{ $product->discount_percent }}%)</dt>
-                            <dd>− {{ $product->priceLabel($product->price - $product->discount_price) }}</dd>
+                            <dt>Diskon ({{ $product->discountPercentLabel() }}%)</dt>
+                            <dd>− {{ $product->priceLabel($promoOff) }}</dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-on-surface-variant">Harga setelah diskon</dt>
+                            <dd class="font-semibold">{{ $product->priceLabel($salePrice) }}</dd>
                         </div>
                     @endif
-                    @if(($referralEnabled ?? false) && ($referralDiscount ?? 0) > 0)
+                    @if($refDisc > 0)
                         <div class="flex justify-between text-emerald-700">
                             <dt>Potongan referral (jika kode valid)</dt>
-                            <dd>− Rp {{ number_format($referralDiscount, 0, ',', '.') }}</dd>
+                            <dd>− Rp {{ number_format($refDisc, 0, ',', '.') }}</dd>
                         </div>
                     @endif
                 </dl>
-                <div class="border-t border-outline-variant pt-4 flex justify-between items-baseline">
-                    <span class="text-[13px] text-on-surface-variant">Total bayar</span>
-                    <span class="font-display text-[28px] font-extrabold text-primary-container">{{ $product->priceLabel() }}</span>
+                <div class="border-t border-outline-variant pt-4 space-y-2">
+                    <div class="flex justify-between items-baseline">
+                        <span class="text-[13px] text-on-surface-variant">Total bayar</span>
+                        <span class="font-display text-[28px] font-extrabold text-primary-container">{{ $product->priceLabel($salePrice) }}</span>
+                    </div>
+                    @if($refDisc > 0)
+                        <div class="flex justify-between items-baseline text-emerald-800 bg-emerald-50 rounded-xl px-3 py-2">
+                            <span class="text-[12.5px] font-semibold">Total dengan kode referral valid</span>
+                            <span class="font-display text-[22px] font-extrabold">{{ $product->priceLabel($totalWithReferral) }}</span>
+                        </div>
+                    @endif
                 </div>
 
                 <ul class="mt-5 space-y-2 text-[12.5px] text-on-surface-variant">

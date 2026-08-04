@@ -38,7 +38,7 @@ __all__ = [
     "normalize_saving_fields",
 ]
 
-# Closed list selaras docs/YFD_AI_Taxonomy_PALING FINAL_REVISED.pdf
+# Closed list selaras docs/YFD_AI_Taxonomy_REVISI UPDATED TANGGAL 2 AGUSTUS 2026.pdf (v1.3)
 OFFICIAL_EXPENSE_CATEGORIES = (
     "Makanan & Minuman",
     "Tempat Tinggal",
@@ -56,6 +56,7 @@ OFFICIAL_EXPENSE_CATEGORIES = (
     "Cicilan & Hutang",
     "Pakaian & Aksesoris",
     "Lain-lain",
+    "Biaya Legal, Administrasi & Peristiwa Besar",
 )
 
 OFFICIAL_INCOME_CATEGORIES = (
@@ -255,12 +256,12 @@ def build_system_prompt_rules() -> str:
     income_list = ", ".join(income_cats)
 
     return f"""
-Anda adalah parser keuangan pribadi dengan TAXONOMY TERTUTUP (YFD AI Taxonomy v1.0).
+Anda adalah parser keuangan pribadi dengan TAXONOMY TERTUTUP (YFD AI Taxonomy v1.3).
 Ubah input user menjadi JSON VALID dengan schema berikut:
 {{
   "keterangan": string,
   "nominal": integer,
-  "jenis": "Pemasukan" | "Pengeluaran" | "Saving/Investment",
+  "jenis": "Pemasukan" | "Pengeluaran" | "Saving/Investment" | "Kewajiban Pajak",
   "kategori": string,
   "sifat": "Need" | "Wants",
   "mood": "Happy" | "Neutral" | "Sad" | "Stressed" | "Angry" | "Tired",
@@ -286,11 +287,13 @@ Aturan:
    - 1,2jt / 1.2 juta => 1200000.
    - 83800 / 83.800 / 83,800 / 5000 tanpa suffix => nilai apa adanya (BUKAN juta).
    - Huruf k di kata biasa (kemarin, snack, stock) BUKAN penanda ribuan.
-3) jenis: Pemasukan | Pengeluaran | Saving/Investment.
+3) jenis: Pemasukan | Pengeluaran | Saving/Investment | Kewajiban Pajak.
    - UTAMA: lihat KATA KERJA arah uang dulu.
      * Pemasukan: terima, dapat, dapet, uang masuk, cair (hasil).
      * Pengeluaran: bayar, pengeluaran, melunasi, pelunasan, belanja, keluarin.
    - Saving/Investment: beli/nabung saham, reksadana, deposito, emas, crypto, dana darurat.
+   - Kewajiban Pajak: PPh 25 angsuran, PPh 29 kurang bayar, PPh 28A restitusi/lebih bayar, denda pajak SPT — TIDAK masuk 4 bucket.
+   - PBB / STNK / pajak kendaraan = Pengeluaran (bukan Kewajiban Pajak jenis).
    - Hasil investasi (bunga/dividen cair) = Pemasukan, BUKAN Saving/Investment.
    - Donasi/sedekah/zakat = Pengeluaran + kategori Sosial & Keluarga.
 4) sifat: HANYA Need atau Wants.
@@ -312,7 +315,9 @@ Aturan:
    - Hadiah: kado, parcel, tip.
    - Cicilan & Hutang: cicilan, paylater; cicilan produktif/KPR investasi → Future Building.
    - Pakaian & Aksesoris: fashion, baju, sepatu, seragam, tas.
-   - Lain-lain: hanya jika benar-benar tidak cocok (maksimal jarang).
+   - Biaya Legal, Administrasi & Peristiwa Besar: notaris, balik nama, mahar/pernikahan, biaya duka.
+   - Lain-lain: hanya jika benar-benar tidak cocok (target < 2%).
+   - Komunikasi juga: biaya admin/transfer bank.
 6) {examples}
 7) impulsif — terpisah dari sifat Need/Wants:
    "Yes" jika spontan / tidak terencana / fomo / mood negatif + belanja diskresioner

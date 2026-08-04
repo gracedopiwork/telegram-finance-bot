@@ -16,6 +16,10 @@ class CategoryBucketService
      */
     public function resolve(BotTransaction $row): ?string
     {
+        if ($row->type === TransactionTaxonomy::TYPE_TAX) {
+            return null;
+        }
+
         $fromDb = $this->mappingService->resolveBucket($row);
         if ($fromDb !== null) {
             return $this->normalizeBucket($fromDb);
@@ -31,7 +35,7 @@ class CategoryBucketService
         $notes = mb_strtolower((string) $row->notes);
         $combined = "{$notes} {$category}";
 
-        if ($row->type === TransactionTaxonomy::TYPE_INCOME) {
+        if ($row->type === TransactionTaxonomy::TYPE_INCOME || $row->type === TransactionTaxonomy::TYPE_TAX) {
             return null;
         }
 

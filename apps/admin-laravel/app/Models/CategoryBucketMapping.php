@@ -19,6 +19,7 @@ class CategoryBucketMapping extends Model
         'income' => 'Income',
         'expense' => 'Expense',
         'saving' => 'Saving/Investment',
+        'tax' => 'Kewajiban Pajak',
         'transfer' => 'Transfer',
     ];
 

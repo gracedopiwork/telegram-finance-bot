@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-VALID_JENIS = frozenset({"Pemasukan", "Pengeluaran", "Saving/Investment"})
+VALID_JENIS = frozenset({"Pemasukan", "Pengeluaran", "Saving/Investment", "Kewajiban Pajak"})
 VALID_SIFAT = frozenset({"Need", "Wants"})
 
 _EXPLICIT_JENIS_RE = re.compile(
@@ -510,6 +510,32 @@ _BUSINESS_BUILDING = (
     "untuk usaha",
     "modal usaha",
     "kebutuhan bisnis",
+    # Ekspektasi klien: makan/ngopi + meeting kerja → Bisnis & Karir / Future Building
+    "meeting kerja",
+    "meeting kerjaan",
+    "rapat kerja",
+    "meeting klien",
+    "rapat klien",
+    "meeting untuk kerja",
+    "rapat untuk kerja",
+    "ngopi meeting",
+    "kopi meeting",
+    "makan meeting",
+)
+
+_WORK_MEETING_RE = tuple(
+    re.compile(p, re.IGNORECASE)
+    for p in (
+        r"\bmeeting\s+kerja(?:an)?\b",
+        r"\brapat\s+kerja\b",
+        r"\bmeeting\s+klien\b",
+        r"\brapat\s+klien\b",
+        r"\bmeeting\s+untuk\s+kerja\b",
+        r"\brapat\s+untuk\s+kerja\b",
+        # "sambil/sekalian meeting … kerja(an|klien|bisnis)"
+        r"\b(?:sekalian|sambil|saat|lagi|pas)\s+meeting\b.{0,40}\b(?:kerja(?:an)?|klien|bisnis)\b",
+        r"\b(?:kerja(?:an)?|klien|bisnis)\b.{0,40}\b(?:sekalian|sambil|saat|lagi|pas)\s+meeting\b",
+    )
 )
 
 _TIP_PATTERNS = tuple(
@@ -627,14 +653,54 @@ _CICILAN = (
     "kredit mobil",
 )
 
-_PAJAK = (
-    "pajak",
-    "pph",
-    "ppn",
+_PPH_KEWAJIBAN = (
+    "pph 25",
+    "pph25",
+    "pph 29",
+    "pph29",
+    "pph 28a",
+    "pph28a",
+    "angsuran pajak",
+    "cicilan pajak",
+    "kurang bayar pajak",
+    "bayar pajak spt",
+    "restitusi pajak",
+    "lebih bayar pajak",
+    "denda pajak",
+    "sanksi pajak",
+)
+
+_PBB = (
     "pbb",
+    "pajak bumi",
+    "pajak bangunan",
+)
+
+_PAJAK_KENDARAAN = (
     "stnk",
     "pkb",
     "samsat",
+    "pajak kendaraan",
+    "pajak mobil",
+    "pajak motor",
+)
+
+_LEGAL_EVENT = (
+    "notaris",
+    "balik nama",
+    "ajb",
+    "mahar",
+    "pernikahan",
+    "resepsi",
+    "duka",
+    "pemakaman",
+    "tahlilan",
+    "biaya legal",
+)
+
+_PAJAK = (
+    "pajak",
+    "pph",
 )
 
 _ELEKTRONIK_PATTERNS = tuple(
@@ -753,7 +819,11 @@ def is_discretionary_social_giving(text: str) -> bool:
 
 
 def is_business_building_expense(text: str) -> bool:
-    return _contains(text.lower(), _BUSINESS_BUILDING)
+    """Biaya bisnis/konten ATAU konsumsi meeting kerja → Future Building."""
+    lower = text.lower()
+    if _contains(lower, _BUSINESS_BUILDING):
+        return True
+    return _match_any(lower, _WORK_MEETING_RE)
 
 
 def is_transport_ride(text: str) -> bool:
@@ -761,6 +831,43 @@ def is_transport_ride(text: str) -> bool:
     if is_food_delivery(text):
         return False
     return _match_any(text, _TRANSPORT_PATTERNS)
+
+
+_LEISURE_TRANSPORT_DEST = (
+    "ke gym",
+    "ke fitness",
+    "ke cafe",
+    "ke mall",
+    "ke bioskop",
+    "ke konser",
+    "ke yoga",
+    "ke pilates",
+    "ke spa",
+    "nongkrong",
+    "healing",
+    "wisata",
+    "staycation",
+    "ke will fitness",
+    "dari kos ke gym",
+    "dari cafe",
+)
+
+
+def is_leisure_transport_destination(text: str) -> bool:
+    """Tujuan ride yang Flexible + Social / Wants (bukan Essential ke kantor)."""
+    lower = text.lower()
+    if not is_transport_ride(lower):
+        return False
+    if _contains(lower, _LEISURE_TRANSPORT_DEST):
+        return True
+    # "grab … gym/fitness" tanpa kata "ke" eksplisit
+    if _contains(lower, ("gym", "fitness", "pilates", "yoga", "crossfit")):
+        return True
+    return False
+
+
+def transport_ride_sifat(text: str) -> str:
+    return "Wants" if is_leisure_transport_destination(text) else "Need"
 
 
 def is_electronics_expense(text: str) -> bool:
@@ -948,7 +1055,11 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     # Ride Grab/ojek dulu — "grab ke gym" tetap Transportasi (bucket Flexible),
     # bukan Lifestyle. Bayar membership gym tanpa ride → Lifestyle di bawah.
     if _contains(lower, _SERVIS_KENDARAAN) or is_transport_ride(lower):
-        return {"jenis": "Pengeluaran", "kategori": "Transportasi", "sifat": "Need"}
+        return {
+            "jenis": "Pengeluaran",
+            "kategori": "Transportasi",
+            "sifat": transport_ride_sifat(lower),
+        }
     if _contains(lower, _GYM_LIFESTYLE):
         return {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants"}
     if _contains(lower, _SKINCARE):
@@ -980,8 +1091,23 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
     if _contains(lower, _CICILAN):
         return {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "sifat": "Need"}
-    if _contains(lower, _PAJAK):
-        return {"jenis": "Pengeluaran", "kategori": "Lain-lain", "sifat": "Need"}
+    if _contains(lower, _PPH_KEWAJIBAN) or (
+        _contains(lower, _PAJAK)
+        and not _contains(lower, _PBB)
+        and not _contains(lower, _PAJAK_KENDARAAN)
+    ):
+        return {"jenis": "Kewajiban Pajak", "kategori": "Lain-lain", "sifat": "Need"}
+    if _contains(lower, _PBB):
+        return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
+    if _contains(lower, _PAJAK_KENDARAAN):
+        return {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "sifat": "Need"}
+    if _contains(lower, _LEGAL_EVENT):
+        sifat_legal = "Wants" if any(k in lower for k in ("mahar", "pernikahan", "resepsi", "duka", "pemakaman", "tahlilan")) else "Need"
+        return {
+            "jenis": "Pengeluaran",
+            "kategori": "Biaya Legal, Administrasi & Peristiwa Besar",
+            "sifat": sifat_legal,
+        }
     if _contains(lower, _SOCIAL):
         return {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "sifat": "Wants"}
     if has_essential_living_intent(lower):
@@ -1102,12 +1228,12 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
             parsed.pop("sub_kategori", None)
             return parsed
 
-        # Grab/ojek (termasuk ke gym/cafe) → Transportasi. Jangan diganti Lifestyle
-        # hanya karena ada kata gym/fitness di tujuan.
+        # Grab/ojek (termasuk ke gym/cafe) → SELALU Transportasi.
+        # Klien: semua Grab masuk kategori Transport; bucket/sifat ikut tujuan.
         if ai_jenis == "Pengeluaran" and is_transport_ride(combined):
             if not is_food_delivery(combined) and not is_social_giving(combined):
                 parsed["kategori"] = "Transportasi"
-                parsed["sifat"] = "Need"
+                parsed["sifat"] = transport_ride_sifat(combined)
                 parsed.pop("sub_kategori", None)
                 return parsed
 
@@ -1123,11 +1249,13 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
             parsed.pop("sub_kategori", None)
             return parsed
 
-        # Konsumsi meeting bisnis/konten → Bisnis & Karir (bucket Future Building).
+        # Konsumsi meeting kerja/bisnis/konten → Bisnis & Karir (Future Building).
+        # Ekspektasi klien: "makan + meeting kerja" bukan Essential Living.
         if ai_jenis == "Pengeluaran" and is_business_building_expense(combined):
             if ai_kat_l in {
                 "jajan", "makan", "makanan & minuman", "makanan dan minuman",
                 "lainnya", "lain-lain", "lain lain", "belanja",
+                "lifestyle & hiburan", "kopi", "minuman",
             }:
                 parsed["kategori"] = "Bisnis & Karir"
                 parsed["sifat"] = "Need"
@@ -1260,8 +1388,8 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "skincare serum 120rb" → Pengeluaran / Kesehatan & Kebersihan Diri / Wants
 - "makan malam 65.700" → Pengeluaran / Makanan & Minuman / Need
 - "grab ke kantor 28rb" → Pengeluaran / Transportasi / Need
-- "grab dari kos ke gym 21rb" → Pengeluaran / Transportasi / Need (bucket Flexible; BUKAN Lifestyle)
-- "grabbike ke fitness 21rb" → Pengeluaran / Transportasi / Need
+- "grab dari kos ke gym 21rb" → Pengeluaran / Transportasi / Wants (bucket Flexible; BUKAN Lifestyle)
+- "grabbike ke fitness 21rb" → Pengeluaran / Transportasi / Wants (BUKAN Lifestyle)
 - "jajan di grabfood 60k beli kue" → Pengeluaran / Makanan & Minuman / Wants (BUKAN Transportasi)
 - "gofood nasi padang 45rb" → Pengeluaran / Makanan & Minuman / Need (BUKAN Transportasi)
 - "bayar sewa kos 1.5jt" → Pengeluaran / Tempat Tinggal / Need
@@ -1276,6 +1404,8 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "beli tiket konser 450rb" → Pengeluaran / Lifestyle & Hiburan / Wants
 - "bayar olahraga gym bulanan + personal training 455rb" → Pengeluaran / Lifestyle & Hiburan / Wants
 - "konsumsi meeting untuk take konten bisnis YFD 127rb" → Pengeluaran / Bisnis & Karir / Need → Future Building
+- "makan malem sekalian meeting kerjaan 213rb" → Pengeluaran / Bisnis & Karir / Need → Future Building
+- "makan malem sambil meeting untuk kerja 213rb" → Pengeluaran / Bisnis & Karir / Need → Future Building
 - "laundry/cuci baju 52.500" → Pengeluaran / Kesehatan & Kebersihan Diri / Need
 - "beli baju fashion 250rb" → Pengeluaran / Pakaian & Aksesoris / Wants
 """

@@ -125,6 +125,7 @@
             ['route' => 'admin.services.index', 'label' => 'Layanan',   'count' => $stats['services'], 'icon' => 'fa-hand-holding-medical', 'bg' => 'bg-success'],
             ['route' => 'admin.advisors.index', 'label' => 'Tim Dokter','count' => $stats['advisors'], 'icon' => 'fa-user-md',       'bg' => 'bg-danger'],
             ['route' => 'admin.faqs.index',     'label' => 'FAQ',       'count' => $stats['faqs'],     'icon' => 'fa-question-circle','bg' => 'bg-warning'],
+            ['route' => 'admin.partners.index', 'label' => 'Partner',   'count' => $stats['partners'], 'icon' => 'fa-handshake',     'bg' => 'bg-teal'],
             ['route' => 'admin.articles.index', 'label' => 'Artikel',   'count' => $stats['articles'], 'icon' => 'fa-book-open',      'bg' => 'bg-secondary'],
         ];
     @endphp
@@ -158,6 +159,9 @@
                     </div>
                     <div class="col-md-6 mb-2">
                         <a href="{{ route('admin.faqs.create') }}" class="btn btn-outline-primary btn-block"><i class="fas fa-plus mr-1"></i> Tambah FAQ</a>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <a href="{{ route('admin.partners.create') }}" class="btn btn-outline-primary btn-block"><i class="fas fa-handshake mr-1"></i> Tambah Partner</a>
                     </div>
                     <div class="col-md-6 mb-2">
                         <a href="{{ route('admin.articles.create') }}" class="btn btn-outline-primary btn-block"><i class="fas fa-edit mr-1"></i> Tulis Artikel</a>

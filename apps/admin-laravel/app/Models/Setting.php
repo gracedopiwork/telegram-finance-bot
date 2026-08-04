@@ -40,7 +40,7 @@ class Setting extends Model
     {
         Cache::forget('site_settings.all');
         // Bust group caches used by LandingController.
-        foreach (['brand', 'contact', 'hero', 'about', 'stats', 'vision', 'mission', 'values', 'affiliate', 'reviews'] as $g) {
+        foreach (['brand', 'contact', 'hero', 'home', 'about', 'stats', 'vision', 'mission', 'values', 'affiliate', 'reviews', 'bot'] as $g) {
             Cache::forget("settings.group.{$g}");
         }
     }

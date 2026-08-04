@@ -88,7 +88,7 @@ ACTIVATE_HELP_TEXT = (
     "`/activate KODE-LISENSI-ANDA`"
 )
 
-VALID_JENIS = {"Pemasukan", "Pengeluaran", "Saving/Investment"}
+VALID_JENIS = {"Pemasukan", "Pengeluaran", "Saving/Investment", "Kewajiban Pajak"}
 VALID_SIFAT = {"Need", "Wants"}
 VALID_MOOD = {"Happy", "Neutral", "Sad", "Stressed", "Angry", "Tired"}
 VALID_IMPULSIF = {"Yes", "No"}
@@ -201,7 +201,7 @@ def detect_mood_in_text(text: str) -> str | None:
 
 
 def normalize_taxonomy(parsed: Dict[str, Any]) -> Dict[str, Any]:
-    """Selaraskan jenis & sifat dengan taxonomy YFD (Need/Wants + 3 jenis)."""
+    """Selaraskan jenis & sifat dengan taxonomy YFD (Need/Wants + jenis v1.3)."""
     jenis = str(parsed.get("jenis", "Pengeluaran")).strip()
     sifat = str(parsed.get("sifat", "Need")).strip()
     sifat_lower = sifat.lower()
@@ -220,6 +220,8 @@ def normalize_taxonomy(parsed: Dict[str, Any]) -> Dict[str, Any]:
         jenis_lower = jenis.lower()
         if jenis_lower in {"saving/investement", "saving/investment", "saving", "investasi", "investment", "nabung"}:
             parsed["jenis"] = "Saving/Investment"
+        elif jenis_lower in {"kewajiban pajak", "pajak", "tax", "pph", "pph 25", "pph 29", "pph 28a"}:
+            parsed["jenis"] = "Kewajiban Pajak"
         else:
             parsed["jenis"] = "Pengeluaran"
 

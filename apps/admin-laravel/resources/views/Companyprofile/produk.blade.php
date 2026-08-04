@@ -97,7 +97,7 @@
                                 <div class="flex items-baseline gap-3">
                                     <span class="font-display text-[36px] md:text-[44px] font-extrabold text-primary-container leading-none">{{ $featured->priceLabel($featured->discount_price) }}</span>
                                     <span class="text-[18px] text-on-surface-variant line-through">{{ $featured->priceLabel($featured->price) }}</span>
-                                    <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-[11px] font-bold">−{{ $featured->discount_percent }}%</span>
+                                    <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-[11px] font-bold">−{{ $featured->discountPercentLabel() }}%</span>
                                 </div>
                                 <div class="text-[12px] text-on-surface-variant mt-1 font-semibold">{{ $featured->period }}</div>
                             </div>
@@ -379,7 +379,7 @@
                             <div class="flex items-baseline gap-2">
                                 <span class="font-display text-[22px] font-extrabold text-primary-container">{{ $p->priceLabel($p->discount_price) }}</span>
                                 <span class="text-[13px] text-on-surface-variant line-through">{{ $p->priceLabel($p->price) }}</span>
-                                <span class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-[10px] font-bold">−{{ $p->discount_percent }}%</span>
+                                <span class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-[10px] font-bold">−{{ $p->discountPercentLabel() }}%</span>
                             </div>
                         @else
                             <span class="font-display text-[22px] font-extrabold text-primary-container">{{ $p->priceLabel($p->price) }}</span>

@@ -1,10 +1,10 @@
 <?php
 
 /**
- * YFD AI Taxonomy v1.0 FINAL REVISED (Juli 2026) — closed list.
+ * YFD AI Taxonomy v1.3 (Agustus 2026) — closed list.
  * AI hanya boleh memilih dari daftar ini; bucket ditentukan sistem.
  *
- * @see docs/YFD_AI_Taxonomy_PALING FINAL_REVISED.pdf
+ * @see docs/YFD_AI_Taxonomy_REVISI UPDATED TANGGAL 2 AGUSTUS 2026.pdf
  */
 return [
     'expense_categories' => [
@@ -24,6 +24,7 @@ return [
         'Cicilan & Hutang',
         'Pakaian & Aksesoris',
         'Lain-lain',
+        'Biaya Legal, Administrasi & Peristiwa Besar',
     ],
 
     'income_categories' => [
@@ -128,24 +129,41 @@ return [
         'tas' => 'Pakaian & Aksesoris',
         'aksesoris' => 'Pakaian & Aksesoris',
         'seragam' => 'Pakaian & Aksesoris',
-        'pajak' => 'Lain-lain',
+        'komunikasi & administrasi' => 'Komunikasi',
+        'biaya admin' => 'Komunikasi',
+        'biaya transfer' => 'Komunikasi',
+        'pbb' => 'Tempat Tinggal',
+        'pajak bumi' => 'Tempat Tinggal',
+        'pajak bangunan' => 'Tempat Tinggal',
+        'stnk' => 'Cicilan & Hutang',
+        'pkb' => 'Cicilan & Hutang',
+        'samsat' => 'Cicilan & Hutang',
+        'pajak kendaraan' => 'Cicilan & Hutang',
+        'notaris' => 'Biaya Legal, Administrasi & Peristiwa Besar',
+        'balik nama' => 'Biaya Legal, Administrasi & Peristiwa Besar',
+        'ajb' => 'Biaya Legal, Administrasi & Peristiwa Besar',
+        'mahar' => 'Biaya Legal, Administrasi & Peristiwa Besar',
+        'pernikahan' => 'Biaya Legal, Administrasi & Peristiwa Besar',
+        'duka' => 'Biaya Legal, Administrasi & Peristiwa Besar',
+        'pemakaman' => 'Biaya Legal, Administrasi & Peristiwa Besar',
+        'biaya legal' => 'Biaya Legal, Administrasi & Peristiwa Besar',
         'lainnya' => 'Lain-lain',
         'lain-lain' => 'Lain-lain',
         'lain lain' => 'Lain-lain',
     ],
 
     'source_of_truth_note' => [
-        'Taxonomy tertutup (YFD AI Taxonomy FINAL REVISED): AI HANYA memilih dari 16 kategori resmi (+ kategori pemasukan).',
-        'AI tidak boleh membuat kategori baru. Jika ragu → Lain-lain.',
+        'Taxonomy tertutup (YFD AI Taxonomy v1.3): AI HANYA memilih dari 17 kategori resmi (+ kategori pemasukan).',
+        'AI tidak boleh membuat kategori baru. Jika ragu → Lain-lain (< 2% target).',
         'Layer 1 = Kategori (closed list). Layer 2 = Bucket (otomatis dari mapping sistem).',
-        'AI tidak menentukan bucket. Bucket dihitung dari sub-konteks + Need/Wants.',
+        'Jenis transaksi: Pemasukan | Pengeluaran | Saving/Investment | Kewajiban Pajak (PPh 25/29/28A — dikecualikan dari 4 bucket).',
+        'PBB → Tempat Tinggal (bucket ikut fungsi properti). Pajak kendaraan (STNK/PKB) → Cicilan & Hutang.',
+        'Notaris/mahar/duka → Biaya Legal, Administrasi & Peristiwa Besar.',
         'Gym/olahraga berbayar → Lifestyle & Hiburan / Flexible + Social / Wants (bukan Essential).',
         'Laundry/cuci baju → Kesehatan & Kebersihan Diri / Essential Living.',
-        'Skincare premium / make-up → Kesehatan & Kebersihan Diri / Flexible + Social (Wants).',
         'Fashion/baju/sepatu → Pakaian & Aksesoris (bukan Lifestyle).',
-        'Pengembangan diri → Pendidikan / Future Building (Need atau Wants, bucket sama).',
-        'DP rumah/properti → Saving/Investment / Future Building. Cicilan produktif / KPR investasi → Future Building.',
+        'Pengembangan diri → Pendidikan / Future Building. Makan+meeting kerja → Bisnis & Karir / Future Building.',
+        'DP rumah/properti → Saving/Investment / Future Building.',
         'Donasi/sedekah/zakat/hadiah → Sosial & Keluarga atau Hadiah / Flexible + Social.',
-        'Jenis transaksi dan bucket berbeda: biaya bisnis tetap Pengeluaran, bucket Future Building.',
     ],
 ];

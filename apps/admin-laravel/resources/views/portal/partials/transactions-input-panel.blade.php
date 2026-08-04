@@ -33,7 +33,7 @@
     <div class="p-5 sm:p-6">
         <p class="text-sm text-slate-600 mb-4">
             Isi data di Excel/Google Sheets lalu simpan sebagai <strong>CSV UTF-8</strong> (koma atau titik-koma).
-            Kolom: tanggal, <strong>jenis</strong> (Pemasukan / Pengeluaran / Saving/Investment), kategori, nominal,
+            Kolom: tanggal, <strong>jenis</strong> (Pemasukan / Pengeluaran / Saving/Investment / Kewajiban Pajak), kategori, nominal,
             <strong>sifat</strong> (Need / Wants), mood (atau Mood Spending), impulsif, keterangan.
             File Excel: simpan sebagai <strong>CSV UTF-8</strong> (titik-koma atau koma) — ekstensi .csv / .txt / .xls didukung.
             Kategori resmi (closed list): Makanan & Minuman, Transportasi, Tempat Tinggal, Lifestyle & Hiburan, Sosial & Keluarga, Bisnis & Karir, Gaji, dll.
@@ -162,6 +162,7 @@
                                 $typeClass = match($t['type']) {
                                     'Pemasukan' => 'bg-emerald-50 text-emerald-700',
                                     'Saving/Investment' => 'bg-sky-50 text-sky-800',
+                                    'Kewajiban Pajak' => 'bg-amber-50 text-amber-800',
                                     default => 'bg-rose-50 text-rose-700',
                                 };
                             @endphp

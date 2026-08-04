@@ -53,6 +53,48 @@ class CategoryAutoRegisterService
     }
 
     /**
+     * Canonicalize + koreksi dari notes (mis. Grab ke gym → Transportasi, bukan Lifestyle).
+     */
+    public function resolveFromNotes(string $categoryInput, string $type, string $notes = ''): string
+    {
+        $resolved = $this->resolveWithoutRegister($categoryInput, $type);
+        $notesLower = mb_strtolower(trim($notes));
+
+        if ($type === 'Pengeluaran' && $this->notesLookLikeTransportRide($notesLower)) {
+            return 'Transportasi';
+        }
+
+        return $resolved;
+    }
+
+    private function notesLookLikeTransportRide(string $notesLower): bool
+    {
+        if ($notesLower === '') {
+            return false;
+        }
+
+        // Bukan delivery makanan.
+        foreach (['grabfood', 'grab food', 'grabmart', 'gofood', 'go food', 'shopeefood', 'foodpanda'] as $food) {
+            if (str_contains($notesLower, $food)) {
+                return false;
+            }
+        }
+
+        foreach (['grabbike', 'grabcar', 'grab bike', 'grab car', 'gojek', 'go ride', 'maxim', 'ojek'] as $ride) {
+            if (str_contains($notesLower, $ride)) {
+                return true;
+            }
+        }
+
+        // "grab" standalone (bukan grabfood — sudah dicek di atas)
+        if (preg_match('/\bgrab\b/u', $notesLower) === 1) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @param  array<string, mixed>  $rules
      */
     private function resolveExisting(string $value, array $rules): ?string

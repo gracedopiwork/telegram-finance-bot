@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CpAdvisor extends Model
 {
@@ -22,6 +23,11 @@ class CpAdvisor extends Model
     public function scopeActive($q)
     {
         return $q->where('is_active', true);
+    }
+
+    public function consultationSlots(): HasMany
+    {
+        return $this->hasMany(ConsultationSlot::class, 'advisor_id');
     }
 
     public function getPhotoUrlAttribute(): string

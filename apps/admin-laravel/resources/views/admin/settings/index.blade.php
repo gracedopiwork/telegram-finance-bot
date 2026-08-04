@@ -1,7 +1,7 @@
 @extends('admin.layouts.page')
 
 @section('page_heading', 'Site Settings')
-@section('page_subheading', 'Atur konten global yang muncul di seluruh halaman website')
+@section('page_subheading', 'Edit teks website di sini — Homepage, Hero, About, Statistik, dll. Setelah simpan, refresh halaman publik.')
 
 @section('main')
 

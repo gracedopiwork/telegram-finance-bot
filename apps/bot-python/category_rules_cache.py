@@ -17,7 +17,7 @@ _cache: dict[str, Any] | None = None
 _cache_loaded_at: float = 0.0
 _warned_fetch_fail = False
 
-# Fallback statis jika API belum tersedia — YFD AI Taxonomy v1.0 closed list.
+# Fallback statis jika API belum tersedia — YFD AI Taxonomy v1.3 closed list.
 _STATIC_FALLBACK: dict[str, Any] = {
     "version": "static",
     "source": "static",
@@ -38,6 +38,7 @@ _STATIC_FALLBACK: dict[str, Any] = {
         "Cicilan & Hutang",
         "Pakaian & Aksesoris",
         "Lain-lain",
+        "Biaya Legal, Administrasi & Peristiwa Besar",
         "Gaji",
         "Bonus",
         "Freelance",
@@ -57,12 +58,15 @@ _STATIC_FALLBACK: dict[str, Any] = {
     "fallback_sub": "-",
     "natures": ["Need", "Wants"],
     "policy_notes": [
-        "Taxonomy tertutup (YFD AI Taxonomy FINAL REVISED): AI HANYA memilih dari 16 kategori resmi (+ kategori pemasukan).",
+        "Taxonomy tertutup (YFD AI Taxonomy v1.3): AI HANYA memilih dari 17 kategori resmi (+ kategori pemasukan).",
         "AI tidak boleh membuat kategori baru. Jika ragu → Lain-lain.",
         "Layer 1 = Kategori (closed list). Layer 2 = Bucket (otomatis dari mapping sistem).",
+        "Jenis Kewajiban Pajak (PPh 25/29/28A) dikecualikan dari 4 bucket.",
         "Gym/olahraga berbayar → Lifestyle & Hiburan / Flexible + Social / Wants.",
-        "Grab/ojek ke gym/cafe → tetap Transportasi; bucket Flexible + Social (bukan ganti kategori Lifestyle).",
+        "Grab/ojek ke gym/cafe → tetap Transportasi / Wants; bucket Flexible + Social (bukan kategori Lifestyle).",
         "Laundry → Kesehatan & Kebersihan Diri / Essential. Fashion → Pakaian & Aksesoris.",
+        "Makan/ngopi + meeting kerja/klien → Bisnis & Karir / Future Building.",
+        "Notaris/mahar/duka → Biaya Legal, Administrasi & Peristiwa Besar.",
     ],
     "strict_categories_only": True,
     "aliases": {},

@@ -35,6 +35,11 @@ return Application::configure(basePath: dirname(__DIR__))
             ->timezone($tz)
             ->withoutOverlapping()
             ->onOneServer();
+
+        $schedule->command('consultation:release-expired-holds')
+            ->everyFiveMinutes()
+            ->timezone($tz)
+            ->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [

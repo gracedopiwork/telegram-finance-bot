@@ -71,15 +71,15 @@
             <div class="flex flex-wrap items-center gap-x-6 gap-y-3 mt-10 text-[13.5px] text-white/80">
                 <span class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-secondary-fixed-dim text-[18px]" style="font-variation-settings:'FILL' 1;">verified</span>
-                    Dokter umum bersertifikat QWP
+                    {{ $homeCopy['home.trust_1'] ?? 'Dokter umum bersertifikat QWP' }}
                 </span>
                 <span class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-secondary-fixed-dim text-[18px]" style="font-variation-settings:'FILL' 1;">workspace_premium</span>
-                    Pendekatan medis untuk finansial
+                    {{ $homeCopy['home.trust_2'] ?? 'Pendekatan medis untuk finansial' }}
                 </span>
                 <span class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-secondary-fixed-dim text-[18px]" style="font-variation-settings:'FILL' 1;">groups</span>
-                    Building Financially Healthy Generations
+                    {{ $homeCopy['home.trust_3'] ?? 'Building Financially Healthy Generations' }}
                 </span>
             </div>
         </div>
@@ -131,20 +131,20 @@
     </div>
 </section>
 
-{{-- ============== Latar Belakang Section ============== --}}
+{{-- ============== Latar Belakang Section (editable: Site Settings → Homepage) ============== --}}
 <section class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-24">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         <div>
-            <span class="text-label-md text-secondary block mb-4">LATAR BELAKANG</span>
+            <span class="text-label-md text-secondary block mb-4">{{ $homeCopy['home.bg_eyebrow'] ?? 'LATAR BELAKANG' }}</span>
             <h2 class="font-heading text-headline-lg text-primary mb-6">
-                Indonesia bukan negara termiskin, tapi sebagian besar belum sehat secara finansial.
+                {{ $homeCopy['home.bg_title'] ?? 'Indonesia bukan negara termiskin, tapi sebagian besar belum sehat secara finansial.' }}
             </h2>
             <div class="prose-yfd">
-                <p>Berdasarkan data BPS 2025, <strong>82,2%</strong> masyarakat Indonesia merupakan kelompok ekonomi menengah ke bawah. Sedikit guncangan ekonomi saja sudah berdampak luas. Akar masalahnya bukan kemalasan — tapi rendahnya literasi keuangan.</p>
-                <p>YFD lahir untuk menjadi <em>"dokter dompet"</em> — membantu masyarakat memahami kondisi finansial mereka secara objektif, dan meningkatkan kekebalan komunitas (<strong>Herd Financial Immunity</strong>).</p>
+                <p>{!! nl2br(e($homeCopy['home.bg_p1'] ?? 'Berdasarkan data BPS 2025, 82,2% masyarakat Indonesia merupakan kelompok ekonomi menengah ke bawah. Sedikit guncangan ekonomi saja sudah berdampak luas. Akar masalahnya bukan hanya karena rendahnya literasi keuangan/pengetahuan tapi juga kurangnya regulasi diri/self awareness dalam mengambil keputusan finansial yang sehat.')) !!}</p>
+                <p>{!! nl2br(e($homeCopy['home.bg_p2'] ?? 'YFD lahir untuk menjadi "dokter dompet" — membantu masyarakat memahami kondisi finansial mereka secara objektif, dan meningkatkan kekebalan komunitas (Herd Financial Immunity).')) !!}</p>
             </div>
             <a href="{{ route('company.tentang') }}" class="inline-flex items-center gap-2 mt-6 text-primary-container font-semibold text-[14px] hover:underline">
-                Pelajari filosofi YFD <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                {{ $homeCopy['home.bg_cta'] ?? 'Pelajari filosofi YFD' }} <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
             </a>
         </div>
         <div class="grid grid-cols-2 gap-4">
@@ -168,10 +168,10 @@
 <section class="bg-surface-container-low py-20 border-y border-outline-variant">
     <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
         <div class="text-center mb-12 max-w-2xl mx-auto">
-            <span class="text-label-md text-secondary block mb-3">EKOSISTEM YFD</span>
-            <h2 class="font-heading text-headline-lg text-primary mb-3">Enam Layanan Kesehatan Finansial</h2>
+            <span class="text-label-md text-secondary block mb-3">{{ $homeCopy['home.services_eyebrow'] ?? 'EKOSISTEM YFD' }}</span>
+            <h2 class="font-heading text-headline-lg text-primary mb-3">{{ $homeCopy['home.services_title'] ?? 'Tujuh Layanan Kesehatan Finansial' }}</h2>
             <p class="text-body-md text-on-surface-variant">
-                Mengintegrasikan edukasi, proteksi, pendampingan, dan solusi finansial dalam satu ekosistem.
+                {{ $homeCopy['home.services_subtitle'] ?? 'Mengintegrasikan edukasi, proteksi, pendampingan, dan solusi finansial dalam satu ekosistem.' }}
             </p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -189,7 +189,7 @@
         </div>
         <div class="text-center mt-10">
             <a href="{{ route('company.layanan') }}" class="btn btn-outline-primary">
-                Lihat semua layanan
+                {{ $homeCopy['home.services_cta'] ?? 'Lihat semua layanan' }}
                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
             </a>
         </div>

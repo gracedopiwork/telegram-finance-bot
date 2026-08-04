@@ -81,7 +81,25 @@ class CpDigitalProduct extends Model
         if (! $this->on_sale || ! $this->price) {
             return 0;
         }
+
         return (int) round((($this->price - $this->discount_price) / $this->price) * 100);
+    }
+
+    /** Label persen diskon (satu desimal bila perlu, mis. 33,4%). */
+    public function discountPercentLabel(): string
+    {
+        if (! $this->on_sale || ! $this->price) {
+            return '0';
+        }
+
+        $pct = (($this->price - $this->discount_price) / $this->price) * 100;
+        $rounded = round($pct, 1);
+
+        if (abs($rounded - round($rounded)) < 0.05) {
+            return (string) (int) round($rounded);
+        }
+
+        return number_format($rounded, 1, ',', '');
     }
 
     public function orders(): HasMany

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from context_rules import is_discretionary_social_giving
+from context_rules import is_discretionary_social_giving, is_leisure_transport_destination
 
 VALID_SIFAT = frozenset({"Need", "Wants"})
 
@@ -145,8 +145,13 @@ def refine_sifat_from_context(parsed: dict[str, Any], source_text: str = "") -> 
     }
     kategori = str(parsed.get("kategori", ""))
     # Jangan paksa Need untuk Makanan bila framing diskresioner (jajan/snack).
+    # Grab ke gym/cafe tetap Transportasi tapi sifat Wants (ekspektasi klien).
     if kategori in essential_cats:
         if kategori in {"Makan", "Makanan & Minuman", "Minuman"} and has_discretionary_framing(
+            combined
+        ):
+            parsed["sifat"] = "Wants"
+        elif kategori in {"Transport", "Transportasi"} and is_leisure_transport_destination(
             combined
         ):
             parsed["sifat"] = "Wants"

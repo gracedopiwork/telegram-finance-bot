@@ -9,11 +9,13 @@ use App\Http\Controllers\Admin\DiagnosticResultsController;
 use App\Http\Controllers\Admin\DiagnosticStagesController;
 use App\Http\Controllers\Admin\FtsaQuestionsController;
 use App\Http\Controllers\Admin\FtsaResultsController;
+use App\Http\Controllers\Admin\ConsultationSlotsController;
 use App\Http\Controllers\Admin\DigitalProductsController;
 use App\Http\Controllers\Admin\FaqsController;
 use App\Http\Controllers\Admin\AffiliatesController;
 use App\Http\Controllers\Admin\OrdersController;
 use App\Http\Controllers\Admin\PackagesController;
+use App\Http\Controllers\Admin\PartnersController;
 use App\Http\Controllers\Admin\ServicesController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\GoogleBusinessReviewsController;
@@ -44,12 +46,15 @@ Route::get('/tentang',       [LandingController::class, 'tentang'])->name('compa
 Route::get('/layanan',       [LandingController::class, 'layanan'])->name('company.layanan');
 Route::get('/layanan/recovery', [LandingController::class, 'bundle'])->defaults('slug', 'recovery')->name('company.bundle.recovery');
 Route::get('/layanan/edukasi',  [LandingController::class, 'bundle'])->defaults('slug', 'edukasi')->name('company.bundle.education');
+Route::get('/layanan/premarital', [LandingController::class, 'bundle'])->defaults('slug', 'premarital')->name('company.bundle.premarital');
 Route::get('/paket',         [LandingController::class, 'paket'])->name('company.paket');
 Route::get('/penasihat',     [LandingController::class, 'penasihat'])->name('company.penasihat');
 Route::get('/produk',        [LandingController::class, 'produk'])->name('company.produk');
 Route::get('/wealthpedia',   [LandingController::class, 'wealthpedia'])->name('company.wealthpedia');
 Route::get('/wealthpedia/{slug}', [LandingController::class, 'wealthpediaShow'])->name('company.wealthpedia.show');
 Route::get('/pertemuan',     [LandingController::class, 'pertemuan'])->name('company.pertemuan');
+Route::post('/pertemuan/book', [LandingController::class, 'bookPertemuan'])->name('company.pertemuan.book');
+Route::get('/pertemuan/slots', [LandingController::class, 'pertemuanSlots'])->name('company.pertemuan.slots');
 Route::get('/informasi',     [LandingController::class, 'informasi'])->name('company.informasi');
 
 // Alias backward-compat untuk nama route lama 'landing'
@@ -131,8 +136,16 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     // CRUD resources
     Route::resource('packages',         PackagesController::class)->except(['show']);
     Route::resource('advisors',         AdvisorsController::class)->except(['show']);
+    Route::get('consultation-slots', [ConsultationSlotsController::class, 'index'])->name('consultation-slots.index');
+    Route::get('consultation-slots/create', [ConsultationSlotsController::class, 'create'])->name('consultation-slots.create');
+    Route::post('consultation-slots', [ConsultationSlotsController::class, 'store'])->name('consultation-slots.store');
+    Route::post('consultation-slots/{consultation_slot}/confirm', [ConsultationSlotsController::class, 'confirm'])->name('consultation-slots.confirm');
+    Route::post('consultation-slots/{consultation_slot}/release', [ConsultationSlotsController::class, 'release'])->name('consultation-slots.release');
+    Route::post('consultation-slots/{consultation_slot}/cancel', [ConsultationSlotsController::class, 'cancel'])->name('consultation-slots.cancel');
+    Route::delete('consultation-slots/{consultation_slot}', [ConsultationSlotsController::class, 'destroy'])->name('consultation-slots.destroy');
     Route::resource('services',         ServicesController::class)->except(['show']);
     Route::resource('faqs',             FaqsController::class)->except(['show']);
+    Route::resource('partners',         PartnersController::class)->except(['show']);
     Route::resource('articles',         ArticlesController::class)->except(['show']);
     Route::resource('digital-products', DigitalProductsController::class)->except(['show']);
     Route::patch('digital-products/{digital_product}/billing-mode', [DigitalProductsController::class, 'updateBillingMode'])

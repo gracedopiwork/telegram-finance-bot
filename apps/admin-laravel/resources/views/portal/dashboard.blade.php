@@ -108,6 +108,9 @@
         @endif
     </div>
 
+    {{-- Kesehatan Pajak — referral tax planner (taxonomy v1.3 §5B.5) --}}
+    @include('portal.partials.tax-health-panel', ['summary' => $summary, 'fmt' => $fmt])
+
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
         {{-- Budget prescription --}}
         <div class="bg-white rounded-xl border border-slate-200 p-5 min-h-[200px]">

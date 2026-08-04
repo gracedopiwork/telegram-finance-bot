@@ -46,3 +46,17 @@ def test_jajan_brownies_is_wants_not_need():
     }
     refine_sifat_from_context(parsed, text)
     assert parsed["sifat"] == "Wants"
+
+
+def test_grab_ke_gym_stays_wants():
+    text = "Grab dari kos ke gym Imam Bonjol 21000"
+    parsed = {
+        "keterangan": "Grab dari kos ke gym Imam Bonjol",
+        "nominal": 21000,
+        "jenis": "Pengeluaran",
+        "kategori": "Transportasi",
+        "sifat": "Wants",
+        "mood": "Neutral",
+    }
+    refine_sifat_from_context(parsed, text)
+    assert parsed["sifat"] == "Wants"

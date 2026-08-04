@@ -19,6 +19,7 @@ class SettingsController extends Controller
         'brand'    => ['label' => 'Brand', 'icon' => 'fas fa-certificate'],
         'contact'  => ['label' => 'Kontak', 'icon' => 'fas fa-address-book'],
         'hero'     => ['label' => 'Hero (Home)', 'icon' => 'fas fa-bullhorn'],
+        'home'     => ['label' => 'Homepage (teks)', 'icon' => 'fas fa-home'],
         'about'    => ['label' => 'About / Latar Belakang', 'icon' => 'fas fa-history'],
         'stats'    => ['label' => 'Statistik', 'icon' => 'fas fa-chart-bar'],
         'vision'   => ['label' => 'Visi', 'icon' => 'fas fa-flag'],

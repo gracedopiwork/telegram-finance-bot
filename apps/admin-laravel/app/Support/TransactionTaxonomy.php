@@ -3,10 +3,12 @@
 namespace App\Support;
 
 /**
- * YFD First Aid — jenis transaksi & sifat (disetujui klien).
+ * YFD First Aid — jenis transaksi & sifat (taxonomy v1.3).
  *
- * Jenis: Pemasukan | Pengeluaran | Saving/Investment
+ * Jenis: Pemasukan | Pengeluaran | Saving/Investment | Kewajiban Pajak
  * Sifat: Need | Wants (hanya dua nilai)
+ *
+ * Kewajiban Pajak (PPh 25/29/28A) dikecualikan dari 4 bucket; mengurangi pemasukan bersih.
  */
 class TransactionTaxonomy
 {
@@ -16,11 +18,14 @@ class TransactionTaxonomy
 
     public const TYPE_SAVING = 'Saving/Investment';
 
+    public const TYPE_TAX = 'Kewajiban Pajak';
+
     /** @var list<string> */
     public const TYPES = [
         self::TYPE_INCOME,
         self::TYPE_EXPENSE,
         self::TYPE_SAVING,
+        self::TYPE_TAX,
     ];
 
     public const NATURE_NEED = 'Need';
@@ -93,6 +98,9 @@ class TransactionTaxonomy
         if (in_array($v, ['saving/investement', 'saving/investment', 'saving', 'investasi', 'investment', 'nabung'], true)) {
             return self::TYPE_SAVING;
         }
+        if (in_array($v, ['kewajiban pajak', 'pajak', 'tax', 'pph', 'pph 25', 'pph 29', 'pph 28a'], true)) {
+            return self::TYPE_TAX;
+        }
         foreach (self::TYPES as $type) {
             if (strcasecmp($type, (string) $value) === 0) {
                 return $type;
@@ -120,6 +128,7 @@ class TransactionTaxonomy
         return match ($type) {
             self::TYPE_INCOME => 'income',
             self::TYPE_SAVING => 'saving',
+            self::TYPE_TAX => 'tax',
             default => 'expense',
         };
     }

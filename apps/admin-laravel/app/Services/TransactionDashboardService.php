@@ -60,7 +60,8 @@ class TransactionDashboardService
         $income = (int) $rows->where('type', TransactionTaxonomy::TYPE_INCOME)->sum('amount');
         $expense = (int) $rows->where('type', TransactionTaxonomy::TYPE_EXPENSE)->sum('amount');
         $savingInvestment = (int) $rows->where('type', TransactionTaxonomy::TYPE_SAVING)->sum('amount');
-        $cashflow = $income - $expense - $savingInvestment;
+        $taxObligation = (int) $rows->where('type', TransactionTaxonomy::TYPE_TAX)->sum('amount');
+        $cashflow = $income - $expense - $savingInvestment - $taxObligation;
         $savingRate = $income > 0 ? round(($savingInvestment / $income) * 100, 1) : 0.0;
         $transactionCount = $rows->count();
 
@@ -76,6 +77,7 @@ class TransactionDashboardService
         $incomeAnalysis = $this->incomeAnalysis($rows, $income);
         $savingAnalysis = $this->savingAnalysis($rows);
         $protectionAnalysis = $this->protectionAnalysis($rows, $baseline);
+        $taxHealth = $this->taxHealthSummary($rows, $taxObligation, $income);
         $dailyExpenses = $this->dailyExpenseTrend($telegramUserId, $month);
         $fallbackClinical = $this->clinicalSummary($income, $expense, $cashflow, $savingRate, $buckets, $baseline, $periodMonths);
         $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $buckets, $baseline);
@@ -109,6 +111,7 @@ class TransactionDashboardService
             'income' => $income,
             'expense' => $expense,
             'saving_investment' => $savingInvestment,
+            'tax_obligation' => $taxObligation,
             'cashflow' => $cashflow,
             'saving_rate' => $savingRate,
             'transaction_count' => $transactionCount,
@@ -125,6 +128,7 @@ class TransactionDashboardService
             'income_analysis' => $incomeAnalysis,
             'saving_analysis' => $savingAnalysis,
             'protection_analysis' => $protectionAnalysis,
+            'tax_health' => $taxHealth,
             'daily_expenses' => $dailyExpenses,
             'clinical_summary' => $aiGuidance['clinical_summary'],
             'doctors_note' => $aiGuidance['doctors_note'],
@@ -166,7 +170,8 @@ class TransactionDashboardService
         $income = (int) $rows->where('type', TransactionTaxonomy::TYPE_INCOME)->sum('amount');
         $expense = (int) $rows->where('type', TransactionTaxonomy::TYPE_EXPENSE)->sum('amount');
         $savingInvestment = (int) $rows->where('type', TransactionTaxonomy::TYPE_SAVING)->sum('amount');
-        $cashflow = $income - $expense - $savingInvestment;
+        $taxObligation = (int) $rows->where('type', TransactionTaxonomy::TYPE_TAX)->sum('amount');
+        $cashflow = $income - $expense - $savingInvestment - $taxObligation;
         $savingRate = $income > 0 ? round(($savingInvestment / $income) * 100, 1) : 0.0;
         $transactionCount = $rows->count();
 
@@ -627,6 +632,36 @@ class TransactionDashboardService
         usort($result, fn ($a, $b) => $b['amount'] <=> $a['amount']);
 
         return $result;
+    }
+
+    /**
+     * Panel Kesehatan Pajak — jenis Kewajiban Pajak di luar 4 bucket (referral tax planner).
+     *
+     * @return array{amount: int, count: int, share_of_income: float, status: string, status_label: string}
+     */
+    private function taxHealthSummary(Collection $rows, int $taxObligation, int $income): array
+    {
+        $taxRows = $rows->where('type', TransactionTaxonomy::TYPE_TAX);
+        $count = $taxRows->count();
+        $share = $income > 0 ? round(($taxObligation / $income) * 100, 1) : 0.0;
+
+        if ($count === 0) {
+            return [
+                'amount' => 0,
+                'count' => 0,
+                'share_of_income' => 0.0,
+                'status' => 'empty',
+                'status_label' => 'Belum ada pencatatan kewajiban pajak di periode ini',
+            ];
+        }
+
+        return [
+            'amount' => $taxObligation,
+            'count' => $count,
+            'share_of_income' => $share,
+            'status' => 'recorded',
+            'status_label' => 'Tidak masuk 4 bucket — mengurangi pemasukan bersih',
+        ];
     }
 
     private function protectionAnalysisLabel(BotTransaction $row): string

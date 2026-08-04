@@ -60,14 +60,17 @@
                         @endphp
                         <input type="text" name="category" list="article-categories"
                                value="{{ old('category', $article->category) }}" class="form-control"
-                               placeholder="Contoh: Emotional Finance, Cashflow, Investasi">
+                               placeholder="Contoh: Behavioural Finance, Financial Health">
                         <datalist id="article-categories">
+                            <option value="Behavioural Finance"></option>
+                            <option value="Financial Health"></option>
                             @foreach($existingCategories as $cat)
                                 <option value="{{ $cat }}"></option>
                             @endforeach
                         </datalist>
                         <small class="form-text text-muted">
-                            Diisi manual (bukan otomatis). Kategori ini muncul di Wealthpedia sebagai filter/pool artikel.
+                            Diisi manual. Nama kategori menentukan kartu di Wealthpedia
+                            (deskripsi &amp; warna: Behavioural Finance = teal + ikon otak; Financial Health = hijau + ikon jantung).
                         </small>
                     </div>
                     <div class="form-group">

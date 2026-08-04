@@ -20,9 +20,10 @@ class BotTransactionController extends Controller
         }
 
         $validated = $request->validate($this->classificationRules());
-        $category = app(CategoryAutoRegisterService::class)->resolveWithoutRegister(
+        $category = app(CategoryAutoRegisterService::class)->resolveFromNotes(
             (string) $validated['category'],
             (string) $validated['type'],
+            (string) $validated['notes'],
         );
         $transaction = $this->previewTransaction($validated, $category);
 
@@ -49,7 +50,11 @@ class BotTransactionController extends Controller
         ]));
 
         $category = app(CategoryAutoRegisterService::class)->resolveOrRegister(
-            (string) $validated['category'],
+            app(CategoryAutoRegisterService::class)->resolveFromNotes(
+                (string) $validated['category'],
+                (string) $validated['type'],
+                (string) $validated['notes'],
+            ),
             (string) $validated['type'],
             (string) $validated['nature'],
             (string) $validated['notes'],
