@@ -172,13 +172,73 @@ class ConsultationSlotService
         return $created;
     }
 
+    /**
+     * Expand availability window into session start times.
+     * Default: 60-min session, starts every 120 minutes, must finish by window end.
+     *
+     * @return list<string> e.g. ["09:00","11:00","13:00"]
+     */
+    public function timesFromAvailabilityWindow(
+        string $startHm,
+        string $endHm,
+        int $durationMinutes = 60,
+        int $intervalMinutes = 120,
+    ): array {
+        $day = '2000-01-01';
+        $cursor = \Carbon\Carbon::parse($day.' '.trim($startHm));
+        $windowEnd = \Carbon\Carbon::parse($day.' '.trim($endHm));
+        $times = [];
+
+        while ($cursor->copy()->addMinutes($durationMinutes)->lte($windowEnd)) {
+            $times[] = $cursor->format('H:i');
+            $cursor->addMinutes($intervalMinutes);
+        }
+
+        return $times;
+    }
+
+    /**
+     * @param  list<array{date: string, start: string, end: string}>  $windows
+     * @return int number created
+     */
+    public function createSlotsFromWindows(
+        CpAdvisor $advisor,
+        array $windows,
+        int $durationMinutes = 60,
+        int $intervalMinutes = 120,
+    ): int {
+        $created = 0;
+        foreach ($windows as $window) {
+            $times = $this->timesFromAvailabilityWindow(
+                (string) ($window['start'] ?? ''),
+                (string) ($window['end'] ?? ''),
+                $durationMinutes,
+                $intervalMinutes,
+            );
+            if ($times === []) {
+                continue;
+            }
+            $created += $this->createSlotsForDate(
+                $advisor,
+                (string) $window['date'],
+                $times,
+                $durationMinutes,
+            );
+        }
+
+        return $created;
+    }
+
     private function whatsAppUrl(ConsultationSlot $slot): string
     {
         $wa = Setting::val('contact.wa_number', '6285111228911') ?: '6285111228911';
+        $service = match ($slot->service_type) {
+            'recovery' => 'Financial Recovery Program',
+            'premarital' => 'Premarital Financial Health Check Up',
+            default => 'Financial Consultation',
+        };
         $advisorName = $slot->advisor?->name ?? 'Dokter YFD';
-        $service = ($slot->service_type === 'recovery')
-            ? 'Financial Recovery Program'
-            : 'Financial Consultation';
+        $showDoctor = $slot->service_type === 'premarital';
 
         $lines = [
             'Halo Tim YFD, saya ingin booking konsultasi.',
@@ -193,8 +253,12 @@ class ConsultationSlotService
             $lines[] = '*No. WA:* '.$slot->guest_phone;
         }
         $lines[] = '*Layanan:* '.$service;
-        $lines[] = '*Dokter:* '.$advisorName;
-        $lines[] = '*Jadwal:* '.$slot->labelDate().' · '.$slot->labelTimeRange().' WIB';
+        $lines[] = '*Jadwal:* '.$slot->labelDate().' · '.$slot->starts_at->format('H:i').' WIB';
+        if ($showDoctor) {
+            $lines[] = '*Dokter:* '.$advisorName.' (tetap sama untuk sesi berikutnya)';
+        } else {
+            $lines[] = '*Dokter:* dikonfirmasi admin setelah booking';
+        }
         if ($slot->financial_stage) {
             $lines[] = '*Tahap finansial:* '.$slot->financial_stage;
         }

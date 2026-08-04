@@ -212,10 +212,18 @@ class LandingController extends Controller
     {
         $stageKey = request('stage');
         $consultationType = request('type', 'standard');
-        $advisors = CpAdvisor::active()->orderBy('sort')->get();
+        if (! in_array($consultationType, ['standard', 'recovery', 'premarital'], true)) {
+            $consultationType = 'standard';
+        }
+        $isPremarital = $consultationType === 'premarital';
+        $isRecovery = $consultationType === 'recovery';
+
         $openSlots = collect();
-        $slotsByAdvisor = collect();
+        $availableDates = [];
+        $slotsByDate = [];
+        $advisors = collect();
         $datesByAdvisor = [];
+        $slotsByAdvisorDate = [];
 
         if (Schema::hasTable('consultation_slots')) {
             app(ConsultationSlotService::class)->releaseExpiredHolds();
@@ -224,28 +232,79 @@ class LandingController extends Controller
                 ->with('advisor')
                 ->orderBy('starts_at')
                 ->get();
-            $slotsByAdvisor = $openSlots->groupBy('advisor_id');
-            foreach ($slotsByAdvisor as $advisorId => $group) {
-                $datesByAdvisor[$advisorId] = $group
-                    ->map(fn (ConsultationSlot $s) => $s->starts_at->format('Y-m-d'))
-                    ->unique()
-                    ->values()
-                    ->all();
+
+            if ($isPremarital) {
+                $advisors = CpAdvisor::active()->orderBy('sort')->get();
+                foreach ($openSlots as $slot) {
+                    $aid = (int) $slot->advisor_id;
+                    $date = $slot->starts_at->format('Y-m-d');
+                    $time = $slot->starts_at->format('H:i');
+                    $datesByAdvisor[$aid][$date] = true;
+                    if (! isset($slotsByAdvisorDate[$aid][$date][$time])) {
+                        $slotsByAdvisorDate[$aid][$date][$time] = [
+                            'id' => $slot->id,
+                            'label' => $time,
+                        ];
+                    }
+                }
+                foreach ($datesByAdvisor as $aid => $dates) {
+                    $keys = array_keys($dates);
+                    sort($keys);
+                    $datesByAdvisor[$aid] = $keys;
+                }
+                foreach ($slotsByAdvisorDate as $aid => $byDate) {
+                    foreach ($byDate as $date => $times) {
+                        ksort($times);
+                        $slotsByAdvisorDate[$aid][$date] = array_values($times);
+                    }
+                }
+            } else {
+                foreach ($openSlots as $slot) {
+                    $date = $slot->starts_at->format('Y-m-d');
+                    $availableDates[$date] = true;
+                    $time = $slot->starts_at->format('H:i');
+                    if (! isset($slotsByDate[$date][$time])) {
+                        $slotsByDate[$date][$time] = [
+                            'id' => $slot->id,
+                            'label' => $time,
+                        ];
+                    }
+                }
+                $availableDates = array_keys($availableDates);
+                sort($availableDates);
+                foreach ($slotsByDate as $date => $times) {
+                    ksort($times);
+                    $slotsByDate[$date] = array_values($times);
+                }
             }
         }
 
+        $calendarMonth = $openSlots->isNotEmpty()
+            ? $openSlots->first()->starts_at->copy()->startOfMonth()
+            : now()->startOfMonth();
+
+        $active = match ($consultationType) {
+            'recovery' => 'recovery',
+            'premarital' => 'premarital',
+            default => 'pertemuan',
+        };
+
         return view('Companyprofile.pertemuan', [
-            'active' => $consultationType === 'recovery' ? 'recovery' : 'pertemuan',
+            'active' => $active,
             'consultationTiers' => ConsultationPricing::stages(),
             'consultationMeta' => config('consultation_pricing'),
             'selectedStage' => is_string($stageKey) ? $stageKey : null,
-            'selectedType' => is_string($consultationType) ? $consultationType : 'standard',
+            'selectedType' => $consultationType,
             'selectedTier' => ConsultationPricing::forStage(is_string($stageKey) ? $stageKey : null),
-            'isRecovery' => $consultationType === 'recovery',
+            'isRecovery' => $isRecovery,
+            'isPremarital' => $isPremarital,
             'advisors' => $advisors,
-            'openSlots' => $openSlots,
-            'slotsByAdvisor' => $slotsByAdvisor,
             'datesByAdvisor' => $datesByAdvisor,
+            'slotsByAdvisorDate' => $slotsByAdvisorDate,
+            'openSlots' => $openSlots,
+            'availableDates' => $availableDates,
+            'slotsByDate' => $slotsByDate,
+            'calendarMonth' => $calendarMonth->format('Y-m'),
             'holdMinutes' => ConsultationSlot::HOLD_MINUTES,
         ]);
     }
@@ -258,25 +317,36 @@ class LandingController extends Controller
 
         app(ConsultationSlotService::class)->releaseExpiredHolds();
 
-        $advisorId = (int) $request->query('advisor_id');
         $date = (string) $request->query('date', '');
-
-        if ($advisorId <= 0 || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             return response()->json(['slots' => []]);
         }
 
-        $slots = ConsultationSlot::query()
+        $advisorId = (int) $request->query('advisor_id', 0);
+
+        $query = ConsultationSlot::query()
             ->bookable()
-            ->where('advisor_id', $advisorId)
             ->whereDate('starts_at', $date)
-            ->orderBy('starts_at')
-            ->get()
-            ->map(fn (ConsultationSlot $s) => [
+            ->orderBy('starts_at');
+
+        if ($advisorId > 0) {
+            $query->where('advisor_id', $advisorId);
+        }
+
+        $seen = [];
+        $slots = [];
+        foreach ($query->get() as $s) {
+            $time = $s->starts_at->format('H:i');
+            if (isset($seen[$time])) {
+                continue;
+            }
+            $seen[$time] = true;
+            $slots[] = [
                 'id' => $s->id,
-                'label' => $s->labelTimeRange(),
+                'label' => $time,
                 'starts_at' => $s->starts_at->toIso8601String(),
-            ])
-            ->values();
+            ];
+        }
 
         return response()->json(['slots' => $slots]);
     }
@@ -289,17 +359,28 @@ class LandingController extends Controller
 
         $data = $request->validate([
             'slot_id' => 'required|integer|exists:consultation_slots,id',
+            'advisor_id' => 'nullable|integer|exists:cp_advisors,id',
             'name' => 'required|string|max:200',
             'phone' => 'nullable|string|max:40',
             'age' => 'nullable|integer|min:15|max:99',
             'stage' => 'nullable|string|max:80',
             'situation' => 'nullable|string|max:200',
             'condition' => 'nullable|string|max:2000',
-            'service_type' => 'nullable|in:standard,recovery',
+            'service_type' => 'nullable|in:standard,recovery,premarital',
+            'session_role' => 'nullable|in:male,female,couple',
         ]);
 
-        $slot = ConsultationSlot::findOrFail((int) $data['slot_id']);
+        $slot = ConsultationSlot::with('advisor')->findOrFail((int) $data['slot_id']);
         $serviceType = $data['service_type'] ?? 'standard';
+
+        if ($serviceType === 'premarital') {
+            $advisorId = (int) ($data['advisor_id'] ?? 0);
+            if ($advisorId <= 0 || (int) $slot->advisor_id !== $advisorId) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Premarital wajib pilih dokter di awal, lalu slot milik dokter yang sama.');
+            }
+        }
 
         $stageLabel = null;
         if (! empty($data['stage'])) {
@@ -311,6 +392,18 @@ class LandingController extends Controller
             }
         }
 
+        $sessionRole = $data['session_role'] ?? null;
+        $roleNote = match ($sessionRole) {
+            'male' => 'Sesi 1-on-1 male',
+            'female' => 'Sesi 1-on-1 female',
+            'couple' => 'Sesi couple',
+            default => null,
+        };
+        $condition = $data['condition'] ?? null;
+        if ($roleNote) {
+            $condition = trim($roleNote.($condition ? "\n".$condition : ''));
+        }
+
         try {
             $waUrl = app(ConsultationSlotService::class)->holdAndBuildWaUrl($slot, [
                 'name' => $data['name'],
@@ -318,7 +411,7 @@ class LandingController extends Controller
                 'age' => isset($data['age']) ? (int) $data['age'] : null,
                 'stage' => $stageLabel,
                 'situation' => $data['situation'] ?? null,
-                'condition' => $data['condition'] ?? null,
+                'condition' => $condition,
                 'service_type' => $serviceType,
             ]);
         } catch (ValidationException $e) {

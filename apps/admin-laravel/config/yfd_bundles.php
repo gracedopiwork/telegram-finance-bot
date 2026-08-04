@@ -94,8 +94,8 @@ return [
                 'note' => 'Dijadwalkan setelah kedua sesi individu selesai · dokter yang sama',
             ],
         ],
-        'footnote' => 'Kedua sesi individu wajib dengan dokter yang sama, agar sesi couple punya konteks penuh dari kedua individu. Form booking couple plan lengkap (pilih dokter di level atas + slot male/female) menyusul; untuk saat ini hubungi tim YFD via WA.',
-        'cta_primary' => ['label' => 'Tanya Premarital via WA', 'type' => 'wa', 'wa_topic' => 'Premarital Financial Health Check Up'],
+        'footnote' => 'Kedua sesi individu wajib dengan dokter yang sama, agar sesi couple punya konteks penuh dari kedua individu.',
+        'cta_primary' => ['label' => 'Booking Premarital', 'type' => 'route', 'route' => 'company.pertemuan', 'query' => ['type' => 'premarital']],
         'cta_secondary' => ['label' => 'Lihat Tarif Konsultasi Individu', 'route' => 'company.paket'],
     ],
 ];
