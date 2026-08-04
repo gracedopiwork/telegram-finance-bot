@@ -20,6 +20,8 @@ class CategoryBucketMapping extends Model
         'expense' => 'Expense',
         'saving' => 'Saving/Investment',
         'tax' => 'Kewajiban Pajak',
+        'receivable_out' => 'Piutang Keluar',
+        'receivable_in' => 'Piutang Masuk',
         'transfer' => 'Transfer',
     ];
 

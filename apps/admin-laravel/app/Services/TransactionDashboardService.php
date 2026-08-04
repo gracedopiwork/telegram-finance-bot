@@ -78,6 +78,13 @@ class TransactionDashboardService
         $savingAnalysis = $this->savingAnalysis($rows);
         $protectionAnalysis = $this->protectionAnalysis($rows, $baseline);
         $taxHealth = $this->taxHealthSummary($rows, $taxObligation, $income);
+        $socialLiquidity = app(SocialLiquidityService::class)->dashboardSummary(
+            $telegramUserId,
+            $rows,
+            $income,
+            $range['start'],
+            $range['end'],
+        );
         $dailyExpenses = $this->dailyExpenseTrend($telegramUserId, $month);
         $fallbackClinical = $this->clinicalSummary($income, $expense, $cashflow, $savingRate, $buckets, $baseline, $periodMonths);
         $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $buckets, $baseline);
@@ -129,6 +136,7 @@ class TransactionDashboardService
             'saving_analysis' => $savingAnalysis,
             'protection_analysis' => $protectionAnalysis,
             'tax_health' => $taxHealth,
+            'social_liquidity' => $socialLiquidity,
             'daily_expenses' => $dailyExpenses,
             'clinical_summary' => $aiGuidance['clinical_summary'],
             'doctors_note' => $aiGuidance['doctors_note'],

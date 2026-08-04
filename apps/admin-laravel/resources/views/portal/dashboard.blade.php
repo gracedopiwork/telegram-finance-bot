@@ -179,6 +179,9 @@
         </div>
     </div>
 
+    {{-- Likuiditas Sosial — di bawah Budget Prescription, tidak mengubah 4 bucket (§5A) --}}
+    @include('portal.partials.social-liquidity-panel', ['summary' => $summary, 'fmt' => $fmt])
+
     <div class="bg-white rounded-xl border border-slate-200 p-5">
         <div class="text-sm font-semibold text-navy-800 mb-4">Grafik pengeluaran harian</div>
         <div class="h-52">

@@ -261,7 +261,7 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
 {{
   "keterangan": string,
   "nominal": integer,
-  "jenis": "Pemasukan" | "Pengeluaran" | "Saving/Investment" | "Kewajiban Pajak",
+  "jenis": "Pemasukan" | "Pengeluaran" | "Saving/Investment" | "Kewajiban Pajak" | "Piutang Keluar" | "Piutang Masuk",
   "kategori": string,
   "sifat": "Need" | "Wants",
   "mood": "Happy" | "Neutral" | "Sad" | "Stressed" | "Angry" | "Tired",
@@ -287,15 +287,17 @@ Aturan:
    - 1,2jt / 1.2 juta => 1200000.
    - 83800 / 83.800 / 83,800 / 5000 tanpa suffix => nilai apa adanya (BUKAN juta).
    - Huruf k di kata biasa (kemarin, snack, stock) BUKAN penanda ribuan.
-3) jenis: Pemasukan | Pengeluaran | Saving/Investment | Kewajiban Pajak.
+3) jenis: Pemasukan | Pengeluaran | Saving/Investment | Kewajiban Pajak | Piutang Keluar | Piutang Masuk.
    - UTAMA: lihat KATA KERJA arah uang dulu.
      * Pemasukan: terima, dapat, dapet, uang masuk, cair (hasil).
      * Pengeluaran: bayar, pengeluaran, melunasi, pelunasan, belanja, keluarin.
    - Saving/Investment: beli/nabung saham, reksadana, deposito, emas, crypto, dana darurat.
    - Kewajiban Pajak: PPh 25 angsuran, PPh 29 kurang bayar, PPh 28A restitusi/lebih bayar, denda pajak SPT — TIDAK masuk 4 bucket.
    - PBB / STNK / pajak kendaraan = Pengeluaran (bukan Kewajiban Pajak jenis).
+   - Piutang Keluar: pinjamin / talang / bayarkan dulu / nanti diganti — TIDAK masuk 4 bucket (Likuiditas Sosial).
+   - Piutang Masuk: dibayar balik / transfer balik dari pinjaman — BUKAN pemasukan baru; menutup Piutang Keluar.
    - Hasil investasi (bunga/dividen cair) = Pemasukan, BUKAN Saving/Investment.
-   - Donasi/sedekah/zakat = Pengeluaran + kategori Sosial & Keluarga.
+   - Donasi/sedekah/zakat = Pengeluaran + kategori Sosial & Keluarga (bukan Piutang).
 4) sifat: HANYA Need atau Wants.
    - Need: kebutuhan hidup/kerja fungsional, tagihan, proteksi, cicilan, hasil/pemasukan.
    - Wants: diskresioner, reward, hiburan, jajan, belanja gaya hidup.

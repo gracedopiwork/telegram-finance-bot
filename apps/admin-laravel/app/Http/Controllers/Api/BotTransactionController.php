@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BotTransaction;
 use App\Services\CategoryAutoRegisterService;
 use App\Services\CategoryBucketService;
+use App\Services\SocialLiquidityService;
 use App\Support\PortalTimezone;
 use App\Support\TransactionTaxonomy;
 use Illuminate\Http\JsonResponse;
@@ -75,6 +76,10 @@ class BotTransactionController extends Controller
             'notes' => $validated['notes'],
             'source' => $validated['source'] ?? 'manual',
         ]);
+
+        if (TransactionTaxonomy::isReceivable((string) $transaction->type)) {
+            app(SocialLiquidityService::class)->syncFromTransaction($transaction);
+        }
 
         return response()->json([
             'ok' => true,

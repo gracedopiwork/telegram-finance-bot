@@ -12,11 +12,11 @@ from __future__ import annotations
 import re
 from typing import Any
 
-VALID_JENIS = frozenset({"Pemasukan", "Pengeluaran", "Saving/Investment", "Kewajiban Pajak"})
+VALID_JENIS = frozenset({"Pemasukan", "Pengeluaran", "Saving/Investment", "Kewajiban Pajak", "Piutang Keluar", "Piutang Masuk"})
 VALID_SIFAT = frozenset({"Need", "Wants"})
 
 _EXPLICIT_JENIS_RE = re.compile(
-    r"^\s*(pengeluaran|pemasukan|saving(?:\s*/\s*investment)?)\b",
+    r"^\s*(pengeluaran|pemasukan|saving(?:\s*/\s*investment)?|kewajiban\s*pajak|piutang\s*keluar|piutang\s*masuk)\b",
     re.IGNORECASE,
 )
 
@@ -43,6 +43,12 @@ def detect_explicit_jenis(text: str) -> str | None:
         return "Pengeluaran"
     if word == "pemasukan":
         return "Pemasukan"
+    if word in {"kewajibanpajak", "kewajiban pajak"}:
+        return "Kewajiban Pajak"
+    if word in {"piutangkeluar", "piutang keluar"}:
+        return "Piutang Keluar"
+    if word in {"piutangmasuk", "piutang masuk"}:
+        return "Piutang Masuk"
     return "Saving/Investment"
 
 
@@ -711,6 +717,40 @@ _PAJAK_KENDARAAN = (
     "pajak motor",
 )
 
+# Likuiditas Sosial §5 — bukan Pengeluaran / bukan Pemasukan
+_PIUTANG_KELUAR = (
+    "piutang keluar",
+    "pinjamin",
+    "pinjami",
+    "pinjamkan",
+    "talang dulu",
+    "talangin",
+    "bayarkan dulu",
+    "lunasin dulu buat",
+    "aku yang bayar dulu",
+    "nanti dia ganti",
+    "nanti diganti",
+    "dia bayar balik",
+    "sementara aku yang cover",
+    "pinjam ke teman",
+    "pinjam ke saudara",
+    "pinjam ke keluarga",
+)
+
+_PIUTANG_MASUK = (
+    "piutang masuk",
+    "dibayar balik",
+    "bayar balik",
+    "transfer balik",
+    "ganti uang dari",
+    "cicil hutang dari",
+    "ngembalikan pinjaman",
+    "mengembalikan pinjaman",
+    "balikin pinjaman",
+    "balikin utang",
+    "pelunasan piutang",
+)
+
 _LEGAL_EVENT = (
     "notaris",
     "balik nama",
@@ -1132,6 +1172,11 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
     if _contains(lower, _PAJAK_KENDARAAN):
         return {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "sifat": "Need"}
+    # Piutang sebelum Sosial — "pinjamin teman" ≠ sedekah
+    if _contains(lower, _PIUTANG_MASUK):
+        return {"jenis": "Piutang Masuk", "kategori": "Lain-lain", "sifat": "Need"}
+    if _contains(lower, _PIUTANG_KELUAR):
+        return {"jenis": "Piutang Keluar", "kategori": "Lain-lain", "sifat": "Need"}
     if _contains(lower, _LEGAL_EVENT):
         sifat_legal = "Wants" if any(k in lower for k in ("mahar", "pernikahan", "resepsi", "duka", "pemakaman", "tahlilan")) else "Need"
         return {
@@ -1177,13 +1222,25 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
     combined = f"{source_text} {parsed.get('keterangan', '')}".strip()
     explicit = detect_explicit_jenis(source_text) or detect_explicit_jenis(combined)
     direction = detect_cashflow_direction(source_text) or detect_cashflow_direction(combined)
+    lower_combined = _normalize_typos(combined)
 
     # Jenis yang user tulis sendiri di awal pesan.
     if explicit and str(parsed.get("jenis") or "").strip() != explicit:
         parsed["jenis"] = explicit
 
+    # Likuiditas Sosial: jangan ditimpa Pemasukan/Pengeluaran oleh kata kerja generik.
+    if _contains(lower_combined, _PIUTANG_MASUK):
+        parsed["jenis"] = "Piutang Masuk"
+        if not str(parsed.get("kategori") or "").strip():
+            parsed["kategori"] = "Lain-lain"
+            parsed["sifat"] = "Need"
+    elif _contains(lower_combined, _PIUTANG_KELUAR):
+        parsed["jenis"] = "Piutang Keluar"
+        if not str(parsed.get("kategori") or "").strip():
+            parsed["kategori"] = "Lain-lain"
+            parsed["sifat"] = "Need"
     # Kata kerja arah uang menang jika AI salah (terima ≠ pengeluaran).
-    if direction and str(parsed.get("jenis") or "").strip() != direction:
+    elif direction and str(parsed.get("jenis") or "").strip() != direction:
         parsed["jenis"] = direction
         kat_l = str(parsed.get("kategori") or "").strip().lower()
         if direction == "Pemasukan" and _has_freelance_marker(combined):

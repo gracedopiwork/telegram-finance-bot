@@ -62,6 +62,7 @@ _STATIC_FALLBACK: dict[str, Any] = {
         "AI tidak boleh membuat kategori baru. Jika ragu → Lain-lain.",
         "Layer 1 = Kategori (closed list). Layer 2 = Bucket (otomatis dari mapping sistem).",
         "Jenis Kewajiban Pajak (PPh 25/29/28A) dikecualikan dari 4 bucket.",
+        "Jenis Piutang Keluar / Piutang Masuk = Likuiditas Sosial (di luar 4 bucket).",
         "Gym/olahraga berbayar → Lifestyle & Hiburan / Flexible + Social / Wants.",
         "Grab/ojek ke gym/cafe → tetap Transportasi / Wants; bucket Flexible + Social (bukan kategori Lifestyle).",
         "Laundry → Kesehatan & Kebersihan Diri / Essential. Fashion → Pakaian & Aksesoris.",

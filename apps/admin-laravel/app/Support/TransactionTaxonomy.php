@@ -3,12 +3,13 @@
 namespace App\Support;
 
 /**
- * YFD First Aid — jenis transaksi & sifat (taxonomy v1.3).
+ * YFD First Aid — jenis transaksi & sifat (taxonomy v1.3 + §5 Piutang).
  *
- * Jenis: Pemasukan | Pengeluaran | Saving/Investment | Kewajiban Pajak
+ * Jenis: Pemasukan | Pengeluaran | Saving/Investment | Kewajiban Pajak | Piutang Keluar | Piutang Masuk
  * Sifat: Need | Wants (hanya dua nilai)
  *
- * Kewajiban Pajak (PPh 25/29/28A) dikecualikan dari 4 bucket; mengurangi pemasukan bersih.
+ * Kewajiban Pajak & Piutang dikecualikan dari 4 bucket.
+ * Piutang Masuk bukan pemasukan baru — menutup Piutang Keluar.
  */
 class TransactionTaxonomy
 {
@@ -20,12 +21,18 @@ class TransactionTaxonomy
 
     public const TYPE_TAX = 'Kewajiban Pajak';
 
+    public const TYPE_RECEIVABLE_OUT = 'Piutang Keluar';
+
+    public const TYPE_RECEIVABLE_IN = 'Piutang Masuk';
+
     /** @var list<string> */
     public const TYPES = [
         self::TYPE_INCOME,
         self::TYPE_EXPENSE,
         self::TYPE_SAVING,
         self::TYPE_TAX,
+        self::TYPE_RECEIVABLE_OUT,
+        self::TYPE_RECEIVABLE_IN,
     ];
 
     public const NATURE_NEED = 'Need';
@@ -38,9 +45,24 @@ class TransactionTaxonomy
         self::NATURE_WANTS,
     ];
 
-  /**
-   * @return array{type: string, nature: string, category: ?string}
-   */
+    public static function isExcludedFromBuckets(string $type): bool
+    {
+        return in_array($type, [
+            self::TYPE_INCOME,
+            self::TYPE_TAX,
+            self::TYPE_RECEIVABLE_OUT,
+            self::TYPE_RECEIVABLE_IN,
+        ], true);
+    }
+
+    public static function isReceivable(string $type): bool
+    {
+        return in_array($type, [self::TYPE_RECEIVABLE_OUT, self::TYPE_RECEIVABLE_IN], true);
+    }
+
+    /**
+     * @return array{type: string, nature: string, category: ?string}
+     */
     public static function normalize(string $typeInput, string $natureInput, ?string $category = null): array
     {
         $type = self::normalizeType($typeInput);
@@ -70,11 +92,7 @@ class TransactionTaxonomy
 
         $type ??= self::TYPE_EXPENSE;
 
-        if ($type === self::TYPE_SAVING) {
-            $nature = self::normalizeNature($natureRaw);
-        } else {
-            $nature = self::normalizeNature($natureRaw);
-        }
+        $nature = self::normalizeNature($natureRaw);
 
         return [
             'type' => $type,
@@ -100,6 +118,12 @@ class TransactionTaxonomy
         }
         if (in_array($v, ['kewajiban pajak', 'pajak', 'tax', 'pph', 'pph 25', 'pph 29', 'pph 28a'], true)) {
             return self::TYPE_TAX;
+        }
+        if (in_array($v, ['piutang keluar', 'piutang out', 'receivable out', 'pinjaman keluar', 'pinjamin'], true)) {
+            return self::TYPE_RECEIVABLE_OUT;
+        }
+        if (in_array($v, ['piutang masuk', 'piutang in', 'receivable in', 'pelunasan piutang', 'pengembalian piutang'], true)) {
+            return self::TYPE_RECEIVABLE_IN;
         }
         foreach (self::TYPES as $type) {
             if (strcasecmp($type, (string) $value) === 0) {
@@ -129,6 +153,8 @@ class TransactionTaxonomy
             self::TYPE_INCOME => 'income',
             self::TYPE_SAVING => 'saving',
             self::TYPE_TAX => 'tax',
+            self::TYPE_RECEIVABLE_OUT => 'receivable_out',
+            self::TYPE_RECEIVABLE_IN => 'receivable_in',
             default => 'expense',
         };
     }

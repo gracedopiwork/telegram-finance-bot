@@ -15,6 +15,10 @@ class BotTransaction extends Model
 
     public const TYPE_TAX = TransactionTaxonomy::TYPE_TAX;
 
+    public const TYPE_RECEIVABLE_OUT = TransactionTaxonomy::TYPE_RECEIVABLE_OUT;
+
+    public const TYPE_RECEIVABLE_IN = TransactionTaxonomy::TYPE_RECEIVABLE_IN;
+
     protected $fillable = [
         'telegram_user_id',
         'recorded_at',

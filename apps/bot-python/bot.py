@@ -88,7 +88,7 @@ ACTIVATE_HELP_TEXT = (
     "`/activate KODE-LISENSI-ANDA`"
 )
 
-VALID_JENIS = {"Pemasukan", "Pengeluaran", "Saving/Investment", "Kewajiban Pajak"}
+VALID_JENIS = {"Pemasukan", "Pengeluaran", "Saving/Investment", "Kewajiban Pajak", "Piutang Keluar", "Piutang Masuk"}
 VALID_SIFAT = {"Need", "Wants"}
 VALID_MOOD = {"Happy", "Neutral", "Sad", "Stressed", "Angry", "Tired"}
 VALID_IMPULSIF = {"Yes", "No"}
@@ -222,6 +222,10 @@ def normalize_taxonomy(parsed: Dict[str, Any]) -> Dict[str, Any]:
             parsed["jenis"] = "Saving/Investment"
         elif jenis_lower in {"kewajiban pajak", "pajak", "tax", "pph", "pph 25", "pph 29", "pph 28a"}:
             parsed["jenis"] = "Kewajiban Pajak"
+        elif jenis_lower in {"piutang keluar", "piutang out", "receivable out", "pinjaman keluar"}:
+            parsed["jenis"] = "Piutang Keluar"
+        elif jenis_lower in {"piutang masuk", "piutang in", "receivable in", "pelunasan piutang"}:
+            parsed["jenis"] = "Piutang Masuk"
         else:
             parsed["jenis"] = "Pengeluaran"
 
@@ -695,7 +699,12 @@ def attach_prescription_bucket(parsed: Dict[str, Any]) -> bool:
     ok, result, error = resolve_transaction_bucket(parsed)
     if not ok:
         logger.warning("Bucket preview belum tersedia: %s", error)
-        parsed["bucket"] = None if parsed.get("jenis") == "Pemasukan" else "Belum dapat dicek"
+        parsed["bucket"] = None if parsed.get("jenis") in {
+            "Pemasukan",
+            "Kewajiban Pajak",
+            "Piutang Keluar",
+            "Piutang Masuk",
+        } else "Belum dapat dicek"
         return False
 
     parsed["kategori"] = result.get("category") or parsed["kategori"]

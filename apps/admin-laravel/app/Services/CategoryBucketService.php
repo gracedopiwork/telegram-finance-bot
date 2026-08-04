@@ -16,7 +16,9 @@ class CategoryBucketService
      */
     public function resolve(BotTransaction $row): ?string
     {
-        if ($row->type === TransactionTaxonomy::TYPE_TAX) {
+        if ($row->type === TransactionTaxonomy::TYPE_TAX
+            || $row->type === TransactionTaxonomy::TYPE_RECEIVABLE_OUT
+            || $row->type === TransactionTaxonomy::TYPE_RECEIVABLE_IN) {
             return null;
         }
 
@@ -35,7 +37,10 @@ class CategoryBucketService
         $notes = mb_strtolower((string) $row->notes);
         $combined = "{$notes} {$category}";
 
-        if ($row->type === TransactionTaxonomy::TYPE_INCOME || $row->type === TransactionTaxonomy::TYPE_TAX) {
+        if ($row->type === TransactionTaxonomy::TYPE_INCOME
+            || $row->type === TransactionTaxonomy::TYPE_TAX
+            || $row->type === TransactionTaxonomy::TYPE_RECEIVABLE_OUT
+            || $row->type === TransactionTaxonomy::TYPE_RECEIVABLE_IN) {
             return null;
         }
 
