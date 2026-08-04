@@ -70,88 +70,20 @@ class DashboardController extends Controller
 
   public function generateManualFinancialGuidance(Request $request): RedirectResponse
   {
-    $telegramUserId = (int) PortalSession::telegramUserId($request);
-    $email = (string) (PortalSession::email($request) ?? '');
-    app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
-
     [$month, $period] = $this->filters($request);
-    $dashboard = app(TransactionDashboardService::class);
-    $snapshot = app(PortalGuidanceSnapshotService::class);
-    $aiGuidance = app(PortalAiGuidanceService::class);
-    $baseline = app(PortalOnboardingService::class)->resolveBaseline($email, $telegramUserId);
-
-    $end = Carbon::createFromFormat('Y-m', $month)->endOfMonth();
-    $start = $end->copy()->subMonths($period - 1)->startOfMonth();
-    $periodLabel = $period === 1
-      ? Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y')
-      : $start->translatedFormat('M Y').' – '.$end->translatedFormat('M Y');
-
-    $context = $dashboard->financialGuidanceContext($telegramUserId, $start, $end, $periodLabel, max(1, $period));
-    if (($context['transaction_count'] ?? 0) === 0) {
-      return redirect()
-        ->route('portal.dashboard', ['month' => $month, 'period' => $period])
-        ->with('warning', 'Belum ada transaksi untuk periode ini, jadi belum bisa generate manual.');
-    }
-
-    $monthCarbon = Carbon::createFromFormat('Y-m', $month);
-    $weekAnchor = $monthCarbon->isCurrentMonth() ? now() : $monthCarbon->copy()->endOfMonth();
-    $week = $snapshot->monthCumulativeWeekRange($weekAnchor);
-    $weeklyContext = $dashboard->financialGuidanceContext(
-      $telegramUserId,
-      $week['start'],
-      $week['end'],
-      $week['label'],
-      1,
-    );
-
-    $aiGuidance->generateAndStoreWeeklyClinicalSummary(
-      $telegramUserId,
-      PortalGuidanceSnapshot::monthCumulativeWeekPeriodKey($weekAnchor),
-      $weeklyContext['metrics'],
-      $baseline,
-      $weeklyContext['fallback_clinical'],
-    );
-
-    $aiGuidance->generateAndStoreMonthlyDoctorsNote(
-      $telegramUserId,
-      $month,
-      $context['metrics'],
-      $baseline,
-      $context['fallback_doctors_note'],
-    );
 
     return redirect()
       ->route('portal.dashboard', ['month' => $month, 'period' => $period])
-      ->with('success', 'Doctor\'s Note dan Clinical Summary berhasil di-generate manual dari data terbaru.');
+      ->with('warning', 'Generate manual dinonaktifkan. Doctor\'s Note keluar otomatis akhir bulan pukul 22.00 WIB.');
   }
 
   public function generateManualBehavioralGuidance(Request $request): RedirectResponse
   {
-    $telegramUserId = (int) PortalSession::telegramUserId($request);
-    $email = (string) (PortalSession::email($request) ?? '');
-    app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
-
     [$month, $period] = $this->filters($request);
-    $baseline = app(PortalOnboardingService::class)->resolveBaseline($email, $telegramUserId);
-    $context = app(ImpulsivityAssessmentService::class)->monthlyGuidanceContext($telegramUserId, $month, $email);
-
-    if (($context['expense_count'] ?? 0) === 0) {
-      return redirect()
-        ->route('portal.emotional', ['month' => $month, 'period' => $period])
-        ->with('warning', 'Belum ada pengeluaran untuk bulan ini, jadi belum bisa generate behavioral recommendation.');
-    }
-
-    app(PortalAiGuidanceService::class)->generateAndStoreMonthlyBehavioralGuidance(
-      $telegramUserId,
-      $month,
-      $context['metrics'],
-      $baseline,
-      $context['fallback'],
-    );
 
     return redirect()
       ->route('portal.emotional', ['month' => $month, 'period' => $period])
-      ->with('success', 'Behavioral Recommendation berhasil di-generate manual dari data bulan ini.');
+      ->with('warning', 'Generate manual dinonaktifkan. Behavioral Recommendation keluar otomatis akhir bulan pukul 22.00 WIB.');
   }
 
   public function emotional(Request $request): View

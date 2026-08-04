@@ -27,6 +27,8 @@ return [
     'guidance_timezone' => env('PORTAL_AI_GUIDANCE_TZ', 'Asia/Jakarta'),
     'guidance_weekly_time' => env('PORTAL_AI_GUIDANCE_WEEKLY_TIME', '22:00'),
     'guidance_monthly_time' => env('PORTAL_AI_GUIDANCE_MONTHLY_TIME', '22:00'),
+    // Manual generate di portal dimatikan (hemat token) — hanya scheduler akhir bulan 22:00.
+    'allow_manual_guidance_generate' => (bool) env('PORTAL_AI_ALLOW_MANUAL_GENERATE', false),
     'guidance_weekly_label' => 'Minggu pukul 22.00 WIB',
 
     'max_insights' => 3,
