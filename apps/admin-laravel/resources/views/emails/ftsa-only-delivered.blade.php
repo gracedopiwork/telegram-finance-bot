@@ -1,7 +1,7 @@
 @php
     $licenseKey = $order->license?->license_key ?? '';
-    $portalHref = rtrim((string) config('app.url'), '/') . '/portal/login';
-    $checkupHref = rtrim((string) config('app.url'), '/') . '/check-up';
+    $portalHref = url('/portal/login');
+    $checkupHref = url('/check-up');
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -22,9 +22,12 @@
     @endif
 
     <p>
-        <a href="{{ $portalHref }}" style="display: inline-block; background: {{ config('yfd_brand.navy') }}; color: {{ config('yfd_brand.white') }}; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 600;">Login Portal FTSA</a>
+        <a href="{{ $portalHref }}" target="_blank" rel="noopener" style="display: inline-block; background: {{ config('yfd_brand.navy') }}; color: {{ config('yfd_brand.white') }} !important; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: 600;">Login Portal FTSA</a>
     </p>
-    <p style="font-size: 0.875rem; color: #52525b; word-break: break-all;">{{ $portalHref }}</p>
+    <p style="font-size: 0.875rem; color: #52525b;">
+        Jika tombol tidak terbuka di HP, salin di browser:<br>
+        <a href="{{ $portalHref }}" target="_blank" rel="noopener" style="color: #229ed9; word-break: break-all;">{{ $portalHref }}</a>
+    </p>
     <p style="font-size: 0.875rem; color: #52525b;">
         Login dengan email checkout <strong>{{ $order->email }}</strong> dan kode lisensi di atas.
         <strong>Tidak perlu</strong> aktivasi di YFD First Aid.
@@ -35,7 +38,10 @@
         Isi <strong>Financial Health Check-Up</strong> lalu lengkapi <strong>FTSA 1–32</strong> di menu Baseline Data portal.
     </p>
     <p>
-        <a href="{{ $checkupHref }}" style="display: inline-block; background: {{ config('yfd_brand.gold') }}; color: {{ config('yfd_brand.navy') }}; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 700;">Mulai Check-Up</a>
+        <a href="{{ $checkupHref }}" target="_blank" rel="noopener" style="display: inline-block; background: {{ config('yfd_brand.gold') }}; color: {{ config('yfd_brand.navy') }} !important; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: 700;">Mulai Check-Up</a>
+    </p>
+    <p style="font-size: 0.8125rem; color: #71717a; word-break: break-all;">
+        <a href="{{ $checkupHref }}" target="_blank" rel="noopener" style="color: #229ed9;">{{ $checkupHref }}</a>
     </p>
 
     <p style="margin-top: 2rem; font-size: 0.8125rem; color: #71717a;">Email otomatis dari YFD. Mohon tidak membalas ke alamat pengirim.</p>

@@ -7,7 +7,8 @@ use App\Models\Setting;
 final class TelegramBotUrl
 {
     /**
-     * URL https://t.me/... untuk email & halaman web.
+     * URL https://t.me/... untuk email, WA, & halaman web.
+     * Pakai ini di HP — jangan tg:// (banyak WebView/email client menolak).
      */
     public static function resolve(): ?string
     {
@@ -15,7 +16,7 @@ final class TelegramBotUrl
     }
 
     /**
-     * Deep link agar HP langsung buka aplikasi Telegram (bukan halaman "download").
+     * Deep link tg:// — hanya untuk app native. Jangan dipakai di email/WA/WebView Midtrans.
      */
     public static function appDeepLink(): ?string
     {
@@ -24,11 +25,15 @@ final class TelegramBotUrl
         return $username !== null ? 'tg://resolve?domain='.$username : null;
     }
 
+    /**
+     * Tautan https yang andal di HP: buka chat bot + tombol Start.
+     */
     public static function webUrl(): ?string
     {
         $username = self::username();
 
-        return $username !== null ? 'https://t.me/'.$username : null;
+        // ?start= membuka chat bot langsung (bukan halaman profil kosong di beberapa client).
+        return $username !== null ? 'https://t.me/'.$username.'?start=yfd' : null;
     }
 
     public static function username(): ?string

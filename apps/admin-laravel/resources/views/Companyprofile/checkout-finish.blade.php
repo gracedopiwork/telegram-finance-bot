@@ -175,13 +175,9 @@
 
     <div class="flex flex-wrap gap-3 justify-center">
         @if(!$isFtsaOnly && !empty($telegramBotUrl))
-            @if(!empty($telegramBotAppUrl))
-                <a href="{{ $telegramBotAppUrl }}" class="btn btn-primary">
-                    <span class="material-symbols-outlined text-[18px]">smart_toy</span> Buka bot di Telegram
-                </a>
-            @endif
-            <a href="{{ $telegramBotUrl }}" target="_blank" rel="noopener" class="btn btn-outline-primary">
-                <span class="material-symbols-outlined text-[18px]">open_in_new</span> Buka via t.me
+            {{-- Pakai https://t.me/... saja. tg:// sering gagal di HP (WebView Midtrans / Chrome). --}}
+            <a href="{{ $telegramBotUrl }}" target="_blank" rel="noopener" class="btn btn-primary">
+                <span class="material-symbols-outlined text-[18px]">smart_toy</span> Buka bot di Telegram
             </a>
         @endif
         <a href="{{ route('company.home') }}" class="btn btn-outline-primary">

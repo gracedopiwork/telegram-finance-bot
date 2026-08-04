@@ -1,6 +1,7 @@
 @php
     $licenseKey = $order->license?->license_key ?? '';
-    $portalHref = rtrim((string) config('app.url'), '/') . '/portal/login';
+    $portalHref = url('/portal/login');
+    $baselineHref = url('/check-up');
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -16,12 +17,12 @@
     <h2 style="font-size: 1rem; margin-top: 1.75rem;">1) Buka YFD First Aid di Telegram</h2>
     @if(!empty($telegramBotUrl))
         <p>
-            {{-- Pakai https://t.me/... (bukan tg://) agar bisa diklik di email/WA --}}
-            <a href="{{ $telegramBotUrl }}" style="display: inline-block; background: #229ed9; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: 600;">Buka bot di Telegram</a>
+            {{-- https://t.me/... saja — tg:// sering tidak bisa dibuka dari email di HP --}}
+            <a href="{{ $telegramBotUrl }}" target="_blank" rel="noopener" style="display: inline-block; background: #229ed9; color: #ffffff !important; text-decoration: none; padding: 14px 22px; border-radius: 10px; font-weight: 600; mso-padding-alt: 14px 22px;">Buka bot di Telegram</a>
         </p>
         <p style="font-size: 0.875rem; color: #52525b;">
-            Atau salin/buka tautan ini:<br>
-            <a href="{{ $telegramBotUrl }}" style="color: #229ed9; word-break: break-all;">{{ $telegramBotUrl }}</a>
+            Jika tombol tidak terbuka di HP, salin lalu tempel di browser:<br>
+            <a href="{{ $telegramBotUrl }}" target="_blank" rel="noopener" style="color: #229ed9; word-break: break-all;">{{ $telegramBotUrl }}</a>
         </p>
         @if(!empty($telegramBotUsername))
             <p style="font-size: 0.8125rem; color: #71717a; margin-top: 0.75rem;">
@@ -48,16 +49,18 @@
 
     <h2 style="font-size: 1rem; margin-top: 1.75rem;">3) Dashboard Web YFD</h2>
     <p>
-        <a href="{{ $portalHref }}" style="display: inline-block; background: {{ config('yfd_brand.navy') }}; color: {{ config('yfd_brand.white') }}; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 600;">Buka Dashboard Web</a>
+        <a href="{{ $portalHref }}" target="_blank" rel="noopener" style="display: inline-block; background: {{ config('yfd_brand.navy') }}; color: {{ config('yfd_brand.white') }} !important; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: 600;">Buka Dashboard Web</a>
     </p>
-    <p style="font-size: 0.875rem; color: #52525b; word-break: break-all;">{{ $portalHref }}</p>
+    <p style="font-size: 0.875rem; color: #52525b;">
+        Atau buka di browser HP:<br>
+        <a href="{{ $portalHref }}" target="_blank" rel="noopener" style="color: #229ed9; word-break: break-all;">{{ $portalHref }}</a>
+    </p>
     <p style="font-size: 0.875rem; color: #52525b;">
         Login dengan email checkout <strong>{{ $order->email }}</strong> dan kode lisensi Anda.
         Atau ketik <strong>/web</strong> di bot untuk link masuk otomatis.
     </p>
 
     <h2 style="font-size: 1rem; margin-top: 1.75rem;">4) Isi Diagnostik (Baseline Data) — wajib</h2>
-    @php $baselineHref = rtrim((string) config('app.url'), '/') . '/check-up'; @endphp
     <p style="font-size: 0.875rem; color: #52525b;">
         Setelah masuk dashboard, langkah pertama adalah mengisi <strong>Baseline Data (Diagnostik Keuangan)</strong>.
         Ini menentukan tahap keuangan Anda dan mengaktifkan prescription bucket di dashboard.
@@ -66,7 +69,10 @@
         @endif
     </p>
     <p>
-        <a href="{{ $baselineHref }}" style="display: inline-block; background: {{ config('yfd_brand.gold') }}; color: {{ config('yfd_brand.navy') }}; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 700;">Isi Diagnostik Sekarang</a>
+        <a href="{{ $baselineHref }}" target="_blank" rel="noopener" style="display: inline-block; background: {{ config('yfd_brand.gold') }}; color: {{ config('yfd_brand.navy') }} !important; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: 700;">Isi Diagnostik Sekarang</a>
+    </p>
+    <p style="font-size: 0.8125rem; color: #71717a; word-break: break-all;">
+        <a href="{{ $baselineHref }}" target="_blank" rel="noopener" style="color: #229ed9;">{{ $baselineHref }}</a>
     </p>
     <p style="font-size: 0.8125rem; color: #71717a;">Menu di portal: <strong>BASELINE DATA (WAJIB DI ISI)</strong> → jawab semua pertanyaan → Simpan.</p>
 

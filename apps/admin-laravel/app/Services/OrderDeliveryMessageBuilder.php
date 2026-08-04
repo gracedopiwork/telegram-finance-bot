@@ -31,8 +31,8 @@ class OrderDeliveryMessageBuilder
     {
         $licenseKey = trim((string) ($order->license?->license_key ?? ''));
         $botUrl = TelegramBotUrl::resolve() ?? '';
-        $portalUrl = rtrim((string) config('app.url'), '/').'/portal/login';
-        $checkupUrl = rtrim((string) config('app.url'), '/').'/check-up';
+        $portalUrl = url('/portal/login');
+        $checkupUrl = url('/check-up');
 
         $lines = [
             'Hai '.$order->full_name.',',
@@ -45,7 +45,7 @@ class OrderDeliveryMessageBuilder
         if ($botUrl !== '') {
             $botUser = TelegramBotUrl::username();
             $lines[] = '🤖 *YFD First Aid*';
-            $lines[] = 'Buka tautan ini:';
+            $lines[] = 'Buka tautan ini di HP (buka di Chrome/Safari jika diminta):';
             $lines[] = $botUrl;
             if ($botUser) {
                 $lines[] = 'Atau di Telegram cari: @'.$botUser.' lalu ketuk Start.';
@@ -86,7 +86,7 @@ class OrderDeliveryMessageBuilder
 
     public function whatsAppFtsaUpgradeText(Order $order): string
     {
-        $portalUrl = rtrim((string) config('app.url'), '/').'/portal/login';
+        $portalUrl = url('/portal/login');
         $licenseKey = trim((string) ($order->license?->license_key ?? ''));
 
         $lines = [
@@ -116,7 +116,7 @@ class OrderDeliveryMessageBuilder
     {
         $licenseKey = trim((string) ($order->license?->license_key ?? ''));
         $botUrl = TelegramBotUrl::resolve() ?? '';
-        $portalUrl = rtrim((string) config('app.url'), '/').'/portal/login';
+        $portalUrl = url('/portal/login');
 
         $lines = [
             'Hai '.$order->full_name.',',
@@ -131,7 +131,7 @@ class OrderDeliveryMessageBuilder
         if ($botUrl !== '') {
             $botUser = TelegramBotUrl::username();
             $lines[] = '🤖 *YFD First Aid*';
-            $lines[] = 'Buka tautan ini:';
+            $lines[] = 'Buka tautan ini di HP (buka di Chrome/Safari jika diminta):';
             $lines[] = $botUrl;
             if ($botUser) {
                 $lines[] = 'Atau di Telegram cari: @'.$botUser.' lalu ketuk Start.';
@@ -157,8 +157,8 @@ class OrderDeliveryMessageBuilder
     private function whatsAppFtsaOnlyText(Order $order): string
     {
         $licenseKey = trim((string) ($order->license?->license_key ?? ''));
-        $portalUrl = rtrim((string) config('app.url'), '/').'/portal/login';
-        $checkupUrl = rtrim((string) config('app.url'), '/').'/check-up';
+        $portalUrl = url('/portal/login');
+        $checkupUrl = url('/check-up');
 
         $lines = [
             'Hai '.$order->full_name.',',

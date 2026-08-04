@@ -11,6 +11,7 @@ use App\Support\PortalSession;
 use App\Support\PrimaryCheckupUrl;
 use App\Support\TelegramBotUrl;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -28,6 +29,16 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Carbon::setLocale('id');
+
+        // Pastikan link email/WA/signed (/web) selalu https absolut — di HP sering gagal
+        // kalau APP_URL http lalu Nginx redirect ke https (signature & deep link rusak).
+        $appUrl = rtrim((string) config('app.url'), '/');
+        if ($appUrl !== '') {
+            URL::forceRootUrl($appUrl);
+            if (str_starts_with($appUrl, 'https://')) {
+                URL::forceScheme('https');
+            }
+        }
 
         View::composer('*', function ($view) {
             try {
