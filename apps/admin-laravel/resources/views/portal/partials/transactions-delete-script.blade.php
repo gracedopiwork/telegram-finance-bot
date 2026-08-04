@@ -167,6 +167,90 @@
             }
         });
     }
+
+    // --- Sort & filter tabel transaksi ---
+    const tbody = document.getElementById('tx-table-body');
+    const filterCategory = document.getElementById('tx-filter-category');
+    const filterBucket = document.getElementById('tx-filter-bucket');
+    const filterCount = document.getElementById('tx-filter-count');
+    let sortKey = null;
+    let sortDir = 1; // 1 asc, -1 desc
+
+    function visibleRows() {
+        if (!tbody) return [];
+        return Array.from(tbody.querySelectorAll('[data-tx-row]')).filter((r) => r.style.display !== 'none');
+    }
+
+    function updateFilterCount() {
+        if (!filterCount || !tbody) return;
+        const all = tbody.querySelectorAll('[data-tx-row]').length;
+        const shown = visibleRows().length;
+        filterCount.textContent = shown === all ? `${all} baris` : `${shown} dari ${all} baris`;
+    }
+
+    function applyFilters() {
+        if (!tbody) return;
+        const cat = (filterCategory && filterCategory.value) || '';
+        const bucket = (filterBucket && filterBucket.value) || '';
+        tbody.querySelectorAll('[data-tx-row]').forEach((row) => {
+            const matchCat = !cat || (row.dataset.txCategory || '') === cat;
+            const matchBucket = !bucket || (row.dataset.txBucket || '') === bucket;
+            row.style.display = matchCat && matchBucket ? '' : 'none';
+        });
+        updateFilterCount();
+    }
+
+    function sortValue(row, key, type) {
+        if (key === 'date') return row.dataset.txDate || '';
+        if (key === 'type') return row.dataset.txType || '';
+        if (key === 'category') return row.dataset.txCategory || '';
+        if (key === 'bucket') return row.dataset.txBucket || '';
+        if (key === 'amount') return Number(row.dataset.txAmount || 0);
+        return '';
+    }
+
+    function applySort(key, type) {
+        if (!tbody) return;
+        if (sortKey === key) {
+            sortDir *= -1;
+        } else {
+            sortKey = key;
+            sortDir = 1;
+        }
+
+        document.querySelectorAll('.tx-sort').forEach((btn) => {
+            const icon = btn.querySelector('.tx-sort-icon');
+            if (!icon) return;
+            if (btn.dataset.sort === key) {
+                icon.textContent = sortDir === 1 ? 'arrow_upward' : 'arrow_downward';
+                icon.classList.remove('opacity-40');
+            } else {
+                icon.textContent = 'unfold_more';
+                icon.classList.add('opacity-40');
+            }
+        });
+
+        const rows = Array.from(tbody.querySelectorAll('[data-tx-row]'));
+        rows.sort((a, b) => {
+            const va = sortValue(a, key, type);
+            const vb = sortValue(b, key, type);
+            if (type === 'number') {
+                return (va - vb) * sortDir;
+            }
+            return String(va).localeCompare(String(vb), 'id', { sensitivity: 'base' }) * sortDir;
+        });
+        rows.forEach((row) => tbody.appendChild(row));
+    }
+
+    document.querySelectorAll('.tx-sort').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            applySort(btn.dataset.sort, btn.dataset.type || 'text');
+        });
+    });
+
+    if (filterCategory) filterCategory.addEventListener('change', applyFilters);
+    if (filterBucket) filterBucket.addEventListener('change', applyFilters);
+    updateFilterCount();
 })();
 </script>
 @endpush

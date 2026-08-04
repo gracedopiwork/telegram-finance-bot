@@ -18,59 +18,6 @@
 </div>
 @endif
 
-<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-    <div class="px-5 py-4 border-b bg-slate-50 flex flex-wrap items-center justify-between gap-3">
-        <h3 class="font-bold text-navy-800 flex items-center gap-2">
-            <span class="material-symbols-outlined">upload_file</span>
-            Import Transaksi (CSV)
-        </h3>
-        <a href="{{ route('portal.transactions.template') }}"
-           class="inline-flex items-center gap-1 text-sm font-semibold text-navy-800 hover:underline">
-            <span class="material-symbols-outlined text-base">download</span>
-            Unduh template CSV
-        </a>
-    </div>
-    <div class="p-5 sm:p-6">
-        <p class="text-sm text-slate-600 mb-4">
-            Isi data di Excel/Google Sheets lalu simpan sebagai <strong>CSV UTF-8</strong> (koma atau titik-koma).
-            Kolom: tanggal, <strong>jenis</strong> (Pemasukan / Pengeluaran / Saving/Investment / Kewajiban Pajak), kategori, nominal,
-            <strong>sifat</strong> (Need / Wants), mood (atau Mood Spending), impulsif, keterangan.
-            File Excel: simpan sebagai <strong>CSV UTF-8</strong> (titik-koma atau koma) — ekstensi .csv / .txt / .xls didukung.
-            Kategori resmi (closed list): Makanan & Minuman, Transportasi, Tempat Tinggal, Lifestyle & Hiburan, Sosial & Keluarga, Bisnis & Karir, Gaji, dll.
-            Nominal: angka polos (<code>35000</code>) atau format Indonesia (<code>35.000</code>, <code>35rb</code>).
-            Maks. 500 baris per file.
-        </p>
-        @if(session('import_errors'))
-            <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-900 max-h-40 overflow-y-auto">
-                <div class="font-semibold mb-1">Detail error:</div>
-                <ul class="list-disc pl-5 space-y-0.5">
-                    @foreach(session('import_errors') as $err)
-                        <li>{{ $err }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-        <form method="post" action="{{ route('portal.transactions.import', request()->only(['month', 'period'])) }}"
-              enctype="multipart/form-data" class="flex flex-col sm:flex-row sm:items-end gap-3">
-            @csrf
-            <div class="flex-1 min-w-0">
-                <label class="block text-sm font-medium text-slate-700 mb-1">File CSV</label>
-                <input type="file" name="file" accept=".csv,.txt,.xls,.xlsx,text/csv"
-                       class="block w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-navy-800 file:text-white file:font-semibold hover:file:bg-navy-700"
-                       required>
-                @error('file')
-                    <p class="text-rose-600 text-xs mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-            <button type="submit"
-                    class="inline-flex items-center justify-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-5 py-2.5 rounded-xl shrink-0">
-                <span class="material-symbols-outlined">upload</span>
-                Import
-            </button>
-        </form>
-    </div>
-</div>
-
 <div id="tx-delete-toast" class="hidden fixed bottom-6 right-6 z-50 rounded-xl bg-navy-800 text-white text-sm px-4 py-3 shadow-lg"></div>
 
 <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -119,11 +66,39 @@
     @if(empty($summary['transactions']))
         @include('portal.partials.empty-state', [
             'title' => 'Belum ada transaksi',
-            'message' => 'Catat via bot di atas atau import CSV. Lihat ringkasan di Financial Health Dashboard.',
+            'message' => 'Catat via bot Telegram di atas. Lihat ringkasan di Financial Health Dashboard.',
         ])
     @else
+        @php
+            $txCategories = collect($summary['transactions'])->pluck('category')->filter()->unique()->sort()->values();
+            $txBuckets = collect($summary['transactions'])->pluck('bucket')->filter()->unique()->sort()->values();
+        @endphp
+        <div class="px-5 py-3 border-b bg-slate-50/80 flex flex-wrap items-end gap-3">
+            <div class="min-w-[10rem]">
+                <label for="tx-filter-category" class="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Filter kategori</label>
+                <select id="tx-filter-category" class="w-full rounded-lg border-slate-300 text-sm">
+                    <option value="">Semua kategori</option>
+                    @foreach($txCategories as $cat)
+                        <option value="{{ $cat }}">{{ $cat }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="min-w-[10rem]">
+                <label for="tx-filter-bucket" class="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Filter bucket</label>
+                <select id="tx-filter-bucket" class="w-full rounded-lg border-slate-300 text-sm">
+                    <option value="">Semua bucket</option>
+                    @foreach($txBuckets as $bucket)
+                        <option value="{{ $bucket }}">{{ $bucket }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <p class="text-xs text-slate-500 pb-2">
+                Klik header kolom untuk sort. Filter bucket mis. <strong>Essential Living</strong> untuk evaluasi alokasi.
+            </p>
+            <p id="tx-filter-count" class="text-xs font-semibold text-navy-800 pb-2 ml-auto"></p>
+        </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table id="tx-table" class="w-full text-sm">
                 <thead class="bg-slate-50 text-slate-600 text-left">
                     <tr>
                         <th class="px-4 py-3 font-semibold w-10">
@@ -131,11 +106,31 @@
                                    class="rounded border-slate-300 text-navy-700 focus:ring-navy-500"
                                    aria-label="Pilih semua transaksi">
                         </th>
-                        <th class="px-4 py-3 font-semibold">Tanggal</th>
-                        <th class="px-4 py-3 font-semibold">Jenis</th>
-                        <th class="px-4 py-3 font-semibold">Kategori</th>
-                        <th class="px-4 py-3 font-semibold text-right">Nominal</th>
-                        <th class="px-4 py-3 font-semibold hidden lg:table-cell">Bucket</th>
+                        <th class="px-4 py-3 font-semibold">
+                            <button type="button" class="tx-sort inline-flex items-center gap-0.5 hover:text-navy-800" data-sort="date" data-type="date">
+                                Tanggal <span class="material-symbols-outlined text-sm tx-sort-icon opacity-40">unfold_more</span>
+                            </button>
+                        </th>
+                        <th class="px-4 py-3 font-semibold">
+                            <button type="button" class="tx-sort inline-flex items-center gap-0.5 hover:text-navy-800" data-sort="type" data-type="text">
+                                Jenis <span class="material-symbols-outlined text-sm tx-sort-icon opacity-40">unfold_more</span>
+                            </button>
+                        </th>
+                        <th class="px-4 py-3 font-semibold">
+                            <button type="button" class="tx-sort inline-flex items-center gap-0.5 hover:text-navy-800" data-sort="category" data-type="text">
+                                Kategori <span class="material-symbols-outlined text-sm tx-sort-icon opacity-40">unfold_more</span>
+                            </button>
+                        </th>
+                        <th class="px-4 py-3 font-semibold text-right">
+                            <button type="button" class="tx-sort inline-flex items-center gap-0.5 hover:text-navy-800 ml-auto" data-sort="amount" data-type="number">
+                                Nominal <span class="material-symbols-outlined text-sm tx-sort-icon opacity-40">unfold_more</span>
+                            </button>
+                        </th>
+                        <th class="px-4 py-3 font-semibold hidden lg:table-cell">
+                            <button type="button" class="tx-sort inline-flex items-center gap-0.5 hover:text-navy-800" data-sort="bucket" data-type="text">
+                                Bucket <span class="material-symbols-outlined text-sm tx-sort-icon opacity-40">unfold_more</span>
+                            </button>
+                        </th>
                         <th class="px-4 py-3 font-semibold hidden sm:table-cell">Sifat</th>
                         <th class="px-4 py-3 font-semibold">Mood</th>
                         <th class="px-4 py-3 font-semibold">Impulsif</th>
@@ -149,7 +144,10 @@
                         data-tx-row
                         data-tx-id="{{ $t['id'] }}"
                         data-tx-type="{{ $t['type'] }}"
-                        data-tx-amount="{{ $t['amount'] }}">
+                        data-tx-amount="{{ $t['amount'] }}"
+                        data-tx-date="{{ $t['recorded_at'] }}"
+                        data-tx-category="{{ $t['category'] }}"
+                        data-tx-bucket="{{ $t['bucket'] ?? '' }}">
                         <td class="px-4 py-3 align-top">
                             <input type="checkbox"
                                    class="tx-select-item rounded border-slate-300 text-navy-700 focus:ring-navy-500"
