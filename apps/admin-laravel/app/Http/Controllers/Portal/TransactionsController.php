@@ -30,6 +30,25 @@ class TransactionsController extends Controller
         ]);
     }
 
+    public function export(Request $request): StreamedResponse|RedirectResponse
+    {
+        $telegramUserId = $this->activeTelegramUserId($request);
+        if ($telegramUserId <= 0) {
+            return redirect()
+                ->route('portal.login')
+                ->with('warning', 'Sesi portal habis. Silakan login ulang sebelum export.');
+        }
+
+        $csv = app(TransactionImportService::class)->exportCsvForUser($telegramUserId);
+        $filename = 'yfd-transaksi-semua-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($csv): void {
+            echo $csv;
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     public function import(Request $request): RedirectResponse
     {
         $request->validate([

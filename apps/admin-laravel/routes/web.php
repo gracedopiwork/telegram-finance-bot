@@ -243,6 +243,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('/referral', [PortalAffiliateController::class, 'index'])->name('affiliate');
             Route::post('/referral/klaim', [PortalAffiliateController::class, 'claim'])->name('affiliate.claim');
             Route::get('/transaksi', [PortalDashboardController::class, 'transactions'])->name('transactions');
+            Route::get('/transaksi/export', [PortalTransactionsController::class, 'export'])->name('transactions.export');
             Route::get('/transaksi/template', [PortalTransactionsController::class, 'importTemplate'])->name('transactions.template');
             Route::post('/transaksi/import', [PortalTransactionsController::class, 'import'])->name('transactions.import');
             Route::delete('/transaksi', [PortalTransactionsController::class, 'destroySelected'])->name('transactions.destroy-selected');

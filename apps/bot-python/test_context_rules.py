@@ -172,6 +172,14 @@ class ContextRulesTests(unittest.TestCase):
         self.assertEqual(hit["kategori"], "Transportasi")
         self.assertEqual(hit["sifat"], "Need")
 
+    def test_transport_tujuan_bisnis_detected(self) -> None:
+        from context_rules import is_business_transport_destination
+
+        self.assertTrue(is_business_transport_destination("grab ke klien untuk bisnis 30rb"))
+        self.assertTrue(is_business_transport_destination("gojek ke meeting kerja 45rb"))
+        self.assertTrue(is_business_transport_destination("ojek ke rapat client 25rb"))
+        self.assertFalse(is_business_transport_destination("grab ke mall nongkrong 25rb"))
+
     def test_transport_lifestyle_wants(self) -> None:
         hit = classify_from_text("grab ke mall nongkrong 25rb")
         self.assertIsNotNone(hit)

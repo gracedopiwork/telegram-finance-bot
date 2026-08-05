@@ -71,6 +71,50 @@ class TransactionImportService
     }
 
     /**
+     * Export semua transaksi user (CSV, BOM UTF-8) — cocok dibuka di Excel.
+     */
+    public function exportCsvForUser(int $telegramUserId, ?CategoryBucketService $buckets = null): string
+    {
+        $buckets ??= app(CategoryBucketService::class);
+        $lines = ["\xEF\xBB\xBF".'tanggal,jenis,kategori,sub_kategori,nominal,sifat,mood,impulsif,bucket,keterangan'];
+
+        BotTransaction::query()
+            ->where('telegram_user_id', $telegramUserId)
+            ->orderBy('recorded_at')
+            ->orderBy('id')
+            ->cursor()
+            ->each(function (BotTransaction $row) use (&$lines, $telegramUserId, $buckets): void {
+                $tanggal = PortalTimezone::formatRecordedAt($row->recorded_at, $telegramUserId);
+                $bucket = $buckets->resolve($row) ?? '';
+                $impulsif = $row->is_impulsive ? 'Yes' : 'No';
+                $lines[] = implode(',', [
+                    $this->csvEscape($tanggal),
+                    $this->csvEscape((string) $row->type),
+                    $this->csvEscape((string) $row->category),
+                    $this->csvEscape((string) ($row->sub_category ?: '')),
+                    (string) (int) $row->amount,
+                    $this->csvEscape((string) $row->nature),
+                    $this->csvEscape((string) ($row->mood ?: '')),
+                    $impulsif,
+                    $this->csvEscape($bucket),
+                    $this->csvEscape((string) ($row->notes ?: '')),
+                ]);
+            });
+
+        return implode("\n", $lines)."\n";
+    }
+
+    private function csvEscape(string $value): string
+    {
+        $value = str_replace(["\r\n", "\r", "\n"], ' ', $value);
+        if (str_contains($value, ',') || str_contains($value, '"') || str_contains($value, ';')) {
+            return '"'.str_replace('"', '""', $value).'"';
+        }
+
+        return $value;
+    }
+
+    /**
      * @return array{imported: int, failed: int, errors: list<string>, focus_month: ?string}
      */
     public function importFromFile(int $telegramUserId, UploadedFile $file): array

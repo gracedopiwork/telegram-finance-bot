@@ -125,6 +125,10 @@ class CategoryBucketServiceTest extends TestCase
             'Grab dari kos ke aktivitas networking bisnis di Nusa Dua',
             'Grab dari kos ke cafe komeda ketemu client bisnis',
             'Tiket pesawat untuk meeting klien di Jakarta',
+            'Grab ke meeting kerja 45rb',
+            'Gojek ke klien untuk bisnis 30rb',
+            'Ojek ke rapat client 25rb',
+            'Grab untuk bisnis pitching investor 50rb',
         ] as $notes) {
             $this->assertBucket(
                 'Future Building',

@@ -37,6 +37,11 @@
             @endif
         </h3>
         <div class="flex flex-wrap items-center gap-2">
+            <a href="{{ route('portal.transactions.export') }}"
+               class="inline-flex items-center gap-1 rounded-lg border border-navy-200 bg-navy-50 text-navy-800 hover:bg-navy-100 px-3 py-2 text-xs font-semibold">
+                <span class="material-symbols-outlined text-sm">download</span>
+                Export Semua CSV
+            </a>
             @if(!empty($summary['transactions']))
                 <button type="button"
                         id="tx-delete-selected-btn"
