@@ -6,9 +6,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Likuiditas Sosial — Hutang Masuk/Keluar (mirror Piutang).
- * Hutang Masuk = terima pinjaman sosial (bukan Pemasukan).
- * Hutang Keluar = bayar balik pinjaman sosial (bukan Pengeluaran 4-bucket).
+ * Likuiditas Sosial — Utang Masuk/Keluar (mirror Piutang).
+ * Utang Masuk = terima pinjaman sosial (bukan Pemasukan).
+ * Utang Keluar = bayar balik pinjaman sosial (bukan Pengeluaran 4-bucket).
  */
 return new class extends Migration
 {
@@ -18,7 +18,7 @@ return new class extends Migration
             DB::statement(
                 "ALTER TABLE bot_transactions MODIFY COLUMN type ENUM("
                 ."'Pemasukan', 'Pengeluaran', 'Saving/Investment', 'Kewajiban Pajak', "
-                ."'Piutang Keluar', 'Piutang Masuk', 'Hutang Masuk', 'Hutang Keluar'"
+                ."'Piutang Keluar', 'Piutang Masuk', 'Utang Masuk', 'Utang Keluar'"
                 .") NOT NULL"
             );
         }
@@ -42,11 +42,11 @@ return new class extends Migration
             foreach ([
                 [
                     'transaction_type' => 'payable_in',
-                    'reason' => 'Hutang Masuk dikecualikan dari pendapatan & 4 bucket (Likuiditas Sosial)',
+                    'reason' => 'Utang Masuk dikecualikan dari pendapatan & 4 bucket (Likuiditas Sosial)',
                 ],
                 [
                     'transaction_type' => 'payable_out',
-                    'reason' => 'Hutang Keluar dikecualikan dari 4 bucket (Likuiditas Sosial)',
+                    'reason' => 'Utang Keluar dikecualikan dari 4 bucket (Likuiditas Sosial)',
                 ],
             ] as $row) {
                 $exists = DB::table('category_bucket_mappings')

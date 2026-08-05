@@ -276,7 +276,7 @@ class SocialLiquidityService
         int $countBorrow = 0,
     ): array {
         if ($countOutbound === 0 && $activeTotal === 0 && $countBorrow === 0 && $activeDebtTotal === 0) {
-            return ['empty', 'Belum ada pencatatan piutang/hutang sosial di periode ini'];
+            return ['empty', 'Belum ada pencatatan piutang/utang sosial di periode ini'];
         }
 
         if ($share > 20.0) {

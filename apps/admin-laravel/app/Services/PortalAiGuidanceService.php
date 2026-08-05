@@ -758,7 +758,7 @@ Jangan menyebut archetype FTSA — itu ada di dashboard behavioral.
 Doctor's note HANYA berisi rekomendasi tindakan — jangan ulang ringkasan deskriptif (itu ada di clinical summary).
 Tiap rekomendasi harus konkret, bisa dilakukan, dan spesifik (contoh: alokasikan cashflow positif ke Future Building, tingkatkan saving rate >30%, diversifikasi investasi, batasi Flexible+Social ≤10%, evaluasi proteksi keuangan).
 JANGAN sarankan menaikkan Essential Living jika aktual sudah di bawah 50% — itu justru sehat.
-Jika ada defisit yang dibiayai Hutang Masuk, prioritaskan rekomendasi pelunasan hutang sosial tanpa mengoreksi Income.
+Jika ada defisit yang dibiayai Utang Masuk, prioritaskan rekomendasi pelunasan utang sosial tanpa mengoreksi Income.
 
 OUTPUT: JSON valid saja, tanpa markdown, format:
 {
@@ -1050,10 +1050,10 @@ PROMPT;
 
       $lines = [
           '- Defisit (expense>income): Rp '.$this->formatIdr((int) ($cash['deficit'] ?? 0)),
-          '- Hutang Masuk (pinjaman sosial masuk): Rp '.$this->formatIdr((int) ($cash['social_borrow_inflow'] ?? 0)),
-          '- Hutang Keluar (bayar balik): Rp '.$this->formatIdr((int) ($cash['social_repay_outflow'] ?? 0)),
+          '- Utang Masuk (pinjaman sosial masuk): Rp '.$this->formatIdr((int) ($cash['social_borrow_inflow'] ?? 0)),
+          '- Utang Keluar (bayar balik): Rp '.$this->formatIdr((int) ($cash['social_repay_outflow'] ?? 0)),
           '- Estimasi sisa kas: Rp '.$this->formatIdr((int) ($cash['estimated_cash'] ?? 0)),
-          '- Outstanding hutang sosial: Rp '.$this->formatIdr((int) ($cash['outstanding_debt'] ?? 0)),
+          '- Outstanding utang sosial: Rp '.$this->formatIdr((int) ($cash['outstanding_debt'] ?? 0)),
           '- Outstanding piutang aktif: Rp '.$this->formatIdr((int) ($cash['outstanding_receivable'] ?? 0)),
       ];
       $insight = trim((string) ($cash['insight_text'] ?? ''));

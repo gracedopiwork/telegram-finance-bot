@@ -1,4 +1,4 @@
-"""Reclassify transaksi tersimpan memakai rules taxonomy (tanpa AI / Telegram).
+﻿"""Reclassify transaksi tersimpan memakai rules taxonomy (tanpa AI / Telegram).
 
 Input JSON (stdin atau --file):
 {
@@ -45,7 +45,7 @@ from impulsive_rules import resolve_impulsif
 from nature_rules import refine_sifat_from_context
 from transaction_categories import normalize_category_fields, normalize_saving_fields
 
-VALID_JENIS = frozenset({"Pemasukan", "Pengeluaran", "Saving/Investment", "Kewajiban Pajak", "Piutang Keluar", "Piutang Masuk", "Hutang Masuk", "Hutang Keluar"})
+VALID_JENIS = frozenset({"Pemasukan", "Pengeluaran", "Saving/Investment", "Kewajiban Pajak", "Piutang Keluar", "Piutang Masuk", "Utang Masuk", "Utang Keluar"})
 VALID_SIFAT = frozenset({"Need", "Wants"})
 
 

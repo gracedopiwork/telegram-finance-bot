@@ -48,7 +48,7 @@
     </div>
     <div class="bg-white rounded-xl border p-4 text-center">
         <div class="text-lg font-extrabold text-navy-800">{{ $fmt($outstandingDebt) }}</div>
-        <div class="text-xs text-slate-500 mt-1">Outstanding hutang sosial</div>
+        <div class="text-xs text-slate-500 mt-1">Outstanding utang sosial</div>
     </div>
 </div>
 @if(!empty($cashLiq['insight_text']))

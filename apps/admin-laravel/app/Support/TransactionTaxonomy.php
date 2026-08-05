@@ -6,12 +6,13 @@ namespace App\Support;
  * YFD First Aid — jenis transaksi & sifat (taxonomy v1.3 + §5 Likuiditas Sosial).
  *
  * Jenis: Pemasukan | Pengeluaran | Saving/Investment | Kewajiban Pajak
- *      | Piutang Keluar | Piutang Masuk | Hutang Masuk | Hutang Keluar
+ *      | Piutang Keluar | Piutang Masuk | Utang Masuk | Utang Keluar
  * Sifat: Need | Wants (hanya dua nilai)
  *
- * Kewajiban Pajak & Likuiditas Sosial (Piutang + Hutang) dikecualikan dari 4 bucket.
- * Piutang = aset keluar dipinjamkan; Hutang = likuiditas naik karena pinjaman sosial diterima.
- * Hutang Masuk BUKAN Pemasukan; Hutang Keluar BUKAN Pengeluaran prescription.
+ * Kewajiban Pajak & Likuiditas Sosial (Piutang + Utang) dikecualikan dari 4 bucket.
+ * Piutang = cash kita yang keluar (outstanding piutang).
+ * Utang = cash kita bertambah (outstanding utang masuk).
+ * Utang Masuk BUKAN Pemasukan; Utang Keluar BUKAN Pengeluaran prescription.
  */
 class TransactionTaxonomy
 {
@@ -28,10 +29,10 @@ class TransactionTaxonomy
     public const TYPE_RECEIVABLE_IN = 'Piutang Masuk';
 
     /** Terima pinjaman sosial (uang masuk, jadi kewajiban) — bukan Pemasukan. */
-    public const TYPE_PAYABLE_IN = 'Hutang Masuk';
+    public const TYPE_PAYABLE_IN = 'Utang Masuk';
 
     /** Bayar balik pinjaman sosial — bukan Pengeluaran 4-bucket. */
-    public const TYPE_PAYABLE_OUT = 'Hutang Keluar';
+    public const TYPE_PAYABLE_OUT = 'Utang Keluar';
 
     /** @var list<string> */
     public const TYPES = [
@@ -151,10 +152,10 @@ class TransactionTaxonomy
         if (in_array($v, ['piutang masuk', 'piutang in', 'receivable in', 'pelunasan piutang', 'pengembalian piutang'], true)) {
             return self::TYPE_RECEIVABLE_IN;
         }
-        if (in_array($v, ['hutang masuk', 'payable in', 'pinjaman masuk', 'terima pinjaman'], true)) {
+        if (in_array($v, ['utang masuk', 'hutang masuk', 'payable in', 'pinjaman masuk', 'terima pinjaman'], true)) {
             return self::TYPE_PAYABLE_IN;
         }
-        if (in_array($v, ['hutang keluar', 'payable out', 'bayar hutang sosial', 'lunasi hutang sosial'], true)) {
+        if (in_array($v, ['utang keluar', 'hutang keluar', 'payable out', 'bayar utang sosial', 'bayar hutang sosial', 'lunasi utang sosial', 'lunasi hutang sosial'], true)) {
             return self::TYPE_PAYABLE_OUT;
         }
         foreach (self::TYPES as $type) {

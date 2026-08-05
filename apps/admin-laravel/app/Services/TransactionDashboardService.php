@@ -808,7 +808,7 @@ class TransactionDashboardService
         } elseif ($borrowIn > 0 && $cashflow >= 0) {
             $fmt = static fn (int $n): string => 'Rp'.number_format($n, 0, ',', '.');
             $insightText = sprintf(
-                'Ada arus Hutang Masuk %s pada periode ini. Ini menaikkan kas dan outstanding hutang — bukan pendapatan, dan tidak mengubah Income/Expense/bucket.',
+                'Ada arus Utang Masuk %s pada periode ini. Ini menaikkan kas dan outstanding hutang — bukan pendapatan, dan tidak mengubah Income/Expense/bucket.',
                 $fmt($borrowIn),
             );
         }
@@ -924,9 +924,9 @@ class TransactionDashboardService
         $borrowIn = (int) ($cashLiquidity['social_borrow_inflow'] ?? 0);
         $outstandingDebt = (int) ($cashLiquidity['outstanding_debt'] ?? 0);
         if ($cashflow < 0 && $borrowIn > 0) {
-            $recommendations[] = 'Rencanakan pelunasan hutang sosial (Hutang Keluar) agar Essential Living ke depan tidak bergantung pada pinjaman keluarga/teman.';
+            $recommendations[] = 'Rencanakan pelunasan utang sosial (Utang Keluar) agar Essential Living ke depan tidak bergantung pada pinjaman keluarga/teman.';
             if ($outstandingDebt > 0) {
-                $recommendations[] = 'Pantau outstanding hutang sosial di panel Likuiditas Sosial — ini kewajiban, bukan pendapatan.';
+                $recommendations[] = 'Pantau outstanding utang sosial di panel Likuiditas Sosial — ini kewajiban, bukan pendapatan.';
             }
         } elseif ($cashflow < 0) {
             $recommendations[] = 'Kurangi pengeluaran Flexible + Social hingga cashflow kembali positif sebelum menambah investasi.';

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Hutang sosial aktif: dibuka saat Hutang Masuk, ditutup saat Hutang Keluar.
+ * Hutang sosial aktif: dibuka saat Utang Masuk, ditutup saat Utang Keluar.
  */
 class BotSocialPayable extends Model
 {

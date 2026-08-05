@@ -48,7 +48,7 @@ class CategoryBucketService
             return null;
         }
 
-        if (in_array($category, ['piutang keluar', 'piutang masuk', 'hutang masuk', 'hutang keluar'], true)) {
+        if (in_array($category, ['piutang keluar', 'piutang masuk', 'utang masuk', 'utang keluar', 'hutang masuk', 'hutang keluar'], true)) {
             return null;
         }
 

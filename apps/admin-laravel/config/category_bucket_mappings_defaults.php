@@ -18,8 +18,8 @@ return [
     // Piutang + Hutang (§5 Likuiditas Sosial — di luar 4 bucket)
     ['category' => '*', 'sub_category' => '-', 'bucket' => 'Transfer (Excluded)', 'transaction_type' => 'receivable_out', 'reason' => 'Piutang Keluar dikecualikan dari 4 bucket', 'sort_order' => 0],
     ['category' => '*', 'sub_category' => '-', 'bucket' => 'Transfer (Excluded)', 'transaction_type' => 'receivable_in', 'reason' => 'Piutang Masuk dikecualikan dari pendapatan & 4 bucket', 'sort_order' => 0],
-    ['category' => '*', 'sub_category' => '-', 'bucket' => 'Transfer (Excluded)', 'transaction_type' => 'payable_in', 'reason' => 'Hutang Masuk dikecualikan dari pendapatan & 4 bucket', 'sort_order' => 0],
-    ['category' => '*', 'sub_category' => '-', 'bucket' => 'Transfer (Excluded)', 'transaction_type' => 'payable_out', 'reason' => 'Hutang Keluar dikecualikan dari 4 bucket', 'sort_order' => 0],
+    ['category' => '*', 'sub_category' => '-', 'bucket' => 'Transfer (Excluded)', 'transaction_type' => 'payable_in', 'reason' => 'Utang Masuk dikecualikan dari pendapatan & 4 bucket', 'sort_order' => 0],
+    ['category' => '*', 'sub_category' => '-', 'bucket' => 'Transfer (Excluded)', 'transaction_type' => 'payable_out', 'reason' => 'Utang Keluar dikecualikan dari 4 bucket', 'sort_order' => 0],
 
     // Income
     ['category' => 'Gaji', 'sub_category' => '-', 'bucket' => 'Income', 'transaction_type' => 'income', 'nature' => 'Need', 'match_keywords' => 'gaji,salary,payroll', 'reason' => 'Pemasukan gaji', 'sort_order' => 10],

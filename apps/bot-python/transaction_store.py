@@ -1,4 +1,4 @@
-"""Simpan transaksi ke Laravel (MySQL) via API internal."""
+﻿"""Simpan transaksi ke Laravel (MySQL) via API internal."""
 
 from __future__ import annotations
 
@@ -21,19 +21,19 @@ def format_prescription_bucket(parsed: dict) -> str:
     if jenis in {
         "Piutang Keluar",
         "Piutang Masuk",
-        "Hutang Masuk",
-        "Hutang Keluar",
+        "Utang Masuk",
+        "Utang Keluar",
     } or kategori in {
         "Piutang Keluar",
         "Piutang Masuk",
-        "Hutang Masuk",
-        "Hutang Keluar",
+        "Utang Masuk",
+        "Utang Keluar",
     }:
         label = jenis if jenis in {
             "Piutang Keluar",
             "Piutang Masuk",
-            "Hutang Masuk",
-            "Hutang Keluar",
+            "Utang Masuk",
+            "Utang Keluar",
         } else kategori
         return f"Likuiditas sosial ({label}) — tidak masuk prescription"
     if jenis == "Pemasukan" and bucket is None:

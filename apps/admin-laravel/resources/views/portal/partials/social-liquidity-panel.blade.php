@@ -37,7 +37,7 @@
     </div>
     <p class="text-sm text-slate-600 leading-relaxed mb-4">{{ $liqBody }}</p>
 
-    <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Piutang (kamu meminjamkan)</div>
+    <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Piutang (cash keluar)</div>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-5">
         <div>
             <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Piutang keluar</div>
@@ -61,22 +61,22 @@
         </div>
     </div>
 
-    <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Hutang (kamu menerima pinjaman)</div>
+    <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Utang (cash bertambah)</div>
     <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 text-sm mb-4">
         <div>
-            <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Hutang masuk</div>
+            <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Utang masuk</div>
             <div class="text-lg font-extrabold text-navy-800">{{ $fmt((int) ($liq['borrow_month'] ?? 0)) }}</div>
-            <div class="text-xs text-slate-500">likuiditas naik (bukan income)</div>
+            <div class="text-xs text-slate-500">cash naik (bukan income)</div>
         </div>
         <div>
-            <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Hutang keluar</div>
+            <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Utang keluar</div>
             <div class="text-lg font-extrabold text-navy-800">{{ $fmt((int) ($liq['repay_debt_month'] ?? 0)) }}</div>
             <div class="text-xs text-slate-500">bayar balik periode ini</div>
         </div>
         <div>
-            <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Hutang aktif</div>
+            <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Utang aktif</div>
             <div class="text-lg font-extrabold text-navy-800">{{ $fmt((int) ($liq['active_debt_total'] ?? 0)) }}</div>
-            <div class="text-xs text-slate-500">{{ (int) ($liq['count_active_debt'] ?? 0) }} hutang</div>
+            <div class="text-xs text-slate-500">{{ (int) ($liq['count_active_debt'] ?? 0) }} utang</div>
         </div>
     </div>
 

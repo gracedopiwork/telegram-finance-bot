@@ -1,4 +1,4 @@
-"""Tests for transaction clarification before confirmation."""
+﻿"""Tests for transaction clarification before confirmation."""
 
 from __future__ import annotations
 
@@ -224,7 +224,7 @@ class ClarificationRulesTests(unittest.TestCase):
             "utang ke ayuti 1 juta",
         )
         self.assertIn("Piutang Keluar", question or "")
-        self.assertIn("Hutang Masuk", question or "")
+        self.assertIn("Utang Masuk", question or "")
 
     def test_bayar_utang_no_arah_clarification(self) -> None:
         question = clarification_question(

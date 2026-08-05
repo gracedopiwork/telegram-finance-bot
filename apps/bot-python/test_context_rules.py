@@ -1,4 +1,4 @@
-"""Unit tests for context_rules — run: python test_context_rules.py"""
+﻿"""Unit tests for context_rules — run: python test_context_rules.py"""
 
 from __future__ import annotations
 
@@ -191,12 +191,12 @@ class ContextRulesTests(unittest.TestCase):
         self.assertIsNone(classify_from_text("pinjam ke ayuti 1jt"))
 
     def test_bayar_utang_ke_adalah_hutang_keluar(self) -> None:
-        self.assertClass("bayar utang ke ayuti 1jt", "Hutang Keluar", "Lain-lain")
-        self.assertClass("lunasi hutang ke ayuti 1jt", "Hutang Keluar", "Lain-lain")
+        self.assertClass("bayar utang ke ayuti 1jt", "Utang Keluar", "Lain-lain")
+        self.assertClass("lunasi hutang ke ayuti 1jt", "Utang Keluar", "Lain-lain")
 
     def test_pinjam_dari_adalah_hutang_masuk(self) -> None:
-        self.assertClass("pinjam dari ayuti 1jt", "Hutang Masuk", "Lain-lain")
-        self.assertClass("ngutang dari ayuti 1jt", "Hutang Masuk", "Lain-lain")
+        self.assertClass("pinjam dari ayuti 1jt", "Utang Masuk", "Lain-lain")
+        self.assertClass("ngutang dari ayuti 1jt", "Utang Masuk", "Lain-lain")
 
     def test_klarifikasi_pinjamkan_jadi_piutang(self) -> None:
         parsed = {
@@ -222,7 +222,7 @@ class ContextRulesTests(unittest.TestCase):
             parsed,
             "utang ke ayuti 1 juta\nKlarifikasi user: saya yang berhutang",
         )
-        self.assertEqual(out["jenis"], "Hutang Masuk")
+        self.assertEqual(out["jenis"], "Utang Masuk")
         self.assertEqual(out["kategori"], "Lain-lain")
 
     def test_ngutangin_tetap_piutang_keluar(self) -> None:

@@ -1,4 +1,4 @@
-"""Daftar kategori resmi YFD — closed list (YFD AI Taxonomy v1.3)."""
+﻿"""Daftar kategori resmi YFD — closed list (YFD AI Taxonomy v1.3)."""
 
 from __future__ import annotations
 
@@ -280,8 +280,8 @@ Aturan:
      * PBB / STNK / pajak kendaraan = Pengeluaran (bukan Kewajiban Pajak).
    - Piutang Keluar: pinjamin / ngutangin / talang / bayarkan dulu / nanti diganti — Likuiditas Sosial.
    - Piutang Masuk: dibayar balik / transfer balik — BUKAN pemasukan baru.
-   - Hutang Masuk: pinjam dari / ngutang dari / terima pinjaman sosial — likuiditas naik, BUKAN Pemasukan.
-   - Hutang Keluar: bayar utang/hutang ke orang (sosial) — BUKAN Pengeluaran 4-bucket.
+   - Utang Masuk: pinjam dari / ngutang dari / terima pinjaman sosial — likuiditas naik, BUKAN Pemasukan.
+   - Utang Keluar: bayar utang/hutang ke orang (sosial) — BUKAN Pengeluaran 4-bucket.
      * Cicilan lembaga (pinjol/KPR/kartu kredit/paylater) tetap Pengeluaran + Cicilan & Hutang.
    - PRINSIP: Likuiditas Sosial hanya mengubah kas & piutang/hutang. Belanja dari dana pinjaman (mis. bayar RS) tetap Pengeluaran + bucket.
    - "utang ke [nama]" tanpa konteks = AMBIGU → needs_clarification (meminjamkan vs berhutang).

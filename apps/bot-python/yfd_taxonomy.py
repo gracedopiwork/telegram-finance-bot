@@ -1,4 +1,4 @@
-"""YFD AI Taxonomy v1.3 (2 Agustus 2026) — closed vocabulary & grey-area helpers.
+﻿"""YFD AI Taxonomy v1.3 (2 Agustus 2026) — closed vocabulary & grey-area helpers.
 
 Source: docs/YFD_AI_Taxonomy_REVISI UPDATED TANGGAL 2 AGUSTUS 2026.pdf
 AI picks kategori/jenis/sifat only. Bucket is system-determined (not AI).
@@ -53,8 +53,8 @@ VALID_JENIS = (
     "Saving/Investment",
     "Piutang Keluar",
     "Piutang Masuk",
-    "Hutang Masuk",
-    "Hutang Keluar",
+    "Utang Masuk",
+    "Utang Keluar",
     "Kewajiban Pajak",
 )
 
@@ -192,7 +192,7 @@ GREY_AREA_ITEMS: dict[str, dict[str, str]] = {
         "question": (
             "Utang ini artinya kamu meminjamkan uang ke orang itu "
             "(nanti kembali = Piutang Keluar), atau kamu yang menerima pinjaman/berhutang "
-            "(Hutang Masuk — likuiditas naik, bukan Pemasukan)?"
+            "(Utang Masuk — likuiditas naik, bukan Pemasukan)?"
         ),
     },
 }
