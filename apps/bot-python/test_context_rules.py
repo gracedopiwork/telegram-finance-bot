@@ -186,20 +186,38 @@ class ContextRulesTests(unittest.TestCase):
         self.assertEqual(hit["jenis"], "Piutang Keluar")
         self.assertEqual(hit["sifat"], "Need")
 
-    def test_utang_ke_orang_adalah_cicilan_hutang(self) -> None:
-        self.assertClass("utang ke ayuti 1 juta", "Pengeluaran", "Cicilan & Hutang")
-        self.assertClass("hutang ke ayuti 1jt", "Pengeluaran", "Cicilan & Hutang")
-        self.assertClass("pinjam ke ayuti 1jt", "Pengeluaran", "Cicilan & Hutang")
-        self.assertClass("bayar utang ke ayuti 1jt", "Pengeluaran", "Cicilan & Hutang")
+    def test_utang_ke_orang_ambiguous_no_auto_class(self) -> None:
+        self.assertIsNone(classify_from_text("utang ke ayuti 1 juta"))
+        self.assertIsNone(classify_from_text("pinjam ke ayuti 1jt"))
 
-    def test_apply_rules_corrects_ai_piutang_when_utang_ke(self) -> None:
+    def test_bayar_utang_ke_adalah_cicilan_hutang(self) -> None:
+        self.assertClass("bayar utang ke ayuti 1jt", "Pengeluaran", "Cicilan & Hutang")
+        self.assertClass("lunasi hutang ke ayuti 1jt", "Pengeluaran", "Cicilan & Hutang")
+
+    def test_klarifikasi_pinjamkan_jadi_piutang(self) -> None:
+        parsed = {
+            "keterangan": "Utang ke Ayuti",
+            "jenis": "Pengeluaran",
+            "kategori": "Cicilan & Hutang",
+            "sifat": "Need",
+        }
+        out = apply_context_rules(
+            parsed,
+            "utang ke ayuti 1 juta\nKlarifikasi user: saya pinjamkan, nanti balik",
+        )
+        self.assertEqual(out["jenis"], "Piutang Keluar")
+
+    def test_klarifikasi_berhutang_jadi_cicilan(self) -> None:
         parsed = {
             "keterangan": "Utang ke Ayuti",
             "jenis": "Piutang Keluar",
             "kategori": "Sosial & Keluarga",
             "sifat": "Need",
         }
-        out = apply_context_rules(parsed, "utang ke ayuti 1 juta")
+        out = apply_context_rules(
+            parsed,
+            "utang ke ayuti 1 juta\nKlarifikasi user: saya yang berhutang",
+        )
         self.assertEqual(out["jenis"], "Pengeluaran")
         self.assertEqual(out["kategori"], "Cicilan & Hutang")
 

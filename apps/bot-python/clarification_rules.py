@@ -20,6 +20,7 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
     category = str(parsed.get("kategori") or "").strip().lower()
 
     checkers = (
+        _is_ambiguous_utang_arah,
         _is_generic_book,
         _is_generic_instrument,
         _is_generic_coffee,
@@ -50,6 +51,14 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
 
 def _has_purpose(text: str, markers: tuple[str, ...]) -> bool:
     return any(marker in text for marker in markers) or "klarifikasi user:" in text
+
+
+def _is_ambiguous_utang_arah(text: str, category: str) -> str | None:
+    """utang/pinjam ke [nama] tanpa sinyal jelas — tanya arah cashflow."""
+    del category
+    from context_rules import is_ambiguous_utang_ke_person
+
+    return "utang_arah" if is_ambiguous_utang_ke_person(text) else None
 
 
 def _is_generic_book(text: str, category: str) -> str | None:

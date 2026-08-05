@@ -218,6 +218,28 @@ class ClarificationRulesTests(unittest.TestCase):
         )
         self.assertIn("mobilitas kerja", question or "")
 
+    def test_utang_ke_requires_arah_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Cicilan & Hutang", "keterangan": "Utang ke Ayuti"},
+            "utang ke ayuti 1 juta",
+        )
+        self.assertIn("Piutang Keluar", question or "")
+        self.assertIn("Cicilan & Hutang", question or "")
+
+    def test_bayar_utang_no_arah_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Cicilan & Hutang", "keterangan": "Bayar utang ke Ayuti"},
+            "bayar utang ke ayuti 1jt",
+        )
+        self.assertIsNone(question)
+
+    def test_utang_after_klarifikasi_no_ask_again(self) -> None:
+        question = clarification_question(
+            {"kategori": "Lain-lain", "keterangan": "Utang ke Ayuti"},
+            "utang ke ayuti 1 juta\nKlarifikasi user: saya pinjamkan",
+        )
+        self.assertIsNone(question)
+
 
 if __name__ == "__main__":
     unittest.main()

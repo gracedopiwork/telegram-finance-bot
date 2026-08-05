@@ -185,6 +185,14 @@ GREY_AREA_ITEMS: dict[str, dict[str, str]] = {
             "kebutuhan wajib sekolah, atau hobi/hiburan?"
         ),
     },
+    "utang_arah": {
+        "label": "utang ke orang",
+        "question": (
+            "Utang ini artinya kamu meminjamkan uang ke orang itu "
+            "(nanti kembali = Piutang Keluar), atau kamu yang berhutang/bayar hutang ke dia "
+            "(Cicilan & Hutang)?"
+        ),
+    },
 }
 
 
