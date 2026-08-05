@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Perhitungan Biaya AI — Claude vs Gemini | YFD</title>
+  <style>
+    @page { size: A4; margin: 16mm 14mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      color: #1e293b;
+      line-height: 1.5;
+      font-size: 10.5pt;
+      margin: 0;
+      padding: 0;
+    }
+    .cover {
+      background: linear-gradient(135deg, #0c2240 0%, #1c3f6e 100%);
+      color: #fff;
+      padding: 26px 28px;
+      border-radius: 12px;
+      margin-bottom: 22px;
+    }
+    .cover .brand { font-size: 9pt; letter-spacing: 0.14em; text-transform: uppercase; color: #f5c130; font-weight: 700; }
+    .cover h1 { margin: 10px 0 8px; font-size: 22pt; line-height: 1.2; }
+    .cover p { margin: 0; opacity: 0.92; font-size: 10.5pt; }
+    .meta { font-size: 9pt; color: #64748b; margin-bottom: 18px; }
+    h2 {
+      color: #0c2240;
+      font-size: 13pt;
+      margin: 20px 0 8px;
+      padding-bottom: 5px;
+      border-bottom: 2px solid #f5c130;
+    }
+    h3 { color: #143057; font-size: 11pt; margin: 14px 0 6px; }
+    p { margin: 0 0 8px; }
+    ul { margin: 0 0 10px 18px; padding: 0; }
+    li { margin-bottom: 4px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 14px;
+      font-size: 9.5pt;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f1f5f9; color: #0c2240; font-weight: 700; }
+    td.num, th.num { text-align: right; }
+    .formula {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #0c2240;
+      padding: 10px 12px;
+      margin: 10px 0;
+      font-size: 10pt;
+    }
+    .note {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 12px 0;
+      font-size: 9.5pt;
+    }
+    .ok {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 12px 0;
+      font-size: 9.5pt;
+    }
+    .warn {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 12px 0;
+      font-size: 9.5pt;
+    }
+    .footer {
+      margin-top: 24px;
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 8.5pt;
+      color: #64748b;
+    }
+    .badge {
+      display: inline-block;
+      background: #0c2240;
+      color: #f5c130;
+      font-weight: 700;
+      font-size: 8.5pt;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .page-break { page-break-before: always; }
+    .highlight { background: #fef9c3; }
+    .small { font-size: 9pt; color: #64748b; }
+    .two-col { display: table; width: 100%; margin: 10px 0; }
+    .two-col > div { display: table-cell; width: 50%; vertical-align: top; padding-right: 10px; }
+  </style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="brand">Your Financial Doctor</div>
+  <h1>Perhitungan Biaya AI<br>Claude vs Gemini</h1>
+  <p>Panduan internal: model bisnis YFD First Aid, kuota AI, dan proyeksi skala pengguna</p>
+</div>
+
+<p class="meta">
+  <strong>Dokumen:</strong> PERHITUNGAN_BIAYA_AI_CLAUDE_VS_GEMINI &nbsp;|&nbsp;
+  <strong>Tanggal:</strong> Juli 2026 &nbsp;|&nbsp;
+  <strong>Kurs acuan:</strong> Rp 16.500 / USD
+</p>
+
+<h2>1. Ringkasan eksekutif</h2>
+<p>
+  YFD First Aid memakai AI untuk <strong>(A) parsing transaksi bot Telegram</strong> dan
+  <strong>(B) Doctor's Note / insight dashboard</strong>. Saat ini provider utama adalah
+  <strong>Claude (Haiku + Sonnet)</strong>. Dokumen ini membandingkan biaya dengan
+  <strong>Google Gemini</strong> dan menjelaskan dampak model <strong>sekali bayar (lifetime)</strong>
+  vs <strong>biaya API berulang</strong>.
+</p>
+
+<div class="note">
+  <strong>Poin penting:</strong> Angka <strong>Rp 5.000/bulan per user</strong> di sistem YFD adalah
+  <strong>plafon kuota internal</strong>, bukan tagihan Claude/Gemini ke provider.
+  Setelah kuota habis, user tetap bisa catat transaksi (mode biasa) tanpa biaya API tambahan.
+</div>
+
+<h2>2. Harga API resmi (per 1 juta token)</h2>
+<p class="small">Sumber: Anthropic Platform Docs &amp; Google Gemini API Pricing (Juli 2026). Input dan output dibilling terpisah.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Model</th>
+      <th>Input / 1M token</th>
+      <th>Output / 1M token</th>
+      <th>Setara use case YFD</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Gemini 2.5 Flash-Lite</strong></td>
+      <td class="num">$0,10</td>
+      <td class="num">$0,40</td>
+      <td>Parsing bot (paling murah)</td>
+    </tr>
+    <tr>
+      <td><strong>Gemini 3 Flash Preview</strong></td>
+      <td class="num">$0,50</td>
+      <td class="num">$3,00</td>
+      <td>Parsing + multimodal ringan</td>
+    </tr>
+    <tr class="highlight">
+      <td><strong>Claude Haiku 4.5</strong> <span class="badge">YFD sekarang</span></td>
+      <td class="num">$1,00</td>
+      <td class="num">$5,00</td>
+      <td>Parse bot + insight ringan</td>
+    </tr>
+    <tr>
+      <td><strong>Gemini 3.5 Flash</strong></td>
+      <td class="num">$1,50</td>
+      <td class="num">$9,00</td>
+      <td>Agentic / coding</td>
+    </tr>
+    <tr>
+      <td><strong>Gemini 3.1 Pro</strong> (≤200K prompt)</td>
+      <td class="num">$2,00</td>
+      <td class="num">$12,00</td>
+      <td>Reasoning kompleks</td>
+    </tr>
+    <tr>
+      <td><strong>Claude Sonnet 4.6</strong> <span class="badge">Portal insight</span></td>
+      <td class="num">$3,00</td>
+      <td class="num">$15,00</td>
+      <td>Doctor's Note premium</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Pola umum:</strong> output ≈ 5× input. Gemini Flash-Lite bisa <strong>8–10× lebih murah</strong> dari Claude Haiku untuk workload serupa.</p>
+
+<div class="page-break"></div>
+
+<h2>3. Estimasi biaya per aksi (YFD)</h2>
+
+<h3>3.1 Parse transaksi bot (teks)</h3>
+<div class="formula">
+  Per request kira-kira: <strong>~2.500 token input</strong> (system prompt + aturan kategori) + <strong>~150 token output</strong> (JSON)
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Provider / model</th>
+      <th>Biaya per parse (USD)</th>
+      <th>Biaya per parse (IDR)</th>
+      <th>Per 1.000 parse</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Gemini 2.5 Flash-Lite</td>
+      <td class="num">~$0,0003</td>
+      <td class="num">~Rp 5</td>
+      <td class="num">~Rp 5.000</td>
+    </tr>
+    <tr>
+      <td>Gemini 3 Flash Preview</td>
+      <td class="num">~$0,0017</td>
+      <td class="num">~Rp 28</td>
+      <td class="num">~Rp 28.000</td>
+    </tr>
+    <tr class="highlight">
+      <td>Claude Haiku 4.5</td>
+      <td class="num">~$0,0033</td>
+      <td class="num">~Rp 54</td>
+      <td class="num">~Rp 54.000</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>3.2 Doctor's Note bulanan (dashboard AI)</h3>
+<div class="formula">
+  Per generate kira-kira: <strong>~3.000 token input</strong> + <strong>~800 token output</strong> &nbsp;|&nbsp;
+  Frekuensi: <strong>1× per user per bulan</strong> (dengan cache)
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Provider / model</th>
+      <th>Biaya per generate (IDR)</th>
+      <th>Jika dijual Rp 10.000/bulan</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Gemini 2.5 Flash-Lite</td>
+      <td class="num">~Rp 10–15</td>
+      <td class="num">Margin ~99%</td>
+    </tr>
+    <tr class="highlight">
+      <td>Claude Haiku 4.5</td>
+      <td class="num">~Rp 120–200</td>
+      <td class="num">Margin ~98%</td>
+    </tr>
+    <tr>
+      <td>Claude Sonnet 4.6</td>
+      <td class="num">~Rp 350–500</td>
+      <td class="num">Margin ~95%</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>4. Kuota AI di sistem YFD (bukan tagihan provider)</h2>
+
+<table>
+  <thead>
+    <tr><th>Setting</th><th>Nilai default</th><th>Artinya</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>AI_QUOTA_MONTHLY_IDR</code></td>
+      <td class="num">Rp 5.000</td>
+      <td>Plafon kuota AI per user per bulan</td>
+    </tr>
+    <tr>
+      <td><code>AI_COST_TEXT_PARSE_IDR</code></td>
+      <td class="num">Rp 10</td>
+      <td>1 parse teks = Rp 10 (akuntansi internal)</td>
+    </tr>
+    <tr>
+      <td><code>AI_COST_VISION_PARSE_IDR</code></td>
+      <td class="num">Rp 30</td>
+      <td>1 parse foto struk = Rp 30 (internal)</td>
+    </tr>
+    <tr>
+      <td>Maks parse teks/bulan</td>
+      <td class="num">±500×</td>
+      <td>Setelah habis → mode biasa (tanpa AI)</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <strong>Jangan pakai Rp 5.000 sebagai biaya Claude langsung.</strong><br>
+  Itu batas proteksi bisnis. Biaya API riil tergantung berapa kali user benar-benar memakai AI.
+</div>
+
+<div class="page-break"></div>
+
+<h2>5. Biaya API riil per user per bulan</h2>
+<p>Asumsi: Claude Haiku untuk parse bot. Kurs Rp 16.500/USD.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Profil user</th>
+      <th>Parse/bulan</th>
+      <th>Claude Haiku</th>
+      <th>Gemini Flash-Lite</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Ringan</td>
+      <td class="num">10</td>
+      <td class="num">~Rp 540</td>
+      <td class="num">~Rp 50</td>
+    </tr>
+    <tr>
+      <td>Normal</td>
+      <td class="num">30</td>
+      <td class="num">~Rp 1.620</td>
+      <td class="num">~Rp 150</td>
+    </tr>
+    <tr>
+      <td>Aktif</td>
+      <td class="num">100</td>
+      <td class="num">~Rp 5.400</td>
+      <td class="num">~Rp 500</td>
+    </tr>
+    <tr>
+      <td>Maks kuota</td>
+      <td class="num">500</td>
+      <td class="num">~Rp 27.000</td>
+      <td class="num">~Rp 2.500</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>6. Model bisnis: sekali bayar vs biaya berulang</h2>
+
+<h3>6.1 Produk YFD First Aid (lifetime)</h3>
+<table>
+  <thead>
+    <tr><th>Item</th><th>Nilai</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Harga jual</td><td class="num">Rp 199.000 – 299.000 (sekali bayar)</td></tr>
+    <tr><td>Yang didapat</td><td>Bot Telegram + dashboard angka selamanya + kuota AI terbatas</td></tr>
+    <tr><td>Biaya berulang ke YFD</td><td>API AI + server (tergantung pemakaian aktual)</td></tr>
+  </tbody>
+</table>
+
+<h3>6.2 Runway lifetime vs biaya API (contoh Rp 199.000)</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Profil user</th>
+      <th>Biaya API/bulan (Claude)</th>
+      <th>Runway dari Rp 199k</th>
+      <th>Biaya API/bulan (Gemini Lite)</th>
+      <th>Runway dari Rp 199k</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Normal (30 parse)</td>
+      <td class="num">~Rp 1.620</td>
+      <td class="num">~10 tahun</td>
+      <td class="num">~Rp 150</td>
+      <td class="num">~110 tahun</td>
+    </tr>
+    <tr>
+      <td>Aktif (100 parse)</td>
+      <td class="num">~Rp 5.400</td>
+      <td class="num">~3 tahun</td>
+      <td class="num">~Rp 500</td>
+      <td class="num">~33 tahun</td>
+    </tr>
+    <tr>
+      <td>Maks kuota (500 parse)</td>
+      <td class="num">~Rp 27.000</td>
+      <td class="num">~8 bulan</td>
+      <td class="num">~Rp 2.500</td>
+      <td class="num">~6,5 tahun</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <strong>Kesimpulan:</strong> Lifetime Rp 199–299k <em>sustainable</em> jika mayoritas user normal/ringan
+  dan kuota AI tetap dibatasi. Risiko tinggi hanya jika banyak user sangat aktif yang selalu habiskan kuota penuh setiap bulan.
+</div>
+
+<div class="page-break"></div>
+
+<h2>7. Proyeksi skala: 1 juta pengguna</h2>
+<p>Asumsi: semua user aktif dalam skenario terburuk vs realistis. Hanya biaya API parse (belum server).</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Skenario</th>
+      <th>Parse/user/bulan</th>
+      <th>Claude Haiku / bulan</th>
+      <th>Gemini Flash-Lite / bulan</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Realistis (30% user aktif, rata-rata 30 parse)</td>
+      <td class="num">~9 juta total</td>
+      <td class="num">~Rp 486 juta</td>
+      <td class="num">~Rp 45 juta</td>
+    </tr>
+    <tr>
+      <td>Aktif (semua user 100 parse)</td>
+      <td class="num">100 juta total</td>
+      <td class="num">~Rp 5,4 miliar</td>
+      <td class="num">~Rp 500 juta</td>
+    </tr>
+    <tr class="highlight">
+      <td>Terburuk (semua maks 500 parse)</td>
+      <td class="num">500 juta total</td>
+      <td class="num">~Rp 27 miliar</td>
+      <td class="num">~Rp 2,5 miliar</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>7.1 Pendapatan sekali bayar vs biaya bulanan</h3>
+<div class="formula">
+  <strong>1 juta user × Rp 300.000</strong> = <strong>Rp 300 miliar</strong> (one-time, bukan per bulan)<br>
+  <strong>Biaya API Claude (skenario aktif):</strong> ~Rp 5,4 miliar/bulan → runway ~55 bulan (~4,6 tahun) dari pool pendapatan sekali bayar<br>
+  <strong>Biaya API Gemini Lite (skenario aktif):</strong> ~Rp 500 juta/bulan → runway ~600 bulan (~50 tahun)
+</div>
+
+<div class="warn">
+  Tanpa langganan berulang, model lifetime akan <strong>terkuras</strong> pada skala besar + user sangat aktif.
+  Solusi: kuota AI (sudah ada) + langganan Doctor's Note Rp 10.000/bulan.
+</div>
+
+<h2>8. Rekomendasi Doctor's Note — Rp 10.000/bulan</h2>
+
+<table>
+  <thead>
+    <tr><th>Layer</th><th>Harga</th><th>Isi</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>YFD First Aid</strong> (lifetime)</td>
+      <td class="num">Rp 199–299k</td>
+      <td>Bot + dashboard angka (KPI, bucket, grafik, Pulse) — tanpa Doctor's Note AI penuh</td>
+    </tr>
+    <tr class="highlight">
+      <td><strong>Doctor's Note Bulanan</strong></td>
+      <td class="num">Rp 10.000/bulan</td>
+      <td>Analisa personal dr. Financial: ringkasan, interpretasi, prioritas aksi</td>
+    </tr>
+    <tr>
+      <td><strong>FTSA Premium</strong></td>
+      <td class="num">Rp 50.000 / 12 bln</td>
+      <td>Behavioral FTSA — terpisah dari Doctor's Note transaksi</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>8.1 Simulasi Doctor's Note subscription</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Subscriber</th>
+      <th>Pendapatan/bulan</th>
+      <th>Biaya API (Claude)</th>
+      <th>Biaya API (Gemini Lite)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="num">100</td>
+      <td class="num">Rp 1.000.000</td>
+      <td class="num">~Rp 15–50 rb</td>
+      <td class="num">~Rp 1–2 rb</td>
+    </tr>
+    <tr>
+      <td class="num">1.000</td>
+      <td class="num">Rp 10.000.000</td>
+      <td class="num">~Rp 150–500 rb</td>
+      <td class="num">~Rp 10–20 rb</td>
+    </tr>
+    <tr>
+      <td class="num">10.000</td>
+      <td class="num">Rp 100.000.000</td>
+      <td class="num">~Rp 1,5–5 juta</td>
+      <td class="num">~Rp 100–200 rb</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="ok">
+  <strong>Margin Doctor's Note sangat sehat</strong> di kedua provider. Rp 10.000/bulan lebih dari cukup menutup biaya API per user.
+</div>
+
+<div class="page-break"></div>
+
+<h2>9. Rekomendasi strategi provider</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Fase</th>
+      <th>Provider</th>
+      <th>Alasan</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Pilot (&lt;500 user)</strong></td>
+      <td>Claude Haiku</td>
+      <td>Stabilitas JSON + aturan konteks sudah teruji; biaya masih kecil (puluhan ribu/bulan)</td>
+    </tr>
+    <tr>
+      <td><strong>Growth (500–10.000 user)</strong></td>
+      <td>Claude Haiku + kuota ketat</td>
+      <td>Pertahankan akurasi; pantau biaya bulanan di dashboard Anthropic</td>
+    </tr>
+    <tr>
+      <td><strong>Scale (10.000+ user)</strong></td>
+      <td>Gemini Flash-Lite (parse bot)</td>
+      <td>Hemat 80–90%; perlu uji ulang akurasi kategori konteks</td>
+    </tr>
+    <tr>
+      <td><strong>Doctor's Note premium</strong></td>
+      <td>Claude Haiku/Sonnet</td>
+      <td>Insight berkualitas; frekuensi rendah (1×/bulan) → biaya tetap kecil</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>10. Keputusan yang perlu disetujui klien</h2>
+<ol>
+  <li><strong>Lifetime</strong> mencakup dashboard angka + kuota AI terbatas — bukan AI unlimited.</li>
+  <li><strong>Doctor's Note</strong> dijual terpisah Rp 10.000/bulan (cashflow berulang).</li>
+  <li><strong>FTSA Premium</strong> (Rp 50k/12 bln) tetap produk behavioral terpisah.</li>
+  <li>Migrasi ke <strong>Gemini</strong> dipertimbangkan saat user aktif &gt; 5.000 atau biaya API &gt; Rp 5 juta/bulan.</li>
+  <li>Pembayaran langganan via <strong>Midtrans otomatis</strong> (bukan transfer manual admin).</li>
+</ol>
+
+<h2>11. Glosarium</h2>
+<table>
+  <thead>
+    <tr><th>Istilah</th><th>Arti</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Token</td><td>Unit billing AI (~1 token ≈ ¾ kata Bahasa Indonesia)</td></tr>
+    <tr><td>Parse</td><td>1 kali AI membaca &amp; mengkategorikan 1 catatan transaksi</td></tr>
+    <tr><td>Doctor's Note</td><td>Interpretasi personal dr. Financial di dashboard bulanan</td></tr>
+    <tr><td>Kuota internal</td><td>Batas pemakaian AI per user di sistem YFD (Rp 5.000/bln)</td></tr>
+    <tr><td>Lifetime</td><td>Sekali bayar — lisensi bot &amp; dashboard tidak expired</td></tr>
+    <tr><td>MTok</td><td>1 juta token</td></tr>
+  </tbody>
+</table>
+
+<div class="footer">
+  <p>
+    <strong>Your Financial Doctor (YFD)</strong> — Dokumen internal perencanaan biaya AI.<br>
+    Angka estimasi berdasarkan harga publik provider Juli 2026. Biaya aktual dapat berbeda tergantung panjang prompt,
+    cache, batch API, dan pola pemakaian user. Verifikasi harga terbaru di platform.claude.com dan ai.google.dev.
+  </p>
+  <p>File pendamping: <code>PERHITUNGAN_BIAYA_AI_CLAUDE_VS_GEMINI.html</code> (buka di browser → Cetak → Simpan sebagai PDF)</p>
+</div>
+
+</body>
+</html>
