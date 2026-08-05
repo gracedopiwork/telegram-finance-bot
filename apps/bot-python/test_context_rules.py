@@ -186,6 +186,29 @@ class ContextRulesTests(unittest.TestCase):
         self.assertEqual(hit["jenis"], "Piutang Keluar")
         self.assertEqual(hit["sifat"], "Need")
 
+    def test_utang_ke_orang_adalah_cicilan_hutang(self) -> None:
+        self.assertClass("utang ke ayuti 1 juta", "Pengeluaran", "Cicilan & Hutang")
+        self.assertClass("hutang ke ayuti 1jt", "Pengeluaran", "Cicilan & Hutang")
+        self.assertClass("pinjam ke ayuti 1jt", "Pengeluaran", "Cicilan & Hutang")
+        self.assertClass("bayar utang ke ayuti 1jt", "Pengeluaran", "Cicilan & Hutang")
+
+    def test_apply_rules_corrects_ai_piutang_when_utang_ke(self) -> None:
+        parsed = {
+            "keterangan": "Utang ke Ayuti",
+            "jenis": "Piutang Keluar",
+            "kategori": "Sosial & Keluarga",
+            "sifat": "Need",
+        }
+        out = apply_context_rules(parsed, "utang ke ayuti 1 juta")
+        self.assertEqual(out["jenis"], "Pengeluaran")
+        self.assertEqual(out["kategori"], "Cicilan & Hutang")
+
+    def test_ngutangin_tetap_piutang_keluar(self) -> None:
+        hit = classify_from_text("ngutangin ayuti 1jt")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["jenis"], "Piutang Keluar")
+
     def test_apply_rules_corrects_ai_kesehatan_to_piutang(self) -> None:
         parsed = {
             "keterangan": "Dipinjam Catherine untuk bayar RS",

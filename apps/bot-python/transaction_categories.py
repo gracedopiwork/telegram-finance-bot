@@ -278,7 +278,9 @@ Aturan:
    - Saving/Investment: beli/nabung saham, reksadana, deposito, emas, crypto, dana darurat, DP rumah/properti, DP kendaraan kebutuhan.
    - Kewajiban Pajak: PPh 25 angsuran, PPh 29 kurang bayar, PPh 28A restitusi/lebih bayar, denda pajak SPT — TIDAK masuk 4 bucket.
      * PBB / STNK / pajak kendaraan = Pengeluaran (bukan Kewajiban Pajak).
-   - Piutang Keluar: pinjamin / talang / bayarkan dulu / nanti diganti — Likuiditas Sosial, bukan 4 bucket.
+   - Piutang Keluar: pinjamin / ngutangin / talang / bayarkan dulu / nanti diganti — Likuiditas Sosial, bukan 4 bucket.
+     * BUKAN "utang ke [nama]" / "hutang ke [nama]" / "pinjam ke [nama]" — itu saya berhutang.
+   - "utang ke [nama]" / "bayar utang" / "pinjam ke [nama]" → Pengeluaran + Cicilan & Hutang.
    - Piutang Masuk: dibayar balik / transfer balik — BUKAN pemasukan baru.
    - Hasil investasi (bunga/dividen cair) = Pemasukan, BUKAN Saving/Investment.
    - Donasi/sedekah/zakat/qurban = Pengeluaran + Sosial & Keluarga (bukan Piutang).

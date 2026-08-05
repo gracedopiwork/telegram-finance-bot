@@ -841,7 +841,8 @@ _PAJAK_KENDARAAN = (
     "pajak motor",
 )
 
-# Likuiditas Sosial §5 — bukan Pengeluaran / bukan Pemasukan
+# Likuiditas Sosial §5 — uang KELUAR dipinjamkan ke orang lain
+# JANGAN masukkan "utang ke" / "pinjam ke" (itu = saya berhutang).
 _PIUTANG_KELUAR = (
     "piutang keluar",
     "di pinjam",
@@ -850,6 +851,10 @@ _PIUTANG_KELUAR = (
     "pinjamin",
     "pinjami",
     "pinjamkan",
+    "ngutangin",
+    "ngutangi",
+    "utangin",
+    "hutangin",
     "talang dulu",
     "talangin",
     "bayarkan dulu",
@@ -859,9 +864,31 @@ _PIUTANG_KELUAR = (
     "nanti diganti",
     "dia bayar balik",
     "sementara aku yang cover",
-    "pinjam ke teman",
-    "pinjam ke saudara",
-    "pinjam ke keluarga",
+)
+
+# Hutang saya ke orang lain → Pengeluaran / Cicilan & Hutang (bukan Piutang Keluar)
+_PERSONAL_DEBT_PHRASES = (
+    "bayar utang",
+    "bayar hutang",
+    "lunasi utang",
+    "lunasi hutang",
+    "melunasi utang",
+    "melunasi hutang",
+    "cicil utang",
+    "cicil hutang",
+    "nyicil utang",
+    "nyicil hutang",
+    "lunasin utang",
+    "lunasin hutang",
+)
+
+_PERSONAL_DEBT_PATTERNS = (
+    re.compile(r"\b(?:ng)?utang\s+ke\b", re.IGNORECASE),
+    re.compile(r"\bhutang\s+ke\b", re.IGNORECASE),
+    re.compile(r"\bberhutang\s+(?:ke|pada|sama)\b", re.IGNORECASE),
+    re.compile(r"\bberutang\s+(?:ke|pada|sama)\b", re.IGNORECASE),
+    # "pinjam ke Ayuti" = pinjam DARI Ayuti (saya berhutang), bukan meminjamkan
+    re.compile(r"\bpinjam\s+ke\b", re.IGNORECASE),
 )
 
 _PIUTANG_MASUK = (
@@ -1090,6 +1117,25 @@ def is_dp_lifestyle_vehicle(text: str) -> bool:
 def is_pinjol_or_cash_loan(text: str) -> bool:
     lower = text.lower()
     return any(k in lower for k in ("pinjol", "pinjaman online", "pinjaman tunai"))
+
+
+def is_lending_to_others(text: str) -> bool:
+    """Uang keluar dipinjamkan — Piutang Keluar (§5.1)."""
+    lower = _normalize_typos(text)
+    return _contains(lower, _PIUTANG_KELUAR)
+
+
+def is_personal_debt_to_others(text: str) -> bool:
+    """Saya berhutang ke orang — Cicilan & Hutang, BUKAN Piutang Keluar.
+
+    'utang ke Ayuti' ≠ 'pinjamin Ayuti' / 'ngutangin Ayuti'.
+    """
+    lower = _normalize_typos(text)
+    if is_lending_to_others(lower):
+        return False
+    if _contains(lower, _PERSONAL_DEBT_PHRASES):
+        return True
+    return any(p.search(lower) for p in _PERSONAL_DEBT_PATTERNS)
 
 
 def is_denda_sanksi(text: str) -> bool:
@@ -1408,10 +1454,13 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     # Air minum/galon sebelum jajan — "beli aqua" sering salah jadi Jajan.
     if is_drinking_water_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
+    # Hutang saya dulu — "utang ke Ayuti" ≠ Piutang Keluar
+    if is_personal_debt_to_others(lower):
+        return {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "sifat": "Need"}
     # Piutang sebelum Kesehatan — "dipinjam … buat bayar RS" ≠ pengeluaran kesehatan
     if _contains(lower, _PIUTANG_MASUK):
         return {"jenis": "Piutang Masuk", "kategori": "Lain-lain", "sifat": "Need"}
-    if _contains(lower, _PIUTANG_KELUAR):
+    if is_lending_to_others(lower):
         return {"jenis": "Piutang Keluar", "kategori": "Lain-lain", "sifat": "Need"}
     if is_fisioterapi_expense(lower):
         return {
@@ -1496,13 +1545,20 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
     if explicit and str(parsed.get("jenis") or "").strip() != explicit:
         parsed["jenis"] = explicit
 
+    # Hutang saya ke orang ≠ Piutang (AI sering salah: "utang ke X" → Piutang Keluar).
+    if is_personal_debt_to_others(lower_combined):
+        parsed["jenis"] = "Pengeluaran"
+        parsed["kategori"] = "Cicilan & Hutang"
+        if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
+            parsed["sifat"] = "Need"
+        parsed.pop("sub_kategori", None)
     # Likuiditas Sosial: jangan ditimpa Pemasukan/Pengeluaran oleh kata kerja generik.
-    if _contains(lower_combined, _PIUTANG_MASUK):
+    elif _contains(lower_combined, _PIUTANG_MASUK):
         parsed["jenis"] = "Piutang Masuk"
         if not str(parsed.get("kategori") or "").strip():
             parsed["kategori"] = "Lain-lain"
             parsed["sifat"] = "Need"
-    elif _contains(lower_combined, _PIUTANG_KELUAR):
+    elif is_lending_to_others(lower_combined):
         parsed["jenis"] = "Piutang Keluar"
         if not str(parsed.get("kategori") or "").strip():
             parsed["kategori"] = "Lain-lain"
@@ -1858,6 +1914,8 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "grab dari kos ke gym 21rb" → Pengeluaran / Transportasi / Wants (bucket Flexible; BUKAN Lifestyle)
 - "grab ke networking bisnis 45rb" → Pengeluaran / Transportasi / Need (bucket Future Building)
 - "Di pinjam Catherine 1 jt buat bayar RS" → Piutang Keluar (BUKAN Kesehatan; likuiditas sosial)
+- "utang ke Ayuti 1jt" / "pinjam ke Ayuti 1jt" → Pengeluaran / Cicilan & Hutang / Need (saya berhutang; BUKAN Piutang Keluar)
+- "pinjamin Ayuti 1jt" / "ngutangin Ayuti 1jt" → Piutang Keluar (saya yang meminjamkan)
 - "grabbike ke fitness 21rb" → Pengeluaran / Transportasi / Wants (BUKAN Lifestyle)
 - "jajan di grabfood 60k beli kue" → Pengeluaran / Makanan & Minuman / Wants (BUKAN Transportasi)
 - "gofood nasi padang 45rb" → Pengeluaran / Makanan & Minuman / Need (BUKAN Transportasi)
