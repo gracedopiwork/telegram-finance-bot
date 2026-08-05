@@ -60,3 +60,16 @@ def test_grab_ke_gym_stays_wants():
     }
     refine_sifat_from_context(parsed, text)
     assert parsed["sifat"] == "Wants"
+
+
+def test_networking_bisnis_transport_is_need():
+    text = "Grab dari kos ke aktivitas networking bisnis di Nusa Dua 45100"
+    parsed = {
+        "keterangan": text,
+        "nominal": 45100,
+        "jenis": "Pengeluaran",
+        "kategori": "Transportasi",
+        "sifat": "Wants",
+    }
+    refine_sifat_from_context(parsed, text)
+    assert parsed["sifat"] == "Need"

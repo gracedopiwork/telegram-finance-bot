@@ -50,6 +50,23 @@ class ClarificationRulesTests(unittest.TestCase):
         )
         self.assertIsNone(question)
 
+    def test_generic_transport_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Transport", "keterangan": "Grab"},
+            "grab 28rb",
+        )
+        self.assertIn("wajib", question or "")
+
+    def test_business_transport_does_not_require_clarification(self) -> None:
+        question = clarification_question(
+            {
+                "kategori": "Transport",
+                "keterangan": "Grab ke aktivitas networking bisnis",
+            },
+            "grab ke networking bisnis 45rb",
+        )
+        self.assertIsNone(question)
+
     def test_ai_question_has_priority(self) -> None:
         question = clarification_question(
             {

@@ -16,7 +16,15 @@ _warned_missing_config = False
 
 def format_prescription_bucket(parsed: dict) -> str:
     bucket = parsed.get("bucket")
-    if parsed.get("jenis") == "Pemasukan" and bucket is None:
+    jenis = str(parsed.get("jenis") or "").strip()
+    kategori = str(parsed.get("kategori") or "").strip()
+    if jenis in {"Piutang Keluar", "Piutang Masuk"} or kategori in {
+        "Piutang Keluar",
+        "Piutang Masuk",
+    }:
+        label = jenis if jenis in {"Piutang Keluar", "Piutang Masuk"} else kategori
+        return f"Likuiditas sosial ({label}) — tidak masuk prescription"
+    if jenis == "Pemasukan" and bucket is None:
         return "Tidak masuk prescription (Pemasukan)"
     return str(bucket or "Belum dapat dicek")
 

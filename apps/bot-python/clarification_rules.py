@@ -29,6 +29,12 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
     if _is_generic_coffee(text, category):
         return "Kopi/ngopi ini untuk kebutuhan kerja/meeting atau untuk santai/healing?"
 
+    if _is_generic_transport(text, category):
+        return (
+            "Transport ini untuk tujuan wajib (kantor/sekolah/klinik), "
+            "lifestyle/sosial (cafe/mall/healing), atau bisnis/kerja/networking?"
+        )
+
     if _is_generic_electronic(text, category):
         return (
             "Perangkat ini untuk kerja, mengganti perangkat utama yang rusak, "
@@ -36,6 +42,41 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
         )
 
     return None
+
+
+def _is_generic_transport(text: str, category: str) -> bool:
+    if category not in {"transport", "transportasi"}:
+        return False
+    if not any(word in text for word in ("grab", "gojek", "ojek", "maxim", "parkir", "bensin", "tiket")):
+        return False
+    purpose_markers = (
+        "kantor",
+        "office",
+        "klinik",
+        "rumah sakit",
+        "sekolah",
+        "kampus",
+        "apotek",
+        "supermarket",
+        "gym",
+        "nongkrong",
+        "healing",
+        "cafe",
+        "kafe",
+        "mall",
+        "liburan",
+        "wisata",
+        "bisnis",
+        "networking",
+        "klien",
+        "client",
+        "meeting",
+        "rapat",
+        "kerja",
+        "urusan bisnis",
+        "klarifikasi user:",
+    )
+    return not any(marker in text for marker in purpose_markers)
 
 
 def _is_generic_book(text: str, category: str) -> bool:
@@ -93,7 +134,8 @@ def _is_generic_instrument(text: str) -> bool:
 
 
 def _is_generic_coffee(text: str, category: str) -> bool:
-    if category != "jajan" or not any(word in text for word in ("kopi", "coffee", "ngopi")):
+    coffee_cats = {"jajan", "makanan & minuman", "makanan dan minuman", "makan"}
+    if category not in coffee_cats or not any(word in text for word in ("kopi", "coffee", "ngopi")):
         return False
     purpose_markers = (
         "kerja",

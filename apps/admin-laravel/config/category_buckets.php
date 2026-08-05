@@ -30,6 +30,13 @@ return [
         'laptop kerja', 'laptop produktif', 'alat kerja', 'untuk kerja', 'modal kerja',
         'freelancer it', 'website bisnis', 'software bisnis', 'marketing bisnis',
         'modal usaha', 'proyek bisnis', 'konten bisnis',
+        'networking bisnis', 'networking', 'ketemu client', 'ketemu klien', 'ketemu bisnis',
+        'meeting client', 'meeting bisnis', 'klien bisnis', 'client bisnis',
+        'urusan bisnis', 'keperluan bisnis', 'perjalanan bisnis', 'kerja training',
+    ],
+    'transport_flexible_keywords' => [
+        'gym', 'nongkrong', 'hangout', 'hang out', 'healing', 'cafe', 'kafe', 'mall',
+        'bioskop', 'konser', 'liburan', 'staycation', 'wisata', 'tour', 'fitness',
     ],
     'essential_meeting_keywords' => [
         'starbucks', 'meeting kerja', 'rapat kerja', 'meeting klien', 'ngopi meeting', 'kopi meeting',
@@ -50,5 +57,7 @@ return [
         'Pengembangan diri → Pendidikan / Future Building (Need atau Wants, bucket sama).',
         'Donasi/sedekah/zakat/hadiah → Sosial & Keluarga atau Hadiah / Flexible + Social.',
         'Jenis transaksi dan bucket berbeda: biaya bisnis tetap Pengeluaran, bucket Future Building.',
+        'Transportasi: bucket mengikuti tujuan (wajib → Essential; lifestyle → Flexible; bisnis/networking → Future Building).',
+        'Likuiditas sosial (Piutang Keluar/Masuk) di luar 4-bucket prescription.',
     ],
 ];

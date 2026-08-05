@@ -44,6 +44,10 @@ class CategoryBucketService
             return null;
         }
 
+        if (in_array($category, ['piutang keluar', 'piutang masuk'], true)) {
+            return null;
+        }
+
         // Dana darurat berfungsi sebagai proteksi, walaupun jenis transaksinya Saving/Investment.
         if ($this->containsAny($combined, config('category_buckets.protection_keywords', []))) {
             return 'Protection';
@@ -55,6 +59,10 @@ class CategoryBucketService
 
         if ($this->containsAny($combined, config('category_buckets.future_building_context_keywords', []))) {
             return 'Future Building';
+        }
+        if ($this->matchesCategory($category, ['transport', 'transportasi'])
+            && $this->containsAny($combined, config('category_buckets.transport_flexible_keywords', []))) {
+            return 'Flexible + Social';
         }
         if ($this->containsAny($combined, config('category_buckets.essential_context_keywords', []))) {
             return 'Essential Living';

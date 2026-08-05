@@ -720,6 +720,9 @@ _PAJAK_KENDARAAN = (
 # Likuiditas Sosial §5 — bukan Pengeluaran / bukan Pemasukan
 _PIUTANG_KELUAR = (
     "piutang keluar",
+    "di pinjam",
+    "dipinjam",
+    "dipinjami",
     "pinjamin",
     "pinjami",
     "pinjamkan",
@@ -923,11 +926,40 @@ _LEISURE_TRANSPORT_DEST = (
     "dari cafe",
 )
 
+_BUSINESS_TRANSPORT_DEST = (
+    "networking bisnis",
+    "networking",
+    "ketemu client",
+    "ketemu klien",
+    "ketemu bisnis",
+    "meeting client",
+    "meeting klien",
+    "meeting bisnis",
+    "klien bisnis",
+    "client bisnis",
+    "urusan bisnis",
+    "keperluan bisnis",
+    "perjalanan bisnis",
+    "perjalanan dinas",
+    "kerja training",
+    "training kerja",
+)
+
+
+def is_business_transport_destination(text: str) -> bool:
+    """Tujuan ride bisnis/kerja → Future Building / Need."""
+    lower = text.lower()
+    if not is_transport_ride(lower):
+        return False
+    return _contains(lower, _BUSINESS_TRANSPORT_DEST)
+
 
 def is_leisure_transport_destination(text: str) -> bool:
     """Tujuan ride yang Flexible + Social / Wants (bukan Essential ke kantor)."""
     lower = text.lower()
     if not is_transport_ride(lower):
+        return False
+    if is_business_transport_destination(lower):
         return False
     if _contains(lower, _LEISURE_TRANSPORT_DEST):
         return True
@@ -938,6 +970,8 @@ def is_leisure_transport_destination(text: str) -> bool:
 
 
 def transport_ride_sifat(text: str) -> str:
+    if is_business_transport_destination(text):
+        return "Need"
     return "Wants" if is_leisure_transport_destination(text) else "Need"
 
 
@@ -1148,6 +1182,11 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     # Air minum/galon sebelum jajan — "beli aqua" sering salah jadi Jajan.
     if is_drinking_water_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
+    # Piutang sebelum Kesehatan — "dipinjam … buat bayar RS" ≠ pengeluaran kesehatan
+    if _contains(lower, _PIUTANG_MASUK):
+        return {"jenis": "Piutang Masuk", "kategori": "Lain-lain", "sifat": "Need"}
+    if _contains(lower, _PIUTANG_KELUAR):
+        return {"jenis": "Piutang Keluar", "kategori": "Lain-lain", "sifat": "Need"}
     if _contains(lower, _KESEHATAN):
         return {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need"}
     if _contains(lower, _PENDIDIKAN):
@@ -1172,11 +1211,6 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
     if _contains(lower, _PAJAK_KENDARAAN):
         return {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "sifat": "Need"}
-    # Piutang sebelum Sosial — "pinjamin teman" ≠ sedekah
-    if _contains(lower, _PIUTANG_MASUK):
-        return {"jenis": "Piutang Masuk", "kategori": "Lain-lain", "sifat": "Need"}
-    if _contains(lower, _PIUTANG_KELUAR):
-        return {"jenis": "Piutang Keluar", "kategori": "Lain-lain", "sifat": "Need"}
     if _contains(lower, _LEGAL_EVENT):
         sifat_legal = "Wants" if any(k in lower for k in ("mahar", "pernikahan", "resepsi", "duka", "pemakaman", "tahlilan")) else "Need"
         return {
@@ -1498,6 +1532,8 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "makan malam 65.700" → Pengeluaran / Makanan & Minuman / Need
 - "grab ke kantor 28rb" → Pengeluaran / Transportasi / Need
 - "grab dari kos ke gym 21rb" → Pengeluaran / Transportasi / Wants (bucket Flexible; BUKAN Lifestyle)
+- "grab ke networking bisnis 45rb" → Pengeluaran / Transportasi / Need (bucket Future Building)
+- "Di pinjam Catherine 1 jt buat bayar RS" → Piutang Keluar (BUKAN Kesehatan; likuiditas sosial)
 - "grabbike ke fitness 21rb" → Pengeluaran / Transportasi / Wants (BUKAN Lifestyle)
 - "jajan di grabfood 60k beli kue" → Pengeluaran / Makanan & Minuman / Wants (BUKAN Transportasi)
 - "gofood nasi padang 45rb" → Pengeluaran / Makanan & Minuman / Need (BUKAN Transportasi)

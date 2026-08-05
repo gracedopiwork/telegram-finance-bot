@@ -162,6 +162,47 @@ class ContextRulesTests(unittest.TestCase):
         self.assertEqual(out["kategori"], "Transportasi")
         self.assertEqual(out["sifat"], "Wants")
 
+    def test_transport_bisnis_tetap_transport(self) -> None:
+        hit = classify_from_text(
+            "Grab dari kos ke aktivitas networking bisnis di Nusa Dua 45100"
+        )
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["jenis"], "Pengeluaran")
+        self.assertEqual(hit["kategori"], "Transportasi")
+        self.assertEqual(hit["sifat"], "Need")
+
+    def test_transport_lifestyle_wants(self) -> None:
+        hit = classify_from_text("grab ke mall nongkrong 25rb")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Transportasi")
+        self.assertEqual(hit["sifat"], "Wants")
+
+    def test_piutang_keluar_bukan_kesehatan(self) -> None:
+        hit = classify_from_text("Di pinjam Catherine 1 jt buat bayar RS")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["jenis"], "Piutang Keluar")
+        self.assertEqual(hit["sifat"], "Need")
+
+    def test_apply_rules_corrects_ai_kesehatan_to_piutang(self) -> None:
+        parsed = {
+            "keterangan": "Dipinjam Catherine untuk bayar RS",
+            "jenis": "Pengeluaran",
+            "kategori": "Kesehatan & Kebersihan Diri",
+            "sifat": "Need",
+        }
+        out = apply_context_rules(parsed, "Di pinjam Catherine 1 jt buat bayar RS")
+        self.assertEqual(out["jenis"], "Piutang Keluar")
+
+    def test_piutang_masuk(self) -> None:
+        self.assertClass(
+            "Catherine bayar balik pinjaman 1jt",
+            "Piutang Masuk",
+            "Lain-lain",
+        )
+
     def test_kos(self) -> None:
         self.assertClass("bayar sewa kos 1500000", "Pengeluaran", "Tempat Tinggal")
 

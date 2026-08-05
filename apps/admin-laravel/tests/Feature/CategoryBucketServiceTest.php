@@ -118,6 +118,45 @@ class CategoryBucketServiceTest extends TestCase
         }
     }
 
+    public function test_business_transport_is_future_building(): void
+    {
+        foreach ([
+            'Grab dari kos ke aktivitas networking bisnis di Nusa Dua',
+            'Grab dari kos ke cafe komeda ketemu client bisnis',
+            'Tiket pesawat untuk meeting klien di Jakarta',
+        ] as $notes) {
+            $this->assertBucket(
+                'Future Building',
+                TransactionTaxonomy::TYPE_EXPENSE,
+                'Transportasi',
+                'Need',
+                $notes,
+            );
+        }
+    }
+
+    public function test_lifestyle_transport_is_flexible_social(): void
+    {
+        $this->assertBucket(
+            'Flexible + Social',
+            TransactionTaxonomy::TYPE_EXPENSE,
+            'Transportasi',
+            'Wants',
+            'Grab ke mall nongkrong sama teman',
+        );
+    }
+
+    public function test_piutang_keluar_excluded_from_prescription_buckets(): void
+    {
+        $this->assertBucket(
+            null,
+            TransactionTaxonomy::TYPE_RECEIVABLE_OUT,
+            'Lain-lain',
+            'Need',
+            'Di pinjam Catherine 1 jt buat bayar RS',
+        );
+    }
+
     public function test_income_is_excluded_from_prescription_buckets(): void
     {
         $this->assertBucket(
