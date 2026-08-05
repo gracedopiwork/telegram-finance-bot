@@ -224,11 +224,11 @@ class ClarificationRulesTests(unittest.TestCase):
             "utang ke ayuti 1 juta",
         )
         self.assertIn("Piutang Keluar", question or "")
-        self.assertIn("Cicilan & Hutang", question or "")
+        self.assertIn("Hutang Masuk", question or "")
 
     def test_bayar_utang_no_arah_clarification(self) -> None:
         question = clarification_question(
-            {"kategori": "Cicilan & Hutang", "keterangan": "Bayar utang ke Ayuti"},
+            {"kategori": "Lain-lain", "keterangan": "Bayar utang ke Ayuti"},
             "bayar utang ke ayuti 1jt",
         )
         self.assertIsNone(question)

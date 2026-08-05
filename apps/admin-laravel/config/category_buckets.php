@@ -65,6 +65,6 @@ return [
         'Transportasi: bucket mengikuti tujuan (wajib → Essential; lifestyle → Flexible; bisnis/networking → Future Building).',
         'Donasi/sedekah/zakat/qurban/hadiah → Sosial & Keluarga atau Hadiah / Flexible + Social.',
         'Jenis transaksi dan bucket berbeda: biaya bisnis tetap Pengeluaran, bucket Future Building.',
-        'Likuiditas sosial (Piutang Keluar/Masuk) & Kewajiban Pajak di luar 4-bucket prescription.',
+        'Likuiditas sosial (Piutang + Hutang Masuk/Keluar) & Kewajiban Pajak di luar 4-bucket prescription.',
     ],
 ];

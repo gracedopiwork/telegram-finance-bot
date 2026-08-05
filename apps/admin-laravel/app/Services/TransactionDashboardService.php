@@ -85,9 +85,19 @@ class TransactionDashboardService
             $range['start'],
             $range['end'],
         );
+        $cashLiquidity = $this->cashLiquidityInsight($rows, $income, $expense, $savingInvestment, $taxObligation, $cashflow, $socialLiquidity);
         $dailyExpenses = $this->dailyExpenseTrend($telegramUserId, $month);
-        $fallbackClinical = $this->clinicalSummary($income, $expense, $cashflow, $savingRate, $buckets, $baseline, $periodMonths);
-        $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $buckets, $baseline);
+        $fallbackClinical = $this->clinicalSummary(
+            $income,
+            $expense,
+            $cashflow,
+            $savingRate,
+            $buckets,
+            $baseline,
+            $periodMonths,
+            $cashLiquidity,
+        );
+        $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $buckets, $baseline, $cashLiquidity);
 
         $aiGuidance = app(PortalAiGuidanceService::class)->financial(
             $telegramUserId,
@@ -102,6 +112,8 @@ class TransactionDashboardService
                 'saving_rate' => $savingRate,
                 'transaction_count' => $transactionCount,
                 'buckets' => $buckets,
+                'cash_liquidity' => $cashLiquidity,
+                'social_liquidity' => $socialLiquidity,
             ],
             $baseline,
             [
@@ -137,6 +149,7 @@ class TransactionDashboardService
             'protection_analysis' => $protectionAnalysis,
             'tax_health' => $taxHealth,
             'social_liquidity' => $socialLiquidity,
+            'cash_liquidity' => $cashLiquidity,
             'daily_expenses' => $dailyExpenses,
             'clinical_summary' => $aiGuidance['clinical_summary'],
             'doctors_note' => $aiGuidance['doctors_note'],
@@ -186,6 +199,22 @@ class TransactionDashboardService
         $idealShares = $this->prescription->idealsForUser($telegramUserId);
         $buckets = $this->budgetBuckets($rows, $expense, $savingInvestment, $idealShares);
         $baseline = FinancialBaseline::latestForUser($telegramUserId);
+        $socialLiquidity = app(SocialLiquidityService::class)->dashboardSummary(
+            $telegramUserId,
+            $rows,
+            $income,
+            $start,
+            $end,
+        );
+        $cashLiquidity = $this->cashLiquidityInsight(
+            $rows,
+            $income,
+            $expense,
+            $savingInvestment,
+            $taxObligation,
+            $cashflow,
+            $socialLiquidity,
+        );
 
         $fallbackClinical = $this->clinicalSummary(
             $income,
@@ -195,8 +224,9 @@ class TransactionDashboardService
             $buckets,
             $baseline,
             $periodMonthsForClinical,
+            $cashLiquidity,
         );
-        $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $buckets, $baseline);
+        $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $buckets, $baseline, $cashLiquidity);
 
         return [
             'metrics' => [
@@ -208,6 +238,8 @@ class TransactionDashboardService
                 'saving_rate' => $savingRate,
                 'transaction_count' => $transactionCount,
                 'buckets' => $buckets,
+                'cash_liquidity' => $cashLiquidity,
+                'social_liquidity' => $socialLiquidity,
             ],
             'fallback_clinical' => $fallbackClinical,
             'fallback_doctors_note' => $fallbackDoctorsNote,
@@ -726,7 +758,78 @@ class TransactionDashboardService
     }
 
     /**
+     * Insight kas vs prescription: Likuiditas Sosial mengubah kas & kewajiban, bukan Income/Expense.
+     *
+     * @param  Collection<int, BotTransaction>  $rows
+     * @param  array<string, mixed>  $socialLiquidity
+     * @return array{
+     *   deficit: int,
+     *   social_borrow_inflow: int,
+     *   social_repay_outflow: int,
+     *   social_lend_outflow: int,
+     *   social_repaid_inflow: int,
+     *   estimated_cash: int,
+     *   outstanding_debt: int,
+     *   outstanding_receivable: int,
+     *   deficit_funded_by_social: int,
+     *   insight_text: string|null
+     * }
+     */
+    private function cashLiquidityInsight(
+        Collection $rows,
+        int $income,
+        int $expense,
+        int $savingInvestment,
+        int $taxObligation,
+        int $cashflow,
+        array $socialLiquidity,
+    ): array {
+        $borrowIn = (int) $rows->where('type', TransactionTaxonomy::TYPE_PAYABLE_IN)->sum('amount');
+        $repayOut = (int) $rows->where('type', TransactionTaxonomy::TYPE_PAYABLE_OUT)->sum('amount');
+        $lendOut = (int) $rows->where('type', TransactionTaxonomy::TYPE_RECEIVABLE_OUT)->sum('amount');
+        $repaidIn = (int) $rows->where('type', TransactionTaxonomy::TYPE_RECEIVABLE_IN)->sum('amount');
+
+        // Cashflow prescription (income − expense − saving − tax) ± arus likuiditas sosial
+        $estimatedCash = $cashflow + $borrowIn - $repayOut - $lendOut + $repaidIn;
+        $deficit = max(0, -$cashflow);
+        $deficitFundedBySocial = $deficit > 0 ? min($deficit, $borrowIn) : 0;
+
+        $outstandingDebt = (int) ($socialLiquidity['active_debt_total'] ?? 0);
+        $outstandingReceivable = (int) ($socialLiquidity['active_total'] ?? 0);
+
+        $insightText = null;
+        if ($deficit > 0 && $borrowIn > 0) {
+            $fmt = static fn (int $n): string => 'Rp'.number_format($n, 0, ',', '.');
+            $insightText = sprintf(
+                'Pengeluaran melebihi pemasukan sebesar %s. Selisih tersebut dibiayai oleh Likuiditas Sosial (pinjaman sosial %s). Essential Living tetap terjaga bukan karena pendapatan mencukupi, melainkan karena likuiditas sosial.',
+                $fmt($deficit),
+                $fmt($borrowIn),
+            );
+        } elseif ($borrowIn > 0 && $cashflow >= 0) {
+            $fmt = static fn (int $n): string => 'Rp'.number_format($n, 0, ',', '.');
+            $insightText = sprintf(
+                'Ada arus Hutang Masuk %s pada periode ini. Ini menaikkan kas dan outstanding hutang — bukan pendapatan, dan tidak mengubah Income/Expense/bucket.',
+                $fmt($borrowIn),
+            );
+        }
+
+        return [
+            'deficit' => $deficit,
+            'social_borrow_inflow' => $borrowIn,
+            'social_repay_outflow' => $repayOut,
+            'social_lend_outflow' => $lendOut,
+            'social_repaid_inflow' => $repaidIn,
+            'estimated_cash' => $estimatedCash,
+            'outstanding_debt' => $outstandingDebt,
+            'outstanding_receivable' => $outstandingReceivable,
+            'deficit_funded_by_social' => $deficitFundedBySocial,
+            'insight_text' => $insightText,
+        ];
+    }
+
+    /**
      * @param  list<array{bucket: string, amount: int, share: float, ideal: float, progress: float, status: string, status_label: string}>  $buckets
+     * @param  array<string, mixed>|null  $cashLiquidity
      * @return array{headline: string, findings: list<string>, status: string}
      */
     private function clinicalSummary(
@@ -737,6 +840,7 @@ class TransactionDashboardService
         array $buckets,
         ?FinancialBaseline $baseline,
         int $periodMonths,
+        ?array $cashLiquidity = null,
     ): array {
         $findings = [];
         $periodText = $periodMonths === 1 ? 'bulan ini' : "{$periodMonths} bulan terakhir";
@@ -749,7 +853,13 @@ class TransactionDashboardService
             ];
         }
 
-        if ($cashflow < 0) {
+        $socialInsight = is_array($cashLiquidity) ? ($cashLiquidity['insight_text'] ?? null) : null;
+        $deficit = (int) ($cashLiquidity['deficit'] ?? max(0, -$cashflow));
+        $borrowIn = (int) ($cashLiquidity['social_borrow_inflow'] ?? 0);
+
+        if ($cashflow < 0 && $borrowIn > 0 && is_string($socialInsight) && $socialInsight !== '') {
+            $findings[] = $socialInsight;
+        } elseif ($cashflow < 0) {
             $findings[] = "Cashflow negatif {$periodText} — pengeluaran melebihi pendapatan.";
         } elseif ($savingRate >= 20) {
             $findings[] = "Saving rate {$savingRate}% — di atas ambang sehat (≥20%).";
@@ -769,6 +879,7 @@ class TransactionDashboardService
         }
 
         $headline = match (true) {
+            $cashflow < 0 && $borrowIn > 0 => 'Defisit dibiayai Likuiditas Sosial',
             $cashflow < 0 => 'Defisit — perlu restrukturisasi pengeluaran',
             $savingRate >= 20 => 'Kesehatan arus kas baik',
             $savingRate >= 10 => 'Stabil — masih ada ruang optimasi',
@@ -776,6 +887,7 @@ class TransactionDashboardService
         };
 
         $status = match (true) {
+            $cashflow < 0 && $borrowIn > 0 => 'attention',
             $cashflow < 0 => 'critical',
             $savingRate >= 20 => 'healthy',
             $savingRate >= 10 => 'fair',
@@ -791,6 +903,7 @@ class TransactionDashboardService
 
     /**
      * @param  list<array{bucket: string, amount: int, share: float, ideal: float, progress: float, status: string, status_label: string}>  $buckets
+     * @param  array<string, mixed>|null  $cashLiquidity
      * @return array{summary: string, findings: list<string>, interpretation: string, priority: string, education: string}
      */
     private function doctorsNoteFinancial(
@@ -798,6 +911,7 @@ class TransactionDashboardService
         float $savingRate,
         array $buckets,
         ?FinancialBaseline $baseline,
+        ?array $cashLiquidity = null,
     ): array {
         $recommendations = [];
 
@@ -807,7 +921,14 @@ class TransactionDashboardService
             $recommendations[] = 'Pertahankan saving rate di atas 30% dan arahkan surplus ke instrumen jangka panjang.';
         }
 
-        if ($cashflow < 0) {
+        $borrowIn = (int) ($cashLiquidity['social_borrow_inflow'] ?? 0);
+        $outstandingDebt = (int) ($cashLiquidity['outstanding_debt'] ?? 0);
+        if ($cashflow < 0 && $borrowIn > 0) {
+            $recommendations[] = 'Rencanakan pelunasan hutang sosial (Hutang Keluar) agar Essential Living ke depan tidak bergantung pada pinjaman keluarga/teman.';
+            if ($outstandingDebt > 0) {
+                $recommendations[] = 'Pantau outstanding hutang sosial di panel Likuiditas Sosial — ini kewajiban, bukan pendapatan.';
+            }
+        } elseif ($cashflow < 0) {
             $recommendations[] = 'Kurangi pengeluaran Flexible + Social hingga cashflow kembali positif sebelum menambah investasi.';
         }
 

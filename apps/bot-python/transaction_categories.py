@@ -272,16 +272,19 @@ Aturan:
    - 1,2jt / 1.2 juta => 1200000.
    - 83800 / 83.800 / 83,800 / 5000 tanpa suffix => nilai apa adanya (BUKAN juta).
    - Huruf k di kata biasa (kemarin, snack, stock) BUKAN penanda ribuan.
-3) jenis (6 jenis resmi §5):
-   - Pemasukan: terima, dapat, dapet, uang masuk, cair (hasil).
+3) jenis (8 jenis resmi — Likuiditas Sosial 4 arah):
+   - Pemasukan: terima, dapat, dapet, uang masuk, cair (hasil). BUKAN terima pinjaman sosial.
    - Pengeluaran: bayar, belanja, keluarin, konsumsi.
    - Saving/Investment: beli/nabung saham, reksadana, deposito, emas, crypto, dana darurat, DP rumah/properti, DP kendaraan kebutuhan.
    - Kewajiban Pajak: PPh 25 angsuran, PPh 29 kurang bayar, PPh 28A restitusi/lebih bayar, denda pajak SPT — TIDAK masuk 4 bucket.
      * PBB / STNK / pajak kendaraan = Pengeluaran (bukan Kewajiban Pajak).
-   - Piutang Keluar: pinjamin / ngutangin / talang / bayarkan dulu / nanti diganti — Likuiditas Sosial, bukan 4 bucket.
-     * "utang ke [nama]" / "pinjam ke [nama]" tanpa konteks = AMBIGU → set needs_clarification (meminjamkan vs berhutang).
-   - "bayar utang" / "lunasi hutang" → Pengeluaran + Cicilan & Hutang.
+   - Piutang Keluar: pinjamin / ngutangin / talang / bayarkan dulu / nanti diganti — Likuiditas Sosial.
    - Piutang Masuk: dibayar balik / transfer balik — BUKAN pemasukan baru.
+   - Hutang Masuk: pinjam dari / ngutang dari / terima pinjaman sosial — likuiditas naik, BUKAN Pemasukan.
+   - Hutang Keluar: bayar utang/hutang ke orang (sosial) — BUKAN Pengeluaran 4-bucket.
+     * Cicilan lembaga (pinjol/KPR/kartu kredit/paylater) tetap Pengeluaran + Cicilan & Hutang.
+   - PRINSIP: Likuiditas Sosial hanya mengubah kas & piutang/hutang. Belanja dari dana pinjaman (mis. bayar RS) tetap Pengeluaran + bucket.
+   - "utang ke [nama]" tanpa konteks = AMBIGU → needs_clarification (meminjamkan vs berhutang).
    - Hasil investasi (bunga/dividen cair) = Pemasukan, BUKAN Saving/Investment.
    - Donasi/sedekah/zakat/qurban = Pengeluaran + Sosial & Keluarga (bukan Piutang).
 4) sifat: HANYA Need atau Wants.

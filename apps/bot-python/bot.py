@@ -89,7 +89,7 @@ ACTIVATE_HELP_TEXT = (
     "`/activate KODE-LISENSI-ANDA`"
 )
 
-VALID_JENIS = {"Pemasukan", "Pengeluaran", "Saving/Investment", "Kewajiban Pajak", "Piutang Keluar", "Piutang Masuk"}
+VALID_JENIS = {"Pemasukan", "Pengeluaran", "Saving/Investment", "Kewajiban Pajak", "Piutang Keluar", "Piutang Masuk", "Hutang Masuk", "Hutang Keluar"}
 VALID_SIFAT = {"Need", "Wants"}
 VALID_MOOD = {"Happy", "Neutral", "Sad", "Stressed", "Angry", "Tired"}
 VALID_IMPULSIF = {"Yes", "No"}
@@ -227,6 +227,10 @@ def normalize_taxonomy(parsed: Dict[str, Any]) -> Dict[str, Any]:
             parsed["jenis"] = "Piutang Keluar"
         elif jenis_lower in {"piutang masuk", "piutang in", "receivable in", "pelunasan piutang"}:
             parsed["jenis"] = "Piutang Masuk"
+        elif jenis_lower in {"hutang masuk", "payable in", "pinjaman masuk", "terima pinjaman"}:
+            parsed["jenis"] = "Hutang Masuk"
+        elif jenis_lower in {"hutang keluar", "payable out", "bayar hutang sosial"}:
+            parsed["jenis"] = "Hutang Keluar"
         else:
             parsed["jenis"] = "Pengeluaran"
 
@@ -717,6 +721,8 @@ def attach_prescription_bucket(parsed: Dict[str, Any]) -> bool:
             "Kewajiban Pajak",
             "Piutang Keluar",
             "Piutang Masuk",
+            "Hutang Masuk",
+            "Hutang Keluar",
         } else "Belum dapat dicek"
         return False
 

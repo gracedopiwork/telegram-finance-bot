@@ -18,11 +18,23 @@ def format_prescription_bucket(parsed: dict) -> str:
     bucket = parsed.get("bucket")
     jenis = str(parsed.get("jenis") or "").strip()
     kategori = str(parsed.get("kategori") or "").strip()
-    if jenis in {"Piutang Keluar", "Piutang Masuk"} or kategori in {
+    if jenis in {
         "Piutang Keluar",
         "Piutang Masuk",
+        "Hutang Masuk",
+        "Hutang Keluar",
+    } or kategori in {
+        "Piutang Keluar",
+        "Piutang Masuk",
+        "Hutang Masuk",
+        "Hutang Keluar",
     }:
-        label = jenis if jenis in {"Piutang Keluar", "Piutang Masuk"} else kategori
+        label = jenis if jenis in {
+            "Piutang Keluar",
+            "Piutang Masuk",
+            "Hutang Masuk",
+            "Hutang Keluar",
+        } else kategori
         return f"Likuiditas sosial ({label}) — tidak masuk prescription"
     if jenis == "Pemasukan" and bucket is None:
         return "Tidak masuk prescription (Pemasukan)"

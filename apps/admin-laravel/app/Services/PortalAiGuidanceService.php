@@ -623,6 +623,7 @@ PROMPT;
     {
         $rules = $this->claude->rulesBlock(['shared_rules', 'financial_rules']);
         $bucketLines = $this->formatBucketPrescriptionLines((array) ($metrics['buckets'] ?? []));
+        $socialLines = $this->formatCashLiquidityLines($metrics);
 
         $stage = $baseline?->stage_label ? "Tahap finansial: {$baseline->stage_label}" : 'Tahap finansial: belum diisi';
         $archetype = $baseline?->dominant_archetype_label ? "Archetype: {$baseline->dominant_archetype_label}" : '';
@@ -639,9 +640,12 @@ PERIODE: {$metrics['period_label']}
 METRIK:
 - Pendapatan: Rp {$this->formatIdr((int) $metrics['income'])}
 - Pengeluaran: Rp {$this->formatIdr((int) $metrics['expense'])}
-- Cashflow: Rp {$this->formatIdr((int) $metrics['cashflow'])}
+- Cashflow (prescription, tanpa likuiditas sosial): Rp {$this->formatIdr((int) $metrics['cashflow'])}
 - Saving rate: {$metrics['saving_rate']}%
 - Jumlah transaksi: {$metrics['transaction_count']}
+
+LIKUIDITAS SOSIAL / KAS:
+{$this->linesBlock($socialLines)}
 
 BUCKET PRESCRIPTION:
 {$this->linesBlock($bucketLines)}
@@ -676,6 +680,7 @@ PROMPT;
     {
         $rules = $this->claude->rulesBlock(['shared_rules', 'financial_rules']);
         $bucketLines = $this->formatBucketPrescriptionLines((array) ($metrics['buckets'] ?? []));
+        $socialLines = $this->formatCashLiquidityLines($metrics);
 
         $stage = $baseline?->stage_label ? "Tahap finansial: {$baseline->stage_label}" : 'Tahap finansial: belum diisi';
         $maxFindings = (int) config('portal_ai.max_findings', 5);
@@ -690,9 +695,12 @@ PERIODE KUMULATIF: {$metrics['period_label']}
 METRIK:
 - Pendapatan: Rp {$this->formatIdr((int) $metrics['income'])}
 - Pengeluaran: Rp {$this->formatIdr((int) $metrics['expense'])}
-- Cashflow: Rp {$this->formatIdr((int) $metrics['cashflow'])}
+- Cashflow (prescription): Rp {$this->formatIdr((int) $metrics['cashflow'])}
 - Saving rate: {$metrics['saving_rate']}%
 - Jumlah transaksi: {$metrics['transaction_count']}
+
+LIKUIDITAS SOSIAL / KAS:
+{$this->linesBlock($socialLines)}
 
 BUCKET PRESCRIPTION:
 {$this->linesBlock($bucketLines)}
@@ -720,6 +728,7 @@ PROMPT;
     {
         $rules = $this->claude->rulesBlock(['shared_rules', 'financial_rules']);
         $bucketLines = $this->formatBucketPrescriptionLines((array) ($metrics['buckets'] ?? []));
+        $socialLines = $this->formatCashLiquidityLines($metrics);
 
         $stage = $baseline?->stage_label ? "Tahap finansial: {$baseline->stage_label}" : 'Tahap finansial: belum diisi';
         $maxFindings = (int) config('portal_ai.max_findings', 5);
@@ -733,9 +742,12 @@ PERIODE BULANAN: {$metrics['period_label']}
 METRIK:
 - Pendapatan: Rp {$this->formatIdr((int) $metrics['income'])}
 - Pengeluaran: Rp {$this->formatIdr((int) $metrics['expense'])}
-- Cashflow: Rp {$this->formatIdr((int) $metrics['cashflow'])}
+- Cashflow (prescription): Rp {$this->formatIdr((int) $metrics['cashflow'])}
 - Saving rate: {$metrics['saving_rate']}%
 - Jumlah transaksi: {$metrics['transaction_count']}
+
+LIKUIDITAS SOSIAL / KAS:
+{$this->linesBlock($socialLines)}
 
 BUCKET PRESCRIPTION:
 {$this->linesBlock($bucketLines)}
@@ -746,6 +758,7 @@ Jangan menyebut archetype FTSA — itu ada di dashboard behavioral.
 Doctor's note HANYA berisi rekomendasi tindakan — jangan ulang ringkasan deskriptif (itu ada di clinical summary).
 Tiap rekomendasi harus konkret, bisa dilakukan, dan spesifik (contoh: alokasikan cashflow positif ke Future Building, tingkatkan saving rate >30%, diversifikasi investasi, batasi Flexible+Social ≤10%, evaluasi proteksi keuangan).
 JANGAN sarankan menaikkan Essential Living jika aktual sudah di bawah 50% — itu justru sehat.
+Jika ada defisit yang dibiayai Hutang Masuk, prioritaskan rekomendasi pelunasan hutang sosial tanpa mengoreksi Income.
 
 OUTPUT: JSON valid saja, tanpa markdown, format:
 {
@@ -1022,6 +1035,33 @@ PROMPT;
     }
 
     return $lines;
+  }
+
+  /**
+   * @param  array<string, mixed>  $metrics
+   * @return list<string>
+   */
+  private function formatCashLiquidityLines(array $metrics): array
+  {
+      $cash = is_array($metrics['cash_liquidity'] ?? null) ? $metrics['cash_liquidity'] : [];
+      if ($cash === []) {
+          return ['- (tidak ada data likuiditas sosial pada periode ini)'];
+      }
+
+      $lines = [
+          '- Defisit (expense>income): Rp '.$this->formatIdr((int) ($cash['deficit'] ?? 0)),
+          '- Hutang Masuk (pinjaman sosial masuk): Rp '.$this->formatIdr((int) ($cash['social_borrow_inflow'] ?? 0)),
+          '- Hutang Keluar (bayar balik): Rp '.$this->formatIdr((int) ($cash['social_repay_outflow'] ?? 0)),
+          '- Estimasi sisa kas: Rp '.$this->formatIdr((int) ($cash['estimated_cash'] ?? 0)),
+          '- Outstanding hutang sosial: Rp '.$this->formatIdr((int) ($cash['outstanding_debt'] ?? 0)),
+          '- Outstanding piutang aktif: Rp '.$this->formatIdr((int) ($cash['outstanding_receivable'] ?? 0)),
+      ];
+      $insight = trim((string) ($cash['insight_text'] ?? ''));
+      if ($insight !== '') {
+          $lines[] = '- Insight: '.$insight;
+      }
+
+      return $lines;
   }
 
   private function clinicalWeekAnchor(string $monthKey): \Carbon\Carbon

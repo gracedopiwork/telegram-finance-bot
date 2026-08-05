@@ -190,9 +190,13 @@ class ContextRulesTests(unittest.TestCase):
         self.assertIsNone(classify_from_text("utang ke ayuti 1 juta"))
         self.assertIsNone(classify_from_text("pinjam ke ayuti 1jt"))
 
-    def test_bayar_utang_ke_adalah_cicilan_hutang(self) -> None:
-        self.assertClass("bayar utang ke ayuti 1jt", "Pengeluaran", "Cicilan & Hutang")
-        self.assertClass("lunasi hutang ke ayuti 1jt", "Pengeluaran", "Cicilan & Hutang")
+    def test_bayar_utang_ke_adalah_hutang_keluar(self) -> None:
+        self.assertClass("bayar utang ke ayuti 1jt", "Hutang Keluar", "Lain-lain")
+        self.assertClass("lunasi hutang ke ayuti 1jt", "Hutang Keluar", "Lain-lain")
+
+    def test_pinjam_dari_adalah_hutang_masuk(self) -> None:
+        self.assertClass("pinjam dari ayuti 1jt", "Hutang Masuk", "Lain-lain")
+        self.assertClass("ngutang dari ayuti 1jt", "Hutang Masuk", "Lain-lain")
 
     def test_klarifikasi_pinjamkan_jadi_piutang(self) -> None:
         parsed = {
@@ -207,7 +211,7 @@ class ContextRulesTests(unittest.TestCase):
         )
         self.assertEqual(out["jenis"], "Piutang Keluar")
 
-    def test_klarifikasi_berhutang_jadi_cicilan(self) -> None:
+    def test_klarifikasi_berhutang_jadi_hutang_masuk(self) -> None:
         parsed = {
             "keterangan": "Utang ke Ayuti",
             "jenis": "Piutang Keluar",
@@ -218,8 +222,8 @@ class ContextRulesTests(unittest.TestCase):
             parsed,
             "utang ke ayuti 1 juta\nKlarifikasi user: saya yang berhutang",
         )
-        self.assertEqual(out["jenis"], "Pengeluaran")
-        self.assertEqual(out["kategori"], "Cicilan & Hutang")
+        self.assertEqual(out["jenis"], "Hutang Masuk")
+        self.assertEqual(out["kategori"], "Lain-lain")
 
     def test_ngutangin_tetap_piutang_keluar(self) -> None:
         hit = classify_from_text("ngutangin ayuti 1jt")

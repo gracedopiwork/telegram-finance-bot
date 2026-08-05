@@ -53,6 +53,8 @@ VALID_JENIS = (
     "Saving/Investment",
     "Piutang Keluar",
     "Piutang Masuk",
+    "Hutang Masuk",
+    "Hutang Keluar",
     "Kewajiban Pajak",
 )
 
@@ -189,8 +191,8 @@ GREY_AREA_ITEMS: dict[str, dict[str, str]] = {
         "label": "utang ke orang",
         "question": (
             "Utang ini artinya kamu meminjamkan uang ke orang itu "
-            "(nanti kembali = Piutang Keluar), atau kamu yang berhutang/bayar hutang ke dia "
-            "(Cicilan & Hutang)?"
+            "(nanti kembali = Piutang Keluar), atau kamu yang menerima pinjaman/berhutang "
+            "(Hutang Masuk — likuiditas naik, bukan Pemasukan)?"
         ),
     },
 }

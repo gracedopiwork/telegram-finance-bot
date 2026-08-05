@@ -18,7 +18,9 @@ class CategoryBucketService
     {
         if ($row->type === TransactionTaxonomy::TYPE_TAX
             || $row->type === TransactionTaxonomy::TYPE_RECEIVABLE_OUT
-            || $row->type === TransactionTaxonomy::TYPE_RECEIVABLE_IN) {
+            || $row->type === TransactionTaxonomy::TYPE_RECEIVABLE_IN
+            || $row->type === TransactionTaxonomy::TYPE_PAYABLE_IN
+            || $row->type === TransactionTaxonomy::TYPE_PAYABLE_OUT) {
             return null;
         }
 
@@ -40,11 +42,13 @@ class CategoryBucketService
         if ($row->type === TransactionTaxonomy::TYPE_INCOME
             || $row->type === TransactionTaxonomy::TYPE_TAX
             || $row->type === TransactionTaxonomy::TYPE_RECEIVABLE_OUT
-            || $row->type === TransactionTaxonomy::TYPE_RECEIVABLE_IN) {
+            || $row->type === TransactionTaxonomy::TYPE_RECEIVABLE_IN
+            || $row->type === TransactionTaxonomy::TYPE_PAYABLE_IN
+            || $row->type === TransactionTaxonomy::TYPE_PAYABLE_OUT) {
             return null;
         }
 
-        if (in_array($category, ['piutang keluar', 'piutang masuk'], true)) {
+        if (in_array($category, ['piutang keluar', 'piutang masuk', 'hutang masuk', 'hutang keluar'], true)) {
             return null;
         }
 

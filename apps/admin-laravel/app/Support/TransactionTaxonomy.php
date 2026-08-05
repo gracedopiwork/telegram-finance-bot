@@ -3,13 +3,15 @@
 namespace App\Support;
 
 /**
- * YFD First Aid — jenis transaksi & sifat (taxonomy v1.3 + §5 Piutang).
+ * YFD First Aid — jenis transaksi & sifat (taxonomy v1.3 + §5 Likuiditas Sosial).
  *
- * Jenis: Pemasukan | Pengeluaran | Saving/Investment | Kewajiban Pajak | Piutang Keluar | Piutang Masuk
+ * Jenis: Pemasukan | Pengeluaran | Saving/Investment | Kewajiban Pajak
+ *      | Piutang Keluar | Piutang Masuk | Hutang Masuk | Hutang Keluar
  * Sifat: Need | Wants (hanya dua nilai)
  *
- * Kewajiban Pajak & Piutang dikecualikan dari 4 bucket.
- * Piutang Masuk bukan pemasukan baru — menutup Piutang Keluar.
+ * Kewajiban Pajak & Likuiditas Sosial (Piutang + Hutang) dikecualikan dari 4 bucket.
+ * Piutang = aset keluar dipinjamkan; Hutang = likuiditas naik karena pinjaman sosial diterima.
+ * Hutang Masuk BUKAN Pemasukan; Hutang Keluar BUKAN Pengeluaran prescription.
  */
 class TransactionTaxonomy
 {
@@ -25,6 +27,12 @@ class TransactionTaxonomy
 
     public const TYPE_RECEIVABLE_IN = 'Piutang Masuk';
 
+    /** Terima pinjaman sosial (uang masuk, jadi kewajiban) — bukan Pemasukan. */
+    public const TYPE_PAYABLE_IN = 'Hutang Masuk';
+
+    /** Bayar balik pinjaman sosial — bukan Pengeluaran 4-bucket. */
+    public const TYPE_PAYABLE_OUT = 'Hutang Keluar';
+
     /** @var list<string> */
     public const TYPES = [
         self::TYPE_INCOME,
@@ -33,6 +41,8 @@ class TransactionTaxonomy
         self::TYPE_TAX,
         self::TYPE_RECEIVABLE_OUT,
         self::TYPE_RECEIVABLE_IN,
+        self::TYPE_PAYABLE_IN,
+        self::TYPE_PAYABLE_OUT,
     ];
 
     public const NATURE_NEED = 'Need';
@@ -52,12 +62,25 @@ class TransactionTaxonomy
             self::TYPE_TAX,
             self::TYPE_RECEIVABLE_OUT,
             self::TYPE_RECEIVABLE_IN,
+            self::TYPE_PAYABLE_IN,
+            self::TYPE_PAYABLE_OUT,
         ], true);
     }
 
     public static function isReceivable(string $type): bool
     {
         return in_array($type, [self::TYPE_RECEIVABLE_OUT, self::TYPE_RECEIVABLE_IN], true);
+    }
+
+    public static function isPayable(string $type): bool
+    {
+        return in_array($type, [self::TYPE_PAYABLE_IN, self::TYPE_PAYABLE_OUT], true);
+    }
+
+    /** Piutang atau Hutang sosial — sync Likuiditas Sosial. */
+    public static function isSocialLiquidity(string $type): bool
+    {
+        return self::isReceivable($type) || self::isPayable($type);
     }
 
     /**
@@ -128,6 +151,12 @@ class TransactionTaxonomy
         if (in_array($v, ['piutang masuk', 'piutang in', 'receivable in', 'pelunasan piutang', 'pengembalian piutang'], true)) {
             return self::TYPE_RECEIVABLE_IN;
         }
+        if (in_array($v, ['hutang masuk', 'payable in', 'pinjaman masuk', 'terima pinjaman'], true)) {
+            return self::TYPE_PAYABLE_IN;
+        }
+        if (in_array($v, ['hutang keluar', 'payable out', 'bayar hutang sosial', 'lunasi hutang sosial'], true)) {
+            return self::TYPE_PAYABLE_OUT;
+        }
         foreach (self::TYPES as $type) {
             if (strcasecmp($type, (string) $value) === 0) {
                 return $type;
@@ -158,6 +187,8 @@ class TransactionTaxonomy
             self::TYPE_TAX => 'tax',
             self::TYPE_RECEIVABLE_OUT => 'receivable_out',
             self::TYPE_RECEIVABLE_IN => 'receivable_in',
+            self::TYPE_PAYABLE_IN => 'payable_in',
+            self::TYPE_PAYABLE_OUT => 'payable_out',
             default => 'expense',
         };
     }

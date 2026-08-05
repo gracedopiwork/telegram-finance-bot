@@ -158,6 +158,28 @@ class CategoryBucketServiceTest extends TestCase
         );
     }
 
+    public function test_hutang_masuk_excluded_from_prescription_buckets(): void
+    {
+        $this->assertBucket(
+            null,
+            TransactionTaxonomy::TYPE_PAYABLE_IN,
+            'Lain-lain',
+            'Need',
+            'Pinjam dari Ayuti 1jt',
+        );
+    }
+
+    public function test_hutang_keluar_excluded_from_prescription_buckets(): void
+    {
+        $this->assertBucket(
+            null,
+            TransactionTaxonomy::TYPE_PAYABLE_OUT,
+            'Lain-lain',
+            'Need',
+            'Bayar utang ke Ayuti 1jt',
+        );
+    }
+
     public function test_income_is_excluded_from_prescription_buckets(): void
     {
         $this->assertBucket(

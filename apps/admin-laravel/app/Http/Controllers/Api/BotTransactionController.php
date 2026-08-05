@@ -80,7 +80,7 @@ class BotTransactionController extends Controller
             'taxonomy_flags' => $validated['taxonomy_flags'] ?? null,
         ]);
 
-        if (TransactionTaxonomy::isReceivable((string) $transaction->type)) {
+        if (TransactionTaxonomy::isSocialLiquidity((string) $transaction->type)) {
             app(SocialLiquidityService::class)->syncFromTransaction($transaction);
         }
 

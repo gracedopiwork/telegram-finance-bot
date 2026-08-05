@@ -12,11 +12,15 @@
         'status_label' => '',
         'count_outbound' => 0,
         'count_active' => 0,
+        'borrow_month' => 0,
+        'repay_debt_month' => 0,
+        'active_debt_total' => 0,
+        'count_active_debt' => 0,
     ];
     $liqTitle = Setting::val('portal.social_liquidity_title', 'Likuiditas Sosial') ?: 'Likuiditas Sosial';
     $liqBody = Setting::val(
         'portal.social_liquidity_body',
-        'Pinjaman ke keluarga/teman (piutang) tidak masuk 4 bucket. Panel ini mengukur dampak jaringan sosial ke cashflow — tanpa menghakimi keputusan meminjamkan.'
+        'Arus kas karena hubungan sosial: piutang (kamu meminjamkan) dan hutang (kamu menerima pinjaman). Tidak masuk 4 bucket prescription.'
     );
     $statusTone = match ($liq['status'] ?? 'empty') {
         'critical' => 'border-rose-200 bg-rose-50 text-rose-900',
@@ -33,7 +37,8 @@
     </div>
     <p class="text-sm text-slate-600 leading-relaxed mb-4">{{ $liqBody }}</p>
 
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-4">
+    <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Piutang (kamu meminjamkan)</div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-5">
         <div>
             <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Piutang keluar</div>
             <div class="text-lg font-extrabold text-navy-800">{{ $fmt((int) ($liq['outbound_month'] ?? 0)) }}</div>
@@ -53,6 +58,25 @@
             <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Direlakan</div>
             <div class="text-lg font-extrabold text-navy-800">{{ $fmt((int) ($liq['written_off_month'] ?? 0)) }}</div>
             <div class="text-xs text-slate-500">periode ini</div>
+        </div>
+    </div>
+
+    <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Hutang (kamu menerima pinjaman)</div>
+    <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 text-sm mb-4">
+        <div>
+            <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Hutang masuk</div>
+            <div class="text-lg font-extrabold text-navy-800">{{ $fmt((int) ($liq['borrow_month'] ?? 0)) }}</div>
+            <div class="text-xs text-slate-500">likuiditas naik (bukan income)</div>
+        </div>
+        <div>
+            <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Hutang keluar</div>
+            <div class="text-lg font-extrabold text-navy-800">{{ $fmt((int) ($liq['repay_debt_month'] ?? 0)) }}</div>
+            <div class="text-xs text-slate-500">bayar balik periode ini</div>
+        </div>
+        <div>
+            <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Hutang aktif</div>
+            <div class="text-lg font-extrabold text-navy-800">{{ $fmt((int) ($liq['active_debt_total'] ?? 0)) }}</div>
+            <div class="text-xs text-slate-500">{{ (int) ($liq['count_active_debt'] ?? 0) }} hutang</div>
         </div>
     </div>
 
