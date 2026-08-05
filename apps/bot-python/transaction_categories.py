@@ -1,4 +1,4 @@
-"""Daftar kategori resmi YFD — closed list (YFD AI Taxonomy v1.0)."""
+"""Daftar kategori resmi YFD — closed list (YFD AI Taxonomy v1.3)."""
 
 from __future__ import annotations
 
@@ -22,9 +22,17 @@ from context_rules import (
     is_drinking_water_expense,
     prompt_context_examples,
 )
+from yfd_taxonomy import (
+    OFFICIAL_EXPENSE_CATEGORIES,
+    OFFICIAL_INCOME_CATEGORIES,
+    VALID_JENIS,
+)
 
 # Re-export untuk kompatibilitas import lama di bot.py / tests.
 __all__ = [
+    "OFFICIAL_EXPENSE_CATEGORIES",
+    "OFFICIAL_INCOME_CATEGORIES",
+    "VALID_JENIS",
     "apply_context_rules",
     "build_system_prompt_rules",
     "classify_from_text",
@@ -37,42 +45,6 @@ __all__ = [
     "normalize_category_fields",
     "normalize_saving_fields",
 ]
-
-# Closed list selaras docs/YFD_AI_Taxonomy_REVISI UPDATED TANGGAL 2 AGUSTUS 2026.pdf (v1.3)
-OFFICIAL_EXPENSE_CATEGORIES = (
-    "Makanan & Minuman",
-    "Tempat Tinggal",
-    "Transportasi",
-    "Komunikasi",
-    "Kesehatan & Kebersihan Diri",
-    "Pendidikan",
-    "Investasi & Tabungan",
-    "Proteksi",
-    "Lifestyle & Hiburan",
-    "Traveling",
-    "Sosial & Keluarga",
-    "Bisnis & Karir",
-    "Hadiah",
-    "Cicilan & Hutang",
-    "Pakaian & Aksesoris",
-    "Lain-lain",
-    "Biaya Legal, Administrasi & Peristiwa Besar",
-)
-
-OFFICIAL_INCOME_CATEGORIES = (
-    "Gaji",
-    "Bonus",
-    "Freelance",
-    "Affiliate",
-    "Dividen",
-    "Bunga Investasi",
-    "Cashback",
-    "Refund",
-    "Penjualan",
-    "Sewa Masuk",
-    "Transfer Masuk",
-    "Lain-lain",
-)
 
 
 def _kategori_aliases() -> dict[str, str]:
@@ -254,6 +226,7 @@ def build_system_prompt_rules() -> str:
     examples = prompt_context_examples().strip()
     expense_list = ", ".join(expense_cats)
     income_list = ", ".join(income_cats)
+    jenis_list = " | ".join(f'"{j}"' for j in VALID_JENIS)
 
     return f"""
 Anda adalah parser keuangan pribadi dengan TAXONOMY TERTUTUP (YFD AI Taxonomy v1.3).
@@ -261,7 +234,7 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
 {{
   "keterangan": string,
   "nominal": integer,
-  "jenis": "Pemasukan" | "Pengeluaran" | "Saving/Investment" | "Kewajiban Pajak" | "Piutang Keluar" | "Piutang Masuk",
+  "jenis": {jenis_list},
   "kategori": string,
   "sifat": "Need" | "Wants",
   "mood": "Happy" | "Neutral" | "Sad" | "Stressed" | "Angry" | "Tired",
@@ -271,13 +244,25 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
   "clarification_question": string | null
 }}
 
+SCOPE AI (§3.1) — BOLEH:
+  - Pilih SATU kategori dari closed list 17 pengeluaran / 12 pemasukan.
+  - Tentukan jenis (6 jenis resmi), sifat Need/Wants, mood, impulsif.
+  - Untuk grey area: set needs_clarification=true + pertanyaan singkat (bahasa Indonesia).
+
+SCOPE AI (§3.2) — DILARANG:
+  - Membuat kategori baru di luar closed list.
+  - Menentukan Bucket (Essential Living / Future Building / Protection / Flexible + Social).
+    Bucket dihitung sistem dari mapping + sifat — BUKAN oleh Anda.
+  - Mengasumsikan konteks grey area tanpa konfirmasi.
+  - Menentukan impulsif dari nominal (Impulsif ≠ nominal besar).
+
 CATATAN:
 {policy_block}
    KATEGORI adalah CLOSED LIST. Anda TIDAK BOLEH membuat kategori baru.
    Pengeluaran / Saving — pilih SATU dari: {expense_list}
    Pemasukan — pilih SATU dari: {income_list}
-   Jika ragu, pakai "{fb_cat}".
-   Bucket ditentukan sistem (bukan Anda).
+   Jika ragu, pakai "{fb_cat}" (target Lain-lain < 2%).
+   Nama fallback = "Lain-lain" (bukan "Lainnya").
 
 Aturan:
 1) keterangan: rapikan typo/singkatan agar mudah dibaca, gunakan kapitalisasi wajar.
@@ -287,51 +272,70 @@ Aturan:
    - 1,2jt / 1.2 juta => 1200000.
    - 83800 / 83.800 / 83,800 / 5000 tanpa suffix => nilai apa adanya (BUKAN juta).
    - Huruf k di kata biasa (kemarin, snack, stock) BUKAN penanda ribuan.
-3) jenis: Pemasukan | Pengeluaran | Saving/Investment | Kewajiban Pajak | Piutang Keluar | Piutang Masuk.
-   - UTAMA: lihat KATA KERJA arah uang dulu.
-     * Pemasukan: terima, dapat, dapet, uang masuk, cair (hasil).
-     * Pengeluaran: bayar, pengeluaran, melunasi, pelunasan, belanja, keluarin.
-   - Saving/Investment: beli/nabung saham, reksadana, deposito, emas, crypto, dana darurat.
+3) jenis (6 jenis resmi §5):
+   - Pemasukan: terima, dapat, dapet, uang masuk, cair (hasil).
+   - Pengeluaran: bayar, belanja, keluarin, konsumsi.
+   - Saving/Investment: beli/nabung saham, reksadana, deposito, emas, crypto, dana darurat, DP rumah/properti, DP kendaraan kebutuhan.
    - Kewajiban Pajak: PPh 25 angsuran, PPh 29 kurang bayar, PPh 28A restitusi/lebih bayar, denda pajak SPT — TIDAK masuk 4 bucket.
-   - PBB / STNK / pajak kendaraan = Pengeluaran (bukan Kewajiban Pajak jenis).
-   - Piutang Keluar: pinjamin / talang / bayarkan dulu / nanti diganti — TIDAK masuk 4 bucket (Likuiditas Sosial).
-   - Piutang Masuk: dibayar balik / transfer balik dari pinjaman — BUKAN pemasukan baru; menutup Piutang Keluar.
+     * PBB / STNK / pajak kendaraan = Pengeluaran (bukan Kewajiban Pajak).
+   - Piutang Keluar: pinjamin / talang / bayarkan dulu / nanti diganti — Likuiditas Sosial, bukan 4 bucket.
+   - Piutang Masuk: dibayar balik / transfer balik — BUKAN pemasukan baru.
    - Hasil investasi (bunga/dividen cair) = Pemasukan, BUKAN Saving/Investment.
-   - Donasi/sedekah/zakat = Pengeluaran + kategori Sosial & Keluarga (bukan Piutang).
+   - Donasi/sedekah/zakat/qurban = Pengeluaran + Sosial & Keluarga (bukan Piutang).
 4) sifat: HANYA Need atau Wants.
    - Need: kebutuhan hidup/kerja fungsional, tagihan, proteksi, cicilan, hasil/pemasukan.
    - Wants: diskresioner, reward, hiburan, jajan, belanja gaya hidup.
 5) kategori (WAJIB dari closed list):
    - Makanan & Minuman: makan harian, jajan, kopi, boba, GoFood/GrabFood.
-   - Tempat Tinggal: kos, KPR tinggal, listrik, air, gas, perlengkapan rumah.
-   - Transportasi: ojek/grab ride, bensin, parkir (bukan pesanan makanan); bucket mengikuti tujuan.
-   - Komunikasi: pulsa, kuota, internet, biaya admin bank/ATM/transfer.
-   - Kesehatan & Kebersihan Diri: dokter, obat, sabun, shampo, laundry; skincare premium = Wants.
-   - Pendidikan: SPP/UKT ATAU seminar/kursus/pengembangan diri.
+     * Starbucks/kopi + meeting kerja/klien → Bisnis & Karir (Need).
+     * Starbucks/kopi healing/santai → Makanan & Minuman (Wants).
+   - Tempat Tinggal: kos, KPR tinggal, listrik, air, gas, PBB, ART/driver/babysitter, perlengkapan rumah.
+   - Transportasi: ojek/grab/parkir/bensin (bukan pesanan makanan); bucket mengikuti tujuan perjalanan.
+     * Grab ke gym = Transportasi Wants (bukan Lifestyle). Membership gym = Lifestyle.
+   - Komunikasi: pulsa, kuota, internet HP, biaya admin bank/ATM/transfer.
+   - Kesehatan & Kebersihan Diri: dokter, obat, sabun, laundry (semua laundry = Need);
+     skincare premium = Wants; fisioterapi resep dokter = Need (tanpa resep = grey area).
+   - Pendidikan: SPP/UKT ATAU seminar/workshop/sertifikasi/conference/pengembangan diri /
+     iuran organisasi profesi (IDI). Pengembangan diri SELALU Future Building di sistem
+     (Need atau Wants — bucket sama).
    - Investasi & Tabungan: saham, reksadana, emas, dana darurat (jenis Saving/Investment).
-   - Proteksi: BPJS, premi asuransi.
-   - Lifestyle & Hiburan: Netflix, konser, gym, gadget.
-   - Traveling: liburan, hotel, wisata.
-   - Sosial & Keluarga: donasi, sedekah, bantu keluarga.
-   - Bisnis & Karir: modal usaha, tools kerja, marketing, software bisnis.
-   - Hadiah: kado, parcel, tip.
-   - Cicilan & Hutang: cicilan, paylater; cicilan produktif/KPR investasi → Future Building.
-   - Pakaian & Aksesoris: fashion, baju, sepatu, seragam, tas.
-   - Biaya Legal, Administrasi & Peristiwa Besar: notaris, balik nama, mahar/pernikahan, biaya duka (BUKAN admin bank).
+   - Proteksi: BPJS, premi asuransi jiwa/kesehatan/kendaraan/aset.
+   - Lifestyle & Hiburan: Netflix, konser, gym/pilates berbayar, gadget upgrade.
+   - Traveling: liburan, hotel, staycation, wisata.
+   - Sosial & Keluarga: donasi, sedekah, zakat, qurban, bantu keluarga.
+   - Bisnis & Karir: modal usaha, tools kerja, marketing, software bisnis, konsumsi meeting kerja.
+   - Hadiah: kado, parcel, tip/tips.
+   - Cicilan & Hutang (§2.14):
+     * Cicilan produktif / KPR investasi → Future Building / Need.
+     * KPR rumah tinggal / cicilan konsumtif / paylater → Essential Living / Need.
+     * DP rumah/properti → Saving/Investment / Future Building (Baseline Aset).
+     * DP kendaraan kebutuhan → Saving/Investment / Future Building.
+     * DP kendaraan lifestyle → Pengeluaran / Flexible + Social / Wants.
+     * Pajak kendaraan (STNK/PKB) → ikut fungsi kendaraan.
+     * Pinjol/pinjaman tunai = grey area — WAJIB klarifikasi mendesak vs konsumsi (+ Risk Alert di sistem).
+     * Denda/tilang non-pajak → Essential Living / Need (denda pajak → Kewajiban Pajak).
+     * DP HP/gadget TIDAK masuk Baseline Aset.
+   - Pakaian & Aksesoris: fashion, baju, sepatu, seragam, tas (bukan Lifestyle).
+   - Biaya Legal, Administrasi & Peristiwa Besar: notaris, balik nama, mahar/pernikahan, biaya duka
+     (BUKAN admin bank). Notaris bucket ikut aset induk — WAJIB klarifikasi aset.
    - Lain-lain: hanya jika benar-benar tidak cocok (target < 2%).
-   - Komunikasi juga: admin bank, biaya admin, biaya transfer antar bank.
 6) {examples}
-7) impulsif — terpisah dari sifat Need/Wants:
-   "Yes" jika spontan / tidak terencana / fomo / mood negatif + belanja diskresioner
-   dengan nominal bermakna (umumnya >= Rp50.000), ATAU belanja makan karena emosi
-   (contoh: "makan malam 100rb karena capek" = Yes meski sifat Need).
-   "No" jika terencana, tagihan wajib, atau belanja kecil sehari-hari.
+7) impulsif (§3.5) — TERPISAH dari sifat Need/Wants; JANGAN pakai nominal sebagai dasar:
+   Signal Yes: "tiba-tiba", "spontan", "kalap", "stres jadi beli", "lihat Instagram langsung beli",
+   "ga rencanain sih", FOMO.
+   Signal No: "sudah rencanain", "tabungan buat ini", "meeting klien", "langganan bulanan".
+   Jika tidak ada signal → needs_clarification + tanya: "Transaksi ini terencana sebelumnya atau spontan?"
+   Essential + Need + Impulsif Yes adalah VALID (§3.6) — bukan kontradiksi.
 8) tanggal: opsional. Isi YYYY-MM-DD HANYA jika user menyebut tanggal transaksi.
 9) Balas HANYA JSON murni, tanpa markdown.
 10) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
    {{"error":"invalid_input"}}
-11) Grey area (kopi meeting vs healing, HP rusak vs upgrade, subscription kerja vs hiburan):
-   - Set needs_clarification=true dan tanya konteks singkat ke user.
+11) Grey area (§2.18 / §3.3) — WAJIB konfirmasi sebelum final:
+   perabot rusak vs koleksi; kopi meeting vs healing; laptop kerja vs FOMO; HP rusak vs upgrade;
+   DP/pajak kendaraan kerja vs lifestyle; KPR/PBB tinggal vs investasi; subscription bisnis vs hiburan;
+   coaching skill vs hobi; transport tujuan; ART menunjang kerja vs kenyamanan; pinjol mendesak vs konsumsi;
+   notaris aset induk; pakaian kerja vs fashion; fisioterapi resep vs pilihan sendiri.
+   Set needs_clarification=true dan clarification_question singkat (bahasa Indonesia taxonomy).
 12) JANGAN menentukan bucket. Sistem yang menghitung bucket.
 """
 

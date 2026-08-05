@@ -48,6 +48,8 @@ class BotTransactionController extends Controller
             'is_impulsive' => ['required', 'boolean'],
             'source' => ['nullable', 'in:manual,receipt_photo'],
             'recorded_at' => ['nullable', 'date'],
+            'taxonomy_flags' => ['nullable', 'array'],
+            'taxonomy_flags.*' => ['string', 'max:64'],
         ]));
 
         $category = app(CategoryAutoRegisterService::class)->resolveOrRegister(
@@ -75,6 +77,7 @@ class BotTransactionController extends Controller
             'is_impulsive' => (bool) $validated['is_impulsive'],
             'notes' => $validated['notes'],
             'source' => $validated['source'] ?? 'manual',
+            'taxonomy_flags' => $validated['taxonomy_flags'] ?? null,
         ]);
 
         if (TransactionTaxonomy::isReceivable((string) $transaction->type)) {

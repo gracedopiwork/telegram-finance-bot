@@ -55,6 +55,7 @@ from impulsive_rules import (
     resolve_impulsif,
 )
 from nature_rules import refine_sifat_from_context
+from yfd_taxonomy import attach_taxonomy_flags
 
 load_dotenv()
 
@@ -253,6 +254,7 @@ def finalize_parsed_transaction(
     normalize_category_fields(parsed, source_text)
     normalize_saving_fields(parsed, source_text)
     refine_sifat_from_context(parsed, source_text)
+    attach_taxonomy_flags(parsed, source_text)
     ai_val = str(parsed.get("impulsif", "")).strip() if trust_ai_impulsif else None
     parsed["impulsif"] = resolve_impulsif(
         parsed,
@@ -678,6 +680,16 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
         kategori=str(parsed.get("kategori") or ""),
     )
     warn_block = f"\n{warning}\n" if warning else ""
+    flags = parsed.get("taxonomy_flags") or []
+    flag_labels = {
+        "risk_alert": "Risk Alert (Pinjol)",
+        "late_pattern": "Pola Keterlambatan",
+        "life_event": "Peristiwa Besar",
+    }
+    flag_line = ""
+    if isinstance(flags, list) and flags:
+        pretty = ", ".join(flag_labels.get(str(f), str(f)) for f in flags)
+        flag_line = f"Flag taxonomy: {pretty}\n"
     return (
         f"Aku baca transaksi untuk {greeting_name} seperti ini:\n"
         f"{date_line}"
@@ -689,6 +701,7 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
         f"Sifat: {parsed['sifat']}\n"
         f"Mood: {parsed['mood']}\n"
         f"Impulsif: {parsed['impulsif']}\n"
+        f"{flag_line}"
         f"{warn_block}\n"
         "Sudah benar?"
     )

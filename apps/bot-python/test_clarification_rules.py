@@ -27,7 +27,7 @@ class ClarificationRulesTests(unittest.TestCase):
             {"kategori": "Makanan & Minuman", "keterangan": "Beli Kopi"},
             "beli kopi 50rb",
         )
-        self.assertIn("kerja/meeting", question or "")
+        self.assertIn("meeting kerja", question or "")
 
     def test_generic_piano_purchase_requires_clarification(self) -> None:
         question = clarification_question(
@@ -67,6 +67,20 @@ class ClarificationRulesTests(unittest.TestCase):
         )
         self.assertIsNone(question)
 
+    def test_generic_pinjol_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Cicilan & Hutang", "keterangan": "Bayar pinjol"},
+            "bayar cicilan pinjol 500rb",
+        )
+        self.assertIn("mendesak", question or "")
+
+    def test_generic_dp_kendaraan_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Investasi & Tabungan", "keterangan": "DP motor"},
+            "dp motor 5jt",
+        )
+        self.assertIn("mobilitas kerja", question or "")
+
     def test_ai_question_has_priority(self) -> None:
         question = clarification_question(
             {
@@ -81,6 +95,128 @@ class ClarificationRulesTests(unittest.TestCase):
             question,
             "Kelas ini untuk olahraga atau pengembangan diri?",
         )
+
+    def test_generic_perabot_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Tempat Tinggal", "keterangan": "Beli kulkas"},
+            "beli kulkas 5jt",
+        )
+        self.assertIn("rusak", question or "")
+
+    def test_perabot_rusak_no_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Tempat Tinggal", "keterangan": "Ganti kulkas rusak"},
+            "ganti kulkas rusak 5jt",
+        )
+        self.assertIsNone(question)
+
+    def test_generic_laptop_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Lifestyle & Hiburan", "keterangan": "Beli laptop"},
+            "beli laptop 12jt",
+        )
+        self.assertIn("alat kerja", question or "")
+
+    def test_generic_hp_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Lifestyle & Hiburan", "keterangan": "Beli HP"},
+            "beli hp 8jt",
+        )
+        self.assertIn("rusak", question or "")
+
+    def test_generic_kpr_pbb_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Tempat Tinggal", "keterangan": "Bayar PBB"},
+            "bayar PBB tahunan 3jt",
+        )
+        self.assertIn("ditinggali", question or "")
+
+    def test_pbb_investasi_no_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Tempat Tinggal", "keterangan": "PBB disewakan"},
+            "bayar PBB properti disewakan 3jt",
+        )
+        self.assertIsNone(question)
+
+    def test_generic_subscription_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Bisnis & Karir", "keterangan": "ChatGPT Plus"},
+            "langganan chatgpt plus 300rb",
+        )
+        self.assertIn("bisnis/kerja", question or "")
+
+    def test_netflix_no_subscription_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Lifestyle & Hiburan", "keterangan": "Netflix"},
+            "netflix bulanan 54rb",
+        )
+        self.assertIsNone(question)
+
+    def test_generic_coaching_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Pendidikan", "keterangan": "Bayar coaching"},
+            "bayar coaching 2jt",
+        )
+        self.assertIn("penghasilan", question or "")
+
+    def test_generic_art_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Tempat Tinggal", "keterangan": "Gaji babysitter"},
+            "gaji babysitter bulanan 2jt",
+        )
+        self.assertIn("menunjang kemampuan kerja", question or "")
+
+    def test_art_with_kerja_context_no_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Tempat Tinggal", "keterangan": "Babysitter agar bisa praktik"},
+            "gaji babysitter agar bisa praktik 2jt\nKlarifikasi user: menunjang kerja",
+        )
+        self.assertIsNone(question)
+
+    def test_generic_notaris_requires_clarification(self) -> None:
+        question = clarification_question(
+            {
+                "kategori": "Biaya Legal, Administrasi & Peristiwa Besar",
+                "keterangan": "Biaya notaris",
+            },
+            "biaya notaris 10jt",
+        )
+        self.assertIn("aset", question or "")
+
+    def test_generic_fashion_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Pakaian & Aksesoris", "keterangan": "Beli baju"},
+            "beli baju 300rb",
+        )
+        self.assertIn("kerja/sekolah", question or "")
+
+    def test_seragam_no_fashion_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Pakaian & Aksesoris", "keterangan": "Seragam kerja"},
+            "beli seragam kerja 250rb",
+        )
+        self.assertIsNone(question)
+
+    def test_generic_fisioterapi_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Kesehatan & Kebersihan Diri", "keterangan": "Fisioterapi"},
+            "fisioterapi 350rb",
+        )
+        self.assertIn("diresepkan dokter", question or "")
+
+    def test_fisioterapi_resep_no_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Kesehatan & Kebersihan Diri", "keterangan": "Fisioterapi resep dokter"},
+            "fisioterapi resep dokter 350rb",
+        )
+        self.assertIsNone(question)
+
+    def test_generic_pajak_kendaraan_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Cicilan & Hutang", "keterangan": "Bayar STNK"},
+            "bayar STNK 3jt",
+        )
+        self.assertIn("mobilitas kerja", question or "")
 
 
 if __name__ == "__main__":

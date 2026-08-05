@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from context_rules import is_discretionary_social_giving, is_leisure_transport_destination
+from context_rules import (
+    is_business_transport_destination,
+    is_discretionary_social_giving,
+    is_leisure_transport_destination,
+)
 
 VALID_SIFAT = frozenset({"Need", "Wants"})
 
@@ -74,6 +78,8 @@ DISCRETIONARY_WANTS_KEYWORDS = (
     "boba",
     "pengen",
     "kepengen",
+    "healing",
+    "santai",
 )
 
 
@@ -111,52 +117,68 @@ def refine_sifat_from_context(parsed: dict[str, Any], source_text: str = "") -> 
         parsed["sifat"] = "Wants"
         return parsed
 
+    # Meeting coffee / produktivitas → Need (closed kategori Makanan atau Bisnis).
     if has_productivity_framing(combined) and (
         has_functional_food_context(combined)
         or str(parsed.get("kategori", "")) in {
+            "Makanan & Minuman",
+            "Bisnis & Karir",
+            "Lifestyle & Hiburan",
+            # Legacy aliases (secondary)
             "Jajan",
             "Makan",
-            "Makanan & Minuman",
             "Minuman",
             "Elektronik",
-            "Lifestyle & Hiburan",
             "Subscription",
-            "Bisnis & Karir",
         }
     ):
         parsed["sifat"] = "Need"
         return parsed
 
+    # Closed-list essential categories (primary).
     essential_cats = {
+        "Tempat Tinggal",
+        "Transportasi",
+        "Komunikasi",
+        "Kesehatan & Kebersihan Diri",
+        "Makanan & Minuman",
+        "Cicilan & Hutang",
+        "Proteksi",
+        # Legacy aliases (secondary)
         "Listrik",
         "Air",
         "Asuransi",
-        "Proteksi",
         "Transport",
-        "Transportasi",
-        "Tempat Tinggal",
         "Gaji",
         "Makan",
-        "Makanan & Minuman",
         "Kesehatan",
-        "Kesehatan & Kebersihan Diri",
-        "Komunikasi",
-        "Cicilan & Hutang",
     }
     kategori = str(parsed.get("kategori", ""))
-    # Jangan paksa Need untuk Makanan bila framing diskresioner (jajan/snack).
-    # Grab ke gym/cafe tetap Transportasi tapi sifat Wants (ekspektasi klien).
     if kategori in essential_cats:
         if kategori in {"Makan", "Makanan & Minuman", "Minuman"} and has_discretionary_framing(
             combined
         ):
             parsed["sifat"] = "Wants"
-        elif kategori in {"Transport", "Transportasi"} and is_leisure_transport_destination(
-            combined
-        ):
-            parsed["sifat"] = "Wants"
+        elif kategori in {"Transport", "Transportasi"}:
+            if is_leisure_transport_destination(combined):
+                parsed["sifat"] = "Wants"
+            elif is_business_transport_destination(combined):
+                parsed["sifat"] = "Need"
+            else:
+                parsed["sifat"] = "Need"
         else:
             parsed["sifat"] = "Need"
+
+    # Traveling / Lifestyle / Sosial / Hadiah default Wants unless already set Need.
+    wants_cats = {
+        "Traveling",
+        "Lifestyle & Hiburan",
+        "Sosial & Keluarga",
+        "Hadiah",
+        "Pakaian & Aksesoris",
+    }
+    if kategori in wants_cats and parsed.get("sifat") not in VALID_SIFAT:
+        parsed["sifat"] = "Wants"
 
     if parsed.get("sifat") not in VALID_SIFAT:
         parsed["sifat"] = "Need"

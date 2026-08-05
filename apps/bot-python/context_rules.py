@@ -478,6 +478,10 @@ _SOCIAL = (
     "infaq",
     "infak",
     "wakaf",
+    "qurban",
+    "kurban",
+    "hewan qurban",
+    "hewan kurban",
 )
 
 _HIBURAN = (
@@ -502,6 +506,8 @@ _OBLIGATION_SOCIAL = (
     "wakaf",
     "persembahan",
     "ibadah",
+    "qurban",
+    "kurban",
 )
 
 _BUSINESS_BUILDING = (
@@ -526,6 +532,7 @@ _BUSINESS_BUILDING = (
     "rapat untuk kerja",
     "ngopi meeting",
     "kopi meeting",
+    "starbucks meeting",
     "makan meeting",
 )
 
@@ -570,8 +577,28 @@ _KESEHATAN = (
     "vitamin",
     "suplemen",
     "fisioterapi",
+    "fisio",
     "rehab",
     "rehabilitasi",
+    "hydrotherapy",
+)
+
+_FISIOTERAPI_RESEP = (
+    "resep dokter",
+    "diresepkan",
+    "resep dari dokter",
+    "anjuran dokter",
+    "pasca operasi",
+    "pasca-operasi",
+    "rehab medis",
+)
+
+_FISIOTERAPI_MARKERS = (
+    "fisioterapi",
+    "fisio",
+    "rehab",
+    "rehabilitasi",
+    "hydrotherapy",
 )
 
 _GYM_LIFESTYLE = (
@@ -595,7 +622,59 @@ _PENDIDIKAN = (
     "bimbel",
     "kuliah",
     "uks",
+    "ukt",
     "buku pelajaran",
+    # Pengembangan diri — selalu kategori Pendidikan (bucket Future Building via mapping)
+    "seminar",
+    "workshop",
+    "sertifikasi",
+    "conference",
+    "konferensi",
+    "pengembangan diri",
+    "self development",
+    "self-development",
+    "iuran organisasi",
+    "keanggotaan profesi",
+    "asosiasi profesi",
+    "iuran idi",
+    "bayar idi",
+    "iuran idai",
+)
+
+_TRAVELING = (
+    "liburan",
+    "staycation",
+    "hotel",
+    "penginapan",
+    "wisata",
+    "traveling",
+    "travelling",
+    "tour",
+    "vacation",
+    "resort",
+    "villa liburan",
+    "tiket wisata",
+)
+
+# Gaji ART / Driver / Babysitter → Tempat Tinggal (grey area sifat)
+_HOUSEHOLD_HELP = (
+    "gaji art",
+    "bayar art",
+    "gaji pembantu",
+    "bayar pembantu",
+    "pembantu rumah",
+    "pembantu rumah tangga",
+    "babysitter",
+    "baby sitter",
+    "gaji babysitter",
+    "bayar babysitter",
+    "pengasuh anak",
+    "gaji pengasuh",
+    "sopir pribadi",
+    "driver pribadi",
+    "gaji driver",
+    "bayar driver",
+    "gaji sopir",
 )
 
 _KOMUNIKASI = (
@@ -683,6 +762,42 @@ _CICILAN = (
     "gopay later",
     "kredit motor",
     "kredit mobil",
+    "pinjol",
+    "pinjaman online",
+    "pinjaman tunai",
+)
+
+_DENDA_SANKSI = (
+    "tilang",
+    "denda keterlambatan",
+    "denda cicilan",
+    "denda kartu kredit",
+    "sanksi keterlambatan",
+    "denda non pajak",
+)
+
+_DP_ASET = (
+    "dp rumah",
+    "dp properti",
+    "dp kpr",
+    "dp ruko",
+    "uang muka rumah",
+    "uang muka properti",
+    "dp mobil",
+    "dp motor",
+    "dp kendaraan",
+    "uang muka mobil",
+    "uang muka motor",
+)
+
+_DP_LIFESTYLE_HINTS = (
+    "kendaraan kedua",
+    "mobil kedua",
+    "motor kedua",
+    "upgrade",
+    "gaya hidup",
+    "lifestyle",
+    "hobi",
 )
 
 _PPH_KEWAJIBAN = (
@@ -706,6 +821,15 @@ _PBB = (
     "pbb",
     "pajak bumi",
     "pajak bangunan",
+)
+
+_PBB_INVESTASI = (
+    "pbb investasi",
+    "pbb disewakan",
+    "pbb dikoskan",
+    "disewakan",
+    "dikoskan",
+    "properti investasi",
 )
 
 _PAJAK_KENDARAAN = (
@@ -862,6 +986,51 @@ def is_bank_admin_fee(text: str) -> bool:
     return _contains(text, _BANK_ADMIN_FEE)
 
 
+def is_traveling_expense(text: str) -> bool:
+    """Liburan/hotel/staycation/wisata → Traveling / Wants."""
+    return _contains(text, _TRAVELING)
+
+
+def is_household_help_expense(text: str) -> bool:
+    """Gaji ART/driver/babysitter → Tempat Tinggal (grey area sifat)."""
+    return _contains(text, _HOUSEHOLD_HELP)
+
+
+def is_fisioterapi_expense(text: str) -> bool:
+    return _contains(text, _FISIOTERAPI_MARKERS)
+
+
+def fisioterapi_sifat(text: str) -> str:
+    """Resep dokter → Need; tanpa konteks resep tetap Need default (klarifikasi terpisah)."""
+    lower = text.lower()
+    if _contains(lower, _FISIOTERAPI_RESEP):
+        return "Need"
+    if any(k in lower for k in ("tanpa resep", "pilihan sendiri", "sendiri aja", "healing")):
+        return "Wants"
+    return "Need"
+
+
+def is_self_development_expense(text: str) -> bool:
+    """Seminar/workshop/sertifikasi/iuran organisasi → Pendidikan (bucket Future Building)."""
+    markers = (
+        "seminar",
+        "workshop",
+        "sertifikasi",
+        "conference",
+        "konferensi",
+        "pengembangan diri",
+        "self development",
+        "self-development",
+        "iuran organisasi",
+        "keanggotaan profesi",
+        "asosiasi profesi",
+        "iuran idi",
+        "bayar idi",
+        "iuran idai",
+    )
+    return _contains(text, markers)
+
+
 def has_essential_living_intent(text: str) -> bool:
     return _contains(text, _KEBUTUHAN_HIDUP)
 
@@ -905,6 +1074,31 @@ def is_transport_ride(text: str) -> bool:
     if is_food_delivery(text):
         return False
     return _match_any(text, _TRANSPORT_PATTERNS)
+
+
+def is_dp_asset_payment(text: str) -> bool:
+    return _contains(text.lower(), _DP_ASET)
+
+
+def is_dp_lifestyle_vehicle(text: str) -> bool:
+    lower = text.lower()
+    if not any(k in lower for k in ("dp mobil", "dp motor", "dp kendaraan", "uang muka mobil", "uang muka motor")):
+        return False
+    return _contains(lower, _DP_LIFESTYLE_HINTS)
+
+
+def is_pinjol_or_cash_loan(text: str) -> bool:
+    lower = text.lower()
+    return any(k in lower for k in ("pinjol", "pinjaman online", "pinjaman tunai"))
+
+
+def is_denda_sanksi(text: str) -> bool:
+    lower = text.lower()
+    if _contains(lower, ("denda pajak", "sanksi pajak")):
+        return False
+    return _contains(lower, _DENDA_SANKSI) or (
+        "denda" in lower and "pajak" not in lower
+    )
 
 
 _LEISURE_TRANSPORT_DEST = (
@@ -1100,7 +1294,7 @@ def classify_from_text(text: str) -> dict[str, str] | None:
             return {"jenis": "Pemasukan", "kategori": "Refund", "sifat": "Need"}
         if _contains(lower, _CASHBACK):
             return {"jenis": "Pemasukan", "kategori": "Cashback", "sifat": "Need"}
-        if _contains(lower, _GAJI):
+        if _contains(lower, _GAJI) and not is_household_help_expense(lower):
             return {"jenis": "Pemasukan", "kategori": "Gaji", "sifat": "Need"}
         if _contains(lower, _BONUS):
             return {"jenis": "Pemasukan", "kategori": "Bonus", "sifat": "Need"}
@@ -1114,10 +1308,27 @@ def classify_from_text(text: str) -> dict[str, str] | None:
             return {"jenis": "Pemasukan", "kategori": "Transfer Masuk", "sifat": "Need"}
         # Kata kerja masuk jelas, tapi kategori belum ketemu → Pemasukan generik.
         if direction == "Pemasukan":
-            return {"jenis": "Pemasukan", "kategori": "Lainnya", "sifat": "Need"}
+            return {"jenis": "Pemasukan", "kategori": "Lain-lain", "sifat": "Need"}
 
     if force_income_only:
         return None
+
+    # ---- DP aset (taxonomy 2.14) — sebelum saving generik ----
+    if is_dp_lifestyle_vehicle(lower) or (
+        explicit == "Pengeluaran"
+        and any(k in lower for k in ("dp mobil", "dp motor", "dp kendaraan", "uang muka mobil", "uang muka motor"))
+    ):
+        return {
+            "jenis": "Pengeluaran",
+            "kategori": "Cicilan & Hutang",
+            "sifat": "Wants",
+        }
+    if is_dp_asset_payment(lower) and explicit != "Pengeluaran" and direction != "Pengeluaran":
+        return {
+            "jenis": "Saving/Investment",
+            "kategori": "Investasi & Tabungan",
+            "sifat": "Need",
+        }
 
     # ---- Saving / Investment ----
     if explicit != "Pengeluaran" and direction != "Pengeluaran" and (
@@ -1157,6 +1368,19 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "sifat": "Wants"}
     if is_business_building_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Bisnis & Karir", "sifat": "Need"}
+    # Traveling: hotel/staycation/liburan/wisata (bukan grab/ojek lokal).
+    if is_traveling_expense(lower) and not is_business_transport_destination(lower):
+        local_ride_only = is_transport_ride(lower) and not _contains(
+            lower,
+            ("tiket pesawat", "tiket kereta", "tiket bus", "boarding", "hotel", "staycation", "penginapan"),
+        )
+        if not local_ride_only:
+            # "grab ke hotel" = ride lokal → biarkan jatuh ke Transportasi di bawah
+            if not (
+                is_transport_ride(lower)
+                and _contains(lower, ("grab", "gojek", "ojek", "maxim", "grabbike", "grabcar"))
+            ):
+                return {"jenis": "Pengeluaran", "kategori": "Traveling", "sifat": "Wants"}
     # Ride Grab/ojek dulu — "grab ke gym" tetap Transportasi (bucket Flexible),
     # bukan Lifestyle. Bayar membership gym tanpa ride → Lifestyle di bawah.
     if _contains(lower, _SERVIS_KENDARAAN) or is_transport_ride(lower):
@@ -1177,6 +1401,8 @@ def classify_from_text(text: str) -> dict[str, str] | None:
             "kategori": "Bisnis & Karir" if is_work_software_expense(lower) else "Lifestyle & Hiburan",
             "sifat": "Need" if is_work_software_expense(lower) else "Wants",
         }
+    if is_household_help_expense(lower):
+        return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
     if _contains(lower, _LISTRIK) or is_water_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
     # Air minum/galon sebelum jajan — "beli aqua" sering salah jadi Jajan.
@@ -1187,9 +1413,15 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Piutang Masuk", "kategori": "Lain-lain", "sifat": "Need"}
     if _contains(lower, _PIUTANG_KELUAR):
         return {"jenis": "Piutang Keluar", "kategori": "Lain-lain", "sifat": "Need"}
+    if is_fisioterapi_expense(lower):
+        return {
+            "jenis": "Pengeluaran",
+            "kategori": "Kesehatan & Kebersihan Diri",
+            "sifat": fisioterapi_sifat(lower),
+        }
     if _contains(lower, _KESEHATAN):
         return {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need"}
-    if _contains(lower, _PENDIDIKAN):
+    if is_self_development_expense(lower) or _contains(lower, _PENDIDIKAN):
         return {"jenis": "Pengeluaran", "kategori": "Pendidikan", "sifat": "Need"}
     if is_bank_admin_fee(lower) or _contains(lower, _KOMUNIKASI):
         return {"jenis": "Pengeluaran", "kategori": "Komunikasi", "sifat": "Need"}
@@ -1199,7 +1431,9 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Pakaian & Aksesoris", "sifat": "Wants"}
     if _contains(lower, _SEWA_KELUAR):
         return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
-    if _contains(lower, _CICILAN):
+    if is_denda_sanksi(lower):
+        return {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "sifat": "Need"}
+    if _contains(lower, _CICILAN) or is_pinjol_or_cash_loan(lower):
         return {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "sifat": "Need"}
     if _contains(lower, _PPH_KEWAJIBAN) or (
         _contains(lower, _PAJAK)
@@ -1349,6 +1583,96 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
             parsed["sifat"] = "Wants"
             parsed.pop("sub_kategori", None)
             return parsed
+
+        # Qurban → Sosial & Keluarga (bukan Lain-lain / Lifestyle).
+        if ai_jenis == "Pengeluaran" and _contains(combined.lower(), ("qurban", "kurban")):
+            parsed["kategori"] = "Sosial & Keluarga"
+            parsed["sifat"] = "Wants"
+            parsed.pop("sub_kategori", None)
+            return parsed
+
+        # ART/driver/babysitter → Tempat Tinggal.
+        if ai_jenis == "Pengeluaran" and is_household_help_expense(combined):
+            parsed["kategori"] = "Tempat Tinggal"
+            if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
+                parsed["sifat"] = "Need"
+            parsed.pop("sub_kategori", None)
+            return parsed
+
+        # Traveling (hotel/liburan/staycation) — bukan Lifestyle.
+        if (
+            ai_jenis == "Pengeluaran"
+            and is_traveling_expense(combined)
+            and not is_business_transport_destination(combined)
+            and not (
+                is_transport_ride(combined)
+                and _contains(combined.lower(), ("grab", "gojek", "ojek", "maxim", "grabbike", "grabcar"))
+            )
+        ):
+            if ai_kat_l in {
+                "lifestyle & hiburan",
+                "lain-lain",
+                "lain lain",
+                "lainnya",
+                "transport",
+                "transportasi",
+                "makanan & minuman",
+                "",
+            } or "traveling" not in ai_kat_l:
+                parsed["kategori"] = "Traveling"
+                parsed["sifat"] = "Wants"
+                parsed.pop("sub_kategori", None)
+                return parsed
+
+        # Pengembangan diri / iuran organisasi → Pendidikan.
+        if ai_jenis == "Pengeluaran" and is_self_development_expense(combined):
+            if ai_kat_l in {
+                "lifestyle & hiburan",
+                "lain-lain",
+                "lain lain",
+                "lainnya",
+                "bisnis & karir",
+                "makanan & minuman",
+                "",
+            } or "pendidikan" not in ai_kat_l:
+                parsed["kategori"] = "Pendidikan"
+                if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
+                    parsed["sifat"] = "Need"
+                parsed.pop("sub_kategori", None)
+                return parsed
+
+        # Fashion → Pakaian & Aksesoris (bukan Lifestyle).
+        if ai_jenis == "Pengeluaran" and _contains(combined.lower(), _PAKAIAN):
+            if ai_kat_l in {
+                "lifestyle & hiburan",
+                "hiburan",
+                "lain-lain",
+                "lain lain",
+                "lainnya",
+                "jajan",
+            }:
+                parsed["kategori"] = "Pakaian & Aksesoris"
+                parsed["sifat"] = "Wants"
+                parsed.pop("sub_kategori", None)
+                return parsed
+
+        # Laundry → Kesehatan & Kebersihan Diri.
+        if ai_jenis == "Pengeluaran" and _contains(combined.lower(), _LAUNDRY):
+            parsed["kategori"] = "Kesehatan & Kebersihan Diri"
+            parsed["sifat"] = "Need"
+            parsed.pop("sub_kategori", None)
+            return parsed
+
+        # Fisioterapi → Kesehatan.
+        if ai_jenis == "Pengeluaran" and is_fisioterapi_expense(combined):
+            parsed["kategori"] = "Kesehatan & Kebersihan Diri"
+            parsed["sifat"] = fisioterapi_sifat(combined)
+            parsed.pop("sub_kategori", None)
+            return parsed
+
+        # Alias AI "Lainnya" → closed list "Lain-lain".
+        if ai_kat_l in {"lainnya", "other", "misc", "umum"}:
+            parsed["kategori"] = "Lain-lain"
 
         # Grab/ojek (termasuk ke gym/cafe) → SELALU Transportasi.
         # Klien: semua Grab masuk kategori Transport; bucket/sifat ikut tujuan.
@@ -1555,4 +1879,13 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "makan malem sambil meeting untuk kerja 213rb" → Pengeluaran / Bisnis & Karir / Need → Future Building
 - "laundry/cuci baju 52.500" → Pengeluaran / Kesehatan & Kebersihan Diri / Need
 - "beli baju fashion 250rb" → Pengeluaran / Pakaian & Aksesoris / Wants
+- "hotel staycation Ubud 1.2jt" → Pengeluaran / Traveling / Wants
+- "bayar seminar sertifikasi 2jt" → Pengeluaran / Pendidikan / Need (bucket Future Building)
+- "iuran IDI tahunan 1jt" → Pengeluaran / Pendidikan / Need (Future Building)
+- "gaji babysitter bulanan 2jt" → Pengeluaran / Tempat Tinggal (grey area sifat)
+- "bayar qurban 3jt" → Pengeluaran / Sosial & Keluarga / Wants
+- "fisioterapi resep dokter 350rb" → Pengeluaran / Kesehatan & Kebersihan Diri / Need
+- "PBB rumah disewakan 5jt" → Pengeluaran / Tempat Tinggal / Need (bucket Future Building)
+- "starbucks meeting klien 85rb" → Pengeluaran / Bisnis & Karir / Need (Future Building)
+- "kopi starbucks healing 65rb" → Pengeluaran / Makanan & Minuman / Wants
 """

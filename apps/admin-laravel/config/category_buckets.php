@@ -2,7 +2,7 @@
 
 /**
  * Pemetaan transaksi ke 4 bucket prescription (YFD First Aid).
- * Taxonomy tertutup — lihat config/yfd_taxonomy.php.
+ * Taxonomy tertutup — lihat config/yfd_taxonomy.php (17 kategori pengeluaran).
  */
 return [
     'protection_keywords' => [
@@ -13,19 +13,24 @@ return [
         'saham', 'reksa', 'obligasi', 'emas', 'deposito', 'crypto', 'investasi', 'nabung',
         'seminar', 'simposium', 'workshop', 'sertifikasi', 'pelatihan', 'kursus', 'conference',
         'penelitian', 'modal usaha', 'marketing usaha', 'website usaha', 'software usaha',
-        'pengembangan diri', 'self development', 'les', 'coaching', 'mentoring',
-        'chatgpt', 'claude', 'notion', 'canva pro', 'figma', 'laptop kerja',
+        'pengembangan diri', 'self development', 'mentoring',
+        'les piano', 'les musik', 'les bahasa', 'les vokal', 'coaching karier', 'coaching leadership',
+        'public speaking', 'chatgpt', 'claude', 'notion', 'canva pro', 'figma', 'laptop kerja',
+        'iuran organisasi', 'keanggotaan profesi', 'idi', 'asosiasi profesi',
     ],
     'flexible_keywords' => [
         'jajan', 'kopi', 'coffee', 'cafe', 'nongkrong', 'healing',
         'liburan', 'staycation', 'bioskop', 'konser', 'hobi', 'hadiah', 'donasi', 'sedekah',
-        'persembahan', 'perpuluhan', 'streaming', 'gaming', 'fashion', 'skincare',
+        'persembahan', 'perpuluhan', 'qurban', 'kurban', 'streaming', 'gaming', 'fashion', 'skincare',
         'make up', 'fomo', 'subscription', 'langganan', 'netflix', 'spotify', 'gym', 'pilates',
+        'yoga', 'tenis', 'padel', 'renang', 'personal trainer', 'coaching tenis', 'coaching padel',
+        'les renang', 'kelas pilates', 'kelas yoga',
     ],
     'essential_context_keywords' => [
         'hp rusak', 'handphone rusak', 'ganti hp', 'hp pecah', 'layar pecah', 'hp mati',
-        'fisioterapi', 'rehab', 'rehabilitasi',
+        'fisioterapi', 'rehab', 'rehabilitasi', 'resep dokter',
     ],
+    // Meeting kerja / konsumsi bisnis → Future Building (bukan Essential Living).
     'future_building_context_keywords' => [
         'laptop kerja', 'laptop produktif', 'alat kerja', 'untuk kerja', 'modal kerja',
         'freelancer it', 'website bisnis', 'software bisnis', 'marketing bisnis',
@@ -33,14 +38,14 @@ return [
         'networking bisnis', 'networking', 'ketemu client', 'ketemu klien', 'ketemu bisnis',
         'meeting client', 'meeting bisnis', 'klien bisnis', 'client bisnis',
         'urusan bisnis', 'keperluan bisnis', 'perjalanan bisnis', 'kerja training',
+        'meeting kerja', 'meeting kerjaan', 'rapat kerja', 'meeting klien', 'ngopi meeting',
+        'kopi meeting', 'konsumsi meeting', 'starbucks meeting', 'makan meeting',
     ],
     'transport_flexible_keywords' => [
         'gym', 'nongkrong', 'hangout', 'hang out', 'healing', 'cafe', 'kafe', 'mall',
         'bioskop', 'konser', 'liburan', 'staycation', 'wisata', 'tour', 'fitness',
     ],
-    'essential_meeting_keywords' => [
-        'starbucks', 'meeting kerja', 'rapat kerja', 'meeting klien', 'ngopi meeting', 'kopi meeting',
-    ],
+    // Catatan: jangan map makan+meeting → Essential; gunakan future_building_context_keywords.
     'essential_categories' => [
         'makanan & minuman', 'tempat tinggal', 'transportasi', 'komunikasi',
         'kesehatan & kebersihan diri', 'pendidikan', 'cicilan & hutang', 'pakaian & aksesoris',
@@ -48,16 +53,18 @@ return [
     'bot_fallback_category' => 'Lain-lain',
     'bot_fallback_sub' => '-',
     'source_of_truth_note' => [
-        'Taxonomy tertutup (YFD AI Taxonomy FINAL REVISED): AI HANYA memilih dari 16 kategori resmi (+ kategori pemasukan).',
-        'AI tidak boleh membuat kategori baru. Jika ragu → Lain-lain.',
+        'Taxonomy tertutup (YFD AI Taxonomy v1.3): AI HANYA memilih dari 17 kategori resmi (+ kategori pemasukan).',
+        'AI tidak boleh membuat kategori baru. Jika ragu → Lain-lain (< 2%).',
         'Layer 1 = Kategori (closed list). Layer 2 = Bucket (otomatis dari mapping sistem).',
         'AI tidak menentukan bucket. Bucket dihitung dari sub-konteks + Need/Wants.',
         'Gym/olahraga berbayar → Lifestyle & Hiburan / Flexible + Social / Wants (bukan Essential).',
+        'Grab/ojek ke gym → Transportasi / Flexible + Social / Wants (bukan Lifestyle).',
         'Laundry → Kesehatan & Kebersihan Diri / Essential. Fashion → Pakaian & Aksesoris.',
-        'Pengembangan diri → Pendidikan / Future Building (Need atau Wants, bucket sama).',
-        'Donasi/sedekah/zakat/hadiah → Sosial & Keluarga atau Hadiah / Flexible + Social.',
-        'Jenis transaksi dan bucket berbeda: biaya bisnis tetap Pengeluaran, bucket Future Building.',
+        'Pengembangan diri / iuran organisasi → Pendidikan / Future Building (Need atau Wants, bucket sama).',
+        'Konsumsi meeting kerja / Starbucks meeting → Bisnis & Karir / Future Building (bukan Essential Living).',
         'Transportasi: bucket mengikuti tujuan (wajib → Essential; lifestyle → Flexible; bisnis/networking → Future Building).',
-        'Likuiditas sosial (Piutang Keluar/Masuk) di luar 4-bucket prescription.',
+        'Donasi/sedekah/zakat/qurban/hadiah → Sosial & Keluarga atau Hadiah / Flexible + Social.',
+        'Jenis transaksi dan bucket berbeda: biaya bisnis tetap Pengeluaran, bucket Future Building.',
+        'Likuiditas sosial (Piutang Keluar/Masuk) & Kewajiban Pajak di luar 4-bucket prescription.',
     ],
 ];

@@ -74,11 +74,14 @@ class TransactionTaxonomy
             $natureRaw = self::NATURE_NEED;
         }
 
-        if (in_array($natureKey, ['donation', 'donasi', 'sedekah', 'persembahan'], true)) {
+        if (in_array($natureKey, ['donation', 'donasi', 'sedekah', 'persembahan', 'qurban', 'kurban'], true)) {
             $type = self::TYPE_EXPENSE;
-            $category = $category && trim($category) !== '' ? $category : 'Social';
+            $category = $category && trim($category) !== '' ? $category : 'Sosial & Keluarga';
             if (mb_strtolower(trim($category)) === 'jajan') {
-                $category = 'Social';
+                $category = 'Sosial & Keluarga';
+            }
+            if (in_array(mb_strtolower(trim((string) $category)), ['social', 'sosial'], true)) {
+                $category = 'Sosial & Keluarga';
             }
             $natureRaw = in_array($natureKey, ['donation', 'donasi'], true) ? self::NATURE_NEED : $natureRaw;
         }

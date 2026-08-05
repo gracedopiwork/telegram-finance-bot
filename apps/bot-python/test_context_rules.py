@@ -203,6 +203,27 @@ class ContextRulesTests(unittest.TestCase):
             "Lain-lain",
         )
 
+    def test_dp_rumah_saving_future(self) -> None:
+        hit = classify_from_text("dp rumah 50jt")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["jenis"], "Saving/Investment")
+        self.assertEqual(hit["kategori"], "Investasi & Tabungan")
+
+    def test_dp_kendaraan_lifestyle_pengeluaran(self) -> None:
+        hit = classify_from_text("dp mobil kedua upgrade gaya hidup 20jt")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["jenis"], "Pengeluaran")
+        self.assertEqual(hit["kategori"], "Cicilan & Hutang")
+        self.assertEqual(hit["sifat"], "Wants")
+
+    def test_pinjol_cicilan(self) -> None:
+        self.assertClass("bayar cicilan pinjol 500rb", "Pengeluaran", "Cicilan & Hutang")
+
+    def test_denda_tilang(self) -> None:
+        self.assertClass("bayar tilang 250rb", "Pengeluaran", "Cicilan & Hutang")
+
     def test_kos(self) -> None:
         self.assertClass("bayar sewa kos 1500000", "Pengeluaran", "Tempat Tinggal")
 
@@ -349,6 +370,99 @@ class ContextRulesTests(unittest.TestCase):
         out = apply_context_rules(parsed, "admin bank 10 rb")
         self.assertEqual(out["kategori"], "Komunikasi")
         self.assertEqual(out["sifat"], "Need")
+
+    def test_traveling_hotel_staycation(self) -> None:
+        self.assertClass("bayar hotel staycation Ubud 1.2jt", "Pengeluaran", "Traveling")
+
+    def test_traveling_liburan_wisata(self) -> None:
+        hit = classify_from_text("liburan wisata Bali hotel 3jt")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Traveling")
+        self.assertEqual(hit["sifat"], "Wants")
+
+    def test_seminar_pengembangan_diri_pendidikan(self) -> None:
+        self.assertClass("bayar seminar sertifikasi 2jt", "Pengeluaran", "Pendidikan")
+
+    def test_workshop_conference_pendidikan(self) -> None:
+        self.assertClass("ikut workshop pengembangan diri 500rb", "Pengeluaran", "Pendidikan")
+
+    def test_iuran_idi_pendidikan(self) -> None:
+        self.assertClass("bayar iuran IDI tahunan 1jt", "Pengeluaran", "Pendidikan")
+
+    def test_babysitter_tempat_tinggal(self) -> None:
+        self.assertClass("gaji babysitter bulanan 2jt", "Pengeluaran", "Tempat Tinggal")
+
+    def test_art_pembantu_tempat_tinggal(self) -> None:
+        self.assertClass("bayar gaji pembantu rumah tangga 1.5jt", "Pengeluaran", "Tempat Tinggal")
+
+    def test_pbb_investasi_tempat_tinggal(self) -> None:
+        hit = classify_from_text("bayar PBB properti disewakan 5jt")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Tempat Tinggal")
+        self.assertEqual(hit["sifat"], "Need")
+
+    def test_fisioterapi_resep_dokter_need(self) -> None:
+        hit = classify_from_text("fisioterapi resep dokter 350rb")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Kesehatan & Kebersihan Diri")
+        self.assertEqual(hit["sifat"], "Need")
+
+    def test_qurban_sosial(self) -> None:
+        self.assertClass("bayar qurban 3jt", "Pengeluaran", "Sosial & Keluarga")
+
+    def test_tip_hadiah(self) -> None:
+        self.assertClass("kasih tip gojek 10rb", "Pengeluaran", "Hadiah")
+
+    def test_fashion_bukan_lifestyle(self) -> None:
+        hit = classify_from_text("beli baju fashion 250rb")
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Pakaian & Aksesoris")
+        self.assertNotEqual(hit["kategori"], "Lifestyle & Hiburan")
+
+    def test_pemasukan_generik_lain_lain_bukan_lainnya(self) -> None:
+        hit = classify_from_text("terima uang 100rb")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["jenis"], "Pemasukan")
+        self.assertEqual(hit["kategori"], "Lain-lain")
+
+    def test_starbucks_meeting_bisnis(self) -> None:
+        self.assertClass(
+            "starbucks meeting klien 85rb",
+            "Pengeluaran",
+            "Bisnis & Karir",
+        )
+
+    def test_kopi_healing_makanan_wants(self) -> None:
+        hit = classify_from_text("kopi starbucks healing 65rb")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Makanan & Minuman")
+        self.assertEqual(hit["sifat"], "Wants")
+
+    def test_gym_membership_bukan_transport(self) -> None:
+        hit = classify_from_text("bayar membership gym bulanan 450rb")
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Lifestyle & Hiburan")
+
+    def test_grab_ke_gym_transport_wants(self) -> None:
+        hit = classify_from_text("grab ke gym 21rb")
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Transportasi")
+        self.assertEqual(hit["sifat"], "Wants")
+
+    def test_apply_ai_lainnya_to_traveling(self) -> None:
+        parsed = {
+            "keterangan": "hotel staycation",
+            "jenis": "Pengeluaran",
+            "kategori": "Lainnya",
+            "sifat": "Wants",
+        }
+        out = apply_context_rules(parsed, "bayar hotel staycation 1jt")
+        self.assertEqual(out["kategori"], "Traveling")
 
 
 if __name__ == "__main__":

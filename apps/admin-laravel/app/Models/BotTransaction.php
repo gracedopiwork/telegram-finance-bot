@@ -30,6 +30,7 @@ class BotTransaction extends Model
         'mood',
         'is_impulsive',
         'notes',
+        'taxonomy_flags',
         'source',
     ];
 
@@ -39,6 +40,7 @@ class BotTransaction extends Model
             'recorded_at' => 'datetime',
             'amount' => 'integer',
             'is_impulsive' => 'boolean',
+            'taxonomy_flags' => 'array',
         ];
     }
 

@@ -40,13 +40,17 @@ def _format_recorded_at(recorded_at: datetime | None) -> str:
 
 
 def _classification_payload(parsed: dict) -> dict:
-    return {
+    payload = {
         "type": parsed["jenis"],
         "category": parsed["kategori"],
         "sub_category": "-",
         "nature": parsed["sifat"],
         "notes": str(parsed.get("keterangan", "")).strip(),
     }
+    flags = parsed.get("taxonomy_flags")
+    if isinstance(flags, list) and flags:
+        payload["taxonomy_flags"] = flags
+    return payload
 
 
 def _response_error(resp: requests.Response) -> str:

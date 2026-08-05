@@ -1,0 +1,982 @@
+
+
+===== PAGE 1 =====
+YFD AI CATEGORIZATION 
+TAXONOMY & PARSING SPECIFICATION 
+Panduan Standarisasi Kategori untuk AI Bot Telegram → Dashboard YFD 
+Versi 1.3 · Juli 2026 · Dokumen Internal YFD bersifat rahasia · Revisi dari v1.0 
+Ringkasan Revisi v1.1 1. Menghapus duplikasi/kontradiksi item rumah tangga (perabot vs habis pakai). 2. 
+Memperbaiki kesalahan field Bucket pada DP Kendaraan (kebutuhan) — dikoreksi dari 'Saving/Investment' menjadi 
+'Future Building'; Jenis transaksi tetap Saving/Investment sebagai field terpisah. 3. Aturan mood dipertahankan: AI 
+hanya bertanya jika mood tidak terdeteksi dari narasi. 4. Alur konfirmasi grey area (berpotensi hingga 3x tanya) 
+dipertahankan, akan dievaluasi berbasis data pemakaian riil. 5. Target kategori LAIN -LAIN diperketat menjadi < 
+2% dari total transaksi. 6. Bahasa Doctor's Note terkait archetype FTSA dilunakkan menjadi observasional, 
+mengingat validasi FTSA-32 masih tahap pilot. 
+Ringkasan Revisi v1.2 7. Parkir ditambahkan sebagai contoh transaksi di Transportasi wajib & lifestyle — bucket 
+ikut tujuan perjalanan. 8. Pajak Kendaraan (kebutuhan/lifestyle) ditambahkan di Kategori 14. 9. Pajak Bangunan 
+(PBB) ditambahkan di Kategori 2 — mengikuti fungsi properti, pola sama dengan KPR. 10. Jenis Transaksi ke-6 
+ditambahkan: KEWAJIBAN PAJAK (PPh 25 dengan Norma, PPh 29, PPh 28A) — dikecualikan dari 4 Bucket, 
+dengan formula proyeksi PPh 29 tervalidasi contoh (Section 5B). Struktur direvisi mengikuti koreksi tax p artner 
+YFD: mekanisme ditentukan oleh SUMBER penghasilan (karyawan/TER, pekerjaan bebas/Norma, kegiatan 
+usaha/Norma-atau-UMKM-Final), bukan status freelancer secara umum. 11. Kategori ke-17 ditambahkan: BIAYA 
+LEGAL, ADMINISTRASI & PERISTIWA BESAR (notaris/balik nama, mahar/pernikahan, biaya duka). 12. Item 
+tambahan: Gaji ART/Driver/Babysitter (Kategori 2), Biaya admin & transfer bank (Kategori 4), Iuran organisasi 
+profesi (Kategori 6), Asuransi kendaraan/aset (Kategori 8), Cicilan Pinjaman Online/Pinjaman T unai dan Denda & 
+Sanksi (Kategori 14). 13. Flag baru 'Peristiwa Besar' (Life Event) untuk pengeluaran satu -kali bernominal besar 
+(pernikahan, duka, DP rumah/kendaraan) agar tidak mendistorsi tren bucket bulanan di dashboard.  
+Ringkasan Revisi v1.3 — Hasil Meeting AKAR Konsultan Pajak & DJP, Juli 2026 14. Formula Norma & 
+proyeksi PPh 29 (Section 5B) DIVALIDASI oleh AKAR Konsultan Pajak bersama DJP — tidak ada koreksi 
+struktural. Bahasa "belum divalidasi" di Section 5B.6 diperbarui jadi "tervalidasi, dengan catatan" — lihat detail 
+caveat yang masih berlaku. 15. BARU — Section 5B.7: field Baseline Data "Jenis Pekerjaan" ditambahkan (ditanya 
+sekali saat onboarding, bukan berulang per transaksi) untuk menentukan skema pajak default user 
+(Norma/Pembukuan/UMKM Final), dengan opsi ganti skema kapan pun. 16. Cat atan konteks (bukan bagian 
+taxonomy user personal): tarif potong pajak affiliate YFD dikonfirmasi DJP — individu 2,5% flat pakai NIK 
+(integrasi NIK-NPWP, PMK 112/2022), badan usaha 2% (PPh 23). Ini kewajiban pajak korporat YFD sebagai 
+pemotong, terpisah dari pencatatan transaksi personal user First Aid — didokumentasikan di materi meeting 
+terpisah, bukan di taxonomy ini. 
+  
+
+===== PAGE 2 =====
+0. Filosofi & Definisi 4 Bucket YFD 
+Sebelum memahami taxonomy kategori, AI dan seluruh tim YFD harus memahami MENGAPA 4 bucket ini ada. 
+Pemahaman ini yang memungkinkan keputusan tepat untuk kasus-kasus baru yang belum ada di daftar. 
+🏠 BUCKET 1 — ESSENTIAL LIVING 
+"Pengeluaran untuk mempertahankan kehidupan dan kemampuan bekerja hari ini."  
+Test AI: "Kalau dihentikan bulan ini, apakah user tidak bisa makan, tidak punya tempat tinggal, tidak bisa bekerja, 
+atau mengalami masalah kesehatan serius?" → YA = Essential Living. 
+● Termasuk: tempat tinggal, makanan harian, transportasi kerja, komunikasi dasar, kesehatan dasar, 
+pendidikan wajib, kewajiban cicilan terikat kontrak 
+● BUKAN Essential: gym (ada alternatif gratis), Netflix, makan di restoran pilihan, perpuluhan/zakat  
+Target: MAKSIMAL — semakin kecil semakin sehat. Steady ≤ 50%. 
+📈 BUCKET 2 — FUTURE BUILDING 
+"Semua pengeluaran yang meningkatkan nilai aset atau kapasitas menghasilkan uang di masa depan."  
+Test AI: "Apakah pengeluaran ini akan menghasilkan uang, menaikkan nilai aset, atau meningkatkan kemampuan 
+menghasilkan uang?" → YA = Future Building. 
+● Termasuk: investasi finansial, properti investasi, pengembangan diri, bisnis & tools kerja  
+● Pengembangan Diri: SELALU Future Building regardless Need/Want 
+Target: MINIMAL — semakin besar semakin sehat. Steady ≥ 30%. 
+🛡️ BUCKET 3 — PROTECTION 
+"Pengeluaran untuk mengurangi risiko finansial yang bisa menghancurkan keuangan."  
+Test AI: "Apakah pengeluaran ini melindungi user dari risiko finansial besar yang tidak bisa diprediksi?" → YA = 
+Protection. 
+● Termasuk: premi BPJS, asuransi kesehatan, asuransi jiwa, asuransi kendaraan/aset, top -up dana darurat 
+Target: MAKSIMAL. Steady ≤ 10%. 
+❤️ BUCKET 4 — FLEXIBLE + SOCIAL 
+"Pengeluaran yang meningkatkan kualitas hidup dan hubungan sosial — bukan kebutuhan dasar, bukan investasi." 
+Test AI: "Apakah pengeluaran ini untuk enjoyment, lifestyle, sosial, atau ekspresi nilai — bukan survival, bukan 
+menghasilkan uang?" → YA = Flexible + Social. 
+Target: MAKSIMAL. Steady ≤ 10%. 
+Ringkasan Bucket 
+Bucket Filosofi Inti Arah Target 
+Ideal(Steady) 
+        Essential Living Mempertahankan hidup & kemampuan kerja hari 
+ini MAKSIMAL ↓ ≤ 50% 
+    Future Building Meningkatkan aset & kapasitas penghasilan masa 
+depan MINIMAL ↑ ≥ 30% 
+    Protection Mengurangi risiko finansial yang bisa 
+menghancurkan MAKSIMAL ↓ ≤ 10% 
+
+===== PAGE 3 =====
+Bucket Filosofi Inti Arah Target 
+Ideal(Steady) 
+     Flexible + Social Kualitas hidup, sosial, spiritual MAKSIMAL ↓ ≤ 10% 
+  
+
+===== PAGE 4 =====
+1. Prinsip Arsitektur Taxonomy 
+Masalah utama yang diselesaikan dokumen ini: AI sebelumnya melakukan dua hal sekaligus — menamai transaksi 
+bebas DAN mengklasifikasikan ke bucket. Hasilnya tidak konsisten. 
+Solusinya: dua layer independen. 
+Layer Siapa yang menentukan Sifat Jumlah pilihan 
+Layer 1 — KATEGORI AI (closed list) Controlled vocabulary — tidak bisa 
+ditambah AI 
+17 kategori + sub-
+kategori 
+Layer 2 — BUCKET Sistem (otomatis dari mapping) Rule-based — AI tidak bisa mengubah 4 bucket (fixed) 
+Dengan arsitektur ini, kesalahan AI hanya bisa terjadi di Layer 1, dan dampaknya terbatas.  
+2. Tabel Taxonomy Resmi YFD (Closed List) 
+AI HARUS memilih dari 17 kategori dan sub-kategori di bawah ini. Tidak ada pengecualian. 
+2.1 — Kategori 1: MAKANAN & MINUMAN 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Kebutuhan pokok Bahan makanan, masak sendiri, air 
+minum Essential Living Need - 
+Jajan & kuliner Boba, cafe, resto, GoFood, 
+GrabFood Flexible + Social Want User tag Need → Essential 
+2.2 — Kategori 2: TEMPAT TINGGAL 
+REVISI v1.1: Item rumah tangga dipisah tegas: consumables murni vs durable goods (elektronik/furnitur), yang 
+sebelumnya tumpang tindih dengan aturan bertentangan. 
+BARU v1.2: Ditambahkan: Pajak Bangunan (PBB) mengikuti fungsi properti — pola sama dengan KPR. 
+Ditambahkan: Gaji ART/Driver/Babysitter. 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Sewa / cicilan rumah 
+tinggal utama 
+Kos, kontrakan, KPR yang 
+ditinggali sendiri Essential Living Need - 
+Utilitas Listrik, air, gas, internet rumah, IPL Essential Living Need - 
+Pajak Bangunan (PBB) — 
+rumah tinggal utama 
+PBB tahunan rumah yang ditinggali 
+sendiri Essential Living Need 
+Sama fungsinya dengan 
+sewa/utilitas — kewajiban 
+survival 
+Pajak Bangunan (PBB) — 
+properti investasi PBB properti disewakan/dikoskan Future Building Need 
+AI konfirmasi: "Properti ini 
+ditinggali sendiri atau 
+investasi/disewakan?" — 
+sama pertanyaan dengan 
+KPR 
+
+===== PAGE 5 =====
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Consumables rumah 
+tangga (habis pakai) 
+Tissue, plastik sampah, sabun cuci, 
+detergen, cairan pel, spons, baterai Essential Living Need 
+Hanya barang habis pakai 
+murni — TIDAK termasuk 
+elektronik/furnitur 
+Peralatan / Perabot rumah 
+tangga (durable goods) 
+AC, kulkas, mesin cuci, rice cooker, 
+bedcover, gorden, panci, piring, dll Grey area Need/Want 
+AI WAJIB konfirmasi — 
+semua elektronik & furnitur 
+di sini, tidak lagi tumpang 
+tindih dengan baris 
+consumables 
+Gaji ART / Driver / 
+Babysitter 
+Pembantu rumah tangga, sopir 
+pribadi, pengasuh anak — rutin 
+bulanan 
+Grey area Need/Want 
+AI konfirmasi: "Ini 
+menunjang kemampuan 
+kerja kamu (mis. babysitter 
+agar bisa praktik) atau 
+kenyamanan tambahan?" 
+2.3 — Kategori 3: TRANSPORTASI 
+BARU v1.2: Parkir ditambahkan sebagai contoh transaksi — bucket tetap mengikuti tujuan perjalanan, bukan jenis 
+biayanya, konsisten dengan aturan ojek/grab yang sudah ada. 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Transportasi wajib / 
+esensial 
+Ojek/grab/parkir ke kantor, klinik, RS, 
+sekolah, apotek, supermarket, urusan 
+administrasi 
+Essential Living Need 
+Tujuan perjalanan 
+menentukan bucket, bukan 
+moda/jenis biaya 
+Transportasi lifestyle / 
+sosial 
+Ojek/grab/parkir ke gym, nongkrong, 
+arisan, healing, cafe, mall 
+Flexible + 
+Social Want Termasuk parkir di lokasi 
+leisure 
+Transportasi jarak jauh 
+— liburan 
+Tiket pesawat, kereta, bus untuk 
+liburan/healing/wisata 
+Flexible + 
+Social Want - 
+Transportasi jarak jauh 
+— bisnis/kerja 
+Tiket pesawat, kereta, bus untuk meeting 
+klien, training kerja Future Building Need 
+GREY AREA — AI wajib 
+konfirmasi konteks 
+perjalanan 
+2.4 — Kategori 4: KOMUNIKASI & ADMINISTRASI 
+BARU v1.2: Ditambahkan: Biaya admin & transfer bank — sering muncul di mutasi rekening tapi belum punya 
+tempat, berisiko nyasar ke LAIN-LAIN. 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Pulsa & paket data Pulsa, paket data, internet HP Essential Living Need - 
+Biaya admin & transfer 
+bank 
+Biaya admin bulanan, biaya transfer antar 
+bank, biaya tarik tunai Essential Living Need 
+Rutin kecil — 
+dikategorikan di sini agar 
+tidak masuk LAIN-LAIN 
+ 
+ 
+
+===== PAGE 6 =====
+2.5 — Kategori 5: KESEHATAN & KEBERSIHAN DIRI 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Medis Dokter, obat, lab, medical check-up, 
+vitamin rutin Essential Living Need - 
+Kebersihan dasar Sabun mandi, shampo, pasta gigi, softex, 
+sunscreen, laundry Essential Living Need Semua laundry = Essential 
+Living 
+Perawatan & kecantikan Serum, skincare premium, klinik 
+kecantikan, facial, make-up 
+Flexible + 
+Social Want Fungsi estetika, bukan 
+perlindungan 
+2.6 — Kategori 6: PENDIDIKAN 
+BARU v1.2: Ditambahkan: Iuran organisasi/keanggotaan profesi (mis. IDI untuk dokter) — analog Pengembangan 
+Diri, selalu Future Building. 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Pendidikan wajib SPP, UKT, buku pelajaran, kebutuhan 
+sekolah anak Essential Living Need - 
+Pengembangan diri Seminar, workshop, kursus, sertifikasi, 
+conference Future Building Need/Want SELALU Future Building 
+Iuran organisasi / 
+keanggotaan profesi 
+IDI, asosiasi profesi, sertifikasi 
+keanggotaan wajib praktik Future Building Need 
+Menjaga kapabilitas & 
+legalitas praktik — analog 
+Pengembangan Diri 
+2.7 — Kategori 7: INVESTASI & TABUNGAN 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Investasi Saham, reksa dana, emas, obligasi, 
+deposito, crypto Future Building - Jenis: Saving/Investment 
+Top-up dana darurat Transfer ke rekening dana darurat terpisah Protection - Bukan Future Building 
+2.8 — Kategori 8: PROTEKSI 
+BARU v1.2: Ditambahkan: Asuransi kendaraan/aset (all-risk/TLO) — proteksi aset, bukan proteksi jiwa/kesehatan, 
+tapi tetap masuk Protection. 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Premi asuransi 
+jiwa/kesehatan 
+BPJS, asuransi jiwa, income protection, 
+critical illness Protection Need - 
+Asuransi kendaraan / aset Asuransi mobil all-risk/TLO, asuransi 
+properti Protection Need Proteksi aset, bukan 
+proteksi jiwa 
+ 
+ 
+
+===== PAGE 7 =====
+2.9 — Kategori 9: LIFESTYLE & HIBURAN 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Entertainment & 
+subscription lifestyle 
+Netflix, Spotify, gaming, bioskop, konser, 
+hobi 
+Flexible + 
+Social Want - 
+Shopping Fashion, gadget upgrade, aksesoris Flexible + 
+Social Want - 
+Gym & olahraga 
+berbayar 
+Gym, studio yoga, pilates, coaching 
+tenis/padel hobi 
+Flexible + 
+Social Want SELALU Flexible — ada 
+alternatif gratis 
+2.10 — Kategori 10: TRAVELING 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Liburan & staycation Tiket pesawat, hotel, wisata Flexible + 
+Social Want - 
+2.11 — Kategori 11: SOSIAL & KELUARGA 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Dana sosial Donasi, sedekah, persembahan, 
+perpuluhan, kolekte, qurban 
+Flexible + 
+Social Want 
+Qurban termasuk di sini — 
+tahunan, nominal lebih 
+besar dari sedekah rutin tapi 
+sub-kategori sama 
+Bantuan keluarga/teman Transfer ke ortu, saudara, teman yang 
+butuh bantuan 
+Flexible + 
+Social Want - 
+2.12 — Kategori 12: BISNIS & KARIR 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Biaya bisnis & tools kerja Modal usaha, marketing, ads, website, 
+software bisnis Future Building Need AI konfirmasi konteks 
+Subscription digital untuk 
+bisnis 
+ChatGPT Plus, Claude Pro, Notion, Canva 
+Pro, domain, hosting Future Building Need GREY AREA — AI wajib 
+konfirmasi 
+Coaching profesi / skill 
+kerja 
+Public speaking, leadership, sales, bahasa 
+asing karir Future Building Need Ada link ke peningkatan 
+penghasilan 
+2.13 — Kategori 13: HADIAH 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Gift Kado ulang tahun, parcel, souvenir Flexible + 
+Social Want - 
+ 
+
+===== PAGE 8 =====
+2.14 — Kategori 14: CICILAN & HUTANG 
+REVISI v1.1: DP Kendaraan (kebutuhan): kolom Bucket dikoreksi dari 'Saving/Investment' (salah — itu field 
+Jenis) menjadi 'Future Building'. 
+BARU v1.2: Ditambahkan: Pajak Kendaraan, Cicilan Pinjaman Online (Pinjol)/Pinjaman Tunai, dan Denda & 
+Sanksi. 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Cicilan produktif Modal usaha, KPR properti 
+investasi Future Building Need - 
+KPR rumah tinggal 
+utama 
+Cicilan KPR rumah yang 
+ditinggali sendiri Essential Living Need Sama fungsinya dengan sewa 
+DP Rumah / Properti DP KPR rumah tinggal, properti 
+investasi, ruko Future Building Need 
+Jenis = Saving/Investment. 
+WAJIB catat Baseline Aset. 
+Tidak perlu konfirmasi. Flag 
+Peristiwa Besar (lihat 5C) 
+Cicilan konsumtif Cicilan kartu kredit, paylater e-
+commerce Essential Living Need Kewajiban bulanan 
+DP Kendaraan 
+(kebutuhan) 
+DP mobil/motor untuk mobilitas 
+kerja utama Future Building Need 
+Jenis = Saving/Investment 
+(field terpisah, bukan Bucket). 
+Catat di Baseline Aset. AI 
+konfirmasi 
+DP Kendaraan (lifestyle) DP kendaraan kedua, upgrade 
+gaya hidup Flexible + Social Want Jenis = Pengeluaran. AI 
+konfirmasi 
+DP HP / Gadget DP atau beli HP/laptop baru Lihat catatan - 
+TIDAK dicatat di Baseline — 
+HP bukan aset (depresiasi 
+cepat) 
+Pajak Kendaraan — 
+kebutuhan kerja 
+STNK/pajak tahunan kendaraan 
+utama mobilitas kerja Essential Living Need 
+Mengikuti fungsi kendaraan — 
+sama pola dengan Cicilan 
+Kendaraan 
+Pajak Kendaraan — 
+lifestyle 
+STNK/pajak kendaraan 
+kedua/hobi Flexible + Social Want AI konfirmasi konteks 
+kendaraan 
+Cicilan Pinjaman Online 
+(Pinjol) / Pinjaman Tunai 
+Cicilan pinjol, pinjaman tunai non-
+bank Grey area Need/Want 
+AI konfirmasi: "Ini untuk 
+kebutuhan mendesak atau 
+konsumsi non-esensial?" — 
+TERLEPAS dari bucket, selalu 
+diberi flag Risk Alert untuk 
+Doctor's Note (lihat Section 
+3.6) 
+Denda & Sanksi (non-
+pajak) 
+Tilang, denda keterlambatan 
+cicilan/kartu kredit Essential Living Need 
+Kewajiban terpaksa setelah 
+kejadian. Diberi flag 'Pola 
+Keterlambatan' untuk Doctor's 
+Note jika berulang. Denda 
+pajak → lihat Section 5B 
+(Kewajiban Pajak) 
+ 
+
+===== PAGE 9 =====
+2.15 — Kategori 15: PAKAIAN & AKSESORIS 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Perlengkapan kerja / 
+sekolah 
+Seragam kerja/sekolah, sepatu kerja, tas 
+kerja Grey area Need/Want AI konfirmasi 
+Perlengkapan olahraga Pakaian/sepatu olahraga, alat 
+diving/berenang Grey area Need/Want AI konfirmasi 
+Pakaian sehari-hari Kaos rumah, baju tidur, pakaian dalam, 
+sandal rumah Grey area Need/Want AI konfirmasi 
+Fashion & lifestyle Baju fashion, tas, sepatu, aksesoris 
+konser 
+Flexible + 
+Social Want Default, jika user tag Need 
+→ Essential 
+Perlengkapan ibadah Mukena, sajadah, Al-Qur'an, Alkitab Grey area Need/Want AI konfirmasi 
+Pakaian acara khusus Bridesmaid, wisuda, jas sidang Essential Living Need - 
+2.16 — Kategori 16: LAIN-LAIN 
+Sub-Kategori Target Bucket Sifat Catatan 
+Tidak terklasifikasi < 2% dari total transaksi 
+bulanan Flexible + Social - 
+Flag review wajib. AI aktif 
+meminimalkan penggunaan 
+kategori ini. 
+2.17 — Kategori 17: BIAYA LEGAL, ADMINISTRASI & PERISTIWA BESAR 
+(BARU v1.2) 
+BARU v1.2: Kategori baru untuk menampung biaya satu-kali terkait aset besar dan life event yang sebelumnya 
+tidak punya tempat di taxonomy. 
+Sub-Kategori Contoh Bucket Sifat Catatan 
+Notaris / Balik Nama / Legal 
+(terkait aset) 
+Biaya notaris, AJB, balik nama 
+rumah/kendaraan Ikut aset induk Need 
+AI konfirmasi: bucket ikut 
+aset yang diurus — Future 
+Building kalau terkait 
+properti/kendaraan 
+investasi, Essential kalau 
+rumah tinggal utama 
+Mahar / Biaya Pernikahan Mahar, resepsi, vendor pernikahan Flexible + 
+Social Want 
+Flag Peristiwa Besar 
+(Section 5C) — nominal 
+besar satu-kali, tidak 
+dibandingkan ke tren 
+bulanan biasa 
+Biaya Duka / Pemakaman 
+Keluarga 
+Biaya pemakaman, tahlilan, adat 
+kematian 
+Flexible + 
+Social Want 
+Mirip Dana Sosial. Flag 
+Peristiwa Besar. Doctor's 
+Note wajib empatik, 
+bukan analitis dingin 
+  
+
+===== PAGE 10 =====
+2.18 Aturan Grey Area — Konteks Menentukan Bucket 
+Item berikut dapat masuk ke bucket berbeda tergantung konteks. AI WAJIB konfirmasi ke user sebelum 
+mengklasifikasi (lihat Section 3.3). 
+Item Konteks → Essential/Future Building Konteks → Flexible Bucket 
+Peralatan/Perabot rumah 
+tangga 
+Rusak/tidak layak atau belum memadai → 
+Essential Living 
+Tambah koleksi/tren → Flexible + 
+Social 
+Starbucks / Kopi Meeting kerja, klien → Essential Living Healing, bersantai → Flexible + Social 
+Laptop / Komputer Alat kerja utama rusak → Future Building Upgrade FOMO/tren → Flexible + 
+Social 
+Handphone / HP HP utama rusak, ganti setara → Essential 
+Living 
+Upgrade model terbaru → Flexible + 
+Social 
+DP Kendaraan Kendaraan utama kebutuhan kerja → 
+Saving/Investment + Baseline Aset 
+Upgrade/kendaraan kedua → Flexible 
++ Social 
+Pajak Kendaraan Kendaraan utama kebutuhan kerja → 
+Essential Living 
+Kendaraan kedua/hobi → Flexible + 
+Social 
+KPR / PBB Rumah ditinggali sendiri → Essential 
+Living 
+Properti investasi disewakan → Future 
+Building 
+Subscription digital Bisnis/kerja → Future Building Entertainment/lifestyle → Flexible + 
+Social 
+Coaching / Les Privat Skill peningkatan penghasilan → Future 
+Building Hobi/enjoyment → Flexible + Social 
+Transportasi (termasuk 
+parkir) 
+Tujuan wajib/kerja/kesehatan → Essential 
+Living 
+Tujuan leisure/sosial → Flexible + 
+Social 
+Gaji 
+ART/Driver/Babysitter 
+Menunjang kemampuan kerja → Essential 
+Living 
+Kenyamanan tambahan → Flexible + 
+Social 
+Cicilan Pinjol/Pinjaman 
+Tunai 
+Kebutuhan mendesak → Essential Living (+ 
+flag Risk Alert) 
+Konsumsi non-esensial → Flexible + 
+Social (+ flag Risk Alert) 
+Notaris/Legal terkait aset 
+Terkait rumah tinggal utama/kendaraan 
+kerja → Essential/Future Building sesuai 
+aset induk 
+Tidak ada grey area ke Flexible — 
+selalu ikut aset induk 
+Gym / Pusat Kebugaran Tidak ada konteks Essential — selalu 
+Flexible 
+Semua gym & studio berbayar → 
+Flexible + Social 
+Fisioterapi / Rehab Medis Diresepkan dokter → Essential Living Pilihan sendiri tanpa resep → Flexible 
++ Social 
+Perpuluhan / Zakat / 
+Sedekah / Qurban Tidak ada konteks Essential Semua bentuk spiritual giving → 
+Flexible + Social 
+Catatan Penting — Gaji ART / Driver / Babysitter (BARU) 
+Pembeda: apakah keberadaan ART/driver/babysitter itu prasyarat agar user bisa bekerja (mis. babysitter supaya bisa 
+praktik tanpa gangguan), atau sekadar kenyamanan tambahan (mis. driver pribadi padahal user bisa menyetir sendiri 
+dan punya waktu). 
+● Menunjang kemampuan kerja langsung → Essential Living (Need) 
+
+===== PAGE 11 =====
+● Kenyamanan tambahan tanpa keterkaitan langsung ke pekerjaan → Flexible + Social (Want)  
+Catatan Penting — Pajak Kendaraan & Pajak Bangunan (BARU) 
+Keduanya mengikuti prinsip yang sama dengan KPR dan Cicilan Kendaraan yang sudah ada: bucket ditentukan oleh 
+FUNGSI aset, bukan oleh sifat 'wajib secara hukum'-nya. Wajib secara legal tidak otomatis berarti Essential — 
+kendaraan/properti kedua yang sifatnya lifestyle tetap masuk Flexible + Social meskipun pajaknya tetap wajib 
+dibayar. 
+Catatan Penting — Cicilan Pinjol / Pinjaman Tunai (BARU) 
+Berbeda dari 'Cicilan konsumtif' (kartu kredit/paylater e-commerce yang sudah ada): pinjol/pinjaman tunai punya 
+profil risiko dan bunga yang jauh lebih tinggi, dan secara klinis penting dipisah karena polanya sering jadi indikator 
+financial distress dini. 
+● AI WAJIB tanya konteks: "Ini untuk kebutuhan mendesak atau konsumsi non -esensial?" — menentukan 
+bucket (Essential vs Flexible) 
+● TERLEPAS dari hasil bucket, setiap transaksi Pinjol/Pinjaman Tunai diberi flag internal 'Risk Alert' yang 
+ditampilkan di Behavioral Dashboard — bukan untuk menghakimi, tapi karena akumulasi pinjol berulang 
+adalah data klinis penting 
+● Kalau muncul berulang (≥ 2 bulan berturut-turut), Doctor's Note wajib menyoroti pola ini secara faktual 
+dan tidak menghakimi, sama seperti pola Likuiditas Sosial 
+Catatan Penting — Denda & Sanksi (BARU) 
+Denda non-pajak (tilang, keterlambatan cicilan/kartu kredit) diperlakukan sebagai Essential Living Need — 
+dianggap kewajiban terpaksa setelah kejadian, bukan pilihan konsumsi. Namun kemunculan berulang adalah sinyal 
+behavioral penting. 
+● Denda pajak (mis. sanksi telat lapor/bayar SPT) TIDAK masuk di sini — ikut perlakuan Kewajiban Pajak 
+di Section 5B, dikecualikan dari 4 Bucket 
+● Kalau Denda & Sanksi non-pajak muncul ≥ 2 bulan berturut-turut, Doctor's Note memberi flag 'Pola 
+Keterlambatan' — faktual, tidak menghakimi, mengikuti prinsip kalibrasi yang sama dengan bagian lain 
+dokumen ini 
+Catatan Penting — Notaris/Legal & Peristiwa Besar (BARU) 
+Biaya notaris/balik nama tidak punya bucket sendiri — dia selalu mengikuti bucket aset yang sedang diurus. AI 
+wajib tahu aset apa yang terkait sebelum menentukan bucket (biasanya muncul berdekatan dengan transaksi DP 
+Rumah/Kendaraan, jadi AI bisa infer dari histori transaksi terdekat). 
+Mahar/Pernikahan dan Biaya Duka diberi flag 'Peristiwa Besar' — lihat Section 5C untuk penjelasan lengkap kenapa 
+ini perlu ditampilkan terpisah dari tren bucket bulanan biasa. 
+  
+
+===== PAGE 12 =====
+Catatan — Prinsip Umum Barang Fisik 
+Barang fisik yang dapat dimiliki lebih dari satu unit tidak ditentukan bucket berdasarkan nama barangnya, tetapi 
+berdasarkan tujuan pembelian. 
+● Mengganti barang tidak layak atau memenuhi kebutuhan dasar → Essential Living (Need)  
+● Menambah koleksi, mengikuti tren, upgrade estetika → Flexible + Social (Want)  
+Catatan Penting — Transportasi: Tujuan Perjalanan Menentukan Bucket 
+Kategori untuk semua transportasi (termasuk parkir) adalah TRANSPORTASI — bucket ditentukan oleh TUJUAN 
+perjalanan, bukan moda atau jenis biayanya. 
+● Essential Living: ke kantor, klinik, RS, sekolah, apotek, supermarket kebutuhan pokok, urusan administrasi 
+wajib 
+● Flexible + Social: ke gym, nongkrong, healing, cafe, mall, wisata, arisan  
+● Future Building: urusan bisnis/kerja 
+Catatan Penting — DP Rumah / Properti 
+● Jenis transaksi: Saving/Investment — bukan Pengeluaran 
+● WAJIB dicatat di Baseline sebagai Aset 
+● Bucket: selalu Future Building 
+● Tidak perlu konfirmasi konteks — tidak ada skenario DP properti masuk Flexible + Social 
+Catatan Penting — KPR 
+● KPR rumah tinggal utama → Essential Living 
+● KPR properti investasi (disewakan) → Future Building 
+● AI WAJIB konfirmasi: "Properti ini untuk ditinggali sendiri atau investasi/disewakan?"  
+Catatan Penting — DP Kendaraan 
+REVISI v1.1: Bucket untuk baris 'kebutuhan kerja/mobilitas utama' dikoreksi menjadi Future Building secara 
+eksplisit. 
+● Jenis transaksi: Saving/Investment 
+● Dicatat di Baseline sebagai Aset Pribadi 
+● Bucket: Future Building (kebutuhan kerja) atau Flexible + Social (lifestyle/kedua)  
+Catatan Penting — DP HP / Gadget 
+HP/gadget TIDAK dicatat sebagai Aset di Baseline — terdepresiasi cepat, tidak liquid. 
+● HP utama rusak, ganti setara → Essential Living 
+● Upgrade/lifestyle → Flexible + Social 
+● HP khusus operasional bisnis → Future Building 
+Catatan Penting — Subscription Digital 
+● Future Building: ChatGPT Plus, Claude Pro, Notion, Canva Pro, domain, hosting, tools bisnis  
+● Flexible + Social: Netflix, Spotify, gaming, app hobi 
+Catatan Penting — Gym / Olahraga 
+Gym dan pusat kebugaran berbayar adalah Flexible + Social — alternatif gratis (lari, jalan kaki, calisthenics) selalu 
+tersedia. Pengecualian Essential Living butuh justifikasi medis (fisioterapi resep dokter, hydrotherapy, rehabilitasi 
+pasca operasi). 
+
+===== PAGE 13 =====
+Catatan Penting — Perpuluhan / Zakat / Sedekah / Qurban / Dana Sosial 
+Semua bentuk spiritual giving dan dana sosial (termasuk Qurban) tetap di Flexible + Social — keputusan klinis yang 
+disengaja, bukan penilaian atas nilai personal user. Doctor's Note dikalibrasi tidak judgemental.  
+Catatan Penting — Sub-Kategori Tidak Muncul di Dashboard 
+Sub-kategori adalah instruksi INTERNAL untuk AI. Kolom Input Data tetap: Tanggal · Jenis · Kategori · Nominal · 
+Bucket · Sifat · Mood · Impulsif · Keterangan. 
+  
+
+===== PAGE 14 =====
+3. Spesifikasi Prompt untuk AI Bot Telegram 
+3.1 Tugas AI (Scope yang Diizinkan) 
+● Memilih SATU Kategori dari 17 kategori resmi YFD (tidak boleh membuat kategori baru)  
+● Memilih SATU Sub-Kategori yang sesuai 
+● Menentukan Jenis transaksi: Pemasukan / Pengeluaran / Saving-Investment / Piutang masuk / Piutang 
+keluar / Kewajiban Pajak 
+● Mendeteksi Mood dari konteks narasi (Happy/Neutral/Sad/Stressed/Angry/Tired)  
+● Menandai Impulsif: Yes/No 
+● Untuk transaksi Kewajiban Pajak: mengidentifikasi SUMBER penghasilan (karyawan / pekerjaan bebas / 
+kegiatan usaha) sebelum menentukan sub-jenis pajak — lihat Section 5B 
+3.2 Yang TIDAK Boleh Dilakukan AI 
+● Membuat kategori baru di luar 17 kategori resmi 
+● Menentukan Bucket secara langsung — rule-based oleh sistem 
+● Mengasumsikan konteks tanpa konfirmasi pada kategori grey area 
+● Mengklaim proyeksi pajak (PPh 29, dsb) sebagai angka pasti — wajib selalu dinyatakan sebagai estimasi 
+(lihat Section 5B) 
+3.3 Alur Grey Area (Opsi A — Konfirmasi ke User) 
+Jika transaksi masuk grey area, AI WAJIB bertanya sebelum mengklasifikasi:  
+"Saya mau pastikan dulu — [item ini] untuk keperluan kerja/kebutuhan, atau personal/lifestyle? Ini berpengaruh ke 
+bucket alokasi kamu." 
+REVISI v1.1: Untuk item yang bersinggungan dengan lebih dari satu aturan grey area, satu transaksi berpotensi 
+memerlukan hingga 3 kali konfirmasi berurutan. Dipertahankan untuk versi ini, dievaluasi berdasarkan data 
+pemakaian riil di iterasi berikutnya. 
+3.4 Format Output AI (ke Sistem) 
+{ "tanggal": "2026-07-21", "jenis": "Pengeluaran", "kategori": "MAKANAN & MINUMAN", 
+"subkategori": "Jajan & kuliner", "nominal": 35000, "sifat": "Want", "mood": "Happy", 
+"impulsif": "Yes", "keterangan": "Beli boba sambil healing" } 
+3.5 Deteksi Impulsif — Aturan & Kasus Khusus 
+Impulsif ≠ Nominal besar. AI TIDAK BOLEH menentukan impulsif berdasarkan nominal.  
+Signal Yes: "tiba-tiba", "spontan", "kalap", "stres jadi beli", "lihat Instagram langsung beli", "ga rencanain sih".  
+Signal No: "sudah rencanain", "tabungan buat ini", "meeting klien", "langganan bulanan".  
+Jika tidak ada signal → AI WAJIB tanya: "Transaksi ini terencana sebelumnya atau spontan?"  
+3.6 Kasus Khusus: Essential + Impulsif (valid secara data) 
+Kombinasi Essential + Need + Impulsif adalah valid dan data klinis berharga — bukan kontradiksi yang perlu 
+dihakimi sistem. 
+
+===== PAGE 15 =====
+Contoh Bucket Sifat Impulsif Makna Klinis 
+"Tiba-tiba pengen AYCE, 
+langsung cabut 500rb" Flexible + Social Want Yes Spontan + keinginan → berulang = 
+financial leakage 
+"Stres kerja, healing makan 
+AYCE 500rb" Flexible + Social Want Yes Emotional spending — penting 
+untuk Behavioral Dashboard 
+"Ga ada makanan di kos, 
+spontan GoFood 80rb" Essential Living Need Yes Essential + Impulsif: kebutuhan 
+nyata, eksekusi tak terencana 
+  
+
+===== PAGE 16 =====
+4. Tabel Mapping Bucket (Rule-based, Bukan AI) 
+Sistem menentukan bucket berdasarkan kombinasi Sub-Kategori + Sifat. Tabel ini source of truth — tidak bisa 
+dioverride AI. 
+Sub-Kategori Sifat Bucket Keterangan 
+Makanan - kebutuhan pokok Need Essential Living - 
+Makanan - jajan & kuliner Want Flexible + Social - 
+Tempat tinggal (kecuali perabot) Need Essential Living - 
+Pajak Bangunan — rumah tinggal 
+utama Need Essential Living BARU 
+Pajak Bangunan — properti 
+investasi Need Future Building BARU 
+Gaji ART/Driver/Babysitter — 
+menunjang kerja Need Essential Living BARU 
+Gaji ART/Driver/Babysitter — 
+kenyamanan Want Flexible + Social BARU 
+Transportasi wajib (termasuk parkir) Need Essential Living - 
+Transportasi lifestyle (termasuk 
+parkir) Want Flexible + Social - 
+Transportasi jarak jauh — liburan Want Flexible + Social - 
+Transportasi jarak jauh — 
+bisnis/kerja Need Future Building - 
+Komunikasi Need Essential Living - 
+Biaya admin & transfer bank Need Essential Living BARU 
+Medis & kesehatan Need Essential Living - 
+Kebersihan dasar Need Essential Living - 
+Perawatan & kecantikan Want Flexible + Social - 
+Pendidikan wajib Need Essential Living - 
+Pengembangan diri Any Future Building - 
+Iuran organisasi profesi Need Future Building BARU 
+Investasi & tabungan - Future Building - 
+Top-up dana darurat - Protection - 
+Premi asuransi jiwa/kesehatan Need Protection - 
+Asuransi kendaraan/aset Need Protection BARU 
+Lifestyle & hiburan Want Flexible + Social - 
+Traveling Want Flexible + Social - 
+Dana sosial (termasuk Qurban) Want Flexible + Social - 
+
+===== PAGE 17 =====
+Sub-Kategori Sifat Bucket Keterangan 
+Bantuan keluarga/teman Want Flexible + Social - 
+Bisnis & karir Need Future Building - 
+Hadiah Want Flexible + Social - 
+KPR rumah tinggal utama Need Essential Living - 
+KPR properti investasi Need Future Building - 
+DP Rumah/Properti Need Future Building - 
+Cicilan produktif Need Future Building - 
+Cicilan konsumtif Need Essential Living - 
+DP Kendaraan — kerja Need Future Building - 
+DP Kendaraan — lifestyle Want Flexible + Social - 
+Pajak Kendaraan — kerja Need Essential Living BARU 
+Pajak Kendaraan — lifestyle Want Flexible + Social BARU 
+Cicilan Pinjol — mendesak Need Essential Living BARU + flag Risk Alert 
+Cicilan Pinjol — non-esensial Want Flexible + Social BARU + flag Risk Alert 
+Denda & Sanksi (non-pajak) Need Essential Living BARU + flag Pola Keterlambatan 
+DP HP utama rusak Need Essential Living - 
+DP HP upgrade/lifestyle Want Flexible + Social - 
+DP HP bisnis Need Future Building - 
+Subscription digital — bisnis Need Future Building - 
+Subscription digital — lifestyle Want Flexible + Social - 
+Coaching skill kerja Need Future Building - 
+Coaching hobi Want Flexible + Social - 
+Gym/olahraga berbayar Want Flexible + Social - 
+Fisioterapi/rehab medis (resep) Need Essential Living - 
+Perpuluhan/Zakat/Qurban Want Flexible + Social - 
+Notaris/Legal — ikut aset induk Need Ikut aset induk BARU 
+Mahar/Pernikahan Want Flexible + Social BARU + flag Peristiwa Besar 
+Biaya Duka/Pemakaman Want Flexible + Social BARU + flag Peristiwa Besar 
+  
+
+===== PAGE 18 =====
+5. Enam Jenis Transaksi (Wajib Distandarisasi) 
+BARU v1.2: Jenis Transaksi ke-6 (KEWAJIBAN PAJAK) ditambahkan di v1.2 — lihat Section 5B untuk detail 
+lengkap. 
+AI harus menentukan jenis dengan tepat karena mempengaruhi seluruh perhitungan dashboard.  
+Jenis Definisi Contoh Impact Dashboard 
+Pemasukan Uang masuk — gaji, freelance, 
+dividen, bonus Gaji bulanan, dividen saham Menambah Total Pendapatan 
+Pengeluaran Uang keluar untuk konsumsi Makan, transport, listrik Masuk kalkulasi 4 Bucket 
+Saving/Investment Uang keluar untuk membangun 
+kekayaan masa depan Beli saham, top-up reksa dana Masuk Saving Rate, dipisah dari 
+Pengeluaran 
+Piutang Keluar Uang keluar dipinjamkan ke orang 
+lain 
+Transfer ke saudara, talangi 
+teman 
+TIDAK masuk 4 Bucket. Masuk 
+Likuiditas Sosial 
+Piutang Masuk Uang kembali dari piutang 
+sebelumnya 
+Saudara mengembalikan 
+pinjaman TIDAK masuk Total Pendapatan 
+Kewajiban Pajak 
+(BARU) 
+PPh 25 (angsuran), PPh 29 (kurang 
+bayar), PPh 28A (lebih bayar) 
+Angsuran pajak bulanan, 
+bayar SPT kurang bayar 
+TIDAK masuk 4 Bucket. 
+Mengurangi Pemasukan bersih. 
+Lihat Section 5B 
+5.1 Cara Bot Mendeteksi Piutang Keluar 
+● Kata pinjam: "pinjamin", "talang dulu", "bayarkan dulu" 
+● Transfer ke orang: "transfer ke [nama]", "bantu [nama]" 
+● Konteks akan kembali: "nanti dia ganti" 
+Default estimasi kembali (kalau tidak diisi): < Rp500rb → 30 hari; Rp500rb –2jt → 60 hari; > Rp2jt → 90 hari. 
+5.2 Cara Bot Mendeteksi Piutang Masuk 
+Signal: "dibayar balik", "transfer balik dari", kombinasi nama + nominal cocok dengan piutang aktif. Bot konfirmasi 
+sebelum dicatat. 
+5.3 Alur Sistem Piutang 
+Langkah Kondisi Tindakan Sistem Status 
+1 User mencatat Piutang Keluar Masuk Likuiditas Sosial, tidak masuk 4 Bucket   Aktif 
+2a Kembali sebelum jatuh tempo Match dengan Piutang Masuk, piutang ditutup    Lunas 
+2b Jatuh tempo terlewati Notifikasi ke user   Jatuh tempo 
+3b User relakan Konversi jadi Pengeluaran Sosial & Keluarga, 
+masuk Flexible + Social   Dihapus 
+3c User tandai sengketa Tidak masuk kalkulasi manapun     Sengketa 
+  
+
+===== PAGE 19 =====
+5A. Likuiditas Sosial — Framework Pengukuran 
+Konsep orisinil YFD untuk mengukur seberapa besar jaringan sosial mempengaruhi cashflow finansial seseorang — 
+fenomena umum di Indonesia (generasi sandwich) yang belum diukur sistematis oleh tools keuangan lain.  
+Likuiditas Sosial TIDAK masuk 4 Bucket Prescription — ditampilkan sebagai panel terpisah, sama prinsipnya 
+dengan Kewajiban Pajak di Section 5B. 
+Level Kondisi Threshold 
+  Aman Piutang keluar < 10% income, mayoritas sudah kembali < 10% income 
+  Perhatian Piutang keluar 10–20% income, atau piutang lama belum kembali 10–20% income 
+  Kritis Piutang keluar > 20% income, atau bucket lain turun bersamaan > 20% income 
+Doctor's Note melaporkan fakta dan dampak secara objektif — tidak menilai keputusan meminjamkan, sama 
+prinsipnya dengan perpuluhan dan dana sosial. 
+REVISI v1.1: Bahasa contoh Doctor's Note dan Clinical Summary yang mengaitkan pola perilaku langsung dengan 
+archetype FTSA ('konsisten dengan profil kamu') dilunakkan menjadi bahasa observasional yang tidak mengklaim 
+diagnosis personal — validasi FTSA-32 masih tahap pilot (n=26). 
+  
+
+===== PAGE 20 =====
+5B. Kewajiban Pajak — PPh 25, PPh 29, PPh 28A (BARU v1.2) 
+BARU v1.2: Section baru sepenuhnya. Struktur di bawah ini disusun berdasarkan konfirmasi langsung dari tax 
+planner partner YFD (Juli 2026) dan divalidasi terhadap PER-17/PJ/2015 (Norma Penghitungan Penghasilan Neto) 
+serta UU HPP (tarif Pasal 17). Formula proyeksi PPh 29 tetap harus divalidasi ulang oleh tax planner sebelum 
+dipakai sebagai basis keputusan otomatis produksi. 
+5B.1 Prinsip Dasar — Mekanisme Ditentukan oleh SUMBER Penghasilan 
+Koreksi penting: mekanisme pajak TIDAK ditentukan oleh 'status user' (karyawan vs freelancer) secara umum, 
+melainkan oleh SUMBER dari setiap penghasilan. Satu orang bisa punya lebih dari satu sumber sekaligus (mis. gaji 
+karyawan + praktik jaga freelance), dan masing-masing sumber dihitung dengan mekanisme berbeda. 
+Sumber Penghasilan Mekanisme Pemotongan/Pembayaran Siapa yang 
+Menghitung 
+Karyawan (gaji) 
+TER (Tarif Efektif Rata-rata), dipotong langsung 
+oleh pemberi kerja tiap bulan, direkonsiliasi ke Pasal 
+17 di akhir tahun oleh pemberi kerja 
+Perusahaan/pemberi 
+kerja 
+Pekerjaan bebas (dokter 
+praktik mandiri, notaris, 
+konsultan, dst) 
+Norma Penghitungan Penghasilan Neto (NPPN) atau 
+Pembukuan, diangsur bulanan via PPh 25, 
+direkonsiliasi Pasal 17 di SPT Tahunan 
+User sendiri (via tax 
+planner) 
+Kegiatan usaha (bisnis/dagang) 
+Norma atau Pembukuan (sama seperti pekerjaan 
+bebas); ATAU jika omzet < Rp 4,8 miliar/tahun, 
+boleh pilih PPh Final UMKM 0,5% dari omzet (final, 
+tidak direkonsiliasi ulang dengan Pasal 17) 
+User sendiri (via tax 
+planner) 
+AI WAJIB tanya sumber penghasilan sebelum menentukan sub-jenis pajak — TIDAK BOLEH mengasumsikan 
+'user freelancer maka otomatis PPh 25'. Pertanyaan: "Penghasilan ini dari gaji karyawan, pekerjaan bebas/praktik 
+mandiri, atau kegiatan usaha?" 
+5B.2 Sub-jenis Kewajiban Pajak 
+Sub-item Sifat Perlakuan Bucket Sinyal Deteksi AI 
+PPh 25 — angsuran bulanan Rutin, prediktif 
+TIDAK masuk 4 Bucket. 
+Mengurangi Pemasukan bersih 
+bulanan 
+"angsuran pajak", "PPh 25", 
+"cicilan pajak bulanan" 
+PPh 29 — kurang bayar 
+tahunan 
+Lump-sum, sekali 
+setahun 
+TIDAK masuk 4 Bucket. Dicatat 
+saat dibayar 
+"kurang bayar pajak", "PPh 
+29", "bayar pajak SPT" 
+PPh 28A — lebih bayar 
+(restitusi) 
+Kredit, sekali 
+setahun 
+Dicatat sebagai kredit, TIDAK 
+masuk Pemasukan baru 
+"restitusi pajak", "lebih bayar 
+pajak" 
+Pertanyaan konfirmasi AI kalau terdeteksi kata "pajak" tapi jenis belum jelas: "Ini angsuran pajak rutin bulanan 
+(PPh 25) atau pembayaran kurang bayar pajak tahunan (PPh 29)?" 
+5B.3 Formula — Norma Penghitungan Penghasilan Neto (NPPN) 
+Untuk sumber Pekerjaan Bebas dan Kegiatan Usaha yang memilih skema Norma (bukan Pembukuan), penghasilan 
+neto TIDAK sama dengan penghasilan bruto — ada langkah perkalian dengan persentase Norma yang bergantung 
+pada jenis profesi (kode KLU) dan wilayah domisili, sesuai PER-17/PJ/2015. 
+Penghasilan Neto = Penghasilan Bruto × Norma% PKP (Penghasilan Kena Pajak) = 
+Penghasilan Neto − PTKP Pajak Terutang = hitung berlapis pakai tarif Pasal 17 (5 
+lapisan progresif) PPh 25 per bulan = Pajak Terutang (dari SPT tahun lalu) ÷ 12 
+
+===== PAGE 21 =====
+Proyeksi PPh 29 = Pajak Terutang (proyeksi tahun berjalan) − Total PPh 25 yang sudah 
+disetor 
+Norma bervariasi per profesi (KLU) dan wilayah — contoh: dokter yang praktik di salah satu dari 10 ibukota 
+provinsi tertentu (termasuk Denpasar) memiliki norma 50%. Profesi lain dan wilayah lain punya angka berbeda; AI 
+TIDAK BOLEH mengasumsikan 50% berlaku untuk semua profesi/wilayah — nilai norma harus dicek dari tabel 
+resmi PER-17/PJ/2015 sesuai KLU dan wilayah domisili user. 
+Tabel Tarif Progresif Pasal 17 (UU HPP) 
+Lapisan PKP Tarif 
+Rp 0 – Rp 60.000.000 5% 
+> Rp 60.000.000 – Rp 250.000.000 15% 
+> Rp 250.000.000 – Rp 500.000.000 25% 
+> Rp 500.000.000 – Rp 5.000.000.000 30% 
+> Rp 5.000.000.000 35% 
+5B.4 Simulasi — Dokter Freelance (Pekerjaan Bebas) di Denpasar, status TK/0 
+Basis tahun lalu (2025) — dasar hitung PPh 25 tahun berjalan: 
+Item Nominal 
+Penghasilan bruto 2025 Rp 360.000.000 
+Penghasilan Neto (× Norma dokter Denpasar 50%) Rp 180.000.000 
+PTKP (TK/0) Rp 54.000.000 
+PKP 2025 Rp 126.000.000 
+Pajak terutang 2025: 5%×60jt + 15%×66jt Rp 3.000.000 + Rp 9.900.000 = Rp 
+12.900.000 
+PPh 25/bulan (berlaku sepanjang 2026) Rp 1.075.000/bulan 
+Realisasi tahun berjalan (2026) — praktik makin ramai: 
+Item Nominal 
+Penghasilan bruto 2026 (proyeksi dari tren realisasi) Rp 432.000.000 
+Penghasilan Neto (× Norma 50%) Rp 216.000.000 
+PKP 2026 (setelah PTKP) Rp 162.000.000 
+Pajak terutang 2026: 5%×60jt + 15%×102jt Rp 3.000.000 + Rp 15.300.000 = Rp 
+18.300.000 
+Total PPh 25 sudah disetor sepanjang 2026 Rp 12.900.000 
+Proyeksi PPh 29 (kurang bayar) ≈ Rp 5.400.000 
+Contoh trigger Doctor's Note: "Berdasarkan tren praktikmu tahun ini, estimasi kurang bayar pajak sekitar Rp 5,4 
+juta di SPT tahun depan — pertimbangkan diskusi dengan tax planner YFD untuk menyiapkan cadangan sebelum 
+jatuh tempo." 
+
+===== PAGE 22 =====
+5B.5 Panel "Kesehatan Pajak" di Dashboard 
+Panel adaptif tergantung profil sumber penghasilan user: 
+● User murni karyawan (hanya gaji) → panel hanya memunculkan proyeksi PPh 29 kalau ada sinyal 
+penghasilan non-gaji tambahan (honorarium, praktik sampingan, dll) 
+● User dengan histori PPh 25 rutin (pekerjaan bebas/kegiatan usaha) → panel memproyeksikan potensi PPh 
+29 dari tren pertumbuhan income vs basis PPh 25 tahun lalu — titik referral terkuat ke tax planner YFD 
+5B.6 Batasan & Validasi (Diperbarui v1.3) 
+TERVALIDASI — Juli 2026: Formula dasar (Neto = Bruto × Norma, PKP = Neto − PTKP, tarif Pasal 17 
+progresif, PPh 25 = terutang tahun lalu ÷ 12, proyeksi PPh 29 = terutang tahun ini − PPh 25 disetor) telah 
+dikonfirmasi oleh AKAR Konsultan Pajak bersama DJP — tidak ada koreksi struktural. Simulasi dokter 
+Denpasar (Norma 50%) juga terkonfirmasi akurat. 
+CATATAN YANG TETAP BERLAKU: sistem WAJIB tetap menyatakan semua proyeksi PPh 29 sebagai 
+ESTIMASI, bukan angka final — AI tidak boleh menampilkan proyeksi ini seolah-olah kewajiban pasti. Hal-
+hal berikut tetap perlu dicek kasus per kasus, bukan diasumsikan seragam: 
+● Kode KLU dan persentase Norma untuk profesi/domisili di luar contoh dokter -Denpasar yang sudah 
+divalidasi — tiap kombinasi profesi+wilayah baru sebaiknya dicek ke PER-17/PJ/2015 atau dikonfirmasi 
+ulang ke AKAR, bukan diasumsikan sama 
+● Kemungkinan user memilih skema Pembukuan alih-alih Norma — penghasilan neto dihitung dari 
+pendapatan riil dikurangi biaya, bukan persentase flat, dan butuh alur input yang sama sekali berbeda  
+● Kemungkinan user (kegiatan usaha, omzet < Rp4,8M) memilih skema PPh Final UMKM 0,5% — final, 
+tidak direkonsiliasi ke Pasal 17, sehingga tidak menghasilkan PPh 29 sama sekali  
+● Perubahan regulasi (PTKP, lapisan tarif, daftar Norma) dapat berubah sewaktu -waktu — sistem perlu 
+mekanisme update berkala, bukan hardcode permanen 
+5B.7 Baseline Data — Field "Jenis Pekerjaan" (BARU v1.3, Onboarding) 
+Hasil keputusan meeting AKAR: AI TIDAK bertanya sumber penghasilan berulang -ulang di setiap transaksi. 
+Pertanyaan ini cukup DITANYAKAN SEKALI saat user mengisi Baseline Data (onboarding First Aid), lalu 
+disimpan sebagai profil yang menentukan skema pajak default. 
+Field baru di Baseline Data: 
+● Pertanyaan ke user: "Pekerjaan kamu saat ini seperti apa?" 
+● Opsi A — Karyawan murni: penghasilan hanya dari gaji, sudah dipotong PPh 21/TER oleh pemberi kerja 
+→ skema pajak First Aid = tidak aktif secara default (PPh 25 tidak relevan, hanya potensi PPh 29 kalau ada 
+penghasilan lain yang diinput belakangan) 
+● Opsi B — Ada Pekerjaan Bebas/Usaha (termasuk kombinasi dengan gaji): dokter praktik, notaris, 
+konsultan, freelancer, pemilik usaha, dll → skema pajak First Aid aktif, default ke Norma (AI minta 
+KLU/profesi + wilayah domisili untuk menentukan persentase Norma yang tepat) 
+User TETAP bisa mengganti skema kapan pun (Norma → Pembukuan, atau → UMKM Final kalau memenuhi 
+syarat omzet) melalui pengaturan profil — default hanya titik awal, bukan kunci permanen. 
+Implikasi ke Section 5B.1–5B.4: pertanyaan "sumber penghasilan ini dari mana?" yang sebelumnya dideskripsikan 
+sebagai pertanyaan AI per transaksi, sekarang dibaca sebagai default hasil dari Jenis Pekerjaan di Baseline Data. 
+AI hanya perlu klarifikasi ulang kalau ada transaksi yang tidak konsisten dengan profil (mis. user berstatus 
+"Karyawan murni" tapi mencatat transaksi PPh 25 — AI tanya apakah profil perlu diperbarui). 
+  
+
+===== PAGE 23 =====
+5C. Flag "Peristiwa Besar" (Life Event) (BARU v1.2) 
+Sub-kategori tertentu — Mahar/Pernikahan, Biaya Duka, DP Rumah/Properti, DP Kendaraan — bernilai besar dan 
+terjadi satu kali, bukan pola rutin bulanan. Kalau dihitung mentah-mentah ke tren bucket bulanan biasa, transaksi ini 
+bisa membuat Doctor's Note salah menyimpulkan "Flexible + Social kamu melonjak drastis bulan ini" padahal itu 
+bukan pola gaya hidup yang berulang — itu satu peristiwa hidup. 
+Perbedaan dengan Piutang Keluar: Peristiwa Besar TETAP dihitung masuk ke 4 Bucket (karena ini benar -benar 
+uang yang dibelanjakan, bukan dipinjamkan), tapi diberi flag khusus supaya dashboard dan Doctor's Note 
+menampilkannya terpisah dari tren bulanan biasa. 
+● Dashboard menampilkan grafik tren bucket dengan DAN tanpa transaksi berflag Peristiwa Besar, supaya 
+user bisa melihat kondisi "normal" mereka tanpa distorsi satu bulan ekstrem 
+● Doctor's Note untuk transaksi Peristiwa Besar memakai nada yang sesuai konteks — empatik untuk Biaya 
+Duka, apresiatif-objektif untuk Pernikahan — bukan nada analitis dingin seperti pola pengeluaran rutin 
+● Peristiwa Besar TIDAK memicu flag "boros" otomatis di bulan terjadinya, meskipun persentase bucket 
+bulan itu melebihi target normal 
+  
+
+===== PAGE 24 =====
+6. Deteksi Mood dari Konteks (Behavioral Layer) 
+Mood adalah data behavioral paling penting untuk riset YFD. Akurasi deteksi mood harus dijaga ketat.  
+⚠️ ATURAN KERAS: Transaksi TIDAK BISA disimpan sebelum mood dipilih. Tidak ada timeout, tidak 
+ada default otomatis. Aturan ini berlaku hanya ketika AI tidak dapat membaca mood langsung dari narasi 
+user — jika mood sudah jelas terbaca dari narasi, AI langsung mengisi tanpa bertanya. 
+6.1 Tabel Keyword Deteksi Mood 
+Mood Keyword / Signal Contoh 
+Happy senang, bahagia, excited, bersyukur, alhamdulillah, 
+seru "Dinner keluarga, seru banget!" 
+Neutral Tidak ada kata emosi — deskripsi teknis murni "Bayar listrik bulan ini" 
+Sad sedih, galau, kecewa, nangis, kesepian "Kecewa, healing ke mall" 
+Stressed stres, cemas, panik, overthinking, deadline "Stres kerja jadi jajan terus" 
+Angry marah, kesal, frustrasi, bete, sebel "Kesal sama kantor, langsung beli 
+ini" 
+Tired capek, lelah, ngantuk, burnout, healing "Abis lembur capek, beli kopi" 
+6.2 Alur Deteksi Mood — Decision Tree 
+Langkah Kondisi Tindakan AI 
+1 Narasi dengan keyword emosi jelas Deteksi otomatis → langsung ke summary 
+2 Narasi tanpa keyword emosi jelas TANYA mood via button 6 pilihan → tunggu 
+jawaban 
+3 Foto struk tanpa narasi teks TANYA mood via button → tunggu jawaban 
+4 Audio/voice note Transkrip dulu → ikuti Langkah 1 atau 2 
+6.3 Jaminan Kualitas Data 
+● Setiap transaksi tersimpan DIJAMIN memiliki mood valid (salah satu dari 6 mood)  
+● Tidak ada nilai null, kosong, atau default otomatis 
+● Konsekuensi: user yang tidak menjawab pilihan mood = transaksi belum tersimpan. Bot tidak memaksa, 
+hanya menunggu. 
+YFD · Your Financial Doctor · Indonesia's First Financial Health Center 
+Dokumen ini bersifat internal dan rahasia. Versi 1.3 · Juli 2026 · Revisi. 

@@ -97,7 +97,8 @@ class CategoryBucketServiceTest extends TestCase
     public function test_context_changes_bucket_without_changing_transaction_type(): void
     {
         $cases = [
-            ['Essential Living', 'Makanan & Minuman', 'Need', 'Ngopi meeting kerja dengan klien'],
+            ['Future Building', 'Makanan & Minuman', 'Need', 'Ngopi meeting kerja dengan klien'],
+            ['Future Building', 'Bisnis & Karir', 'Need', 'Starbucks meeting klien 85rb'],
             ['Flexible + Social', 'Makanan & Minuman', 'Wants', 'Ngopi untuk healing'],
             ['Future Building', 'Lifestyle & Hiburan', 'Need', 'Beli laptop kerja'],
             ['Essential Living', 'Lifestyle & Hiburan', 'Need', 'Ganti HP utama rusak'],
