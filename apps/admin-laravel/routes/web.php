@@ -257,8 +257,12 @@ Route::prefix('portal')->name('portal.')->group(function () {
                 ->name('social-liquidity.receivables.write-off');
             Route::post('/likuiditas-sosial/piutang/{receivable}/sengketa', [PortalSocialLiquidityController::class, 'disputeReceivable'])
                 ->name('social-liquidity.receivables.dispute');
+            Route::delete('/likuiditas-sosial/piutang/{receivable}', [PortalSocialLiquidityController::class, 'destroyReceivable'])
+                ->name('social-liquidity.receivables.destroy');
             Route::post('/likuiditas-sosial/utang/{payable}/sengketa', [PortalSocialLiquidityController::class, 'disputePayable'])
                 ->name('social-liquidity.payables.dispute');
+            Route::delete('/likuiditas-sosial/utang/{payable}', [PortalSocialLiquidityController::class, 'destroyPayable'])
+                ->name('social-liquidity.payables.destroy');
         });
     });
 });

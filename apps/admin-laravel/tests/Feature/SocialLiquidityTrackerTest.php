@@ -121,4 +121,26 @@ class SocialLiquidityTrackerTest extends TestCase
         $this->assertSame('Ayuti', $row->counterparty_name);
         $this->assertNotNull($row->expected_back_at);
     }
+
+    public function test_delete_active_payable_removes_opening_transaction(): void
+    {
+        $tx = BotTransaction::query()->create([
+            'telegram_user_id' => 15,
+            'recorded_at' => now(),
+            'type' => TransactionTaxonomy::TYPE_PAYABLE_IN,
+            'category' => 'Lain-lain',
+            'sub_category' => 'Ayuti',
+            'amount' => 1_000_000,
+            'nature' => 'Need',
+            'mood' => 'Neutral',
+            'is_impulsive' => false,
+            'notes' => 'Pinjam dari Ayuti 1jt buat RS, bulan depan',
+            'source' => 'manual',
+        ]);
+        $row = app(SocialLiquidityService::class)->openFromBorrow($tx);
+        app(SocialLiquidityService::class)->deletePayable($row);
+
+        $this->assertDatabaseMissing('bot_social_payables', ['id' => $row->id]);
+        $this->assertDatabaseMissing('bot_transactions', ['id' => $tx->id]);
+    }
 }

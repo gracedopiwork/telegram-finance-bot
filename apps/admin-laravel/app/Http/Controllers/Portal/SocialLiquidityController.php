@@ -47,4 +47,28 @@ class SocialLiquidityController extends Controller
 
         return back()->with('success', 'Utang ditandai sengketa (di luar perhitungan).');
     }
+
+    public function destroyReceivable(Request $request, BotSocialReceivable $receivable): RedirectResponse
+    {
+        $userId = (int) PortalSession::telegramUserId($request);
+        if ($userId <= 0 || (int) $receivable->telegram_user_id !== $userId) {
+            abort(403);
+        }
+
+        app(SocialLiquidityService::class)->deleteReceivable($receivable);
+
+        return back()->with('success', 'Baris piutang dihapus dari tracker.');
+    }
+
+    public function destroyPayable(Request $request, BotSocialPayable $payable): RedirectResponse
+    {
+        $userId = (int) PortalSession::telegramUserId($request);
+        if ($userId <= 0 || (int) $payable->telegram_user_id !== $userId) {
+            abort(403);
+        }
+
+        app(SocialLiquidityService::class)->deletePayable($payable);
+
+        return back()->with('success', 'Baris utang dihapus dari tracker.');
+    }
 }

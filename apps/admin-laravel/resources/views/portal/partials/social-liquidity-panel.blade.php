@@ -106,22 +106,27 @@
                             </td>
                             <td class="px-3 py-2">
                                 <div class="text-slate-600 mb-1">{{ $row['follow_up'] }}</div>
-                                @if(!empty($row['can_write_off']) || !empty($row['can_dispute']))
-                                    <div class="flex flex-wrap gap-2">
-                                        @if(!empty($row['can_write_off']))
-                                            <form method="POST" action="{{ route('portal.social-liquidity.receivables.write-off', $row['id']) }}" onsubmit="return confirm('Relakan piutang ini? Akan dicatat sebagai Pengeluaran Sosial & Keluarga.');">
-                                                @csrf
-                                                <button type="submit" class="text-xs font-semibold text-rose-700 hover:underline">Relakan</button>
-                                            </form>
-                                        @endif
-                                        @if(!empty($row['can_dispute']))
-                                            <form method="POST" action="{{ route('portal.social-liquidity.receivables.dispute', $row['id']) }}" onsubmit="return confirm('Tandai sebagai sengketa?');">
-                                                @csrf
-                                                <button type="submit" class="text-xs font-semibold text-orange-700 hover:underline">Sengketa</button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                @endif
+                                <div class="flex flex-wrap gap-2">
+                                    @if(!empty($row['can_write_off']))
+                                        <form method="POST" action="{{ route('portal.social-liquidity.receivables.write-off', $row['id']) }}" onsubmit="return confirm('Relakan piutang ini? Akan dicatat sebagai Pengeluaran Sosial & Keluarga.');">
+                                            @csrf
+                                            <button type="submit" class="text-xs font-semibold text-rose-700 hover:underline">Relakan</button>
+                                        </form>
+                                    @endif
+                                    @if(!empty($row['can_dispute']))
+                                        <form method="POST" action="{{ route('portal.social-liquidity.receivables.dispute', $row['id']) }}" onsubmit="return confirm('Tandai sebagai sengketa?');">
+                                            @csrf
+                                            <button type="submit" class="text-xs font-semibold text-orange-700 hover:underline">Sengketa</button>
+                                        </form>
+                                    @endif
+                                    @if(!empty($row['can_delete']))
+                                        <form method="POST" action="{{ route('portal.social-liquidity.receivables.destroy', $row['id']) }}" onsubmit="return confirm('Hapus baris piutang ini dari tracker? Jika masih aktif, transaksi buka ikut dihapus.');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-xs font-semibold text-slate-600 hover:underline">Hapus</button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @endforeach
@@ -191,12 +196,21 @@
                             </td>
                             <td class="px-3 py-2">
                                 <div class="text-slate-600 mb-1">{{ $row['follow_up'] }}</div>
-                                @if(!empty($row['can_dispute']))
-                                    <form method="POST" action="{{ route('portal.social-liquidity.payables.dispute', $row['id']) }}" onsubmit="return confirm('Tandai sebagai sengketa?');">
-                                        @csrf
-                                        <button type="submit" class="text-xs font-semibold text-orange-700 hover:underline">Sengketa</button>
-                                    </form>
-                                @endif
+                                <div class="flex flex-wrap gap-2">
+                                    @if(!empty($row['can_dispute']))
+                                        <form method="POST" action="{{ route('portal.social-liquidity.payables.dispute', $row['id']) }}" onsubmit="return confirm('Tandai sebagai sengketa?');">
+                                            @csrf
+                                            <button type="submit" class="text-xs font-semibold text-orange-700 hover:underline">Sengketa</button>
+                                        </form>
+                                    @endif
+                                    @if(!empty($row['can_delete']))
+                                        <form method="POST" action="{{ route('portal.social-liquidity.payables.destroy', $row['id']) }}" onsubmit="return confirm('Hapus baris utang ini dari tracker? Jika masih aktif, transaksi buka ikut dihapus.');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-xs font-semibold text-slate-600 hover:underline">Hapus</button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @endforeach

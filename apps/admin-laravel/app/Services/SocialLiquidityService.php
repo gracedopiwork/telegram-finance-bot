@@ -225,6 +225,31 @@ class SocialLiquidityService
     }
 
     /**
+     * Hapus baris tracker. Jika masih aktif, transaksi buka (Piutang Keluar / Utang Masuk) ikut dihapus.
+     */
+    public function deleteReceivable(BotSocialReceivable $receivable): void
+    {
+        $wasActive = $receivable->status === BotSocialReceivable::STATUS_ACTIVE;
+        $outboundId = $receivable->outbound_transaction_id;
+        $receivable->delete();
+
+        if ($wasActive && $outboundId) {
+            BotTransaction::query()->where('id', $outboundId)->delete();
+        }
+    }
+
+    public function deletePayable(BotSocialPayable $payable): void
+    {
+        $wasActive = $payable->status === BotSocialPayable::STATUS_ACTIVE;
+        $inboundId = $payable->inbound_transaction_id;
+        $payable->delete();
+
+        if ($wasActive && $inboundId) {
+            BotTransaction::query()->where('id', $inboundId)->delete();
+        }
+    }
+
+    /**
      * @return array{
      *   outbound_month: int,
      *   outbound_share: float,
@@ -604,6 +629,7 @@ class SocialLiquidityService
             'follow_up' => $followUp,
             'can_write_off' => $kind === 'receivable' && $isActive,
             'can_dispute' => $isActive,
+            'can_delete' => true,
         ];
     }
 
