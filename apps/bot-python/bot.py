@@ -36,7 +36,7 @@ from ai_quota import (
 from portal_link import fetch_portal_login_url
 from category_rules_cache import get_rules, refresh as refresh_category_rules
 from clarification_rules import clarification_question
-from social_meta import enrich_social_liquidity_fields
+from social_meta import enrich_social_liquidity_fields, social_missing_details_question
 from transaction_store import (
     format_prescription_bucket,
     resolve_transaction_bucket,
@@ -891,18 +891,21 @@ async def process_note_input(
 
     if user_id:
         question = clarification_question(parsed, text)
+        social_open = social_missing_details_question(parsed, text) is not None
         should_ask = question and (
             not clarification_resolved
             or parsed.get("needs_clarification") is True
+            or social_open
         )
         if should_ask:
             PENDING_CONFIRMATIONS.pop(user_id, None)
             PENDING_MOOD_WAIT.pop(user_id, None)
+            # Simpan input terbaru (termasuk klarifikasi sebelumnya) agar jawaban menumpuk.
             PENDING_CLARIFICATIONS[user_id] = {
                 "source_text": text,
             }
             await message.reply_text(
-                f"Aku perlu memastikan tujuan transaksinya dulu:\n\n{question}\n\n"
+                f"Aku perlu memastikan data Likuiditas Sosial dulu:\n\n{question}\n\n"
                 "Balas dengan keterangannya, atau ketik batal."
             )
             return
