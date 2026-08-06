@@ -883,16 +883,31 @@ _PIUTANG_KELUAR = (
 )
 
 # Utang sosial (KBBI) — terima pinjaman (cash bertambah, bukan Pemasukan)
+# Jangan pakai "saya pinjam" mentah — bentrok dengan "saya pinjamkan".
 _UTANG_MASUK = (
     "utang masuk",
     "hutang masuk",
     "ngutang dari",
     "utang dari",
     "pinjam dari",
+    "pinjam kek",
+    "minjem dari",
+    "minjem kek",
     "terima pinjaman",
     "dapat pinjaman",
     "dapet pinjaman",
-    "minjem dari",
+)
+
+_UTANG_MASUK_PATTERNS = (
+    re.compile(
+        r"\b(?:saya|aku|gue|gw)\s+pinjam(?!kan|i|in)\s+(?:ke|kek|dari|sama|kepada)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:saya|aku|gue|gw)\s+(?:minjem|utang|ngutang|hutang)\s+(?:ke|kek|dari|sama|kepada)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(r"\b(?:pinjam|minjem)\s+kek\b", re.IGNORECASE),
 )
 
 # Utang sosial — bayar balik ke orang (cash turun; bukan Cicilan bank/pinjol)
@@ -955,12 +970,22 @@ _PIUTANG_MASUK = (
 _PIUTANG_MASUK_PATTERNS = (
     re.compile(r"\b(?:meng)?kembalikan\s+(?:uang|pinjaman|piutang)\b", re.IGNORECASE),
     re.compile(r"\bbalikin\s+(?:uang|pinjaman|piutang)\b", re.IGNORECASE),
-    re.compile(r"\b[a-zà-ÿ][\wà-ÿ.\-]{1,40}\s+(?:meng)?kembalikan\b", re.IGNORECASE),
-    re.compile(r"\b[a-zà-ÿ][\wà-ÿ.\-]{1,40}\s+balikin\b", re.IGNORECASE),
-    re.compile(r"\b[a-zà-ÿ][\wà-ÿ.\-]{1,40}\s+bayar\s+balik\b", re.IGNORECASE),
+    # Nama orang + kembalikan — jangan cocokkan "saya/aku kembalikan" (itu utang kita).
+    re.compile(
+        r"\b(?!saya\b|aku\b|gue\b|gw\b|kami\b|kita\b)([a-zà-ÿ][\wà-ÿ.\-]{1,40})\s+(?:meng)?kembalikan\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?!saya\b|aku\b|gue\b|gw\b|kami\b|kita\b)([a-zà-ÿ][\wà-ÿ.\-]{1,40})\s+balikin\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?!saya\b|aku\b|gue\b|gw\b|kami\b|kita\b)([a-zà-ÿ][\wà-ÿ.\-]{1,40})\s+bayar\s+balik\b",
+        re.IGNORECASE,
+    ),
     re.compile(r"\bdikembalikan\b", re.IGNORECASE),
     re.compile(
-        r"\b(?:uang|pinjaman|yang)\s+(?:yang\s+)?dipinjam\s+sebelumnya\b",
+        r"\b(?:uang|pinjaman)\s+(?:yang\s+)?dipinjam\s+sebelumnya\b",
         re.IGNORECASE,
     ),
 )
@@ -1182,6 +1207,24 @@ def is_pinjol_or_cash_loan(text: str) -> bool:
 def is_receivable_repay(text: str) -> bool:
     """Pelunasan piutang — Piutang Masuk (orang lain mengembalikan ke kita)."""
     lower = _normalize_typos(text)
+    # Kita yang meminjam / akan mengembalikan → Utang Masuk/Keluar, bukan Piutang Masuk.
+    if re.search(
+        r"\b(?:saya|aku|gue|gw)\s+pinjam(?!kan|i|in)\b",
+        lower,
+    ):
+        return False
+    if re.search(
+        r"\b(?:saya|aku|gue|gw)\s+(?:minjem|utang|ngutang|hutang)\b",
+        lower,
+    ):
+        return False
+    if re.search(
+        r"\b(?:saya|aku|gue|gw)\s+(?:akan\s+|mau\s+|rencana\s+)?(?:kembalikan|balikin|bayar\s+balik)\b",
+        lower,
+    ):
+        return False
+    if re.search(r"\brencana\b.*\b(?:saya|aku)\s+(?:kembalikan|balikin)\b", lower):
+        return False
     # "nanti dia bayar balik" = janji saat meminjamkan → bukan pelunasan.
     if re.search(r"\bnanti\s+(?:dia\s+)?(?:bayar\s+balik|ganti|balikin|kembali)", lower):
         return False
@@ -1198,6 +1241,14 @@ def is_lending_to_others(text: str) -> bool:
     lower = _normalize_typos(text)
     if is_receivable_repay(lower):
         return False
+    # "saya pinjam ke X" = kita berhutang, bukan meminjamkan.
+    if any(p.search(lower) for p in _UTANG_MASUK_PATTERNS) or _contains(lower, _UTANG_MASUK):
+        if not _contains(lower, _PIUTANG_KELUAR):
+            return False
+        if re.search(r"\b(?:saya|aku|gue|gw)\s+pinjam(?!kan|i|in)\b", lower):
+            return False
+        if re.search(r"\b(?:saya|aku|gue|gw)\s+(?:minjem|utang|ngutang)\b", lower):
+            return False
     if "klarifikasi user:" in lower and any(
         k in lower
         for k in (
@@ -1213,7 +1264,6 @@ def is_lending_to_others(text: str) -> bool:
         )
     ):
         return True
-    # "dipinjam" / "di pinjam" hanya keluar jika bukan konteks pelunasan.
     if _contains(lower, _PIUTANG_KELUAR):
         return True
     return False
@@ -1222,7 +1272,12 @@ def is_lending_to_others(text: str) -> bool:
 def is_social_debt_borrow(text: str) -> bool:
     """Terima pinjaman sosial — Utang Masuk (cash bertambah; bukan Pemasukan)."""
     lower = _normalize_typos(text)
-    if is_receivable_repay(lower) or is_social_debt_repay(lower):
+    if is_social_debt_repay(lower):
+        return False
+    # Pinjam oleh kita menang atas sinyal "kembalikan" di rencana pelunasan.
+    if any(p.search(lower) for p in _UTANG_MASUK_PATTERNS):
+        return True
+    if is_receivable_repay(lower):
         return False
     if is_lending_to_others(lower) and "klarifikasi user:" not in lower:
         if _contains(lower, _PIUTANG_KELUAR):
@@ -1280,6 +1335,9 @@ def is_ambiguous_utang_ke_person(text: str) -> bool:
     """utang/pinjam ke [nama] tanpa sinyal jelas → wajib klarifikasi."""
     lower = _normalize_typos(text)
     if "klarifikasi user:" in lower:
+        return False
+    # "saya pinjam ke X" jelas Utang Masuk.
+    if any(p.search(lower) for p in _UTANG_MASUK_PATTERNS):
         return False
     if (
         is_receivable_repay(lower)

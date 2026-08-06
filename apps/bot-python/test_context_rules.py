@@ -275,6 +275,18 @@ class ContextRulesTests(unittest.TestCase):
         self.assertClass("pinjam dari ayuti 1jt", "Utang Masuk", "Lain-lain")
         self.assertClass("bayar utang ke ayuti 1jt", "Utang Keluar", "Lain-lain")
 
+    def test_saya_pinjam_kek_adalah_utang_masuk(self) -> None:
+        self.assertClass(
+            "saya pinjam kek ayuti 1 jt untuk keperluan bekerja, rencana besok saya kembalikan",
+            "Utang Masuk",
+            "Lain-lain",
+        )
+        self.assertClass(
+            "saya pinjam ke ayuti 1jt buat kerja, besok saya kembalikan",
+            "Utang Masuk",
+            "Lain-lain",
+        )
+
     def test_dp_rumah_saving_future(self) -> None:
         hit = classify_from_text("dp rumah 50jt")
         self.assertIsNotNone(hit)
