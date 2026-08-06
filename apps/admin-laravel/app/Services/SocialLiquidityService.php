@@ -612,9 +612,6 @@ class SocialLiquidityService
         };
 
         $dueLabel = $due ? $due->timezone(config('app.timezone', 'Asia/Jakarta'))->format('j/n/Y') : '—';
-        if ($isActive && $due) {
-            $statusLabel .= ' ('.$dueLabel.')';
-        }
 
         return [
             'id' => (int) $row->id,

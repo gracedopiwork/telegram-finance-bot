@@ -56,6 +56,7 @@ def format_social_list(kind: str, payload: dict[str, Any]) -> str:
         name = str(row.get("name") or "—")
         amount = int(row.get("amount") or 0)
         purpose = str(row.get("purpose") or "—")
+        due = str(row.get("due_label") or "—")
         status = str(row.get("status_label") or row.get("status") or "")
         follow = str(row.get("follow_up") or "")
         mark = "⚠ " if row.get("is_overdue") else ""
@@ -64,6 +65,7 @@ def format_social_list(kind: str, payload: dict[str, Any]) -> str:
         lines.append(
             f"{i}. {mark}{name} — Rp{amount:,}\n"
             f"   Tujuan: {purpose}\n"
+            f"   Jatuh tempo: {due}\n"
             f"   Status: {status}\n"
             f"   Tindak lanjut: {follow}"
         )
