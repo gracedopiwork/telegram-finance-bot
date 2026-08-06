@@ -25,6 +25,7 @@ class BotSocialPayable extends Model
         'counterparty_name',
         'purpose',
         'amount',
+        'amount_remaining',
         'expected_back_at',
         'due_notified_at',
         'status',
@@ -35,9 +36,19 @@ class BotSocialPayable extends Model
     {
         return [
             'amount' => 'integer',
+            'amount_remaining' => 'integer',
             'expected_back_at' => 'datetime',
             'due_notified_at' => 'datetime',
         ];
+    }
+
+    public function remainingAmount(): int
+    {
+        if ($this->amount_remaining !== null) {
+            return (int) $this->amount_remaining;
+        }
+
+        return $this->status === self::STATUS_ACTIVE ? (int) $this->amount : 0;
     }
 
     public function inboundTransaction(): BelongsTo

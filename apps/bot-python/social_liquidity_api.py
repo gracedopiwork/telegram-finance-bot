@@ -55,6 +55,7 @@ def format_social_list(kind: str, payload: dict[str, Any]) -> str:
     for i, row in enumerate(rows, start=1):
         name = str(row.get("name") or "—")
         amount = int(row.get("amount") or 0)
+        remaining = int(row.get("amount_remaining") if row.get("amount_remaining") is not None else amount)
         purpose = str(row.get("purpose") or "—")
         due = str(row.get("due_label") or "—")
         status = str(row.get("status_label") or row.get("status") or "")
@@ -62,13 +63,20 @@ def format_social_list(kind: str, payload: dict[str, Any]) -> str:
         mark = "⚠ " if row.get("is_overdue") else ""
         if row.get("is_overdue"):
             overdue_n += 1
-        lines.append(
-            f"{i}. {mark}{name} — Rp{amount:,}\n"
-            f"   Tujuan: {purpose}\n"
-            f"   Jatuh tempo: {due}\n"
-            f"   Status: {status}\n"
-            f"   Tindak lanjut: {follow}"
+        chunk = [
+            f"{i}. {mark}{name} — Rp{amount:,}",
+            f"   Tujuan: {purpose}",
+        ]
+        if remaining != amount or row.get("is_partial"):
+            chunk.append(f"   Sisa: Rp{remaining:,}")
+        chunk.extend(
+            [
+                f"   Jatuh tempo: {due}",
+                f"   Status: {status}",
+                f"   Tindak lanjut: {follow}",
+            ]
         )
+        lines.append("\n".join(chunk))
 
     total = int(block.get("active_total") or 0)
     overdue_total = int(block.get("overdue_total") or 0)

@@ -270,6 +270,8 @@ Aturan:
    - 50rb / 50 ribu / 50k => 50000 (suffix rb/ribu/k WAJIB menempel pada angka).
    - Typo umum: "90 br" / "90br" = "90 rb" => 90000 (bukan 90).
    - 1,2jt / 1.2 juta => 1200000.
+   - 2 jt 5 ratus / 2 juta 5 ratus => 2500000 (bukan 2000000).
+   - 2 jt 500rb / 2 jt setengah => 2500000.
    - 83800 / 83.800 / 83,800 / 5000 tanpa suffix => nilai apa adanya (BUKAN juta).
    - Huruf k di kata biasa (kemarin, snack, stock) BUKAN penanda ribuan.
 3) jenis (8 jenis resmi — Likuiditas Sosial 4 arah):

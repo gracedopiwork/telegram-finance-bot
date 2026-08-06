@@ -93,6 +93,7 @@ class SocialLiquidityService
             'counterparty_name' => $this->extractCounterparty($notes, (string) $transaction->sub_category),
             'purpose' => $this->extractPurpose($notes),
             'amount' => $amount,
+            'amount_remaining' => $amount,
             'expected_back_at' => $this->resolveExpectedBackAt($notes, $amount, $recorded),
             'status' => BotSocialReceivable::STATUS_ACTIVE,
             'mood_at_lend' => $transaction->mood,
@@ -128,6 +129,7 @@ class SocialLiquidityService
             'counterparty_name' => $this->extractCounterparty($notes, (string) $transaction->sub_category),
             'purpose' => $this->extractPurpose($notes),
             'amount' => $amount,
+            'amount_remaining' => $amount,
             'expected_back_at' => $this->resolveExpectedBackAt($notes, $amount, $recorded),
             'status' => BotSocialPayable::STATUS_ACTIVE,
             'mood_at_borrow' => $transaction->mood,
@@ -146,10 +148,19 @@ class SocialLiquidityService
 
     public function markReceivableSettled(BotSocialReceivable $receivable, BotTransaction $inbound): BotSocialReceivable
     {
-        $receivable->update([
-            'status' => BotSocialReceivable::STATUS_SETTLED,
+        $pay = (int) $inbound->amount;
+        $remaining = $receivable->remainingAmount();
+        $newRemaining = max(0, $remaining - $pay);
+
+        $updates = [
+            'amount_remaining' => $newRemaining,
             'settled_transaction_id' => $inbound->id,
-        ]);
+        ];
+        if ($newRemaining <= 0) {
+            $updates['status'] = BotSocialReceivable::STATUS_SETTLED;
+        }
+
+        $receivable->update($updates);
 
         return $receivable->fresh();
     }
@@ -162,10 +173,19 @@ class SocialLiquidityService
 
     public function markPayableSettled(BotSocialPayable $payable, BotTransaction $repay): BotSocialPayable
     {
-        $payable->update([
-            'status' => BotSocialPayable::STATUS_SETTLED,
+        $pay = (int) $repay->amount;
+        $remaining = $payable->remainingAmount();
+        $newRemaining = max(0, $remaining - $pay);
+
+        $updates = [
+            'amount_remaining' => $newRemaining,
             'settled_transaction_id' => $repay->id,
-        ]);
+        ];
+        if ($newRemaining <= 0) {
+            $updates['status'] = BotSocialPayable::STATUS_SETTLED;
+        }
+
+        $payable->update($updates);
 
         return $payable->fresh();
     }
@@ -182,6 +202,7 @@ class SocialLiquidityService
         $name = trim((string) $receivable->counterparty_name) ?: 'teman';
         $purpose = trim((string) $receivable->purpose);
         $note = 'Direlakan: piutang ke '.$name.($purpose !== '' ? ' ('.$purpose.')' : '');
+        $writeOffAmount = $receivable->remainingAmount();
 
         BotTransaction::query()->create([
             'telegram_user_id' => (int) $receivable->telegram_user_id,
@@ -189,7 +210,7 @@ class SocialLiquidityService
             'type' => TransactionTaxonomy::TYPE_EXPENSE,
             'category' => 'Sosial & Keluarga',
             'sub_category' => $name,
-            'amount' => (int) $receivable->amount,
+            'amount' => max(1, $writeOffAmount),
             'nature' => 'Wants',
             'mood' => $receivable->mood_at_lend ?: 'Neutral',
             'is_impulsive' => false,
@@ -197,7 +218,10 @@ class SocialLiquidityService
             'source' => 'manual',
         ]);
 
-        $receivable->update(['status' => BotSocialReceivable::STATUS_WRITTEN_OFF]);
+        $receivable->update([
+            'status' => BotSocialReceivable::STATUS_WRITTEN_OFF,
+            'amount_remaining' => 0,
+        ]);
 
         return $receivable->fresh();
     }
@@ -292,7 +316,8 @@ class SocialLiquidityService
         $activeTotal = (int) BotSocialReceivable::query()
             ->forUser($telegramUserId)
             ->active()
-            ->sum('amount');
+            ->get()
+            ->sum(fn (BotSocialReceivable $row) => $row->remainingAmount());
         $countActive = BotSocialReceivable::query()
             ->forUser($telegramUserId)
             ->active()
@@ -301,7 +326,8 @@ class SocialLiquidityService
         $activeDebtTotal = (int) BotSocialPayable::query()
             ->forUser($telegramUserId)
             ->active()
-            ->sum('amount');
+            ->get()
+            ->sum(fn (BotSocialPayable $row) => $row->remainingAmount());
         $countActiveDebt = BotSocialPayable::query()
             ->forUser($telegramUserId)
             ->active()
@@ -318,13 +344,15 @@ class SocialLiquidityService
             ->active()
             ->whereNotNull('expected_back_at')
             ->where('expected_back_at', '<', now())
-            ->sum('amount');
+            ->get()
+            ->sum(fn (BotSocialReceivable $row) => $row->remainingAmount());
         $overduePayableTotal = (int) BotSocialPayable::query()
             ->forUser($telegramUserId)
             ->active()
             ->whereNotNull('expected_back_at')
             ->where('expected_back_at', '<', now())
-            ->sum('amount');
+            ->get()
+            ->sum(fn (BotSocialPayable $row) => $row->remainingAmount());
 
         $share = $income > 0 ? round(($outboundMonth / $income) * 100, 1) : 0.0;
         $repaidShare = $outboundMonth > 0 ? round(($repaidMonth / $outboundMonth) * 100, 1) : 0.0;
@@ -547,19 +575,25 @@ class SocialLiquidityService
         $query = BotSocialReceivable::query()
             ->forUser($userId)
             ->active()
-            ->where('amount', $amount)
             ->orderBy('created_at');
 
         if ($name !== '') {
             $match = (clone $query)
                 ->whereRaw('LOWER(counterparty_name) = ?', [mb_strtolower($name)])
-                ->first();
+                ->get()
+                ->first(fn (BotSocialReceivable $row) => $row->remainingAmount() > 0);
             if ($match !== null) {
                 return $match;
             }
         }
 
-        return $query->first();
+        $withRoom = (clone $query)->get()
+            ->first(fn (BotSocialReceivable $row) => $row->remainingAmount() >= $amount);
+        if ($withRoom !== null) {
+            return $withRoom;
+        }
+
+        return $query->get()->first(fn (BotSocialReceivable $row) => $row->remainingAmount() > 0);
     }
 
     private function findActivePayable(BotTransaction $transaction): ?BotSocialPayable
@@ -571,19 +605,25 @@ class SocialLiquidityService
         $query = BotSocialPayable::query()
             ->forUser($userId)
             ->active()
-            ->where('amount', $amount)
             ->orderBy('created_at');
 
         if ($name !== '') {
             $match = (clone $query)
                 ->whereRaw('LOWER(counterparty_name) = ?', [mb_strtolower($name)])
-                ->first();
+                ->get()
+                ->first(fn (BotSocialPayable $row) => $row->remainingAmount() > 0);
             if ($match !== null) {
                 return $match;
             }
         }
 
-        return $query->first();
+        $withRoom = (clone $query)->get()
+            ->first(fn (BotSocialPayable $row) => $row->remainingAmount() >= $amount);
+        if ($withRoom !== null) {
+            return $withRoom;
+        }
+
+        return $query->get()->first(fn (BotSocialPayable $row) => $row->remainingAmount() > 0);
     }
 
     /**
@@ -594,21 +634,29 @@ class SocialLiquidityService
         $due = $row->expected_back_at;
         $isActive = $row->status === 'active';
         $isOverdue = $isActive && $due !== null && $due->isPast();
+        $original = (int) $row->amount;
+        $remaining = $row->remainingAmount();
+        $repaid = max(0, $original - $remaining);
+        $isPartial = $isActive && $repaid > 0 && $remaining > 0;
 
         $statusLabel = match ($row->status) {
             'settled' => 'Lunas',
             'written_off' => 'Direlakan',
             'disputed' => 'Sengketa',
-            default => $isOverdue ? 'Jatuh tempo' : 'Aktif',
+            default => $isPartial
+                ? 'Cicilan'
+                : ($isOverdue ? 'Jatuh tempo' : 'Aktif'),
         };
 
         $followUp = match ($row->status) {
             'settled' => $kind === 'receivable' ? 'Piutang ditutup' : 'Utang ditutup',
             'written_off' => 'Masuk Sosial & Keluarga',
             'disputed' => 'Di luar perhitungan',
-            default => $isOverdue
-                ? ($kind === 'receivable' ? 'Saatnya ditagih' : 'Saatnya dibayar')
-                : 'Menunggu',
+            default => $isPartial
+                ? ('Sisa Rp'.number_format($remaining, 0, ',', '.').' — menunggu cicilan berikutnya')
+                : ($isOverdue
+                    ? ($kind === 'receivable' ? 'Saatnya ditagih' : 'Saatnya dibayar')
+                    : 'Menunggu'),
         };
 
         $dueLabel = $due ? $due->timezone(config('app.timezone', 'Asia/Jakarta'))->format('j/n/Y') : '—';
@@ -617,7 +665,10 @@ class SocialLiquidityService
             'id' => (int) $row->id,
             'kind' => $kind,
             'name' => trim((string) $row->counterparty_name) !== '' ? (string) $row->counterparty_name : '—',
-            'amount' => (int) $row->amount,
+            'amount' => $original,
+            'amount_remaining' => $remaining,
+            'amount_repaid' => $repaid,
+            'is_partial' => $isPartial,
             'purpose' => trim((string) ($row->purpose ?? '')) !== '' ? (string) $row->purpose : '—',
             'status' => (string) $row->status,
             'status_label' => $statusLabel,

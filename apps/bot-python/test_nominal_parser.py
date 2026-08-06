@@ -36,6 +36,19 @@ class NominalParserTests(unittest.TestCase):
     def test_suffix_jt(self) -> None:
         self.assertEqual(parse_nominal_from_text("bayar cicilan 1.2jt"), 1_200_000)
 
+    def test_compound_jt_ratus(self) -> None:
+        self.assertEqual(
+            parse_nominal_from_text("sargib mengembalikan uang yang dia pinjam tapi baru 2 jt 5 ratus"),
+            2_500_000,
+        )
+        self.assertEqual(parse_nominal_from_text("bayar 2 juta 5 ratus"), 2_500_000)
+
+    def test_compound_jt_rb(self) -> None:
+        self.assertEqual(parse_nominal_from_text("transfer 2 jt 500rb"), 2_500_000)
+
+    def test_compound_jt_setengah(self) -> None:
+        self.assertEqual(parse_nominal_from_text("pinjam 2 jt setengah"), 2_500_000)
+
     def test_grouped_indonesian(self) -> None:
         self.assertEqual(parse_nominal_from_text("makan malam 65.700"), 65_700)
 

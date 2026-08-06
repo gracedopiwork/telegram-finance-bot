@@ -143,4 +143,46 @@ class SocialLiquidityTrackerTest extends TestCase
         $this->assertDatabaseMissing('bot_social_payables', ['id' => $row->id]);
         $this->assertDatabaseMissing('bot_transactions', ['id' => $tx->id]);
     }
+
+    public function test_partial_piutang_repay_keeps_remaining(): void
+    {
+        $out = BotTransaction::query()->create([
+            'telegram_user_id' => 21,
+            'recorded_at' => now(),
+            'type' => TransactionTaxonomy::TYPE_RECEIVABLE_OUT,
+            'category' => 'Lain-lain',
+            'sub_category' => 'Sargib',
+            'amount' => 5_000_000,
+            'nature' => 'Need',
+            'mood' => 'Neutral',
+            'is_impulsive' => false,
+            'notes' => 'Pinjamin Sargib 5jt buat kerja',
+            'source' => 'manual',
+        ]);
+        $row = app(SocialLiquidityService::class)->openFromOutbound($out);
+        $this->assertSame(5_000_000, (int) $row->amount_remaining);
+
+        $partial = BotTransaction::query()->create([
+            'telegram_user_id' => 21,
+            'recorded_at' => now(),
+            'type' => TransactionTaxonomy::TYPE_RECEIVABLE_IN,
+            'category' => 'Lain-lain',
+            'sub_category' => 'Sargib',
+            'amount' => 2_500_000,
+            'nature' => 'Need',
+            'mood' => 'Neutral',
+            'is_impulsive' => false,
+            'notes' => 'Sargib mengembalikan uang yang dia pinjam tapi baru 2 jt 5 ratus',
+            'source' => 'manual',
+        ]);
+        $updated = app(SocialLiquidityService::class)->settleFromInbound($partial);
+
+        $this->assertNotNull($updated);
+        $this->assertSame(BotSocialReceivable::STATUS_ACTIVE, $updated->status);
+        $this->assertSame(2_500_000, (int) $updated->amount_remaining);
+
+        $tracker = app(SocialLiquidityService::class)->trackerReceivables(21);
+        $this->assertTrue($tracker[0]['is_partial']);
+        $this->assertSame(2_500_000, $tracker[0]['amount_remaining']);
+    }
 }

@@ -77,6 +77,7 @@
                     <tr>
                         <th class="px-3 py-2 font-semibold">Nama</th>
                         <th class="px-3 py-2 font-semibold">Nominal</th>
+                        <th class="px-3 py-2 font-semibold">Sisa</th>
                         <th class="px-3 py-2 font-semibold">Tujuan</th>
                         <th class="px-3 py-2 font-semibold">Jatuh tempo</th>
                         <th class="px-3 py-2 font-semibold">Status</th>
@@ -88,6 +89,9 @@
                         <tr class="{{ !empty($row['is_overdue']) ? 'bg-amber-50/60' : '' }}">
                             <td class="px-3 py-2 font-medium text-navy-900">{{ $row['name'] }}</td>
                             <td class="px-3 py-2 tabular-nums">{{ $fmt((int) $row['amount']) }}</td>
+                            <td class="px-3 py-2 tabular-nums {{ !empty($row['is_partial']) ? 'text-amber-800 font-semibold' : 'text-slate-700' }}">
+                                {{ $fmt((int) ($row['amount_remaining'] ?? $row['amount'])) }}
+                            </td>
                             <td class="px-3 py-2 text-slate-600">{{ $row['purpose'] }}</td>
                             <td class="px-3 py-2 tabular-nums {{ !empty($row['is_overdue']) ? 'text-rose-700 font-semibold' : 'text-slate-700' }}">
                                 {{ $row['due_label'] ?? '—' }}
@@ -173,6 +177,7 @@
                     <tr>
                         <th class="px-3 py-2 font-semibold">Nama</th>
                         <th class="px-3 py-2 font-semibold">Nominal</th>
+                        <th class="px-3 py-2 font-semibold">Sisa</th>
                         <th class="px-3 py-2 font-semibold">Tujuan</th>
                         <th class="px-3 py-2 font-semibold">Jatuh tempo</th>
                         <th class="px-3 py-2 font-semibold">Status</th>
@@ -184,6 +189,9 @@
                         <tr class="{{ !empty($row['is_overdue']) ? 'bg-amber-50/60' : '' }}">
                             <td class="px-3 py-2 font-medium text-navy-900">{{ $row['name'] }}</td>
                             <td class="px-3 py-2 tabular-nums">{{ $fmt((int) $row['amount']) }}</td>
+                            <td class="px-3 py-2 tabular-nums {{ !empty($row['is_partial']) ? 'text-amber-800 font-semibold' : 'text-slate-700' }}">
+                                {{ $fmt((int) ($row['amount_remaining'] ?? $row['amount'])) }}
+                            </td>
                             <td class="px-3 py-2 text-slate-600">{{ $row['purpose'] }}</td>
                             <td class="px-3 py-2 tabular-nums {{ !empty($row['is_overdue']) ? 'text-rose-700 font-semibold' : 'text-slate-700' }}">
                                 {{ $row['due_label'] ?? '—' }}

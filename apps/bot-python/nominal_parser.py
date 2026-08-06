@@ -8,6 +8,19 @@ _JT_PATTERN = re.compile(
     r"(\d+(?:[.,]\d+)?)\s*(?:jt|juta|milyun|miliar)\b",
     re.IGNORECASE,
 )
+# "2 jt 5 ratus" / "2 juta 500 rb" / "2 jt setengah"
+_COMPOUND_JT_RATUS = re.compile(
+    r"(\d+(?:[.,]\d+)?)\s*(?:jt|juta)\s+(\d+(?:[.,]\d+)?)\s*ratus\b",
+    re.IGNORECASE,
+)
+_COMPOUND_JT_RIBU = re.compile(
+    r"(\d+(?:[.,]\d+)?)\s*(?:jt|juta)\s+(\d+(?:[.,]\d+)?)\s*(?:rb|br|ribu|k)\b",
+    re.IGNORECASE,
+)
+_COMPOUND_JT_HALF = re.compile(
+    r"(\d+(?:[.,]\d+)?)\s*(?:jt|juta)\s+setengah\b",
+    re.IGNORECASE,
+)
 # k/rb menempel pada angka (50k, 50rb). "br" = typo umum untuk "rb".
 # "ribu" / "rb" / "br" boleh pakai spasi (50 ribu, 90 br).
 _RIBU_ATTACHED = re.compile(
@@ -95,6 +108,27 @@ def _parse_ribu_amount(text: str) -> int | None:
     return None
 
 
+def _parse_compound_jt_amount(text: str) -> int | None:
+    """Gabungan juta + pecahan: 2 jt 5 ratus → 2.500.000."""
+    match = _COMPOUND_JT_RATUS.search(text)
+    if match:
+        millions = _token_to_float(match.group(1)) * 1_000_000
+        hundreds = _token_to_float(match.group(2)) * 100_000
+        return max(1, int(round(millions + hundreds)))
+
+    match = _COMPOUND_JT_RIBU.search(text)
+    if match:
+        millions = _token_to_float(match.group(1)) * 1_000_000
+        thousands = _token_to_float(match.group(2)) * 1_000
+        return max(1, int(round(millions + thousands)))
+
+    match = _COMPOUND_JT_HALF.search(text)
+    if match:
+        return max(1, int(round(_token_to_float(match.group(1)) * 1_000_000 + 500_000)))
+
+    return None
+
+
 def parse_nominal_from_text(text: str) -> int:
     """Ekstrak nominal integer dari teks. Raise ValueError jika tidak ada angka valid."""
     cleaned = text.strip()
@@ -106,6 +140,10 @@ def parse_nominal_from_text(text: str) -> int:
     trailing_plain = _parse_trailing_plain_amount(cleaned)
     if trailing_plain is not None:
         return trailing_plain
+
+    compound = _parse_compound_jt_amount(lower)
+    if compound is not None:
+        return compound
 
     jt_match = _JT_PATTERN.search(lower)
     if jt_match:
