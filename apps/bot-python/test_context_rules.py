@@ -256,6 +256,25 @@ class ContextRulesTests(unittest.TestCase):
             "Lain-lain",
         )
 
+    def test_grace_kembalikan_adalah_piutang_masuk(self) -> None:
+        self.assertClass(
+            "Grace kembalikan uang yang dipinjam sebelumnya 2700000",
+            "Piutang Masuk",
+            "Lain-lain",
+        )
+        hit = classify_from_text(
+            "Grace kembalikan uang yang dipinjam sebelumnya | buat Kepentingan kerja"
+        )
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["jenis"], "Piutang Masuk")
+
+    def test_empat_arah_likuiditas_sosial(self) -> None:
+        self.assertClass("pinjamin grace 500rb buat obat", "Piutang Keluar", "Lain-lain")
+        self.assertClass("grace balikin uang 500rb", "Piutang Masuk", "Lain-lain")
+        self.assertClass("pinjam dari ayuti 1jt", "Utang Masuk", "Lain-lain")
+        self.assertClass("bayar utang ke ayuti 1jt", "Utang Keluar", "Lain-lain")
+
     def test_dp_rumah_saving_future(self) -> None:
         hit = classify_from_text("dp rumah 50jt")
         self.assertIsNotNone(hit)
