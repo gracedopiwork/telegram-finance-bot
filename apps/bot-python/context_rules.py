@@ -934,6 +934,25 @@ _UTANG_KELUAR = (
     "bayar balik hutang",
 )
 
+_UTANG_KELUAR_PATTERNS = (
+    re.compile(
+        r"\b(?:saya|aku|gue|gw)\s+(?:mengembalikan|kembalikan|balikin)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:mengembalikan|kembalikan)\s+uang\b.*\b(?:yang\s+)?(?:saya|aku|gue|gw)\s+pinjam\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\byang\s+(?:saya|aku|gue|gw)\s+pinjam\b.*\b(?:mengembalikan|kembalikan)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:bayar|lunasi|lunasin|balikin|kembalikan|mengembalikan)\s+(?:utang|hutang|pinjaman)\s+(?:ke|kepada|sama)\b",
+        re.IGNORECASE,
+    ),
+)
+
 # "utang ke X" / "pinjam ke X" tanpa sinyal pinjamkan ATAU terima/bayar → AMBIGU
 _AMBIGUOUS_UTANG_PATTERNS = (
     re.compile(r"\b(?:ng)?utang\s+ke\b", re.IGNORECASE),
@@ -1219,7 +1238,7 @@ def is_receivable_repay(text: str) -> bool:
     ):
         return False
     if re.search(
-        r"\b(?:saya|aku|gue|gw)\s+(?:akan\s+|mau\s+|rencana\s+)?(?:kembalikan|balikin|bayar\s+balik)\b",
+        r"\b(?:saya|aku|gue|gw)\s+(?:akan\s+|mau\s+|rencana\s+)?(?:mengembalikan|kembalikan|balikin|bayar\s+balik)\b",
         lower,
     ):
         return False
@@ -1306,7 +1325,7 @@ def is_social_debt_repay(text: str) -> bool:
     """Bayar balik pinjaman sosial — Utang Keluar (bukan Cicilan bank/pinjol)."""
     lower = _normalize_typos(text)
     if is_pinjol_or_cash_loan(lower) or _contains(lower, _CICILAN):
-        if not _contains(lower, _UTANG_KELUAR):
+        if not _contains(lower, _UTANG_KELUAR) and not any(p.search(lower) for p in _UTANG_KELUAR_PATTERNS):
             return False
         if any(k in lower for k in ("pinjol", "pinjaman online", "kartu kredit", "paylater", "kpr", "cicilan motor", "cicilan mobil")):
             return False
@@ -1320,8 +1339,18 @@ def is_social_debt_repay(text: str) -> bool:
             "lunasi",
             "bayar balik hutang",
             "bayar balik utang",
+            "saya kembalikan",
+            "saya mengembalikan",
         )
     ):
+        return True
+    if any(p.search(lower) for p in _UTANG_KELUAR_PATTERNS):
+        # Baru pinjam + rencana kembalikan besok → Utang Masuk, bukan Keluar.
+        if re.search(r"\b(?:saya|aku|gue|gw)\s+pinjam(?!kan|i|in)\b", lower) and re.search(
+            r"\b(?:besok|lusa|nanti|rencana|minggu\s+depan|bulan\s+depan)\b",
+            lower,
+        ):
+            return False
         return True
     return _contains(lower, _UTANG_KELUAR)
 
