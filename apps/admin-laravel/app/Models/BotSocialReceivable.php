@@ -22,8 +22,10 @@ class BotSocialReceivable extends Model
         'outbound_transaction_id',
         'settled_transaction_id',
         'counterparty_name',
+        'purpose',
         'amount',
         'expected_back_at',
+        'due_notified_at',
         'status',
         'mood_at_lend',
     ];
@@ -32,6 +34,7 @@ class BotSocialReceivable extends Model
     {
         return [
             'expected_back_at' => 'datetime',
+            'due_notified_at' => 'datetime',
             'amount' => 'integer',
         ];
     }

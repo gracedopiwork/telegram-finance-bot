@@ -48,6 +48,8 @@ return [
     'telegram' => [
         'bot_url' => env('TELEGRAM_BOT_URL'),
         'bot_username' => env('TELEGRAM_BOT_USERNAME'),
+        /** Token BotFather — dipakai notifikasi jatuh tempo likuiditas sosial */
+        'bot_token' => env('TELEGRAM_BOT_TOKEN', ''),
     ],
 
     'bot' => [

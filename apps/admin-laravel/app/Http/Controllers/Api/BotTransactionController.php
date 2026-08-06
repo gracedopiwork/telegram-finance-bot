@@ -50,6 +50,8 @@ class BotTransactionController extends Controller
             'recorded_at' => ['nullable', 'date'],
             'taxonomy_flags' => ['nullable', 'array'],
             'taxonomy_flags.*' => ['string', 'max:64'],
+            'social_purpose' => ['nullable', 'string', 'max:180'],
+            'social_expected_back_at' => ['nullable', 'date'],
         ]));
 
         $category = app(CategoryAutoRegisterService::class)->resolveOrRegister(
@@ -63,6 +65,11 @@ class BotTransactionController extends Controller
             (string) $validated['notes'],
         );
 
+        $notes = (string) $validated['notes'];
+        if (! empty($validated['social_purpose']) && ! str_contains(mb_strtolower($notes), mb_strtolower((string) $validated['social_purpose']))) {
+            $notes = trim($notes.' | buat '.$validated['social_purpose']);
+        }
+
         $transaction = BotTransaction::query()->create([
             'telegram_user_id' => (int) $validated['telegram_user_id'],
             'recorded_at' => isset($validated['recorded_at'])
@@ -75,13 +82,21 @@ class BotTransactionController extends Controller
             'nature' => $validated['nature'],
             'mood' => $validated['mood'],
             'is_impulsive' => (bool) $validated['is_impulsive'],
-            'notes' => $validated['notes'],
+            'notes' => $notes,
             'source' => $validated['source'] ?? 'manual',
             'taxonomy_flags' => $validated['taxonomy_flags'] ?? null,
         ]);
 
         if (TransactionTaxonomy::isSocialLiquidity((string) $transaction->type)) {
-            app(SocialLiquidityService::class)->syncFromTransaction($transaction);
+            $social = app(SocialLiquidityService::class);
+            $social->syncFromTransaction($transaction);
+            if (! empty($validated['social_expected_back_at']) || ! empty($validated['social_purpose'])) {
+                $social->applyBotMeta(
+                    $transaction,
+                    isset($validated['social_purpose']) ? (string) $validated['social_purpose'] : null,
+                    isset($validated['social_expected_back_at']) ? (string) $validated['social_expected_back_at'] : null,
+                );
+            }
         }
 
         return response()->json([

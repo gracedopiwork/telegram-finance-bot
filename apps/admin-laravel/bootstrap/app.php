@@ -40,6 +40,12 @@ return Application::configure(basePath: dirname(__DIR__))
             ->everyFiveMinutes()
             ->timezone($tz)
             ->withoutOverlapping();
+
+        $schedule->command('social-liquidity:notify-due')
+            ->dailyAt('09:00')
+            ->timezone($tz)
+            ->withoutOverlapping()
+            ->onOneServer();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [

@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any
 
 from yfd_taxonomy import grey_area_question
+from social_meta import social_missing_name_question
 
 
 def clarification_question(parsed: dict[str, Any], source_text: str) -> str | None:
@@ -18,6 +19,10 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
 
     text = f"{source_text} {parsed.get('keterangan', '')}".lower()
     category = str(parsed.get("kategori") or "").strip().lower()
+
+    social_q = social_missing_name_question(parsed, source_text)
+    if social_q:
+        return social_q
 
     checkers = (
         _is_ambiguous_utang_arah,

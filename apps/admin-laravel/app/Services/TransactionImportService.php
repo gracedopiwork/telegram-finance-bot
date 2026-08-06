@@ -266,7 +266,7 @@ class TransactionImportService
                 continue;
             }
 
-            BotTransaction::query()->create([
+            $tx = BotTransaction::query()->create([
                 'telegram_user_id' => $telegramUserId,
                 'recorded_at' => $parsed['recorded_at'],
                 'type' => $parsed['type'],
@@ -279,6 +279,9 @@ class TransactionImportService
                 'notes' => $parsed['notes'],
                 'source' => 'manual',
             ]);
+            if (TransactionTaxonomy::isSocialLiquidity((string) $tx->type)) {
+                app(SocialLiquidityService::class)->syncFromTransaction($tx);
+            }
             $imported++;
             $monthKey = $parsed['recorded_at'] instanceof Carbon
                 ? $parsed['recorded_at']->format('Y-m')

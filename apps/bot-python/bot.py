@@ -36,6 +36,7 @@ from ai_quota import (
 from portal_link import fetch_portal_login_url
 from category_rules_cache import get_rules, refresh as refresh_category_rules
 from clarification_rules import clarification_question
+from social_meta import enrich_social_liquidity_fields
 from transaction_store import (
     format_prescription_bucket,
     resolve_transaction_bucket,
@@ -267,6 +268,7 @@ def finalize_parsed_transaction(
         trust_ai=trust_ai_impulsif,
     )
     apply_transaction_date(parsed, source_text)
+    enrich_social_liquidity_fields(parsed, source_text)
     return parsed
 
 

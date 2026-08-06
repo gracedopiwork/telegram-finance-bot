@@ -6,13 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Hutang sosial aktif: dibuka saat Utang Masuk, ditutup saat Utang Keluar.
+ * Utang sosial aktif: dibuka saat Utang Masuk, ditutup saat Utang Keluar.
  */
 class BotSocialPayable extends Model
 {
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_SETTLED = 'settled';
+
+    public const STATUS_DISPUTED = 'disputed';
 
     protected $table = 'bot_social_payables';
 
@@ -21,7 +23,10 @@ class BotSocialPayable extends Model
         'inbound_transaction_id',
         'settled_transaction_id',
         'counterparty_name',
+        'purpose',
         'amount',
+        'expected_back_at',
+        'due_notified_at',
         'status',
         'mood_at_borrow',
     ];
@@ -30,6 +35,8 @@ class BotSocialPayable extends Model
     {
         return [
             'amount' => 'integer',
+            'expected_back_at' => 'datetime',
+            'due_notified_at' => 'datetime',
         ];
     }
 

@@ -30,6 +30,7 @@ use App\Http\Controllers\Portal\CheckoutController as PortalCheckoutController;
 use App\Http\Controllers\Portal\DashboardController as PortalDashboardController;
 use App\Http\Controllers\Portal\DiagnosticController as PortalDiagnosticController;
 use App\Http\Controllers\Portal\TimezoneController as PortalTimezoneController;
+use App\Http\Controllers\Portal\SocialLiquidityController as PortalSocialLiquidityController;
 use App\Http\Controllers\Portal\TransactionsController as PortalTransactionsController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
@@ -252,6 +253,12 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('/dashboard', [PortalDashboardController::class, 'index'])->name('dashboard');
             Route::post('/dashboard/generate-manual', [PortalDashboardController::class, 'generateManualFinancialGuidance'])->name('dashboard.generate-manual');
             Route::post('/emotional/generate-manual', [PortalDashboardController::class, 'generateManualBehavioralGuidance'])->name('emotional.generate-manual');
+            Route::post('/likuiditas-sosial/piutang/{receivable}/relakan', [PortalSocialLiquidityController::class, 'writeOffReceivable'])
+                ->name('social-liquidity.receivables.write-off');
+            Route::post('/likuiditas-sosial/piutang/{receivable}/sengketa', [PortalSocialLiquidityController::class, 'disputeReceivable'])
+                ->name('social-liquidity.receivables.dispute');
+            Route::post('/likuiditas-sosial/utang/{payable}/sengketa', [PortalSocialLiquidityController::class, 'disputePayable'])
+                ->name('social-liquidity.payables.dispute');
         });
     });
 });

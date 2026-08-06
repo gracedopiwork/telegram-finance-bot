@@ -52,16 +52,23 @@ def _format_recorded_at(recorded_at: datetime | None) -> str:
 
 
 def _classification_payload(parsed: dict) -> dict:
+    sub = str(parsed.get("sub_kategori") or parsed.get("sub_category") or "").strip()
     payload = {
         "type": parsed["jenis"],
         "category": parsed["kategori"],
-        "sub_category": "-",
+        "sub_category": sub if sub and sub != "-" else "-",
         "nature": parsed["sifat"],
         "notes": str(parsed.get("keterangan", "")).strip(),
     }
     flags = parsed.get("taxonomy_flags")
     if isinstance(flags, list) and flags:
         payload["taxonomy_flags"] = flags
+    purpose = str(parsed.get("social_purpose") or "").strip()
+    if purpose:
+        payload["social_purpose"] = purpose
+    due = str(parsed.get("social_expected_back_at") or "").strip()
+    if due:
+        payload["social_expected_back_at"] = due
     return payload
 
 

@@ -12,7 +12,16 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('telegram_user_id');
             $table->timestamp('recorded_at');
-            $table->enum('type', ['Pemasukan', 'Pengeluaran']);
+            $table->enum('type', [
+                'Pemasukan',
+                'Pengeluaran',
+                'Saving/Investment',
+                'Kewajiban Pajak',
+                'Piutang Keluar',
+                'Piutang Masuk',
+                'Utang Masuk',
+                'Utang Keluar',
+            ]);
             $table->string('category', 64);
             $table->string('sub_category', 128);
             $table->unsignedBigInteger('amount');
