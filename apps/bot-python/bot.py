@@ -37,6 +37,7 @@ from portal_link import fetch_portal_login_url
 from category_rules_cache import get_rules, refresh as refresh_category_rules
 from clarification_rules import clarification_question
 from social_meta import enrich_social_liquidity_fields, social_missing_details_question
+from social_liquidity_api import fetch_social_liquidity, format_social_list
 from transaction_store import (
     format_prescription_bucket,
     resolve_transaction_bucket,
@@ -978,6 +979,8 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "/activate - aktivasi lisensi\n"
         "/hapuskilat - hapus data terakhir\n"
         "/hariini - rangkuman pengeluaran hari ini\n"
+        "/piutang - daftar piutang aktif (tracker)\n"
+        "/utang - daftar utang aktif (tracker)\n"
         "/kuota - sisa kuota AI parsing bulan ini\n"
         "/web - link masuk dashboard (otomatis)\n\n"
         "Login dashboard:\n"
@@ -1129,6 +1132,33 @@ async def hariini_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         f"Total pengeluaran: Rp{total_expense:,}\n"
         f"Cashflow: Rp{cashflow:,}"
     )
+
+
+async def _social_list_handler(update: Update, kind: str) -> None:
+    if not update.message:
+        return
+    user = update.effective_user
+    user_id = user.id if user else 0
+    if not user_id or not is_license_active_for_user(user_id):
+        await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    ok, payload, err = fetch_social_liquidity(user_id, kind=kind)
+    if not ok:
+        await update.message.reply_text(
+            f"Gagal ambil daftar {kind} dari dashboard.\n{err}"
+        )
+        return
+
+    await update.message.reply_text(format_social_list(kind, payload))
+
+
+async def piutang_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await _social_list_handler(update, "piutang")
+
+
+async def utang_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await _social_list_handler(update, "utang")
 
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1499,6 +1529,8 @@ def main() -> None:
     app.add_handler(CommandHandler("activate", activate_handler))
     app.add_handler(CommandHandler("hapuskilat", hapuskilat_handler))
     app.add_handler(CommandHandler("hariini", hariini_handler))
+    app.add_handler(CommandHandler("piutang", piutang_handler))
+    app.add_handler(CommandHandler("utang", utang_handler))
     app.add_handler(CommandHandler("kuota", kuota_handler))
     app.add_handler(CommandHandler("web", web_handler))
     app.add_handler(CallbackQueryHandler(mood_callback_handler, pattern=r"^mood:"))
