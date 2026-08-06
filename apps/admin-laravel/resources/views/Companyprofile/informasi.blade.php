@@ -124,6 +124,23 @@
         </div>
     </section>
 
+    {{-- ============== Legal Information ============== --}}
+    <section class="bg-surface-container-low border border-outline-variant rounded-2xl p-8 md:p-10">
+        <div class="flex items-start gap-4 mb-4">
+            <div class="bg-primary-container text-on-primary p-3 rounded-lg flex-shrink-0">
+                <span class="material-symbols-outlined text-[28px]">gavel</span>
+            </div>
+            <div>
+                <h2 class="font-headline-lg text-headline-lg text-primary mb-2">
+                    {{ ($page['page.informasi.legal_title'] ?? null) ?: 'Legal Information' }}
+                </h2>
+                <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed max-w-3xl">
+                    {{ ($page['page.informasi.legal_body'] ?? null) ?: 'Your Financial Doctor merupakan brand yang dimiliki dan dioperasikan oleh Ayuti Bulaan. Nomor Induk Berusaha (NIB): 1205260000123' }}
+                </p>
+            </div>
+        </div>
+    </section>
+
     {{-- ============== FAQ ============== --}}
     <section>
         <div class="text-center mb-10">
