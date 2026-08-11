@@ -124,6 +124,53 @@ class ClarificationRulesTests(unittest.TestCase):
         )
         self.assertIn("rusak", question or "")
 
+    def test_hadiah_iphone_skips_hp_and_social_clarification(self) -> None:
+        text = "Hadiah beli iphone 15 jt buat Keluarga. Terencana"
+        question = clarification_question(
+            {
+                "jenis": "Pengeluaran",
+                "kategori": "Hadiah",
+                "keterangan": "Hadiah iPhone untuk keluarga",
+                "needs_clarification": True,
+                "clarification_question": (
+                    "HP ini ganti HP utama yang rusak (setara), "
+                    "upgrade model terbaru, atau khusus operasional bisnis?"
+                ),
+            },
+            text,
+        )
+        self.assertIsNone(question)
+        social_misclassified = clarification_question(
+            {
+                "jenis": "Piutang Keluar",
+                "kategori": "Lain-lain",
+                "keterangan": text,
+            },
+            text,
+        )
+        self.assertIsNone(social_misclassified)
+
+    def test_beli_iphone_sendiri_tetap_grey_area(self) -> None:
+        question = clarification_question(
+            {"kategori": "Lifestyle & Hiburan", "keterangan": "Beli iPhone"},
+            "beli iphone 15jt",
+        )
+        self.assertIn("rusak", question or "")
+
+    def test_hadiah_keeps_impulsif_clarification(self) -> None:
+        question = clarification_question(
+            {
+                "jenis": "Pengeluaran",
+                "kategori": "Hadiah",
+                "needs_clarification": True,
+                "clarification_question": (
+                    "Transaksi ini terencana sebelumnya atau spontan?"
+                ),
+            },
+            "hadiah 200rb",
+        )
+        self.assertIn("terencana", question or "")
+
     def test_generic_kpr_pbb_requires_clarification(self) -> None:
         question = clarification_question(
             {"kategori": "Tempat Tinggal", "keterangan": "Bayar PBB"},

@@ -112,6 +112,30 @@ FOOD_CATEGORIES = frozenset({
     "Minuman",
 })
 
+# Signal No taxonomy §3.5 — "terencana" menang atas heuristic hadiah=impulsif.
+_UNPLANNED_TERENCANA = (
+    "tidak terencana",
+    "nggak terencana",
+    "ngga terencana",
+    "gak terencana",
+    "ga terencana",
+    "belum terencana",
+    "ga rencanain",
+    "gak rencanain",
+    "nggak rencanain",
+    "tidak rencanain",
+)
+
+PLANNED_PURCHASE_KEYWORDS = (
+    "sudah rencanain",
+    "udah rencanain",
+    "sudah direncanakan",
+    "udah direncanakan",
+    "sudah rencanakan",
+    "tabungan buat ini",
+    "langganan bulanan",
+)
+
 # Acara sosial terencana — bukan impulsif meski nominal besar / mood Happy.
 PLANNED_SOCIAL_KEYWORDS = (
     "ulang tahun",
@@ -188,6 +212,16 @@ def is_planned_social(combined: str) -> bool:
     return any(keyword in combined for keyword in PLANNED_SOCIAL_KEYWORDS)
 
 
+def has_planned_purchase_signal(combined: str) -> bool:
+    """§3.5 Signal No: terencana / sudah rencanain. 'tidak terencana' bukan planned."""
+    lower = combined.lower()
+    if any(keyword in lower for keyword in _UNPLANNED_TERENCANA):
+        return False
+    if "terencana" in lower:
+        return True
+    return any(keyword in lower for keyword in PLANNED_PURCHASE_KEYWORDS)
+
+
 def is_essential_obligation(parsed: dict[str, Any], combined: str) -> bool:
     if parsed.get("jenis") != "Pengeluaran":
         return False
@@ -260,6 +294,9 @@ def resolve_impulsif(
 
     combined = _combined_text(parsed, source_text)
     nominal = int(parsed.get("nominal", 0) or 0)
+
+    if has_planned_purchase_signal(combined):
+        return "No"
 
     if is_planned_social(combined):
         return "No"

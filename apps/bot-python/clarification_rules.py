@@ -9,20 +9,70 @@ from typing import Any
 
 from yfd_taxonomy import grey_area_question
 from social_meta import social_missing_details_question
+from context_rules import is_gift_expense
+
+
+def _is_gadget_grey_question(question: str) -> bool:
+    """HP/laptop rusak vs upgrade vs bisnis — §2.18, bukan untuk hadiah."""
+    q = (question or "").lower()
+    return any(
+        hint in q
+        for hint in (
+            "hp ini ganti",
+            "ganti hp utama",
+            "upgrade model terbaru",
+            "operasional bisnis",
+            "laptop/komputer ini",
+            "alat kerja utama yang rusak",
+            "upgrade karena fomo",
+            "upgrade krn fomo",
+        )
+    )
+
+
+def _is_social_liquidity_question(question: str) -> bool:
+    q = (question or "").lower()
+    return any(
+        hint in q
+        for hint in (
+            "likuiditas sosial",
+            "siapa yang meminjam",
+            "dari siapa pinjaman",
+            "tujuan pinjaman",
+            "kapan dikembalikan",
+            "kapan dibayar balik",
+        )
+    )
 
 
 def clarification_question(parsed: dict[str, Any], source_text: str) -> str | None:
     """Return a concise follow-up question when purpose changes the YFD bucket."""
-    ai_question = str(parsed.get("clarification_question") or "").strip()
-    if parsed.get("needs_clarification") is True and ai_question:
-        return ai_question
-
     text = f"{source_text} {parsed.get('keterangan', '')}".lower()
     category = str(parsed.get("kategori") or "").strip().lower()
+    jenis = str(parsed.get("jenis") or "").strip()
+    gift = is_gift_expense(text) or (
+        category == "hadiah" and jenis in {"", "Pengeluaran"}
+    )
 
-    social_q = social_missing_details_question(parsed, source_text)
-    if social_q:
-        return social_q
+    ai_question = str(parsed.get("clarification_question") or "").strip()
+    if parsed.get("needs_clarification") is True and ai_question:
+        if gift and (
+            _is_gadget_grey_question(ai_question) or _is_social_liquidity_question(ai_question)
+        ):
+            ai_question = ""
+        if ai_question:
+            return ai_question
+
+    # Hadiah bukan pinjaman — jangan tanya tracker utang/piutang.
+    if not gift:
+        social_q = social_missing_details_question(parsed, source_text)
+        if social_q:
+            return social_q
+
+    # Hadiah tidak punya grey area gadget (§2.18 HP hanya untuk HP sendiri).
+    # Pertanyaan impulsif terencana vs spontan tetap lewat AI question di atas.
+    if gift:
+        return None
 
     checkers = (
         _is_ambiguous_utang_arah,

@@ -288,6 +288,10 @@ Aturan:
    - Utang Keluar: bayar utang/hutang ke orang (sosial) — BUKAN Pengeluaran 4-bucket.
      * Cicilan lembaga (pinjol/KPR/kartu kredit/paylater) tetap Pengeluaran + Cicilan & Hutang.
    - PRINSIP: Likuiditas Sosial hanya mengubah kas & piutang/hutang. Belanja dari dana pinjaman (mis. bayar RS) tetap Pengeluaran + bucket.
+   - Hadiah/kado/parcel/tip yang DIBERI = Pengeluaran + Hadiah. BUKAN Likuiditas Sosial.
+     Beli gadget sebagai hadiah tidak perlu grey area HP rusak vs upgrade.
+   - Terima hadiah uang = Pemasukan (bukan kategori Hadiah).
+   - Pinjam/utang/talangin/nanti dia ganti tetap Likuiditas Sosial meski ada kata keluarga.
    - "utang ke [nama]" tanpa konteks = AMBIGU → needs_clarification (meminjamkan vs berhutang).
    - Hasil investasi (bunga/dividen cair) = Pemasukan, BUKAN Saving/Investment.
    - Donasi/sedekah/zakat/qurban = Pengeluaran + Sosial & Keluarga (bukan Piutang).
@@ -311,9 +315,9 @@ Aturan:
    - Proteksi: BPJS, premi asuransi jiwa/kesehatan/kendaraan/aset.
    - Lifestyle & Hiburan: Netflix, konser, gym/pilates berbayar, gadget upgrade.
    - Traveling: liburan, hotel, staycation, wisata.
-   - Sosial & Keluarga: donasi, sedekah, zakat, qurban, bantu keluarga.
+   - Sosial & Keluarga: donasi, sedekah, zakat, qurban, bantu keluarga (bukan hadiah barang).
    - Bisnis & Karir: modal usaha, tools kerja, marketing, software bisnis, konsumsi meeting kerja.
-   - Hadiah: kado, parcel, tip/tips.
+   - Hadiah: kado, parcel, tip/tips, hadiah beli barang untuk orang lain. BUKAN piutang/utang.
    - Cicilan & Hutang (§2.14):
      * Cicilan produktif / KPR investasi → Future Building / Need.
      * KPR rumah tinggal / cicilan konsumtif / paylater → Essential Living / Need.
@@ -332,7 +336,7 @@ Aturan:
 7) impulsif (§3.5) — TERPISAH dari sifat Need/Wants; JANGAN pakai nominal sebagai dasar:
    Signal Yes: "tiba-tiba", "spontan", "kalap", "stres jadi beli", "lihat Instagram langsung beli",
    "ga rencanain sih", FOMO.
-   Signal No: "sudah rencanain", "tabungan buat ini", "meeting klien", "langganan bulanan".
+   Signal No: "terencana", "sudah rencanain", "tabungan buat ini", "meeting klien", "langganan bulanan".
    Jika tidak ada signal → needs_clarification + tanya: "Transaksi ini terencana sebelumnya atau spontan?"
    Essential + Need + Impulsif Yes adalah VALID (§3.6) — bukan kontradiksi.
 8) tanggal: opsional. Isi YYYY-MM-DD HANYA jika user menyebut tanggal transaksi.
@@ -344,6 +348,7 @@ Aturan:
    DP/pajak kendaraan kerja vs lifestyle; KPR/PBB tinggal vs investasi; subscription bisnis vs hiburan;
    coaching skill vs hobi; transport tujuan; ART menunjang kerja vs kenyamanan; pinjol mendesak vs konsumsi;
    notaris aset induk; pakaian kerja vs fashion; fisioterapi resep vs pilihan sendiri.
+   JANGAN klarifikasi HP/laptop rusak vs upgrade jika transaksi adalah hadiah/kado.
    Set needs_clarification=true dan clarification_question singkat (bahasa Indonesia taxonomy).
 12) JANGAN menentukan bucket. Sistem yang menghitung bucket.
 """

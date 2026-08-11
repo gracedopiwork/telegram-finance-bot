@@ -134,6 +134,31 @@ class ImpulsiveRulesTests(unittest.TestCase):
         }
         self.assertEqual(resolve_impulsif(parsed, "hadiah atas jasa orang 5k happy"), "Yes")
 
+    def test_hadiah_terencana_not_impulsif(self) -> None:
+        parsed = {
+            "keterangan": "Hadiah beli iPhone untuk keluarga",
+            "jenis": "Pengeluaran",
+            "kategori": "Hadiah",
+            "sifat": "Wants",
+            "nominal": 15_000_000,
+        }
+        self.assertEqual(
+            resolve_impulsif(
+                parsed,
+                "Hadiah beli iphone 15 jt buat Keluarga. Terencana",
+            ),
+            "No",
+        )
+
+    def test_tidak_terencana_tetap_impulsif(self) -> None:
+        parsed = {
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Wants",
+            "nominal": 80_000,
+        }
+        self.assertEqual(resolve_impulsif(parsed, "gofood 80rb tidak terencana"), "Yes")
+
 
 if __name__ == "__main__":
     unittest.main()

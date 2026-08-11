@@ -1,10 +1,15 @@
 ﻿"""Rule konteks transaksi YFD — deterministik sebelum/sesudah AI.
 
-Prioritas:
+Prioritas (YFD AI Taxonomy v1.3):
 0) Jenis eksplisit user ("Pengeluaran"/"Pemasukan" di awal) — menang mutlak
-1) Pemasukan khusus (affiliate, bunga, dividen, refund, dll.)
+1) Pemasukan khusus (affiliate, bunga, dividen, refund, hadiah uang diterima)
 2) Saving/Investment (beli/nabung instrumen)
-3) Pengeluaran (tagihan, konsumsi, sosial, dll.)
+3) Likuiditas Sosial HANYA jika ada sinyal pinjam/utang/akan kembali (§5)
+4) Pengeluaran: hadiah/kado yang DIBERI = Hadiah (bukan piutang; bukan grey area HP)
+5) Pengeluaran lain (tagihan, konsumsi, sosial, dll.)
+
+Hadiah vs Likuiditas Sosial: kado/parcel/tip tidak diharapkan kembali.
+HP grey area (§2.18) hanya untuk HP user sendiri, bukan hadiah untuk orang lain.
 """
 
 from __future__ import annotations
@@ -481,6 +486,9 @@ _KOPI_JAJAN = (
 
 _SOCIAL = (
     "hadiah",
+    "kado",
+    "parcel",
+    "souvenir",
     "amplop",
     "ultah",
     "ulang tahun",
@@ -496,6 +504,14 @@ _SOCIAL = (
     "kurban",
     "hewan qurban",
     "hewan kurban",
+)
+
+_GIFT_MARKERS = (
+    "hadiah",
+    "kado",
+    "parcel",
+    "souvenir",
+    "gift",
 )
 
 _HIBURAN = (
@@ -1302,7 +1318,7 @@ def is_discretionary_social_giving(text: str) -> bool:
     lower = text.lower()
     if _contains(lower, _OBLIGATION_SOCIAL):
         return False
-    if _contains(lower, ("hadiah",)):
+    if _contains(lower, _GIFT_MARKERS):
         return True
     if _match_any(lower, _TIP_PATTERNS):
         return True
@@ -1509,6 +1525,43 @@ def is_ambiguous_utang_ke_person(text: str) -> bool:
 def is_personal_debt_to_others(text: str) -> bool:
     """Deprecated alias — gunakan is_social_debt_repay / is_social_debt_borrow."""
     return is_social_debt_repay(text) or is_social_debt_borrow(text)
+
+
+def is_received_money_gift(text: str) -> bool:
+    """Hadiah uang yang DITERIMA = Pemasukan (taxonomy §5 contoh), bukan kategori Hadiah."""
+    lower = _normalize_typos(text)
+    if _contains(lower, ("beli", "bayar", "belanja", "kasih hadiah", "kasi hadiah", "kasih kado")):
+        return False
+    if detect_cashflow_direction(text) == "Pengeluaran":
+        return False
+    return _contains(
+        lower,
+        (
+            "terima hadiah",
+            "nerima hadiah",
+            "dapat hadiah",
+            "dapet hadiah",
+            "hadiah uang",
+            "uang hadiah",
+        ),
+    )
+
+
+def is_gift_expense(text: str) -> bool:
+    """Hadiah/kado/parcel yang DIBERI = Pengeluaran Hadiah, bukan pinjaman/utang."""
+    lower = _normalize_typos(text)
+    if not _contains(lower, _GIFT_MARKERS):
+        return False
+    if is_received_money_gift(lower):
+        return False
+    if (
+        is_lending_to_others(lower)
+        or is_social_debt_borrow(lower)
+        or is_social_debt_repay(lower)
+        or is_receivable_repay(lower)
+    ):
+        return False
+    return True
 
 
 def is_denda_sanksi(text: str) -> bool:
@@ -1767,6 +1820,8 @@ def classify_from_text(text: str) -> dict[str, str] | None:
             return {"jenis": "Pemasukan", "kategori": "Sewa Masuk", "sifat": "Need"}
         if _contains(lower, _TRANSFER_MASUK):
             return {"jenis": "Pemasukan", "kategori": "Transfer Masuk", "sifat": "Need"}
+        if is_received_money_gift(lower):
+            return {"jenis": "Pemasukan", "kategori": "Lain-lain", "sifat": "Need"}
         # Kata kerja masuk jelas, tapi kategori belum ketemu → Pemasukan generik.
         if direction == "Pemasukan":
             return {"jenis": "Pemasukan", "kategori": "Lain-lain", "sifat": "Need"}
@@ -1822,9 +1877,12 @@ def classify_from_text(text: str) -> dict[str, str] | None:
 
     if _contains(lower, _ASURANSI):
         return {"jenis": "Pengeluaran", "kategori": "Proteksi", "sifat": "Need"}
+    # Hadiah/kado = belanja, bukan pinjaman sosial & bukan grey area gadget.
+    if is_gift_expense(lower):
+        return {"jenis": "Pengeluaran", "kategori": "Hadiah", "sifat": "Wants"}
     # Tip/donasi ke driver (grab/gojek) — Sosial, bukan Transport/Makan.
     if is_social_giving(lower):
-        if _contains(lower, ("hadiah", "kado", "parcel", "tip", "tips")):
+        if is_gift_expense(lower) or _contains(lower, _GIFT_MARKERS + ("tip", "tips")):
             return {"jenis": "Pengeluaran", "kategori": "Hadiah", "sifat": "Wants"}
         return {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "sifat": "Wants"}
     if is_business_building_expense(lower):
@@ -1966,8 +2024,14 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
     if explicit and str(parsed.get("jenis") or "").strip() != explicit:
         parsed["jenis"] = explicit
 
+    # Hadiah yang diberi (§4 Hadiah / Flexible) — jangan timpa pinjam/utang yang sudah jelas.
+    if is_gift_expense(combined):
+        parsed["jenis"] = "Pengeluaran"
+        parsed["kategori"] = "Hadiah"
+        parsed["sifat"] = "Wants"
+        parsed.pop("sub_kategori", None)
     # Likuiditas Sosial: Piutang Masuk dulu agar "X balikin hutang" tidak jadi Utang Keluar.
-    if is_receivable_repay(lower_combined):
+    elif is_receivable_repay(lower_combined):
         parsed["jenis"] = "Piutang Masuk"
         parsed["kategori"] = "Lain-lain"
         if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
@@ -2065,7 +2129,7 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
 
         # Donasi/tip/hadiah spontan sering salah jadi Makan/Transport/Need.
         if ai_jenis == "Pengeluaran" and is_social_giving(combined):
-            if _contains(combined.lower(), ("hadiah", "kado", "parcel", "tip", "tips")):
+            if is_gift_expense(combined) or _contains(combined.lower(), _GIFT_MARKERS + ("tip", "tips")):
                 parsed["kategori"] = "Hadiah"
             else:
                 parsed["kategori"] = "Sosial & Keluarga"
@@ -2370,6 +2434,9 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "kopi susu 28rb" → Pengeluaran / Makanan & Minuman / Wants
 - "beli aqua 1.5L 7k" → Pengeluaran / Makanan & Minuman / Need
 - "donasi ke bapak grab 5k" → Pengeluaran / Sosial & Keluarga / Wants
+- "Hadiah beli iphone 15jt buat keluarga. Terencana" → Pengeluaran / Hadiah / Wants (BUKAN Likuiditas Sosial; BUKAN grey area HP)
+- "beli iphone 15jt" → Pengeluaran / Lifestyle & Hiburan — WAJIB klarifikasi HP rusak vs upgrade vs bisnis
+- "terima hadiah uang 1jt" → Pemasukan / Lain-lain (BUKAN kategori Hadiah)
 - "kasih tip gojek 10rb" → Pengeluaran / Hadiah / Wants
 - "beli tiket konser 450rb" → Pengeluaran / Lifestyle & Hiburan / Wants
 - "bayar olahraga gym bulanan + personal training 455rb" → Pengeluaran / Lifestyle & Hiburan / Wants

@@ -485,6 +485,40 @@ class ContextRulesTests(unittest.TestCase):
     def test_hadiah_wants(self) -> None:
         self.assertClass("hadiah atas jasa orang 5k", "Pengeluaran", "Hadiah")
 
+    def test_hadiah_beli_iphone_bukan_likuiditas_sosial(self) -> None:
+        text = "Hadiah beli iphone 15 jt buat Keluarga. Terencana"
+        self.assertClass(text, "Pengeluaran", "Hadiah")
+        parsed = {
+            "keterangan": "Hadiah beli iPhone untuk keluarga",
+            "jenis": "Piutang Keluar",
+            "kategori": "Lain-lain",
+            "sifat": "Need",
+            "needs_clarification": True,
+            "clarification_question": (
+                "HP ini ganti HP utama yang rusak (setara), "
+                "upgrade model terbaru, atau khusus operasional bisnis?"
+            ),
+        }
+        out = apply_context_rules(parsed, text)
+        self.assertEqual(out["jenis"], "Pengeluaran")
+        self.assertEqual(out["kategori"], "Hadiah")
+        self.assertEqual(out["sifat"], "Wants")
+
+    def test_kado_iphone_hadiah(self) -> None:
+        self.assertClass("kado ulang tahun iphone 15jt", "Pengeluaran", "Hadiah")
+
+    def test_terima_hadiah_uang_tetap_pemasukan(self) -> None:
+        self.assertClass("terima hadiah uang 1jt", "Pemasukan", "Lain-lain")
+        out = apply_context_rules(
+            {"jenis": "Pemasukan", "kategori": "Lain-lain", "sifat": "Need"},
+            "terima hadiah uang 1jt",
+        )
+        self.assertEqual(out["jenis"], "Pemasukan")
+
+    def test_pinjam_tidak_tertimpa_aturan_hadiah(self) -> None:
+        self.assertClass("pinjam ke mama 1jt", "Utang Masuk", "Lain-lain")
+        self.assertClass("Di pinjam Catherine 1 jt buat bayar RS", "Piutang Keluar", "Lain-lain")
+
     def test_gym_lifestyle_wants(self) -> None:
         self.assertClass(
             "Bayar olahraga gym bulanan + Personal training Rp 455.583",

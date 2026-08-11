@@ -905,8 +905,13 @@ async def process_note_input(
             PENDING_CLARIFICATIONS[user_id] = {
                 "source_text": text,
             }
+            header = (
+                "Aku perlu memastikan data Likuiditas Sosial dulu:"
+                if social_open
+                else "Aku perlu memastikan dulu:"
+            )
             await message.reply_text(
-                f"Aku perlu memastikan data Likuiditas Sosial dulu:\n\n{question}\n\n"
+                f"{header}\n\n{question}\n\n"
                 "Balas dengan keterangannya, atau ketik batal."
             )
             return
