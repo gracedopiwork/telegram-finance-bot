@@ -515,21 +515,9 @@ class SocialLiquidityService
 
     public function resolveExpectedBackAt(string $notes, int $amount, Carbon $base): Carbon
     {
-        $lower = mb_strtolower($notes);
-        $relative = [
-            'besok' => 1,
-            'lusa' => 2,
-            'minggu depan' => 7,
-            '2 minggu' => 14,
-            'bulan depan' => 30,
-            '30 hari' => 30,
-            '60 hari' => 60,
-            '90 hari' => 90,
-        ];
-        foreach ($relative as $needle => $days) {
-            if (str_contains($lower, $needle)) {
-                return $base->copy()->startOfDay()->addDays($days);
-            }
+        $days = $this->matchRelativeDueDays($notes);
+        if ($days !== null) {
+            return $base->copy()->startOfDay()->addDays($days);
         }
 
         if (preg_match('/\b(?:tgl|tanggal)\s*(\d{1,2})(?:[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?)?\b/iu', $notes, $m)) {
@@ -559,6 +547,53 @@ class SocialLiquidityService
         }
 
         return 90;
+    }
+
+    /**
+     * Baca frasa waktu dari catatan bot ("balikin besok", "sebulan ke depan", typo "bulan depam").
+     */
+    public function matchRelativeDueDays(string $notes): ?int
+    {
+        $lower = preg_replace('/\s+/u', ' ', mb_strtolower($notes)) ?? '';
+        $lower = str_replace(['kedepan', 'ke-depan'], 'ke depan', $lower);
+        $lower = preg_replace('/\bbln\b/u', 'bulan', $lower) ?? $lower;
+        $lower = preg_replace('/\bmnggu\b/u', 'minggu', $lower) ?? $lower;
+        $lower = preg_replace('/\bmingu\b/u', 'minggu', $lower) ?? $lower;
+
+        $relative = [
+            'sebulan ke depan' => 30,
+            'sebulan kedepan' => 30,
+            'satu bulan ke depan' => 30,
+            '1 bulan ke depan' => 30,
+            'bulan ke depan' => 30,
+            'bulan kedepan' => 30,
+            'bulan depan' => 30,
+            'bulan depam' => 30,
+            'bulan depa' => 30,
+            'bulan depn' => 30,
+            'minggu depan' => 7,
+            'dua minggu' => 14,
+            '2 minggu' => 14,
+            '30 hari' => 30,
+            '60 hari' => 60,
+            '90 hari' => 90,
+            'besok' => 1,
+            'lusa' => 2,
+        ];
+        foreach ($relative as $needle => $days) {
+            if (str_contains($lower, $needle)) {
+                return $days;
+            }
+        }
+
+        if (preg_match('/\b(sebulan|bulan)\s+(depam|depa|depn|depann|kedepan)\b/u', $lower)) {
+            return 30;
+        }
+        if (preg_match('/\bsebulan\b/u', $lower) && preg_match('/\b(depan|lagi|ke)\b/u', $lower)) {
+            return 30;
+        }
+
+        return null;
     }
 
     private function defaultExpectedBackAt(int $amount, Carbon $base): Carbon

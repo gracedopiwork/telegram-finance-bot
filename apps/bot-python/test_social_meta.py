@@ -12,6 +12,7 @@ from social_meta import (
     extract_due_date,
     extract_purpose,
     has_explicit_due,
+    match_relative_due_days,
     social_missing_details_question,
 )
 
@@ -85,6 +86,36 @@ class SocialMetaTest(unittest.TestCase):
         note = parsed["keterangan"].lower()
         self.assertEqual(note.count("pinjam dari mama"), 1)
         self.assertIn("kepentingan bisnis", note)
+
+    def test_fuzzy_due_typos_and_variants(self) -> None:
+        self.assertEqual(match_relative_due_days("balikin besok"), 1)
+        self.assertEqual(match_relative_due_days("di balikin besok"), 1)
+        self.assertEqual(match_relative_due_days("kembali besok"), 1)
+        self.assertEqual(match_relative_due_days("sebulan ke depan"), 30)
+        self.assertEqual(match_relative_due_days("sebulan kedepan"), 30)
+        self.assertEqual(match_relative_due_days("bulan depam"), 30)
+        self.assertEqual(match_relative_due_days("bulan depa"), 30)
+        self.assertEqual(match_relative_due_days("bln depan"), 30)
+        self.assertEqual(match_relative_due_days("minggu depan"), 7)
+        self.assertTrue(has_explicit_due("pinjam ke mama\nKlarifikasi user: sebulan ke depan"))
+        self.assertTrue(has_explicit_due("Klarifikasi user: bulan depam"))
+        due = extract_due_date("bulan depam", amount=5_000_000, base=date(2026, 8, 11))
+        self.assertEqual(due, date(2026, 9, 10))
+
+    def test_purpose_from_short_clarification(self) -> None:
+        text = "pinjam uang ke mama 5jt\nKlarifikasi user: kebutuhan mendesak"
+        self.assertIn("kebutuhan mendesak", extract_purpose(text).lower())
+        parsed = {"jenis": "Utang Masuk", "keterangan": text, "nominal": 5_000_000}
+        q = social_missing_details_question(parsed, text)
+        self.assertIsNotNone(q)
+        self.assertIn("kapan", (q or "").lower())
+
+        text2 = text + "\nKlarifikasi user: sebulan ke depan"
+        self.assertTrue(has_explicit_due(text2))
+        self.assertIsNone(social_missing_details_question(
+            {"jenis": "Utang Masuk", "keterangan": text2, "nominal": 5_000_000},
+            text2,
+        ))
 
     def test_counterparty_pinjem_ke_mama(self) -> None:
         self.assertEqual(extract_counterparty("pinjem duit ke mama 250k").lower(), "mama")

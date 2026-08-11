@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import difflib
 import re
 from datetime import date, timedelta
 from typing import Any
@@ -92,10 +93,49 @@ _RELATIVE_DUE = (
     (re.compile(r"\bminggu\s+depan\b", re.IGNORECASE), 7),
     (re.compile(r"\b2\s*minggu\b", re.IGNORECASE), 14),
     (re.compile(r"\bbulan\s+depan\b", re.IGNORECASE), 30),
+    (re.compile(r"\bsebulan\s+(?:ke\s+)?depan\b", re.IGNORECASE), 30),
+    (re.compile(r"\b1\s*bulan\s+(?:ke\s+)?depan\b", re.IGNORECASE), 30),
+    (re.compile(r"\bdua\s+minggu\b", re.IGNORECASE), 14),
+    (re.compile(r"\bminggu\s+depan\s+lagi\b", re.IGNORECASE), 7),
     (re.compile(r"\b30\s*hari\b", re.IGNORECASE), 30),
     (re.compile(r"\b60\s*hari\b", re.IGNORECASE), 60),
     (re.compile(r"\b90\s*hari\b", re.IGNORECASE), 90),
 )
+
+# Frasa waktu yang sering diketik salah (bulan depam, sebulan kedepan, dll).
+_DUE_PHRASE_DAYS: dict[str, int] = {
+    "besok": 1,
+    "bsk": 1,
+    "besoknya": 1,
+    "di balikin besok": 1,
+    "dibalikin besok": 1,
+    "balikin besok": 1,
+    "kembali besok": 1,
+    "lusa": 2,
+    "minggu depan": 7,
+    "mingdep": 7,
+    "mnggu depan": 7,
+    "mingu depan": 7,
+    "2 minggu": 14,
+    "dua minggu": 14,
+    "bulan depan": 30,
+    "bln depan": 30,
+    "bln depn": 30,
+    "bulan depn": 30,
+    "bulan depam": 30,
+    "bulan depa": 30,
+    "bln depam": 30,
+    "sebulan ke depan": 30,
+    "sebulan kedepan": 30,
+    "sebulan depan": 30,
+    "1 bulan ke depan": 30,
+    "satu bulan ke depan": 30,
+    "bulan kedepan": 30,
+    "nanti bulan depan": 30,
+    "30 hari": 30,
+    "60 hari": 60,
+    "90 hari": 90,
+}
 
 _SKIP_DETAIL_MARKERS = (
     "belum tahu",
@@ -103,6 +143,8 @@ _SKIP_DETAIL_MARKERS = (
     "tidak tahu",
     "ga tahu",
     "gak tahu",
+    "gatau",
+    "ga tau",
     "default",
     "pakai default",
     "skip",
@@ -131,7 +173,7 @@ def extract_counterparty(text: str) -> str:
 def extract_purpose(text: str) -> str:
     raw = text or ""
 
-    # Prioritaskan balasan klarifikasi agar "kepentingan kerja, besok" utuh.
+    # Prioritaskan balasan klarifikasi: "kepentingan kerja, besok" atau "kebutuhan mendesak".
     m = re.search(
         r"klarifikasi\s+user:\s*(.+)$",
         raw,
@@ -139,46 +181,101 @@ def extract_purpose(text: str) -> str:
     )
     if m:
         chunk = re.sub(r"\s+", " ", m.group(1)).strip(" .,")
-        if chunk.lower() not in _SKIP_DETAIL_MARKERS:
-            # Ambil bagian tujuan sebelum sinyal waktu.
+        if chunk.lower() not in _SKIP_DETAIL_MARKERS and not _looks_like_due_only(chunk):
             purpose_part = re.split(
-                r",\s*(?:besok|lusa|minggu|bulan|tanggal|tgl|\d{1,2}[/\-.])",
+                r",\s*(?:besok|lusa|minggu|bulan|sebulan|tanggal|tgl|\d{1,2}[/\-.])",
                 chunk,
                 maxsplit=1,
                 flags=re.IGNORECASE,
             )[0].strip(" .,")
             purpose_part = re.sub(
                 r"\b(?:kembali|bayar|dilunasi|tempo)?\s*"
-                r"(?:besok|lusa|minggu depan|bulan depan|30 hari|60 hari|90 hari)\b",
+                r"(?:besok|lusa|minggu depan|bulan depan|sebulan ke depan|30 hari|60 hari|90 hari)\b",
                 "",
                 purpose_part,
                 flags=re.IGNORECASE,
             ).strip(" .,")
-            # Hilangkan prefix "buat/untuk" jika user menulis ulang lengkap.
             purpose_part = re.sub(
                 r"^(?:buat|untuk|tujuan|keperluan)\s+",
                 "",
                 purpose_part,
                 flags=re.IGNORECASE,
             ).strip(" .,")
-            if len(purpose_part) >= 3:
+            if len(purpose_part) >= 3 and not _looks_like_due_only(purpose_part):
                 return purpose_part[:180]
+            if len(chunk) >= 3:
+                return chunk[:180]
 
     for pattern in _PURPOSE_PATTERNS:
         match = pattern.search(raw)
         if not match:
             continue
         purpose = re.sub(r"\s+", " ", match.group(1)).strip(" .,")
-        if len(purpose) >= 3:
+        if len(purpose) >= 3 and not _looks_like_due_only(purpose):
             return purpose[:180]
 
     return ""
 
 
+def _normalize_due_text(text: str) -> str:
+    lower = re.sub(r"\s+", " ", (text or "").lower()).strip(" .,")
+    lower = lower.replace("kedepan", "ke depan").replace("ke-depan", "ke depan")
+    lower = re.sub(r"\bbln\b", "bulan", lower)
+    lower = re.sub(r"\bmnggu\b", "minggu", lower)
+    lower = re.sub(r"\bmingu\b", "minggu", lower)
+    return lower
+
+
+def _looks_like_due_only(text: str) -> bool:
+    return match_relative_due_days(text) is not None and len(_normalize_due_text(text).split()) <= 6
+
+
+def match_relative_due_days(text: str) -> int | None:
+    """Terima 'bulan depan', 'sebulan ke depan', dan typo dekat (bulan depam)."""
+    raw = text or ""
+    for pattern, days in _RELATIVE_DUE:
+        if pattern.search(raw):
+            return days
+
+    lower = _normalize_due_text(raw)
+    if not lower:
+        return None
+
+    for phrase, days in _DUE_PHRASE_DAYS.items():
+        if phrase in lower:
+            return days
+
+    if len(lower) <= 40:
+        close = difflib.get_close_matches(
+            lower,
+            list(_DUE_PHRASE_DAYS.keys()) + ["besok", "lusa", "minggu depan", "bulan depan", "sebulan ke depan"],
+            n=1,
+            cutoff=0.78,
+        )
+        if close:
+            hit = close[0]
+            return _DUE_PHRASE_DAYS.get(hit, 30 if "bulan" in hit else 7 if "minggu" in hit else 1)
+
+    # "bulan depam" / "bulan depaan" — fuzzy kata kedua.
+    m = re.search(r"\b(sebulan|bulan|minggu|besok|lusa)\s+(\w{3,12})\b", lower)
+    if m:
+        head, tail = m.group(1), m.group(2)
+        if head in {"besok", "lusa"}:
+            return 1 if head == "besok" else 2
+        if difflib.SequenceMatcher(None, tail, "depan").ratio() >= 0.6 or tail in {"kedepan", "depam", "depa", "depn", "depann"}:
+            return 30 if head in {"bulan", "sebulan"} else 7
+
+    m = re.search(r"\bsebulan\b", lower)
+    if m and any(k in lower for k in ("depan", "lagi", "ke")):
+        return 30
+
+    return None
+
+
 def has_explicit_due(text: str) -> bool:
     raw = text or ""
     lower = raw.lower()
-    if any(p.search(raw) for p, _ in _RELATIVE_DUE):
+    if match_relative_due_days(raw) is not None:
         return True
     if re.search(r"\b(?:tgl|tanggal)\s*\d{1,2}\b", raw, re.IGNORECASE):
         return True
@@ -223,9 +320,9 @@ def extract_due_date(text: str, *, amount: int, base: date | None = None) -> dat
         except ValueError:
             pass
 
-    for pattern, days in _RELATIVE_DUE:
-        if pattern.search(raw):
-            return today + timedelta(days=days)
+    relative = match_relative_due_days(raw)
+    if relative is not None:
+        return today + timedelta(days=relative)
 
     return today + timedelta(days=default_due_days(max(0, amount)))
 
@@ -264,10 +361,29 @@ def enrich_social_liquidity_fields(parsed: dict[str, Any], source_text: str = ""
     if purpose and purpose.lower() not in note.lower():
         extras.append(f"buat {purpose}")
     if has_explicit_due(text):
-        for label in ("besok", "lusa", "minggu depan", "2 minggu", "bulan depan", "30 hari", "60 hari", "90 hari"):
+        due_labels = (
+            "besok",
+            "lusa",
+            "minggu depan",
+            "2 minggu",
+            "sebulan ke depan",
+            "bulan depan",
+            "30 hari",
+            "60 hari",
+            "90 hari",
+        )
+        for label in due_labels:
             if label in text.lower() and label not in note.lower():
                 extras.append(label)
                 break
+        else:
+            days = match_relative_due_days(text)
+            if days == 30 and "bulan" not in note.lower() and "sebulan" not in note.lower():
+                extras.append("bulan depan")
+            elif days == 7 and "minggu" not in note.lower():
+                extras.append("minggu depan")
+            elif days == 1 and "besok" not in note.lower():
+                extras.append("besok")
     if extras:
         parsed["keterangan"] = (note + " | " + ", ".join(extras)).strip(" |")
 

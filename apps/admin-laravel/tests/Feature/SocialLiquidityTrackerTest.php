@@ -40,6 +40,21 @@ class SocialLiquidityTrackerTest extends TestCase
         $this->assertSame(BotSocialReceivable::STATUS_ACTIVE, $row->status);
     }
 
+    public function test_balikin_besok_sets_due_tomorrow_not_default(): void
+    {
+        $svc = app(SocialLiquidityService::class);
+        $base = Carbon::parse('2026-08-11 10:00:00');
+
+        $this->assertSame(1, $svc->matchRelativeDueDays('Di pinjam Grace, balikin besok'));
+        $this->assertSame(1, $svc->matchRelativeDueDays('kembali besok'));
+        $this->assertSame(30, $svc->matchRelativeDueDays('sebulan ke depan'));
+        $this->assertSame(30, $svc->matchRelativeDueDays('bulan depam'));
+
+        $due = $svc->resolveExpectedBackAt('Di pinjam Grace 2,7 jt buat kerja, balikin besok', 2_700_000, $base);
+        $this->assertTrue($due->isSameDay(Carbon::parse('2026-08-12')));
+        $this->assertFalse($due->isSameDay($base->copy()->addDays($svc->defaultDueDays(2_700_000))));
+    }
+
     public function test_default_due_days_by_amount(): void
     {
         $svc = app(SocialLiquidityService::class);
