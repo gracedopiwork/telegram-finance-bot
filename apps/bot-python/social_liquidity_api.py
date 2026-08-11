@@ -37,6 +37,17 @@ def fetch_social_liquidity(telegram_user_id: int, kind: str = "all") -> tuple[bo
         return False, {}, str(exc)[:200]
 
 
+def fetch_active_social_rows(telegram_user_id: int, kind: str) -> list[dict[str, Any]]:
+    """kind: utang | piutang — baris tracker yang masih aktif."""
+    ok, payload, _err = fetch_social_liquidity(telegram_user_id, kind=kind)
+    if not ok:
+        return []
+    key = "utang" if kind == "utang" else "piutang"
+    block = payload.get(key) or {}
+    rows = list(block.get("active") or [])
+    return [row for row in rows if str(row.get("status") or "active") == "active"]
+
+
 def format_social_list(kind: str, payload: dict[str, Any]) -> str:
     """kind: piutang | utang"""
     block = payload.get(kind) or {}

@@ -495,6 +495,7 @@ class SocialLiquidityService
             '/\b(?:transfer|bantu|talangin|bayarkan)\s+(?:ke|kepada|sama)?\s*([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
             '/\b(?:kepada|sama|dari|oleh)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
             '/\bke\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
+            '/\bklarifikasi\s+user:\s*(?:ke\s+|dari\s+|sama\s+)?([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
         ];
         foreach ($patterns as $pattern) {
             if (! preg_match_all($pattern, $notes, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE)) {

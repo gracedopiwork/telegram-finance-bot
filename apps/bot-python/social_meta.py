@@ -228,6 +228,36 @@ def _is_person_name(name: str) -> bool:
     return True
 
 
+_COUNTERPARTY_ALIASES = {
+    "mamah": "mama",
+    "mami": "mama",
+    "ibu": "mama",
+    "bunda": "mama",
+    "bun": "mama",
+    "papi": "papa",
+    "ayah": "papa",
+    "bapak": "papa",
+    "abi": "papa",
+    "adek": "adik",
+    "kak": "kakak",
+}
+
+
+def normalize_counterparty(name: str) -> str:
+    token = (name or "").strip().lower()
+    return _COUNTERPARTY_ALIASES.get(token, token)
+
+
+def counterparties_match(left: str, right: str) -> bool:
+    a = normalize_counterparty(left)
+    b = normalize_counterparty(right)
+    if not a or not b:
+        return False
+    if a == b:
+        return True
+    return a in b or b in a
+
+
 def extract_counterparty(text: str) -> str:
     raw = text or ""
     for pattern in _NAME_PATTERNS:
@@ -239,6 +269,14 @@ def extract_counterparty(text: str) -> str:
             if _PURPOSE_PREFIX.search(prefix[-40:] if len(prefix) > 40 else prefix):
                 continue
             return name[:120]
+    m = re.search(
+        r"klarifikasi\s+user:\s*(?:ke\s+|dari\s+|sama\s+)?"
+        r"([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})\b",
+        raw,
+        re.IGNORECASE,
+    )
+    if m and _is_person_name(m.group(1)):
+        return m.group(1)[:120]
     return ""
 
 
@@ -253,7 +291,12 @@ def extract_purpose(text: str) -> str:
     )
     if m:
         chunk = re.sub(r"\s+", " ", m.group(1)).strip(" .,")
-        if chunk.lower() not in _SKIP_DETAIL_MARKERS and not _looks_like_due_only(chunk):
+        # Balasan "mama" / "2" = pilih baris tracker, bukan tujuan pinjaman.
+        if re.fullmatch(r"\d{1,2}", chunk) or (
+            " " not in chunk and _is_person_name(chunk)
+        ):
+            chunk = ""
+        if chunk and chunk.lower() not in _SKIP_DETAIL_MARKERS and not _looks_like_due_only(chunk):
             purpose_part = re.split(
                 r",\s*(?:besok|lusa|minggu|bulan|sebulan|tanggal|tgl|\d{1,2}[/\-.])",
                 chunk,
@@ -563,6 +606,84 @@ def social_missing_details_question(parsed: dict[str, Any], source_text: str = "
         f"Lengkapi dulu data tracker ({label}). "
         f"Contoh: {example}. Ketik 'default' jika sebagian belum pasti."
     )
+
+
+def _active_settle_rows(rows: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+    active: list[dict[str, Any]] = []
+    for row in rows or []:
+        status = str(row.get("status") or "").strip().lower()
+        if status and status != "active":
+            continue
+        try:
+            remaining = int(row.get("amount_remaining") if row.get("amount_remaining") is not None else row.get("amount") or 0)
+        except (TypeError, ValueError):
+            remaining = 0
+        if remaining <= 0:
+            continue
+        active.append(row)
+    return active
+
+
+def social_settle_target_question(
+    parsed: dict[str, Any],
+    source_text: str,
+    active_rows: list[dict[str, Any]] | None,
+) -> str | None:
+    """Jika pelunasan ambigu (lebih dari satu utang/piutang aktif), tanya baris mana."""
+    jenis = str(parsed.get("jenis") or "").strip()
+    if jenis == "Utang Keluar":
+        label = "utang"
+        action = "dicicil atau dilunasi"
+    elif jenis == "Piutang Masuk":
+        label = "piutang"
+        action = "yang baru dikembalikan"
+    else:
+        return None
+
+    rows = _active_settle_rows(active_rows)
+    if len(rows) <= 1:
+        return None
+
+    text = f"{source_text} {parsed.get('keterangan', '')}"
+    name = extract_counterparty(text) or str(parsed.get("sub_kategori") or "").strip()
+    if name and name not in {"", "-"}:
+        matches = [row for row in rows if counterparties_match(name, str(row.get("name") or ""))]
+        if len(matches) == 1:
+            return None
+
+    lines: list[str] = []
+    for i, row in enumerate(rows, start=1):
+        who = str(row.get("name") or "—")
+        try:
+            remaining = int(row.get("amount_remaining") if row.get("amount_remaining") is not None else row.get("amount") or 0)
+        except (TypeError, ValueError):
+            remaining = 0
+        purpose = str(row.get("purpose") or "").strip() or "—"
+        lines.append(f"{i}. {who} — sisa Rp{remaining:,} ({purpose})")
+
+    return (
+        f"Ada beberapa {label} aktif. Yang mana mau {action}?\n\n"
+        + "\n".join(lines)
+        + "\n\nBalas nama orangnya, atau nomor urut (contoh: mama / 2)."
+    )
+
+
+def resolve_settle_choice(reply: str, active_rows: list[dict[str, Any]] | None) -> str | None:
+    """Map balasan '2' / 'mama' / 'ibu' ke nama counterparty tracker."""
+    token = re.sub(r"\s+", " ", (reply or "").strip())
+    if not token:
+        return None
+    rows = _active_settle_rows(active_rows)
+    if token.isdigit():
+        idx = int(token) - 1
+        if 0 <= idx < len(rows):
+            name = str(rows[idx].get("name") or "").strip()
+            return name or None
+    for row in rows:
+        name = str(row.get("name") or "").strip()
+        if name and counterparties_match(token, name):
+            return name
+    return None
 
 
 # Alias lama

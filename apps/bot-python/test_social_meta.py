@@ -13,7 +13,9 @@ from social_meta import (
     extract_purpose,
     has_explicit_due,
     match_relative_due_days,
+    resolve_settle_choice,
     social_missing_details_question,
+    social_settle_target_question,
 )
 
 
@@ -142,6 +144,34 @@ class SocialMetaTest(unittest.TestCase):
         self.assertEqual(
             extract_counterparty("pinjamin ayuti 500k buat biaya ke dokter").lower(),
             "ayuti",
+        )
+
+    def test_settle_asks_which_utang_when_ambiguous(self) -> None:
+        rows = [
+            {"name": "Ayuti", "amount_remaining": 5_000_000, "purpose": "kuliah", "status": "active"},
+            {"name": "mama", "amount_remaining": 5_000_000, "purpose": "bayar kuliah", "status": "active"},
+        ]
+        parsed = {"jenis": "Utang Keluar", "keterangan": "bayar utang 2.5jt"}
+        q = social_settle_target_question(parsed, "bayar utang 2.5jt", rows)
+        self.assertIsNotNone(q)
+        self.assertIn("mama", (q or "").lower())
+        self.assertIn("ayuti", (q or "").lower())
+        self.assertIn("dicicil", (q or "").lower())
+
+        named = social_settle_target_question(
+            {"jenis": "Utang Keluar", "keterangan": "bayar utang ke mama 2.5jt"},
+            "bayar utang ke mama 2.5jt",
+            rows,
+        )
+        self.assertIsNone(named)
+        self.assertIsNone(
+            social_settle_target_question(parsed, "bayar utang 2.5jt", rows[:1])
+        )
+        self.assertEqual(resolve_settle_choice("2", rows).lower(), "mama")
+        self.assertEqual(resolve_settle_choice("ibu", rows).lower(), "mama")
+        self.assertEqual(
+            extract_counterparty("bayar utang 2.5jt\nKlarifikasi user: mama").lower(),
+            "mama",
         )
 
 

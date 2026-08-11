@@ -88,6 +88,9 @@ def _is_social_liquidity_question(question: str) -> bool:
             "tujuan pinjaman",
             "kapan dikembalikan",
             "kapan dibayar balik",
+            "utang mana",
+            "piutang mana",
+            "dicicil atau dilunasi",
         )
     )
 

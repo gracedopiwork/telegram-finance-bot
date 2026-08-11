@@ -37,8 +37,13 @@ from ai_quota import (
 from portal_link import fetch_portal_login_url
 from category_rules_cache import get_rules, refresh as refresh_category_rules
 from clarification_rules import clarification_question
-from social_meta import enrich_social_liquidity_fields, social_missing_details_question
-from social_liquidity_api import fetch_social_liquidity, format_social_list
+from social_meta import (
+    enrich_social_liquidity_fields,
+    resolve_settle_choice,
+    social_missing_details_question,
+    social_settle_target_question,
+)
+from social_liquidity_api import fetch_active_social_rows, fetch_social_liquidity, format_social_list
 from transaction_store import (
     format_prescription_bucket,
     resolve_transaction_bucket,
@@ -896,10 +901,20 @@ async def process_note_input(
     if user_id:
         question = clarification_question(parsed, text)
         social_q = social_missing_details_question(parsed, text)
+        settle_q = None
+        settle_rows: list = []
+        jenis_now = str(parsed.get("jenis") or "").strip()
+        if jenis_now in {"Utang Keluar", "Piutang Masuk"}:
+            kind = "utang" if jenis_now == "Utang Keluar" else "piutang"
+            settle_rows = fetch_active_social_rows(user_id, kind)
+            settle_q = social_settle_target_question(parsed, text, settle_rows)
+            if settle_q:
+                question = settle_q
         should_ask = question and (
             not clarification_resolved
             or parsed.get("needs_clarification") is True
             or (social_q is not None and question == social_q)
+            or settle_q is not None
         )
         if should_ask:
             PENDING_CONFIRMATIONS.pop(user_id, None)
@@ -907,8 +922,9 @@ async def process_note_input(
             # Simpan input terbaru (termasuk klarifikasi sebelumnya) agar jawaban menumpuk.
             PENDING_CLARIFICATIONS[user_id] = {
                 "source_text": text,
+                "settle_choices": settle_rows if settle_q else [],
             }
-            social_jenis = str(parsed.get("jenis") or "").strip() in {
+            social_jenis = jenis_now in {
                 "Piutang Keluar",
                 "Piutang Masuk",
                 "Utang Masuk",
@@ -916,7 +932,7 @@ async def process_note_input(
             }
             header = (
                 "Aku perlu memastikan data Likuiditas Sosial dulu:"
-                if social_jenis and social_q and question == social_q
+                if social_jenis and question and (question == social_q or question == settle_q)
                 else "Aku perlu memastikan dulu:"
             )
             await message.reply_text(
@@ -1215,9 +1231,13 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if text.lower() in {"batal", "cancel", "batalkan"}:
             await update.message.reply_text("Klarifikasi dibatalkan. Transaksi tidak disimpan.")
             return
+        reply = text
+        chosen = resolve_settle_choice(reply, pending.get("settle_choices") or [])
+        if chosen:
+            reply = chosen
         combined_input = (
             f"{pending['source_text']}\n"
-            f"Klarifikasi user: {text}"
+            f"Klarifikasi user: {reply}"
         )
         await process_note_input(
             update.message,
