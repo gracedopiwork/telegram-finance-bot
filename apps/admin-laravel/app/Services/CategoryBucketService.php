@@ -24,12 +24,52 @@ class CategoryBucketService
             return null;
         }
 
+        $household = $this->resolveHouseholdDurable($row);
+        if ($household !== null) {
+            return $household;
+        }
+
         $fromDb = $this->mappingService->resolveBucket($row);
         if ($fromDb !== null) {
             return $this->normalizeBucket($fromDb);
         }
 
         return $this->resolveLegacy($row);
+    }
+
+    /**
+     * Tumbler/perabot bukan Proteksi — ganti rusak = Essential, koleksi = Flexible.
+     */
+    private function resolveHouseholdDurable(BotTransaction $row): ?string
+    {
+        if ($row->type !== TransactionTaxonomy::TYPE_EXPENSE) {
+            return null;
+        }
+
+        $combined = mb_strtolower(trim("{$row->notes} {$row->category}"));
+        $items = [
+            'tumbler', 'termos', 'kulkas', 'rice cooker', 'mesin cuci',
+            'gorden', 'sprei', 'piring', 'perabot',
+        ];
+        if (! $this->containsAny($combined, $items)) {
+            return null;
+        }
+
+        $repair = [
+            'rusak', 'pecah', 'bocor', 'ganti yang', 'ganti yg', 'mengganti',
+            'belum memadai', 'tidak layak', 'sebelumnya rusak',
+        ];
+        $lifestyle = ['koleksi', 'ikuti tren', 'ikut tren', 'upgrade', 'fomo', 'tambah koleksi'];
+
+        if ($this->containsAny($combined, $repair) || (string) $row->nature === 'Need') {
+            if ($this->containsAny($combined, $lifestyle) && ! $this->containsAny($combined, $repair)) {
+                return 'Flexible + Social';
+            }
+
+            return 'Essential Living';
+        }
+
+        return 'Flexible + Social';
     }
 
     private function resolveLegacy(BotTransaction $row): ?string

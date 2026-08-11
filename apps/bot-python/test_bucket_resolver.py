@@ -57,6 +57,26 @@ class BucketResolverTests(unittest.TestCase):
         )
         self.assertIsNone(got)
 
+    def test_tumbler_ganti_rusak_essential_not_protection(self) -> None:
+        got = resolve_bucket(
+            {
+                "jenis": "Pengeluaran",
+                "kategori": "Tempat Tinggal",
+                "sifat": "Need",
+                "keterangan": "Beli tumbler ganti yang rusak",
+            }
+        )
+        self.assertEqual(got, "Essential Living")
+        mislabeled = resolve_bucket(
+            {
+                "jenis": "Pengeluaran",
+                "kategori": "Proteksi",
+                "sifat": "Need",
+                "keterangan": "Beli tumbler ganti yang rusak 200000",
+            }
+        )
+        self.assertEqual(mislabeled, "Essential Living")
+
     def test_offline_grab_gym_is_transport_flexible(self) -> None:
         parsed = classify_offline("Grab dari kos ke gym Imam Bonjol 21000")
         self.assertEqual(parsed["kategori"], "Transportasi")

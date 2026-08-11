@@ -64,6 +64,24 @@ class CategoryBucketServiceTest extends TestCase
         }
     }
 
+    public function test_tumbler_replacement_is_essential_not_protection(): void
+    {
+        $this->assertBucket(
+            'Essential Living',
+            TransactionTaxonomy::TYPE_EXPENSE,
+            'Tempat Tinggal',
+            'Need',
+            'Beli tumbler ganti yang rusak',
+        );
+        $this->assertBucket(
+            'Essential Living',
+            TransactionTaxonomy::TYPE_EXPENSE,
+            'Proteksi',
+            'Need',
+            'Beli tumbler ganti yang rusak 200000',
+        );
+    }
+
     public function test_emergency_fund_saving_is_protection(): void
     {
         $this->assertBucket(

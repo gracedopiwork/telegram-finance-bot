@@ -60,11 +60,26 @@ class CategoryAutoRegisterService
         $resolved = $this->resolveWithoutRegister($categoryInput, $type);
         $notesLower = mb_strtolower(trim($notes));
 
+        if ($type === 'Pengeluaran' && $this->notesLookLikeHouseholdDurable($notesLower)) {
+            return 'Tempat Tinggal';
+        }
+
         if ($type === 'Pengeluaran' && $this->notesLookLikeTransportRide($notesLower)) {
             return 'Transportasi';
         }
 
         return $resolved;
+    }
+
+    private function notesLookLikeHouseholdDurable(string $notesLower): bool
+    {
+        foreach (['tumbler', 'termos', 'kulkas', 'rice cooker', 'mesin cuci', 'gorden', 'sprei', 'perabot'] as $item) {
+            if (str_contains($notesLower, $item)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function notesLookLikeTransportRide(string $notesLower): bool
@@ -154,6 +169,11 @@ class CategoryAutoRegisterService
 
     private function mergeKeywordsFromNotes(CategoryBucketMapping $mapping, string $notes): void
     {
+        $category = mb_strtolower(trim((string) $mapping->category));
+        if ($category === 'proteksi' && $this->notesLookLikeHouseholdDurable(mb_strtolower($notes))) {
+            return;
+        }
+
         $extra = $this->keywordsFromNotes($notes);
         if ($extra === []) {
             return;

@@ -137,6 +137,59 @@ def mapping_transaction_type(jenis: str) -> str:
     return JENIS_TO_TX_TYPE.get(jenis, "expense")
 
 
+_HOUSEHOLD_ITEMS = (
+    "tumbler",
+    "termos",
+    "kulkas",
+    "rice cooker",
+    "mesin cuci",
+    "gorden",
+    "sprei",
+    "piring",
+    "perabot",
+)
+_HOUSEHOLD_REPAIR = (
+    "rusak",
+    "pecah",
+    "bocor",
+    "ganti yang",
+    "ganti yg",
+    "mengganti",
+    "belum memadai",
+    "tidak layak",
+    "sebelumnya rusak",
+)
+_HOUSEHOLD_LIFESTYLE = (
+    "koleksi",
+    "ikuti tren",
+    "ikut tren",
+    "upgrade",
+    "fomo",
+    "tambah koleksi",
+)
+
+
+def resolve_household_durable(
+    *,
+    jenis: str,
+    sifat: str,
+    notes: str,
+    kategori: str,
+) -> str | None:
+    if jenis != "Pengeluaran":
+        return None
+    combined = f"{notes} {kategori}".strip().lower()
+    if not any(item in combined for item in _HOUSEHOLD_ITEMS):
+        return None
+    repair = any(k in combined for k in _HOUSEHOLD_REPAIR)
+    lifestyle = any(k in combined for k in _HOUSEHOLD_LIFESTYLE)
+    if repair or sifat == "Need":
+        if lifestyle and not repair:
+            return "Flexible + Social"
+        return "Essential Living"
+    return "Flexible + Social"
+
+
 def resolve_from_mappings(
     *,
     jenis: str,
@@ -264,6 +317,9 @@ def resolve_bucket(parsed: dict[str, Any]) -> str | None:
 
     notes = str(parsed.get("keterangan") or parsed.get("notes") or "")
     sifat = str(parsed.get("sifat") or "")
+    household = resolve_household_durable(jenis=jenis, sifat=sifat, notes=notes, kategori=kategori)
+    if household is not None:
+        return household
     from_map = resolve_from_mappings(
         jenis=jenis,
         kategori=kategori,
