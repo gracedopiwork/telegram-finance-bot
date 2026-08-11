@@ -98,6 +98,11 @@ _NAME_PATTERNS = (
         re.IGNORECASE,
     ),
     re.compile(
+        r"\b(?:mengembalikan|kembalikan)\s+(?:uang|duit|dana)\s+"
+        r"([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})",
+        re.IGNORECASE,
+    ),
+    re.compile(
         r"\b(?:di\s*pinjam|dipinjam|dipinjami|dipinjemin|pinjamin|pinjami|pinjamkan|pinjemin|"
         r"ngutangin|ngutangi|utangin|hutangin|minjamin|talangin|nombokin)\s+"
         r"([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})",

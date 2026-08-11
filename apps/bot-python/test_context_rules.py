@@ -333,6 +333,11 @@ class ContextRulesTests(unittest.TestCase):
 
     def test_saya_mengembalikan_adalah_utang_keluar(self) -> None:
         self.assertClass(
+            "mengembalikan uang mama 2.500.000 yang sudah saya pinjam",
+            "Utang Keluar",
+            "Lain-lain",
+        )
+        self.assertClass(
             "saya mengembalikan uang ayuti 1 juta yang saya pinjam tadi",
             "Utang Keluar",
             "Lain-lain",

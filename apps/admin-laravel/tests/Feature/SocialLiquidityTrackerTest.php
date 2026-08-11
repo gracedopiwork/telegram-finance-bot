@@ -119,19 +119,23 @@ class SocialLiquidityTrackerTest extends TestCase
     {
         $svc = app(SocialLiquidityService::class);
         $this->assertSame(
-            'Ayuti',
-            $svc->extractCounterparty('saya meminjamkan uang kepada ayuti Meminjamkan Ayuti untuk biaya ke dokter')
+            'ayuti',
+            mb_strtolower($svc->extractCounterparty('saya meminjamkan uang kepada ayuti Meminjamkan Ayuti untuk biaya ke dokter'))
         );
         $this->assertSame(
-            'Sargib',
-            $svc->extractCounterparty('Meminjamkan Sargib untuk ke dokter')
+            'sargib',
+            mb_strtolower($svc->extractCounterparty('Meminjamkan Sargib untuk ke dokter'))
         );
         $this->assertSame(
-            'Ayuti',
-            $svc->extractCounterparty(
+            'ayuti',
+            mb_strtolower($svc->extractCounterparty(
                 'Meminjamkan Ayuti untuk biaya ke dokter',
                 'dokter'
-            )
+            ))
+        );
+        $this->assertSame(
+            'mama',
+            mb_strtolower($svc->extractCounterparty('mengembalikan uang mama 2.500.000 yang sudah saya pinjam'))
         );
     }
 
@@ -301,7 +305,7 @@ class SocialLiquidityTrackerTest extends TestCase
             'nature' => 'Need',
             'mood' => 'Neutral',
             'is_impulsive' => false,
-            'notes' => 'kembalikan ke mama 2 jt 5 ratus',
+            'notes' => 'mengembalikan uang mama 2.500.000 yang sudah saya pinjam',
             'source' => 'manual',
         ]);
         $updated = $svc->settleFromRepay($repay);

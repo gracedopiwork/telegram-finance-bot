@@ -125,6 +125,10 @@ class SocialMetaTest(unittest.TestCase):
         self.assertEqual(extract_counterparty("ngutang sama mama 250k").lower(), "mama")
         self.assertEqual(extract_counterparty("ayuti balikin hutang 500k").lower(), "ayuti")
         self.assertEqual(extract_counterparty("transfer balik dari ayuti 500k").lower(), "ayuti")
+        self.assertEqual(
+            extract_counterparty("mengembalikan uang mama 2.500.000 yang sudah saya pinjam").lower(),
+            "mama",
+        )
 
     def test_counterparty_bukan_tujuan_dokter(self) -> None:
         self.assertEqual(

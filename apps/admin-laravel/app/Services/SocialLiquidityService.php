@@ -479,7 +479,7 @@ class SocialLiquidityService
             'dokter', 'rs', 'rumahsakit', 'rumah', 'sakit', 'apotek', 'klinik', 'puskesmas',
             'sekolah', 'kuliah', 'kampus', 'universitas', 'biaya', 'kebutuhan', 'kepentingan',
             'keperluan', 'kerja', 'bisnis', 'obat', 'lab', 'igd', 'ugd', 'kantor', 'bank',
-            'kos', 'bulan', 'tanggal', 'tgl', 'ini', 'itu',
+            'kos', 'bulan', 'tanggal', 'tgl', 'ini', 'itu', 'yang', 'sudah', 'telah',
         ];
 
         $sub = trim($subCategory);
@@ -489,6 +489,7 @@ class SocialLiquidityService
 
         $patterns = [
             '/\bmeminjamkan\s+(?:(?:duit|uang|dana)\s+)?(?:kepada|ke|sama)?\s*([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
+            '/\b(?:mengembalikan|kembalikan)\s+(?:uang|duit|dana)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
             '/\b(?:di\s*pinjam|dipinjam|dipinjami|pinjamin|pinjami|pinjamkan|ngutangin|ngutangi|utangin|hutangin)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
             '/\b(?:pinjam|utang|hutang|ngutang|minjem)\s+(?:dari|ke|kepada|sama)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
             '/\b(?:pinjam|pinjem|minjem)\s+(?:duit|uang|dana)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
