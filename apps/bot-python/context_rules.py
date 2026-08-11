@@ -2,7 +2,8 @@
 
 Prioritas eksklusif (YFD AI Taxonomy v1.3) — yang di atas menang, tidak ditabrak yang bawah:
 0) Jenis eksplisit user di awal teks — menang mutlak
-1) Likuiditas sosial (pinjam/utang/akan kembali) mengalahkan Pemasukan
+1) Likuiditas sosial (4 arah pinjam-meminjam) mengalahkan Pemasukan DAN
+   kategori tujuan (kuliah/obat/RS/kerja). Jatuh tempo bukan jenis transaksi.
 2) Pemasukan khusus (kecuali skip karena sosial / Pengeluaran eksplisit)
 3) DP aset / Saving-Investment / pajak
 4) Pengeluaran: bisnis jasa → makeup/skincare → proteksi (asuransi/BPJS saja)
@@ -1061,7 +1062,19 @@ _SELF = r"(?:saya|aku|gue|gw|kami|kita)"
 _NOT_SELF = r"(?!saya\b|aku\b|gue\b|gw\b|kami\b|kita\b)"
 _PERSON = r"([a-zà-ÿ][\wà-ÿ.\-]{1,40})"
 _PREP_FROM = r"(?:dari|ke|kek|kepada|sama|dengan|pada)"
+# Bukan nama orang: tujuan pinjaman, preposisi, nominal, benda yang dipinjam.
+_NOT_LENDER_NAME = (
+    r"(?:untuk|buat|karena|kebutuhan|bayar|biaya|kuliah|sekolah|obat|"
+    r"rs|rumahsakit|kerja|bisnis|usaha|modal|kepentingan|"
+    r"uang|duit|dana|pinjaman|rupiah|rp|"
+    r"laptop|hp|charger|buku|mobil|motor|rumah|kos|tiket|makanan|makan|"
+    r"baju|sepatu|makeup|skincare|"
+    r"di|yang|dulu|dong|aja|lah|sih|nih|ya|bulan|depan|nanti|lagi|"
+    r"dari|ke|kek|kepada|sama|dengan|pada)\b"
+)
 _MONEY = r"(?:duit|uang|dana|pinjaman)?"
+_MONEY_WORD = r"(?:duit|uang|dana)"
+_AMOUNT_GAP = r"(?:(?:rp\s*)?\d[\d.,]*\s*(?:rb|ribu|k|jt|juta)?\s+)?"
 
 # Likuiditas Sosial §5 — uang KELUAR dipinjamkan ke orang lain
 # JANGAN masukkan "utang ke" / "pinjam ke" (itu = saya berhutang).
@@ -1070,8 +1083,6 @@ _PIUTANG_KELUAR = (
     "piutang keluar",
     "di pinjam",
     "dipinjam",
-    "dipinjami",
-    "dipinjemin",
     "pinjamin",
     "pinjami",
     "pinjamkan",
@@ -1114,9 +1125,12 @@ _PIUTANG_KELUAR = (
 _PIUTANG_KELUAR_PATTERNS = (
     re.compile(rf"\b{_SELF}\s+(?:yang\s+)?(?:pinjamkan|pinjamin|pinjami|pinjemin|minjamin)\b", re.IGNORECASE),
     re.compile(rf"\b{_SELF}\s+(?:ngutangin|ngutangi|utangin|hutangin|talangin|nombokin)\b", re.IGNORECASE),
-    # Wajib suffix i/in/kan atau "di pinjam" — jangan cocokkan "pinjam ke mama".
-    re.compile(rf"\b(?:di\s+)?pinjam(?:i|in|kan)\s+{_PERSON}\b", re.IGNORECASE),
-    re.compile(rf"\bdipinjam(?:i|in|kan)?\s+{_PERSON}\b", re.IGNORECASE),
+    # "di pinjam catherine" / "dipinjam catherine" = mereka pinjam ke kita.
+    # Jangan cocokkan dipinjami/dipinjemin (itu kita yang dipinjami = Utang Masuk).
+    re.compile(rf"\bdi\s+pinjam\s+{_PERSON}\b", re.IGNORECASE),
+    re.compile(rf"\bdipinjam(?!i|in)\s+{_PERSON}\b", re.IGNORECASE),
+    re.compile(rf"\b(?:pinjam(?:i|in|kan)|pinjemin|minjamin|minjemin)\s+{_PERSON}\b", re.IGNORECASE),
+    re.compile(rf"\bdipinjamkan\s+{_PERSON}\b", re.IGNORECASE),
     re.compile(r"\b(?:kasih|kasi|kasihin)\s+(?:pinjam|utang|hutang)\b", re.IGNORECASE),
     re.compile(
         r"\b(?:transfer|kirim|bantu)\s+(?:ke|kepada|sama)\s+"
@@ -1161,7 +1175,7 @@ _UTANG_MASUK = (
 
 _UTANG_MASUK_PATTERNS = (
     re.compile(
-        rf"\b{_SELF}\s+pinjam(?!kan|i|in)\s+(?:{_MONEY}\s+)?{_PREP_FROM}\b",
+        rf"\b{_SELF}\s+pinjam(?!kan|i|in)\s+(?:{_MONEY}\s+)?{_AMOUNT_GAP}{_PREP_FROM}\b",
         re.IGNORECASE,
     ),
     re.compile(
@@ -1170,7 +1184,23 @@ _UTANG_MASUK_PATTERNS = (
     ),
     # "pinjam ke mama" / "pinjem duit ke mama" = kita yang berhutang.
     re.compile(
-        rf"\bpinjam(?!kan|i|in)\s+(?:(?:duit|uang|dana)\s+)?{_PREP_FROM}\b",
+        rf"\bpinjam(?!kan|i|in)\s+(?:(?:duit|uang|dana)\s+)?{_AMOUNT_GAP}{_PREP_FROM}\b",
+        re.IGNORECASE,
+    ),
+    # "saya pinjam uang ayuti" / "pinjam uang ayuti" tanpa ke/dari.
+    re.compile(
+        rf"\b{_SELF}\s+pinjam(?!kan|i|in)\s+{_MONEY_WORD}\s+"
+        rf"(?!{_NOT_LENDER_NAME}){_PERSON}\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\bpinjam(?!kan|i|in)\s+{_MONEY_WORD}\s+"
+        rf"(?!{_NOT_LENDER_NAME}){_PERSON}\b",
+        re.IGNORECASE,
+    ),
+    # "saya pinjam ayuti 5jt" / "saya pinjam 5jt ayuti"
+    re.compile(
+        rf"\b{_SELF}\s+pinjam(?!kan|i|in)\s+{_AMOUNT_GAP}(?!{_NOT_LENDER_NAME}){_PERSON}\b",
         re.IGNORECASE,
     ),
     re.compile(
@@ -1184,7 +1214,13 @@ _UTANG_MASUK_PATTERNS = (
     re.compile(rf"\b{_SELF}\s+(?:yang\s+)?(?:berhutang|berutang|ngutang)\b", re.IGNORECASE),
     re.compile(r"\b(?:terima|nerima|dapat|dapet)\s+(?:uang\s+)?pinjaman\b", re.IGNORECASE),
     re.compile(rf"\b(?:dipinjami|dipinjemin)\s+(?:oleh\s+)?{_PERSON}\b", re.IGNORECASE),
+    re.compile(rf"\b{_SELF}\s+dipinjami\b", re.IGNORECASE),
     re.compile(r"\b(?:pinjam|minjam|minjem)\s+kek\b", re.IGNORECASE),
+    # "ayuti kasih pinjam" = mereka yang meminjami kita.
+    re.compile(
+        rf"\b{_NOT_SELF}{_PERSON}\s+(?:kasih|kasi|kasihin)\s+pinjam\b",
+        re.IGNORECASE,
+    ),
 )
 
 # Utang sosial — bayar balik ke orang (cash turun; bukan Cicilan bank/pinjol)
@@ -1238,6 +1274,10 @@ _UTANG_KELUAR_PATTERNS = (
     ),
     re.compile(
         rf"\b{_SELF}\s+(?:bayar|lunasi|lunasin)\s+(?:utang|hutang|pinjaman)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\bkembalikan\s+(?:uang|duit|dana).*\byang\s+{_SELF}\s+pinjam\b",
         re.IGNORECASE,
     ),
 )
@@ -1604,142 +1644,144 @@ def is_pinjol_or_cash_loan(text: str) -> bool:
     return any(k in lower for k in ("pinjol", "pinjaman online", "pinjaman tunai"))
 
 
+def _source_without_klarifikasi(text: str) -> str:
+    idx = (text or "").lower().find("klarifikasi user:")
+    return text[:idx] if idx >= 0 else (text or "")
+
+
+def _klarifikasi_only(text: str) -> str:
+    idx = (text or "").lower().find("klarifikasi user:")
+    return text[idx:] if idx >= 0 else ""
+
+
+def _first_pattern_hit(lower: str, patterns: tuple[re.Pattern[str], ...]) -> int | None:
+    best: int | None = None
+    for rx in patterns:
+        m = rx.search(lower)
+        if m and (best is None or m.start() < best):
+            best = m.start()
+    return best
+
+
+def _first_phrase_hit(lower: str, phrases: tuple[str, ...]) -> int | None:
+    best: int | None = None
+    for phrase in phrases:
+        token = phrase.lower().strip()
+        if not token:
+            continue
+        i = lower.find(token)
+        if i >= 0 and (best is None or i < best):
+            # "dipinjam" jangan menelan "dipinjami" (Utang Masuk).
+            if token == "dipinjam" and re.match(r"dipinjami|dipinjemin", lower[i:]):
+                continue
+            best = i
+    return best
+
+
+def _earliest_social_jenis(lower: str) -> str | None:
+    """Jenis likuiditas sosial dari sinyal paling awal. Satu teks = satu arah."""
+    candidates: list[tuple[int, int, str]] = []
+    groups = (
+        ("Piutang Masuk", _PIUTANG_MASUK_PATTERNS, _PIUTANG_MASUK, 0),
+        ("Utang Keluar", _UTANG_KELUAR_PATTERNS, _UTANG_KELUAR, 1),
+        ("Utang Masuk", _UTANG_MASUK_PATTERNS, _UTANG_MASUK, 2),
+        ("Piutang Keluar", _PIUTANG_KELUAR_PATTERNS, _PIUTANG_KELUAR, 3),
+    )
+    for jenis, patterns, phrases, tie in groups:
+        pos = _first_pattern_hit(lower, patterns)
+        phrase_pos = _first_phrase_hit(lower, phrases)
+        if pos is None or (phrase_pos is not None and phrase_pos < pos):
+            pos = phrase_pos
+        if pos is not None:
+            candidates.append((pos, tie, jenis))
+    if not candidates:
+        return None
+    return min(candidates)[2]
+
+
+_LEND_CLAR = (
+    "pinjamkan",
+    "meminjamkan",
+    "piutang",
+    "nanti balik",
+    "nanti kembali",
+    "nanti diganti",
+    "dia yang utang",
+    "dia yang hutang",
+    "saya yang pinjamin",
+    "saya pinjamkan",
+    "aku pinjamkan",
+    "aku pinjamin",
+)
+_BORROW_CLAR = (
+    "berhutang",
+    "berutang",
+    "saya yang utang",
+    "saya yang hutang",
+    "utang saya",
+    "hutang saya",
+    "menerima pinjaman",
+    "terima pinjaman",
+    "pinjam dari",
+    "utang masuk",
+    "hutang masuk",
+    "saya yang berhutang",
+    "aku yang utang",
+    "aku yang hutang",
+)
+
+
+def _resolve_ambiguous_utang_ke(source: str, clar: str) -> str | None:
+    if not any(p.search(source) for p in _AMBIGUOUS_UTANG_PATTERNS):
+        return None
+    if any(k in clar for k in _LEND_CLAR):
+        return "Piutang Keluar"
+    if any(k in clar for k in _BORROW_CLAR):
+        return "Utang Masuk"
+    return None
+
+
+def detect_social_liquidity_jenis(text: str) -> str | None:
+    """Satu arah likuiditas sosial, atau None.
+
+    Kata kerja paling awal yang menang. Tujuan (kuliah/obat/RS) dan jatuh tempo
+    (kembali bulan depan) tidak mengubah jenis. Pinjol/lembaga = bukan sosial.
+    """
+    raw = text or ""
+    if not raw.strip():
+        return None
+    if is_pinjol_or_cash_loan(raw):
+        return None
+    source = _normalize_typos(_source_without_klarifikasi(raw))
+    full = _normalize_typos(raw)
+    clar = _normalize_typos(_klarifikasi_only(raw))
+    hit = _earliest_social_jenis(source)
+    if hit:
+        return hit
+    hit = _earliest_social_jenis(full)
+    if hit:
+        return hit
+    return _resolve_ambiguous_utang_ke(source, clar)
+
+
 def is_receivable_repay(text: str) -> bool:
     """Pelunasan piutang — Piutang Masuk (orang lain mengembalikan ke kita)."""
-    lower = _normalize_typos(text)
-    # Kita yang meminjam / akan mengembalikan → Utang Masuk/Keluar, bukan Piutang Masuk.
-    if re.search(
-        r"\b(?:saya|aku|gue|gw)\s+pinjam(?!kan|i|in)\b",
-        lower,
-    ):
-        return False
-    if re.search(
-        r"\b(?:saya|aku|gue|gw)\s+(?:minjem|utang|ngutang|hutang)\b",
-        lower,
-    ):
-        return False
-    if re.search(
-        r"\b(?:saya|aku|gue|gw)\s+(?:akan\s+|mau\s+|rencana\s+)?(?:mengembalikan|kembalikan|balikin|bayar\s+balik)\b",
-        lower,
-    ):
-        return False
-    if re.search(r"\brencana\b.*\b(?:saya|aku)\s+(?:kembalikan|balikin)\b", lower):
-        return False
-    # "nanti dia bayar balik" = janji saat meminjamkan → bukan pelunasan.
-    if re.search(r"\bnanti\s+(?:dia\s+)?(?:bayar\s+balik|ganti|balikin|kembali)", lower):
-        return False
-    # Bayar utang kita ke orang lain = Utang Keluar, bukan Piutang Masuk.
-    if re.search(r"\b(?:bayar|lunasi|lunasin|balikin|kembalikan)\s+(?:utang|hutang)\s+ke\b", lower):
-        return False
-    if _contains(lower, _PIUTANG_MASUK):
-        return True
-    return any(p.search(lower) for p in _PIUTANG_MASUK_PATTERNS)
+    return detect_social_liquidity_jenis(text) == "Piutang Masuk"
 
 
 def is_lending_to_others(text: str) -> bool:
     """Uang keluar dipinjamkan — Piutang Keluar (§5.1)."""
-    lower = _normalize_typos(text)
-    if is_receivable_repay(lower):
-        return False
-    # "saya pinjam ke X" = kita berhutang, bukan meminjamkan.
-    if any(p.search(lower) for p in _UTANG_MASUK_PATTERNS) or _contains(lower, _UTANG_MASUK):
-        if not _contains(lower, _PIUTANG_KELUAR):
-            return False
-        if re.search(r"\b(?:saya|aku|gue|gw)\s+pinjam(?!kan|i|in)\b", lower):
-            return False
-        if re.search(r"\b(?:saya|aku|gue|gw)\s+(?:minjem|utang|ngutang)\b", lower):
-            return False
-    if "klarifikasi user:" in lower and any(
-        k in lower
-        for k in (
-            "pinjamkan",
-            "meminjamkan",
-            "piutang",
-            "nanti balik",
-            "nanti kembali",
-            "nanti diganti",
-            "dia yang utang",
-            "dia yang hutang",
-            "saya yang pinjamin",
-        )
-    ):
-        return True
-    if _contains(lower, _PIUTANG_KELUAR):
-        return True
-    return any(p.search(lower) for p in _PIUTANG_KELUAR_PATTERNS)
+    return detect_social_liquidity_jenis(text) == "Piutang Keluar"
 
 
 def is_social_debt_borrow(text: str) -> bool:
     """Terima pinjaman sosial — Utang Masuk (cash bertambah; bukan Pemasukan)."""
-    lower = _normalize_typos(text)
-    if is_social_debt_repay(lower):
-        return False
-    # "kasih pinjam X" = kita meminjamkan, bukan kita yang utang.
-    if re.search(r"\b(?:kasih|kasi|kasihin)\s+pinjam\b", lower):
-        return False
-    # Pinjam oleh kita menang atas sinyal "kembalikan" di rencana pelunasan.
-    if any(p.search(lower) for p in _UTANG_MASUK_PATTERNS):
-        return True
-    if is_receivable_repay(lower):
-        return False
-    if is_lending_to_others(lower) and "klarifikasi user:" not in lower:
-        if _contains(lower, _PIUTANG_KELUAR):
-            return False
-    if "klarifikasi user:" in lower and any(
-        k in lower
-        for k in (
-            "berhutang",
-            "berutang",
-            "saya yang utang",
-            "saya yang hutang",
-            "utang saya",
-            "hutang saya",
-            "menerima pinjaman",
-            "terima pinjaman",
-            "pinjam dari",
-            "utang masuk",
-            "hutang masuk",
-        )
-    ):
-        return True
-    return _contains(lower, _UTANG_MASUK)
+    return detect_social_liquidity_jenis(text) == "Utang Masuk"
 
 
 def is_social_debt_repay(text: str) -> bool:
     """Bayar balik pinjaman sosial — Utang Keluar (bukan Cicilan bank/pinjol)."""
-    lower = _normalize_typos(text)
-    # Orang lain yang mengembalikan = Piutang Masuk, bukan kita lunasi utang.
-    if is_receivable_repay(lower):
-        return False
-    if is_pinjol_or_cash_loan(lower) or _contains(lower, _CICILAN):
-        if not _contains(lower, _UTANG_KELUAR) and not any(p.search(lower) for p in _UTANG_KELUAR_PATTERNS):
-            return False
-        if any(k in lower for k in ("pinjol", "pinjaman online", "kartu kredit", "paylater", "kpr", "cicilan motor", "cicilan mobil")):
-            return False
-    if "klarifikasi user:" in lower and any(
-        k in lower
-        for k in (
-            "bayar hutang",
-            "bayar utang",
-            "utang keluar",
-            "hutang keluar",
-            "lunasi",
-            "bayar balik hutang",
-            "bayar balik utang",
-            "saya kembalikan",
-            "saya mengembalikan",
-        )
-    ):
-        return True
-    if any(p.search(lower) for p in _UTANG_KELUAR_PATTERNS):
-        # Baru pinjam + rencana kembalikan besok → Utang Masuk, bukan Keluar.
-        if re.search(r"\b(?:saya|aku|gue|gw)\s+pinjam(?!kan|i|in)\b", lower) and re.search(
-            r"\b(?:besok|lusa|nanti|rencana|minggu\s+depan|bulan\s+depan)\b",
-            lower,
-        ):
-            return False
-        return True
-    return _contains(lower, _UTANG_KELUAR)
+    return detect_social_liquidity_jenis(text) == "Utang Keluar"
 
 
 def is_explicit_debt_repayment(text: str) -> bool:
@@ -1756,14 +1798,7 @@ def is_ambiguous_utang_ke_person(text: str) -> bool:
     lower = _normalize_typos(text)
     if "klarifikasi user:" in lower:
         return False
-    if any(p.search(lower) for p in _UTANG_MASUK_PATTERNS):
-        return False
-    if (
-        is_receivable_repay(lower)
-        or is_lending_to_others(lower)
-        or is_social_debt_borrow(lower)
-        or is_social_debt_repay(lower)
-    ):
+    if detect_social_liquidity_jenis(text):
         return False
     return any(p.search(lower) for p in _AMBIGUOUS_UTANG_PATTERNS)
 
@@ -2074,12 +2109,8 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     direction = detect_cashflow_direction(text)
     # User tulis "Pengeluaran …" → jangan pernah paksa Pemasukan dari keyword kategori.
     skip_income = explicit == "Pengeluaran" or direction == "Pengeluaran"
-    if (
-        is_social_debt_borrow(lower)
-        or is_social_debt_repay(lower)
-        or is_receivable_repay(lower)
-        or is_lending_to_others(lower)
-    ):
+    social_jenis = detect_social_liquidity_jenis(lower)
+    if social_jenis:
         # Terima/bayar pinjaman orang = likuiditas sosial, bukan Pemasukan/Pengeluaran.
         skip_income = True
     # User tulis "Pemasukan …" → tetap izinkan income rules (dan skip expense force).
@@ -2114,6 +2145,13 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         # Kata kerja masuk jelas, tapi kategori belum ketemu → Pemasukan generik.
         if direction == "Pemasukan":
             return {"jenis": "Pemasukan", "kategori": "Lain-lain", "sifat": "Need"}
+
+    # Likuiditas sosial sebelum kategori tujuan (kuliah/obat/makeup) dan sebelum
+    # "Pemasukan …" eksplisit — terima pinjaman bukan pendapatan.
+    if social_jenis:
+        return {"jenis": social_jenis, "kategori": "Lain-lain", "sifat": "Need"}
+    if is_ambiguous_utang_ke_person(lower):
+        return None
 
     if force_income_only:
         return None
@@ -2227,20 +2265,6 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     # Air minum/galon sebelum jajan — "beli aqua" sering salah jadi Jajan.
     if is_drinking_water_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
-    # Piutang Masuk dulu: "Ayuti balikin hutang" / "dibalikin ayuti"
-    # jangan tertangkap sebagai Utang Keluar ("kembalikan hutang").
-    if is_receivable_repay(lower):
-        return {"jenis": "Piutang Masuk", "kategori": "Lain-lain", "sifat": "Need"}
-    # Hutang sosial: bayar balik → Utang Keluar; terima pinjaman → Utang Masuk
-    if is_social_debt_repay(lower):
-        return {"jenis": "Utang Keluar", "kategori": "Lain-lain", "sifat": "Need"}
-    if is_social_debt_borrow(lower):
-        return {"jenis": "Utang Masuk", "kategori": "Lain-lain", "sifat": "Need"}
-    # Frasa ambigu "utang ke X" → jangan tebak di layer keyword (klarifikasi dulu)
-    if is_ambiguous_utang_ke_person(lower):
-        return None
-    if is_lending_to_others(lower):
-        return {"jenis": "Piutang Keluar", "kategori": "Lain-lain", "sifat": "Need"}
     if is_fisioterapi_expense(lower):
         return {
             "jenis": "Pengeluaran",
@@ -2342,6 +2366,15 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         parsed.pop("sub_kategori", None)
         return parsed
 
+    social_jenis = detect_social_liquidity_jenis(lower_combined)
+    if social_jenis:
+        parsed["jenis"] = social_jenis
+        parsed["kategori"] = "Lain-lain"
+        if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
+            parsed["sifat"] = "Need"
+        parsed.pop("sub_kategori", None)
+        return parsed
+
     # Hadiah yang diberi (§4 Hadiah / Flexible) — jangan timpa pinjam/utang yang sudah jelas.
     if is_gift_expense(combined):
         parsed["jenis"] = "Pengeluaran"
@@ -2365,36 +2398,6 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         parsed["kategori"] = "Transportasi"
         parsed["sifat"] = "Wants"
         parsed.pop("sub_kategori", None)
-    # Likuiditas Sosial: Piutang Masuk dulu agar "X balikin hutang" tidak jadi Utang Keluar.
-    elif is_receivable_repay(lower_combined):
-        parsed["jenis"] = "Piutang Masuk"
-        parsed["kategori"] = "Lain-lain"
-        if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
-            parsed["sifat"] = "Need"
-    elif is_social_debt_repay(lower_combined):
-        parsed["jenis"] = "Utang Keluar"
-        parsed["kategori"] = "Lain-lain"
-        if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
-            parsed["sifat"] = "Need"
-        parsed.pop("sub_kategori", None)
-    elif is_social_debt_borrow(lower_combined):
-        parsed["jenis"] = "Utang Masuk"
-        parsed["kategori"] = "Lain-lain"
-        if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
-            parsed["sifat"] = "Need"
-        parsed.pop("sub_kategori", None)
-    elif is_lending_to_others(lower_combined):
-        parsed["jenis"] = "Piutang Keluar"
-        if not str(parsed.get("kategori") or "").strip() or str(parsed.get("kategori") or "").strip().lower() in {
-            "sosial & keluarga",
-            "cicilan & hutang",
-            "lain-lain",
-            "lainnya",
-            "pemasukan",
-        }:
-            parsed["kategori"] = "Lain-lain"
-        if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
-            parsed["sifat"] = "Need"
     # Kata kerja arah uang menang jika AI salah (terima ≠ pengeluaran).
     elif (
         direction
@@ -2808,6 +2811,9 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "grab ke kantor 28rb" → Pengeluaran / Transportasi / Need
 - "grab dari kos ke gym 21rb" → Pengeluaran / Transportasi / Wants (bucket Flexible; BUKAN Lifestyle)
 - "grab ke networking bisnis 45rb" → Pengeluaran / Transportasi / Need (bucket Future Building)
+- "saya pinjam uang ayuti 5 jt" → Utang Masuk (BUKAN Pengeluaran; tanpa ke/dari tetap kita yang utang)
+- "saya pinjam uang ayuti 5 jt" + tujuan kuliah / kembali bulan depan → TETAP Utang Masuk (tujuan & jatuh tempo bukan jenis; BUKAN Pendidikan)
+- "bayar kuliah 5 jt" (tanpa kata pinjam) → Pengeluaran / Pendidikan
 - "Di pinjam Catherine 1 jt buat bayar RS" → Piutang Keluar (BUKAN Kesehatan; likuiditas sosial)
 - "Grace kembalikan uang yang dipinjam sebelumnya 2,7jt" → Piutang Masuk (pelunasan; BUKAN Piutang Keluar / BUKAN Pemasukan)
 - "utang ke Ayuti 1jt" → AMBIGU — tanya: meminjamkan (Piutang Keluar) atau berhutang/terima pinjaman (Utang Masuk)

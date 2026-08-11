@@ -290,12 +290,12 @@ Aturan:
      * PBB / STNK / pajak kendaraan = Pengeluaran (bukan Kewajiban Pajak).
    - Piutang Keluar: pinjamin / pinjamkan / ngutangin / di pinjam X / talangin / kasih pinjam / bayarkan dulu / nanti dia ganti.
    - Piutang Masuk: dibalikin X / X balikin hutang / X bayar balik / transfer balik dari X / uang dikembalikan — BUKAN Utang Keluar, BUKAN Pemasukan.
-   - Utang Masuk: pinjam ke / pinjem duit ke / minjem ke / ngutang sama/dari / pinjam dari / terima pinjaman — cash naik, BUKAN Pengeluaran.
+   - Utang Masuk: saya pinjam / pinjam ke/dari/sama / pinjam uang [nama] (tanpa ke/dari) / ngutang / terima pinjaman — cash naik, BUKAN Pemasukan, BUKAN Pengeluaran.
+     * "saya pinjam uang ayuti 5jt" = Utang Masuk meski tanpa kata ke/dari.
+     * Tujuan pinjaman (kuliah, obat, RS, kerja) dan jatuh tempo (kembali bulan depan) BUKAN jenis. Jangan jadi Pendidikan/Kesehatan.
    - Utang Keluar: bayar/lunasi/balikin utang ke X / saya kembalikan uang yang saya pinjam — BUKAN Pengeluaran 4-bucket.
-   - Utang Masuk: pinjam dari / ngutang dari / terima pinjaman sosial — likuiditas naik, BUKAN Pemasukan.
-   - Utang Keluar: bayar utang/hutang ke orang (sosial) — BUKAN Pengeluaran 4-bucket.
      * Cicilan lembaga (pinjol/KPR/kartu kredit/paylater) tetap Pengeluaran + Cicilan & Hutang.
-   - PRINSIP: Likuiditas Sosial hanya mengubah kas & piutang/hutang. Belanja dari dana pinjaman (mis. bayar RS) tetap Pengeluaran + bucket.
+   - PRINSIP: Likuiditas Sosial hanya mengubah kas & piutang/hutang. Belanja dari dana pinjaman (mis. bayar RS / bayar kuliah) tetap Pengeluaran + bucket — itu transaksi TERPISAH, bukan catatan pinjamnya.
    - Hadiah/kado/parcel/tip yang DIBERI = Pengeluaran + Hadiah. BUKAN Likuiditas Sosial.
      Beli gadget sebagai hadiah tidak perlu grey area HP rusak vs upgrade.
    - Terima hadiah uang = Pemasukan (bukan kategori Hadiah).

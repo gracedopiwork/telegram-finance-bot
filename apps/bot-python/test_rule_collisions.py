@@ -95,6 +95,18 @@ class ClassifyCollisionTests(unittest.TestCase):
         self.assertEqual(parsed["jenis"], "Utang Masuk")
         self.assertIsNone(parsed["bucket"])
 
+    def test_pinjam_uang_nama_bukan_pengeluaran_pendidikan(self) -> None:
+        for text in (
+            "saya pinjam uang ayuti 5 jt",
+            "saya pinjam uang ayuti 5 jt\nKlarifikasi user: kebutuhan bayar uang kuliah, kembali bulan depan",
+        ):
+            with self.subTest(text=text):
+                parsed = classify_offline(text)
+                self.assertEqual(parsed["jenis"], "Utang Masuk")
+                self.assertEqual(parsed["kategori"], "Lain-lain")
+                self.assertNotEqual(parsed["kategori"], "Pendidikan")
+                self.assertIsNone(parsed["bucket"])
+
     def test_pph21_is_tax_excluded(self) -> None:
         parsed = classify_offline("bayar PPh 21 1jt")
         self.assertEqual(parsed["jenis"], "Kewajiban Pajak")

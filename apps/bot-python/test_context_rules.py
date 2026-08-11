@@ -220,6 +220,26 @@ class ContextRulesTests(unittest.TestCase):
         self.assertClass("pinjem duit ke mama 250k", "Utang Masuk", "Lain-lain")
         self.assertClass("ngutang sama mama 250k", "Utang Masuk", "Lain-lain")
 
+    def test_pinjam_uang_nama_tanpa_prep_adalah_utang_masuk(self) -> None:
+        self.assertClass("saya pinjam uang ayuti 5 jt", "Utang Masuk", "Lain-lain")
+        self.assertClass("pinjam uang ayuti 5 jt", "Utang Masuk", "Lain-lain")
+        text = (
+            "saya pinjam uang ayuti 5 jt\n"
+            "Klarifikasi user: kebutuhan bayar uang kuliah, kembali bulan depan"
+        )
+        self.assertClass(text, "Utang Masuk", "Lain-lain")
+        out = apply_context_rules(
+            {
+                "keterangan": "Pinjam uang Ayuti untuk bayar kuliah",
+                "jenis": "Pengeluaran",
+                "kategori": "Pendidikan",
+                "sifat": "Need",
+            },
+            text,
+        )
+        self.assertEqual(out["jenis"], "Utang Masuk")
+        self.assertEqual(out["kategori"], "Lain-lain")
+
     def test_bayar_utang_ke_adalah_hutang_keluar(self) -> None:
         self.assertClass("bayar utang ke ayuti 1jt", "Utang Keluar", "Lain-lain")
         self.assertClass("lunasi hutang ke ayuti 1jt", "Utang Keluar", "Lain-lain")
