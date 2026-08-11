@@ -1765,6 +1765,32 @@ def _resolve_ambiguous_utang_ke(source: str, clar: str) -> str | None:
     return None
 
 
+_STRONG_LEND_CLAR = re.compile(
+    r"\b(?:meminjamkan|pinjamkan|pinjamin|pinjami|pinjemin|minjamin|"
+    r"ngutangin|ngutangi|talangin|kasih pinjam|kasi pinjam|"
+    r"saya pinjamkan|aku pinjamkan|saya pinjamin|aku pinjamin|"
+    r"dia yang utang|dia yang hutang)\b",
+    re.IGNORECASE,
+)
+_STRONG_BORROW_CLAR = re.compile(
+    r"\b(?:berhutang|berutang|terima pinjaman|nerima pinjaman|"
+    r"saya yang utang|aku yang utang|saya yang hutang|aku yang hutang|"
+    r"saya yang berhutang|utang saya|hutang saya|pinjam dari|utang masuk|hutang masuk)\b",
+    re.IGNORECASE,
+)
+
+
+def _arah_from_clarification(clar: str) -> str | None:
+    """Balasan user mengoreksi arah: pinjamkan = Piutang Keluar, bukan Utang Masuk."""
+    if not (clar or "").strip():
+        return None
+    if _STRONG_LEND_CLAR.search(clar):
+        return "Piutang Keluar"
+    if _STRONG_BORROW_CLAR.search(clar):
+        return "Utang Masuk"
+    return None
+
+
 def _self_returning_own_loan(lower: str) -> bool:
     """Kita mengembalikan uang yang kita pinjam = Utang Keluar.
 
@@ -1795,6 +1821,10 @@ def detect_social_liquidity_jenis(text: str) -> str | None:
     # "mengembalikan uang … yang saya pinjam" = kita lunasi utang, bukan Piutang Masuk.
     if _self_returning_own_loan(source) or _self_returning_own_loan(full):
         return "Utang Keluar"
+    # "pinjam ke X" terkunci Utang Masuk; klarifikasi "pinjamkan" harus menang.
+    clar_arah = _arah_from_clarification(clar)
+    if clar_arah:
+        return clar_arah
     hit = _earliest_social_jenis(source)
     if hit:
         return hit

@@ -260,6 +260,17 @@ class ContextRulesTests(unittest.TestCase):
             "utang ke ayuti 1 juta\nKlarifikasi user: saya pinjamkan, nanti balik",
         )
         self.assertEqual(out["jenis"], "Piutang Keluar")
+        out = apply_context_rules(
+            {
+                "keterangan": "buat Ayuti, 1 bulan lagi",
+                "jenis": "Utang Masuk",
+                "kategori": "Lain-lain",
+                "sifat": "Need",
+            },
+            "buat Ayuti 1jt, 1 bulan lagi\n"
+            "Klarifikasi user: Pinjamkan uang ke Ayuti untuk biaya ke dokter, bulan depan",
+        )
+        self.assertEqual(out["jenis"], "Piutang Keluar")
 
     def test_klarifikasi_berhutang_jadi_hutang_masuk(self) -> None:
         parsed = {

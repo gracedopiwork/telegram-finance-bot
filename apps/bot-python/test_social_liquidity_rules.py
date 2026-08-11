@@ -107,6 +107,7 @@ class SocialLiquidityRulesTests(unittest.TestCase):
         samples = (
             "pinjamin ayuti 500k",
             "pinjamkan ayuti 500k",
+            "Pinjamkan uang ke Ayuti untuk biaya ke dokter 1jt, bulan depan",
             "ngutangin ayuti 500k",
             "di pinjam ayuti 500k",
             "dipinjam catherine 500k",
@@ -193,6 +194,22 @@ class SocialLiquidityRulesTests(unittest.TestCase):
             "utang ke ayuti 1 juta\nKlarifikasi user: saya yang berhutang",
         )
         self.assertEqual(borrow["jenis"], "Utang Masuk")
+
+    def test_klarifikasi_pinjamkan_mengalahkan_pinjam_ke(self) -> None:
+        text = (
+            "buat Ayuti, 1 bulan lagi\n"
+            "Klarifikasi user: Pinjamkan uang ke Ayuti untuk biaya ke dokter, bulan depan"
+        )
+        self.assertArah(text, "Piutang Keluar")
+        self.assertArah(
+            "pinjam ke Ayuti 1jt buat dokter\n"
+            "Klarifikasi user: Pinjamkan uang ke Ayuti untuk biaya ke dokter, bulan depan",
+            "Piutang Keluar",
+        )
+        self.assertArah(
+            "Pinjamkan uang ke Ayuti untuk biaya ke dokter 1jt, bulan depan",
+            "Piutang Keluar",
+        )
 
     def test_bukan_likuiditas_sosial(self) -> None:
         cases = (
