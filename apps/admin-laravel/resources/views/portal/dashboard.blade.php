@@ -73,7 +73,7 @@
         @else
             <p class="text-sm text-slate-600">
                 Belum ada Doctor's Note untuk periode ini.
-                Rekomendasi bulanan dirilis otomatis <strong>akhir bulan pukul 22.00 WIB</strong> (tanpa generate manual, agar hemat kuota AI).
+                Rekomendasi bulanan dirilis otomatis <strong>akhir bulan pukul 22.00 WIB</strong>.
             </p>
         @endif
     </div>

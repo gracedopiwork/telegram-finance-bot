@@ -120,11 +120,11 @@
         </h1>
         <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
             @if($isPremarital)
-                {!! nl2br(e(($page['page.pertemuan.hero_subtitle_premarital'] ?? null) ?: 'Karena 2 orang yang konsultasi, pilih dokter di awal agar sesi male, female, dan couple ditangani dokter yang sama. Lalu pilih tanggal & jam available.')) !!}
+                {!! nl2br(e(($page['page.pertemuan.hero_subtitle_premarital'] ?? null) ?: 'Karena 2 orang yang konsultasi, pilih dokter di awal agar sesi male, female, dan couple ditangani dokter yang sama. Pilih tanggal & jam, lalu bayar untuk mengunci slot.')) !!}
             @elseif($isRecovery)
-                {!! nl2br(e(($page['page.pertemuan.hero_subtitle_recovery'] ?? null) ?: 'Pendampingan intensif untuk kondisi finansial darurat. Pilih tanggal & jam available, lanjut WhatsApp — admin verifikasi pembayaran untuk mengunci slot.')) !!}
+                {!! nl2br(e(($page['page.pertemuan.hero_subtitle_recovery'] ?? null) ?: 'Pendampingan intensif untuk kondisi finansial darurat. Pilih tanggal & jam available, lalu bayar via payment gateway untuk mengunci slot.')) !!}
             @else
-                {!! nl2br(e(($page['page.pertemuan.hero_subtitle_standard'] ?? null) ?: 'Konsultasi 1-on-1 dengan dokter YFD dilakukan secara online via WhatsApp. Pilih tanggal & jam yang tersedia, lalu lanjut ke WhatsApp.')) !!}
+                {!! nl2br(e(($page['page.pertemuan.hero_subtitle_standard'] ?? null) ?: 'Konsultasi 1-on-1 dengan dokter YFD secara online. Pilih tanggal & jam tersedia, bayar sesuai tahap FHCU, baru jadwal dikunci.')) !!}
                 Belum screening? <a href="{{ $primaryCheckupUrl }}" class="text-primary-container font-semibold underline">Mulai gratis</a>.
             @endif
         </p>
@@ -132,11 +132,16 @@
 
     @if(!$isRecovery && !$isPremarital && ($selectedTier ?? null))
         <div class="mb-8 max-w-3xl mx-auto rounded-xl bg-secondary-container/20 border border-secondary-container/40 px-5 py-4 text-sm text-on-surface">
-            <strong>Estimasi tarif konsultasi untuk tahap {{ $selectedTier['label'] }}:</strong>
+            <strong>Tarif sesi untuk tahap {{ $selectedTier['label'] }}:</strong>
             {{ ConsultationPricing::formatRange($selectedTier) }} {{ $consultationMeta['period'] ?? '/sesi' }}.
         </div>
     @endif
 
+    @if(!empty($overtimeDisclosure))
+        <div class="mb-8 max-w-3xl mx-auto rounded-xl border border-outline-variant bg-surface-container-lowest px-5 py-4 text-sm text-on-surface-variant">
+            {{ $overtimeDisclosure }}
+        </div>
+    @endif
     @if(session('error'))
         <div class="mb-6 max-w-3xl mx-auto rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-sm text-red-800">
             {{ session('error') }}
@@ -154,7 +159,7 @@
                 <div class="mb-8">
                     <h2 class="font-headline-lg text-headline-lg text-primary-container mb-2">Informasi Booking</h2>
                     <p class="font-body-md text-body-md text-on-surface-variant">
-                        Setelah submit, slot di-hold {{ $holdMinutes ?? 45 }} menit sampai admin verifikasi pembayaran.
+                        Setelah submit, slot di-hold {{ $holdMinutes ?? 45 }} menit sementara Anda menyelesaikan pembayaran. Jadwal terkunci otomatis setelah status LUNAS.
                     </p>
                 </div>
 
@@ -275,9 +280,9 @@
 
                     @if(!$isRecovery && !$isPremarital)
                     <div>
-                        <label class="font-label-md text-label-md text-on-surface-variant block mb-3">Tahap Finansial (hasil screening)</label>
+                        <label class="font-label-md text-label-md text-on-surface-variant block mb-3">Tahap Finansial (hasil FHCU)</label>
                         <select name="stage" id="stageSelect" class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
-                            <option value="">— belum screening / belum tahu —</option>
+                            <option value="">— otomatis dari FHCU (email) —</option>
                             @foreach($consultationTiers as $stageKey => $tier)
                                 <option value="{{ $stageKey }}"
                                         data-range="{{ ConsultationPricing::formatRange($tier) }}"
@@ -287,6 +292,9 @@
                             @endforeach
                         </select>
                         <p id="stageFeeHint" class="font-caption text-caption text-on-surface-variant mt-2 hidden"></p>
+                        <p class="font-caption text-caption text-on-surface-variant mt-1">
+                            Tarif final mengikuti tahap dari FHCU email Anda (berlaku ≤3 bulan).
+                        </p>
                     </div>
                     @endif
 
@@ -316,13 +324,18 @@
                                    class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
                         </div>
                         <div class="space-y-2">
-                            <label for="bf-phone" class="font-label-md text-label-md text-on-surface-variant">No. WhatsApp (opsional)</label>
-                            <input id="bf-phone" type="text" name="phone" value="{{ old('phone') }}" placeholder="08…"
+                            <label for="bf-email" class="font-label-md text-label-md text-on-surface-variant">Email (sama dengan FHCU) *</label>
+                            <input id="bf-email" type="email" name="email" required value="{{ old('email') }}" placeholder="nama@email.com"
                                    class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label for="bf-phone" class="font-label-md text-label-md text-on-surface-variant">No. WhatsApp (opsional)</label>
+                            <input id="bf-phone" type="text" name="phone" value="{{ old('phone') }}" placeholder="08…"
+                                   class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
+                        </div>
                         <div class="space-y-2">
                             <label for="bf-age" class="font-label-md text-label-md text-on-surface-variant">Usia (opsional)</label>
                             <input id="bf-age" type="number" name="age" min="15" max="99" value="{{ old('age') }}" placeholder="contoh: 28"
@@ -347,9 +360,9 @@
 
                     <div class="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4 border-t border-outline-variant">
                         <button type="submit" {{ $hasSlots ? '' : 'disabled' }}
-                                class="bg-[#25D366] text-white px-10 py-4 rounded-lg font-label-md text-label-md flex items-center justify-center gap-3 hover:opacity-90 transition-opacity shadow-md disabled:opacity-50">
-                            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat</span>
-                            Hold Slot &amp; Lanjut WhatsApp
+                                class="bg-primary-container text-on-primary px-10 py-4 rounded-lg font-label-md text-label-md flex items-center justify-center gap-3 hover:opacity-90 transition-opacity shadow-md disabled:opacity-50">
+                            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
+                            Bayar &amp; Kunci Jadwal
                             <span class="material-symbols-outlined">arrow_forward</span>
                         </button>
                     </div>
@@ -383,7 +396,7 @@
                         @if($isPremarital)
                             Pilih dokter dulu, lalu jadwal. Dokter yang sama menangani semua sesi pasangan.
                         @else
-                            Pilih jadwal available, lalu lanjut WhatsApp. Admin akan mengonfirmasi pembayaran untuk mengunci jadwal.
+                            Pilih jadwal available, lalu bayar via Midtrans. Setelah LUNAS, sistem mengunci slot dan memberi tahu admin.
                         @endif
                     </p>
                 </div>
@@ -638,7 +651,7 @@
             stageFeeHint.classList.add('hidden');
             return;
         }
-        stageFeeHint.textContent = 'Estimasi tarif konsultasi: ' + (opt.dataset.range || '-') + '/sesi.';
+        stageFeeHint.textContent = 'Tarif sesi: ' + (opt.dataset.range || '-') + '.';
         stageFeeHint.classList.remove('hidden');
     }
     if (stageSelect) {

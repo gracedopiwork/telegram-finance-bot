@@ -205,8 +205,8 @@ class CheckoutController extends Controller
     public function finish(Request $request, MidtransPaymentSyncService $paymentSync): View
     {
         $orderCode = $request->query('order_id');
-        $order = $orderCode
-            ? Order::with('license')->where('order_code', $orderCode)->first()
+            $order = $orderCode
+            ? Order::with(['license', 'consultationSlot'])->where('order_code', $orderCode)->first()
             : null;
 
         if ($order !== null && $order->status === 'pending') {

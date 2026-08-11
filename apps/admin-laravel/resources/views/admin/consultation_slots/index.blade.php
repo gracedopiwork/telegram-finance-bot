@@ -1,7 +1,7 @@
 @extends('admin.layouts.page')
 
 @section('page_heading', 'Jadwal Konsultasi')
-@section('page_subheading', 'Slot available dokter — format bioskop (hold 45 menit → konfirmasi bayar)')
+@section('page_subheading', 'Slot available dokter — hold → bayar Midtrans → konfirmasi otomatis')
 
 @section('page_actions')
 <a href="{{ route('admin.consultation-slots.create') }}" class="btn btn-success btn-sm"><i class="fas fa-plus mr-1"></i> Tambah Slot</a>
@@ -73,6 +73,9 @@
                                 <code>{{ $slot->booking_code }}</code>
                                 <div class="small">{{ $slot->guest_name }}</div>
                                 @if($slot->guest_phone)<div class="small text-muted">{{ $slot->guest_phone }}</div>@endif
+                                @if($slot->stage_key)
+                                    <div class="small text-muted">{{ $slot->stage_key }}@if($slot->amount_due) · Rp {{ number_format($slot->amount_due, 0, ',', '.') }}@endif</div>
+                                @endif
                             @else
                                 <span class="text-muted">—</span>
                             @endif
@@ -89,6 +92,11 @@
                                 </form>
                             @endif
                             @if($slot->status === 'confirmed')
+                                <form action="{{ route('admin.consultation-slots.overtime', $slot) }}" method="POST" class="d-inline"
+                                      onsubmit="return confirm('Buat invoice overtime Midtrans (+1 jam) untuk booking ini?')">
+                                    @csrf
+                                    <button class="btn btn-sm btn-outline-primary" title="Invoice overtime"><i class="fas fa-clock"></i></button>
+                                </form>
                                 <form action="{{ route('admin.consultation-slots.release', $slot) }}" method="POST" class="d-inline"
                                       onsubmit="return confirm('Lepas konfirmasi dan buka ulang slot?')">
                                     @csrf

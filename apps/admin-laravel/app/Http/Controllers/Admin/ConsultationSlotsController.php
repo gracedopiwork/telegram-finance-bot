@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ConsultationSlot;
 use App\Models\CpAdvisor;
+use App\Services\ConsultationCheckoutService;
 use App\Services\ConsultationSlotService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -13,6 +14,7 @@ class ConsultationSlotsController extends Controller
 {
     public function __construct(
         private readonly ConsultationSlotService $slots,
+        private readonly ConsultationCheckoutService $checkout,
     ) {}
 
     public function index(Request $request)
@@ -89,6 +91,17 @@ class ConsultationSlotsController extends Controller
         $this->slots->cancelSlot($consultation_slot);
 
         return back()->with('success', 'Slot dibatalkan.');
+    }
+
+    public function overtimeInvoice(ConsultationSlot $consultation_slot)
+    {
+        try {
+            $result = $this->checkout->createOvertimeInvoice($consultation_slot);
+        } catch (ValidationException $e) {
+            return back()->with('error', collect($e->errors())->flatten()->first() ?? 'Gagal buat invoice overtime.');
+        }
+
+        return back()->with('success', 'Invoice overtime dibuat. Salin link: '.$result['payment_url']);
     }
 
     public function destroy(ConsultationSlot $consultation_slot)

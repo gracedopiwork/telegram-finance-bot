@@ -6,8 +6,6 @@ use App\Jobs\DeliverPaidOrderJob;
 use App\Models\License;
 use App\Models\Order;
 use App\Models\PaymentEvent;
-use App\Services\AffiliateService;
-use App\Services\LicenseProvisioningService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -100,21 +98,26 @@ class MidtransPaymentSyncService
             $order->payment_reference = $payload['transaction_id'] ?? $order->payment_reference;
 
             if ($isPaid) {
-                $order->loadMissing('digitalProduct');
-                $provisioning = app(LicenseProvisioningService::class);
-
-                $license = $order->license_id ? License::find($order->license_id) : null;
-                if ($license === null) {
-                    $license = $provisioning->resolveLicenseForPaidOrder($order);
+                if ($order->isConsultationOrder()) {
+                    $order->status = 'paid';
+                    $order->paid_at = $order->paid_at ?? now();
                 } else {
-                    $provisioning->syncEntitlementsOntoLicense($order, $license);
+                    $order->loadMissing('digitalProduct');
+                    $provisioning = app(LicenseProvisioningService::class);
+
+                    $license = $order->license_id ? License::find($order->license_id) : null;
+                    if ($license === null) {
+                        $license = $provisioning->resolveLicenseForPaidOrder($order);
+                    } else {
+                        $provisioning->syncEntitlementsOntoLicense($order, $license);
+                    }
+
+                    $order->license_id = $license->id;
+                    $order->status = 'paid';
+                    $order->paid_at = $order->paid_at ?? now();
+
+                    app(AffiliateService::class)->creditCommissionForPaidOrder($order);
                 }
-
-                $order->license_id = $license->id;
-                $order->status = 'paid';
-                $order->paid_at = $order->paid_at ?? now();
-
-                app(AffiliateService::class)->creditCommissionForPaidOrder($order);
             } elseif ($isFailed) {
                 $order->status = 'failed';
             }
@@ -126,10 +129,5 @@ class MidtransPaymentSyncService
     private function isPaidStatus(string $transactionStatus): bool
     {
         return in_array($transactionStatus, ['capture', 'settlement'], true);
-    }
-
-    private function resolveLicenseForPaidOrder(Order $order): License
-    {
-        return app(LicenseProvisioningService::class)->resolveLicenseForPaidOrder($order);
     }
 }

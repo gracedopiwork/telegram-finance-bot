@@ -4,8 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>@yield('title', 'Terjadi Kesalahan') — Your Financial Doctor</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/yfd-logo.png') }}">
+    @php
+        $brandName = $yfd['brand'] ?? 'Your Financial Doctor';
+        $logoPath = $yfd['logo'] ?? 'images/yfd-logo.png';
+        $logoUrl = asset($logoPath);
+    @endphp
+    <title>@yield('title', 'Terjadi Kesalahan') — {{ $brandName }}</title>
+    <link rel="icon" type="image/png" href="{{ $logoUrl }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400&display=swap" rel="stylesheet">
@@ -29,8 +34,8 @@
 <body class="min-h-screen bg-gradient-to-br from-navy-900 via-navy-800 to-navy-700 text-white antialiased">
     <div class="min-h-screen flex flex-col items-center justify-center px-4 py-12">
         <a href="{{ url('/') }}" class="mb-10 flex items-center gap-3 opacity-90 hover:opacity-100 transition">
-            <img src="{{ asset('images/yfd-logo.png') }}" alt="YFD" class="h-10 w-10 rounded-full bg-white/10 p-1">
-            <span class="text-sm font-semibold tracking-wide text-white/90">Your Financial Doctor</span>
+            <img src="{{ $logoUrl }}" alt="{{ $yfd['short'] ?? 'YFD' }}" class="h-12 w-auto rounded-xl bg-white/95 px-2 py-1">
+            <span class="text-sm font-semibold tracking-wide text-white/90">{{ $brandName }}</span>
         </a>
 
         <main class="w-full max-w-lg text-center">
@@ -46,7 +51,7 @@
             </div>
         </main>
 
-        <p class="mt-12 text-xs text-white/40">&copy; {{ date('Y') }} Your Financial Doctor</p>
+        <p class="mt-12 text-xs text-white/40">&copy; {{ date('Y') }} {{ $brandName }}</p>
     </div>
 </body>
 </html>

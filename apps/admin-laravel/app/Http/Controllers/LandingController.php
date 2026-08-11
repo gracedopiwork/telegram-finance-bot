@@ -12,6 +12,7 @@ use App\Models\CpService;
 use App\Models\GoogleBusinessConnection;
 use App\Models\GoogleBusinessReview;
 use App\Models\Setting;
+use App\Services\ConsultationCheckoutService;
 use App\Services\ConsultationSlotService;
 use App\Support\ConsultationPricing;
 use Illuminate\Http\RedirectResponse;
@@ -313,6 +314,7 @@ class LandingController extends Controller
             'slotsByDate' => $slotsByDate,
             'calendarMonth' => $calendarMonth->format('Y-m'),
             'holdMinutes' => ConsultationSlot::HOLD_MINUTES,
+            'overtimeDisclosure' => ConsultationPricing::overtimeDisclosure(),
             'page' => $this->settingsByGroup('page_pertemuan'),
         ]);
     }
@@ -369,6 +371,7 @@ class LandingController extends Controller
             'slot_id' => 'required|integer|exists:consultation_slots,id',
             'advisor_id' => 'nullable|integer|exists:cp_advisors,id',
             'name' => 'required|string|max:200',
+            'email' => 'required|email|max:200',
             'phone' => 'nullable|string|max:40',
             'age' => 'nullable|integer|min:15|max:99',
             'stage' => 'nullable|string|max:80',
@@ -390,16 +393,6 @@ class LandingController extends Controller
             }
         }
 
-        $stageLabel = null;
-        if (! empty($data['stage'])) {
-            $tier = ConsultationPricing::forStage($data['stage']);
-            if (is_array($tier) && isset($tier['label'])) {
-                $stageLabel = $tier['label'].' — '.ConsultationPricing::formatRange($tier);
-            } else {
-                $stageLabel = $data['stage'];
-            }
-        }
-
         $sessionRole = $data['session_role'] ?? null;
         $roleNote = match ($sessionRole) {
             'male' => 'Sesi 1-on-1 male',
@@ -413,11 +406,12 @@ class LandingController extends Controller
         }
 
         try {
-            $waUrl = app(ConsultationSlotService::class)->holdAndBuildWaUrl($slot, [
+            $result = app(ConsultationCheckoutService::class)->holdAndCreateSessionPayment($slot, [
                 'name' => $data['name'],
+                'email' => $data['email'],
                 'phone' => $data['phone'] ?? null,
                 'age' => isset($data['age']) ? (int) $data['age'] : null,
-                'stage' => $stageLabel,
+                'stage_key' => $data['stage'] ?? null,
                 'situation' => $data['situation'] ?? null,
                 'condition' => $condition,
                 'service_type' => $serviceType,
@@ -429,7 +423,7 @@ class LandingController extends Controller
                 ->with('error', collect($e->errors())->flatten()->first());
         }
 
-        return redirect()->away($waUrl);
+        return redirect()->away($result['payment_url']);
     }
 
     public function informasi()

@@ -488,7 +488,7 @@ class PortalAiGuidanceService
 
         return array_merge($fallback, [
             'summary' => "Rekomendasi dokter untuk periode ini akan dirilis pada {$release} pukul 22.00 WIB.",
-            'interpretation' => 'Doctor\'s note bulanan di-generate otomatis agar konsisten dan hemat kuota AI.',
+            'interpretation' => 'Doctor\'s note bulanan di-generate otomatis agar konsisten setiap periode.',
             'priority' => 'Lanjutkan pencatatan transaksi hingga akhir bulan untuk analisis yang lebih akurat.',
         ]);
     }

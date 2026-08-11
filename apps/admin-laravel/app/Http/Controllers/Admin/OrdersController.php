@@ -337,13 +337,15 @@ class OrdersController extends Controller
 
         if ($data['status'] === 'paid') {
             $order->paid_at = $order->paid_at ?? now();
-            $order->loadMissing(['digitalProduct', 'license']);
-            // Auto-generate license jika belum punya
-            if (! $order->license_id) {
-                $license = app(LicenseProvisioningService::class)->resolveLicenseForPaidOrder($order);
-                $order->license_id = $license->id;
-            } elseif ($order->license) {
-                app(LicenseProvisioningService::class)->syncEntitlementsOntoLicense($order, $order->license);
+            if (! $order->isConsultationOrder()) {
+                $order->loadMissing(['digitalProduct', 'license']);
+                // Auto-generate license jika belum punya
+                if (! $order->license_id) {
+                    $license = app(LicenseProvisioningService::class)->resolveLicenseForPaidOrder($order);
+                    $order->license_id = $license->id;
+                } elseif ($order->license) {
+                    app(LicenseProvisioningService::class)->syncEntitlementsOntoLicense($order, $order->license);
+                }
             }
         }
 
@@ -354,7 +356,7 @@ class OrdersController extends Controller
         $order->save();
 
         if ($data['status'] === 'paid' && ! $wasPaid) {
-            if (! $order->isAdminComplimentary()) {
+            if (! $order->isAdminComplimentary() && ! $order->isConsultationOrder()) {
                 app(\App\Services\AffiliateService::class)->creditCommissionForPaidOrder($order->fresh(['digitalProduct', 'affiliate']));
             }
             DeliverPaidOrderJob::dispatchSync($order->id);

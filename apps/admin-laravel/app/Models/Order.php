@@ -17,6 +17,7 @@ class Order extends Model
         'referral_code',
         'affiliate_id',
         'plan',
+        'order_kind',
         'digital_product_id',
         'product_name',
         'amount',
@@ -32,6 +33,7 @@ class Order extends Model
         'payment_token',
         'paid_at',
         'license_id',
+        'consultation_slot_id',
         'purchase_delivery_sent_at',
     ];
 
@@ -59,9 +61,22 @@ class Order extends Model
         return $this->belongsTo(CpDigitalProduct::class, 'digital_product_id');
     }
 
+    public function consultationSlot(): BelongsTo
+    {
+        return $this->belongsTo(ConsultationSlot::class, 'consultation_slot_id');
+    }
+
     public function paymentEvents(): HasMany
     {
         return $this->hasMany(PaymentEvent::class)->orderByDesc('created_at');
+    }
+
+    public function isConsultationOrder(): bool
+    {
+        $kind = (string) ($this->order_kind ?: $this->plan);
+
+        return in_array($kind, ['consultation_session', 'consultation_overtime'], true)
+            || filled($this->consultation_slot_id);
     }
 
     /**

@@ -25,6 +25,9 @@ class ConsultationSlotService
                 'guest_phone' => null,
                 'guest_age' => null,
                 'financial_stage' => null,
+                'stage_key' => null,
+                'amount_due' => null,
+                'order_id' => null,
                 'situation' => null,
                 'notes' => null,
                 'confirmed_at' => null,
@@ -33,23 +36,25 @@ class ConsultationSlotService
     }
 
     /**
-     * Soft-hold a slot for the guest, then return WA redirect URL.
+     * Soft-hold a slot for the guest (payment window).
      *
      * @param  array{
      *   name: string,
      *   phone?: ?string,
      *   age?: ?int,
      *   stage?: ?string,
+     *   stage_key?: ?string,
+     *   amount_due?: ?int,
      *   situation?: ?string,
      *   condition?: ?string,
      *   service_type?: string
      * }  $guest
      */
-    public function holdAndBuildWaUrl(ConsultationSlot $slot, array $guest): string
+    public function holdSlot(ConsultationSlot $slot, array $guest): ConsultationSlot
     {
         $this->releaseExpiredHolds();
 
-        $held = DB::transaction(function () use ($slot, $guest) {
+        return DB::transaction(function () use ($slot, $guest) {
             /** @var ConsultationSlot|null $locked */
             $locked = ConsultationSlot::query()
                 ->whereKey($slot->id)
@@ -71,6 +76,8 @@ class ConsultationSlotService
                 'guest_phone' => $guest['phone'] ?? null,
                 'guest_age' => $guest['age'] ?? null,
                 'financial_stage' => $guest['stage'] ?? null,
+                'stage_key' => $guest['stage_key'] ?? null,
+                'amount_due' => isset($guest['amount_due']) ? (int) $guest['amount_due'] : null,
                 'situation' => $guest['situation'] ?? null,
                 'notes' => $guest['condition'] ?? null,
             ]);
@@ -78,8 +85,24 @@ class ConsultationSlotService
 
             return $locked->fresh(['advisor']);
         });
+    }
 
-        return $this->whatsAppUrl($held);
+    /**
+     * Soft-hold a slot for the guest, then return WA redirect URL (legacy / fallback).
+     *
+     * @param  array{
+     *   name: string,
+     *   phone?: ?string,
+     *   age?: ?int,
+     *   stage?: ?string,
+     *   situation?: ?string,
+     *   condition?: ?string,
+     *   service_type?: string
+     * }  $guest
+     */
+    public function holdAndBuildWaUrl(ConsultationSlot $slot, array $guest): string
+    {
+        return $this->whatsAppUrl($this->holdSlot($slot, $guest));
     }
 
     public function confirmPayment(ConsultationSlot $slot): void
@@ -120,6 +143,9 @@ class ConsultationSlotService
             'guest_phone' => null,
             'guest_age' => null,
             'financial_stage' => null,
+            'stage_key' => null,
+            'amount_due' => null,
+            'order_id' => null,
             'situation' => null,
             'notes' => null,
             'confirmed_at' => null,

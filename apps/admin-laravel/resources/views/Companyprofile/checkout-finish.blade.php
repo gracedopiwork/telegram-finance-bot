@@ -12,6 +12,7 @@
     $isFtsaUpgrade = ($orderContext['is_ftsa_upgrade'] ?? false);
     $isFtsaOnly = ($orderContext['is_ftsa_only'] ?? false);
     $isBotAfterFtsa = ($orderContext['is_bot_after_ftsa'] ?? false);
+    $isConsultation = $order && $order->isConsultationOrder();
 @endphp
 
 @push('head')
@@ -35,7 +36,20 @@
             Order Anda <strong class="text-primary">{{ $order->order_code }}</strong> sedang kami proses.
         </p>
 
-        @if($order->status === 'paid' && $order->license)
+        @if($order->status === 'paid' && $isConsultation)
+            <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
+                Pembayaran <strong>lunas</strong>. Jadwal konsultasi Anda sudah dikunci.
+                Tim YFD akan menghubungi Anda untuk konfirmasi sesi.
+            </p>
+            @if($order->consultationSlot)
+                <div class="bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 max-w-lg mx-auto text-left mb-6">
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-primary mb-2">Detail booking</p>
+                    <p class="text-sm text-on-surface mb-1"><strong>Kode:</strong> {{ $order->consultationSlot->booking_code }}</p>
+                    <p class="text-sm text-on-surface mb-1"><strong>Jadwal:</strong> {{ $order->consultationSlot->labelDate() }} · {{ $order->consultationSlot->starts_at->format('H:i') }} WIB</p>
+                    <p class="text-sm text-on-surface"><strong>Produk:</strong> {{ $order->product_name }}</p>
+                </div>
+            @endif
+        @elseif($order->status === 'paid' && $order->license)
             @if($isFtsaUpgrade)
                 <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
                     Pembayaran <strong>lunas</strong>. <strong>FTSA Premium</strong> sudah aktif pada lisensi bot Anda yang sama
@@ -130,7 +144,12 @@
             <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-8">
                 @if($order->status === 'pending')
                     Status pembayaran dikonfirmasi Midtrans dalam beberapa menit. Halaman ini <strong>otomatis dimuat ulang</strong> setiap 12 detik
-                    sampai status berubah. Setelah <strong>lunas</strong>, ringkasan dikirim ke email Anda.
+                    sampai status berubah.
+                    @if($isConsultation)
+                        Setelah <strong>lunas</strong>, jadwal konsultasi terkunci otomatis.
+                    @else
+                        Setelah <strong>lunas</strong>, ringkasan dikirim ke email Anda.
+                    @endif
                 @else
                     Setelah <strong>lunas</strong>, ringkasan dikirim ke {{ $deliveryLabel }} <strong>{{ $deliveryContact }}</strong>.
                 @endif

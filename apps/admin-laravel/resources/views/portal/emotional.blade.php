@@ -155,8 +155,7 @@
             @endphp
             <p class="text-sm text-slate-600">
                 Rekomendasi bulanan (menghubungkan hasil FTSA dengan behavioral summary) dirilis otomatis
-                <strong>{{ $monthEnd->format('d/m/Y') }} pukul 22.00 WIB</strong>
-                (tanpa generate manual, agar hemat kuota AI).
+                <strong>{{ $monthEnd->format('d/m/Y') }} pukul 22.00 WIB</strong>.
             </p>
         @else
             <p class="text-sm text-slate-500">–</p>

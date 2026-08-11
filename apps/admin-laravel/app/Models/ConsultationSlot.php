@@ -31,6 +31,9 @@ class ConsultationSlot extends Model
         'guest_phone',
         'guest_age',
         'financial_stage',
+        'stage_key',
+        'amount_due',
+        'order_id',
         'situation',
         'notes',
         'confirmed_at',
@@ -42,11 +45,17 @@ class ConsultationSlot extends Model
         'held_until' => 'datetime',
         'confirmed_at' => 'datetime',
         'guest_age' => 'integer',
+        'amount_due' => 'integer',
     ];
 
     public function advisor(): BelongsTo
     {
         return $this->belongsTo(CpAdvisor::class, 'advisor_id');
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 
     public function scopeOpen(Builder $query): Builder

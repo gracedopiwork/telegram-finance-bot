@@ -143,6 +143,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('consultation-slots/{consultation_slot}/confirm', [ConsultationSlotsController::class, 'confirm'])->name('consultation-slots.confirm');
     Route::post('consultation-slots/{consultation_slot}/release', [ConsultationSlotsController::class, 'release'])->name('consultation-slots.release');
     Route::post('consultation-slots/{consultation_slot}/cancel', [ConsultationSlotsController::class, 'cancel'])->name('consultation-slots.cancel');
+    Route::post('consultation-slots/{consultation_slot}/overtime', [ConsultationSlotsController::class, 'overtimeInvoice'])->name('consultation-slots.overtime');
     Route::delete('consultation-slots/{consultation_slot}', [ConsultationSlotsController::class, 'destroy'])->name('consultation-slots.destroy');
     Route::resource('services',         ServicesController::class)->except(['show']);
     Route::resource('faqs',             FaqsController::class)->except(['show']);

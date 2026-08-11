@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Order;
+use App\Services\ConsultationCheckoutService;
 use App\Services\OrderDeliveryNotifier;
 use Illuminate\Bus\Queueable;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -22,10 +23,32 @@ class DeliverPaidOrderJob
 
     public function __construct(public int $orderId) {}
 
-    public function handle(OrderDeliveryNotifier $notifier): void
+    public function handle(OrderDeliveryNotifier $notifier, ConsultationCheckoutService $consultationCheckout): void
     {
-        $order = Order::with(['license', 'digitalProduct'])->find($this->orderId);
-        if (! $order || $order->status !== 'paid' || ! $order->license) {
+        $order = Order::with(['license', 'digitalProduct', 'consultationSlot'])->find($this->orderId);
+        if (! $order || $order->status !== 'paid') {
+            return;
+        }
+
+        if ($consultationCheckout->isConsultationOrder($order)) {
+            try {
+                $consultationCheckout->markConsultationPaid($order);
+                if ($order->purchase_delivery_sent_at === null) {
+                    Order::whereKey($order->id)->update(['purchase_delivery_sent_at' => now()]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Konfirmasi booking konsultasi gagal', [
+                    'order_code' => $order->order_code,
+                    'exception' => $e->getMessage(),
+                ]);
+
+                throw $e;
+            }
+
+            return;
+        }
+
+        if (! $order->license) {
             return;
         }
 
