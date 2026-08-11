@@ -157,7 +157,7 @@ class ClarificationRulesTests(unittest.TestCase):
         )
         self.assertIn("rusak", question or "")
 
-    def test_hadiah_keeps_impulsif_clarification(self) -> None:
+    def test_hadiah_skips_impulsif_only_clarification(self) -> None:
         question = clarification_question(
             {
                 "jenis": "Pengeluaran",
@@ -169,7 +169,48 @@ class ClarificationRulesTests(unittest.TestCase):
             },
             "hadiah 200rb",
         )
-        self.assertIn("terencana", question or "")
+        self.assertIsNone(question)
+
+    def test_makeup_cushion_skips_social_and_impulsif_clarification(self) -> None:
+        text = "beli makeup cushion maybeline 185 rb"
+        planned = clarification_question(
+            {
+                "jenis": "Pengeluaran",
+                "kategori": "Kesehatan & Kebersihan Diri",
+                "needs_clarification": True,
+                "clarification_question": (
+                    "Apakah pembelian makeup cushion ini sudah direncanakan "
+                    "sebelumnya atau spontan/impulsif?"
+                ),
+            },
+            text,
+        )
+        self.assertIsNone(planned)
+        need_wants = clarification_question(
+            {
+                "jenis": "Pengeluaran",
+                "kategori": "Pakaian & Aksesoris",
+                "needs_clarification": True,
+                "clarification_question": (
+                    "Apakah makeup cushion ini untuk kebutuhan sehari-hari (Need) "
+                    "atau produk tambahan/koleksi (Wants)?"
+                ),
+            },
+            text,
+        )
+        self.assertIsNone(need_wants)
+        misclassified_social = clarification_question(
+            {
+                "jenis": "Piutang Keluar",
+                "kategori": "Lain-lain",
+                "needs_clarification": True,
+                "clarification_question": (
+                    "Siapa yang meminjam? Sertakan juga tujuan dan estimasi waktu."
+                ),
+            },
+            text,
+        )
+        self.assertIsNone(misclassified_social)
 
     def test_generic_kpr_pbb_requires_clarification(self) -> None:
         question = clarification_question(

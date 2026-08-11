@@ -721,6 +721,25 @@ class ContextRulesTests(unittest.TestCase):
 
     def test_makeup_kesehatan_bukan_lain_lain(self) -> None:
         self.assertClass("beli makeup 139.5k", "Pengeluaran", "Kesehatan & Kebersihan Diri")
+
+    def test_makeup_cushion_bukan_likuiditas_sosial(self) -> None:
+        text = "beli makeup cushion maybeline 185 rb"
+        self.assertClass(text, "Pengeluaran", "Kesehatan & Kebersihan Diri")
+        out = apply_context_rules(
+            {
+                "keterangan": "Makeup cushion Maybelline",
+                "jenis": "Piutang Keluar",
+                "kategori": "Lain-lain",
+                "sifat": "Need",
+                "needs_clarification": True,
+                "clarification_question": "Siapa yang meminjam?",
+            },
+            text,
+        )
+        self.assertEqual(out["jenis"], "Pengeluaran")
+        self.assertEqual(out["kategori"], "Kesehatan & Kebersihan Diri")
+        self.assertEqual(out["sifat"], "Wants")
+        self.assertFalse(out.get("needs_clarification"))
         self.assertClass("beli skin care 139.5k", "Pengeluaran", "Kesehatan & Kebersihan Diri")
         out = apply_context_rules(
             {

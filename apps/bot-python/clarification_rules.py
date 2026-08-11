@@ -9,7 +9,12 @@ from typing import Any
 
 from yfd_taxonomy import grey_area_question
 from social_meta import social_missing_details_question
-from context_rules import is_gift_expense, is_household_durable, is_ride_subscription
+from context_rules import (
+    is_beauty_care_expense,
+    is_gift_expense,
+    is_household_durable,
+    is_ride_subscription,
+)
 
 
 def _is_gadget_grey_question(question: str) -> bool:
@@ -27,6 +32,47 @@ def _is_gadget_grey_question(question: str) -> bool:
             "upgrade karena fomo",
             "upgrade krn fomo",
         )
+    )
+
+
+def _is_impulsif_only_question(question: str) -> bool:
+    """AI sering tanya terencana vs spontan walau kategori sudah jelas."""
+    q = (question or "").lower()
+    if not q:
+        return False
+    impulsif_hints = (
+        "terencana",
+        "direncanakan",
+        "spontan",
+        "impulsif",
+        "impulse",
+    )
+    if not any(hint in q for hint in impulsif_hints):
+        return False
+    # Jangan buang pertanyaan grey area yang kebetulan menyebut terencana.
+    if any(
+        hint in q
+        for hint in (
+            "meeting",
+            "rusak",
+            "piutang",
+            "utang",
+            "kantor",
+            "healing",
+            "bisnis/kerja",
+        )
+    ):
+        return False
+    return True
+
+
+def _is_beauty_need_wants_question(question: str) -> bool:
+    q = (question or "").lower()
+    if not any(k in q for k in ("makeup", "make up", "skincare", "cushion", "dandan", "kecantikan")):
+        return False
+    return any(
+        k in q
+        for k in ("need", "wants", "kebutuhan", "koleksi", "perawatan rutin", "pakaian & aksesoris")
     )
 
 
@@ -75,18 +121,21 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
             _is_social_liquidity_question(ai_question) or "proteksi" in ai_question.lower()
         ):
             ai_question = ""
+        if is_beauty_care_expense(text) or _is_beauty_need_wants_question(ai_question):
+            ai_question = ""
+        if _is_impulsif_only_question(ai_question):
+            ai_question = ""
         if ai_question:
             return ai_question
 
-    # Hadiah bukan pinjaman — jangan tanya tracker utang/piutang.
-    if not gift:
+    # Hadiah / makeup bukan pinjaman — jangan tanya tracker utang/piutang.
+    if not gift and not is_beauty_care_expense(text):
         social_q = social_missing_details_question(parsed, source_text)
         if social_q:
             return social_q
 
-    # Hadiah tidak punya grey area gadget (§2.18 HP hanya untuk HP sendiri).
-    # Pertanyaan impulsif terencana vs spontan tetap lewat AI question di atas.
-    if gift:
+    # Hadiah / makeup tidak punya grey area gadget atau Need vs Wants.
+    if gift or is_beauty_care_expense(text):
         return None
 
     checkers = (

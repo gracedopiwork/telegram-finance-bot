@@ -907,9 +907,15 @@ async def process_note_input(
             PENDING_CLARIFICATIONS[user_id] = {
                 "source_text": text,
             }
+            social_jenis = str(parsed.get("jenis") or "").strip() in {
+                "Piutang Keluar",
+                "Piutang Masuk",
+                "Utang Masuk",
+                "Utang Keluar",
+            }
             header = (
                 "Aku perlu memastikan data Likuiditas Sosial dulu:"
-                if social_q and question == social_q
+                if social_jenis and social_q and question == social_q
                 else "Aku perlu memastikan dulu:"
             )
             await message.reply_text(

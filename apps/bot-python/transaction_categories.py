@@ -347,7 +347,7 @@ Aturan:
    Signal Yes: "tiba-tiba", "spontan", "kalap", "stres jadi beli", "lihat Instagram langsung beli",
    "ga rencanain sih", FOMO.
    Signal No: "terencana", "sudah rencanain", "tabungan buat ini", "meeting klien", "langganan bulanan".
-   Jika tidak ada signal → needs_clarification + tanya: "Transaksi ini terencana sebelumnya atau spontan?"
+   Jika tidak ada signal → impulsif = "No". JANGAN tanya terencana vs spontan.
    Essential + Need + Impulsif Yes adalah VALID (§3.6) — bukan kontradiksi.
 8) tanggal: opsional. Isi YYYY-MM-DD HANYA jika user menyebut tanggal transaksi.
 9) Balas HANYA JSON murni, tanpa markdown.
@@ -361,7 +361,9 @@ Aturan:
    JANGAN klarifikasi HP/laptop rusak vs upgrade jika transaksi adalah hadiah/kado.
    JANGAN tanya tujuan ride (kantor/lifestyle/bisnis) untuk langganan Grab/Gojek/paket hemat.
    JANGAN pakai pertanyaan Likuiditas Sosial kecuali jenis memang Piutang/Utang.
-   Makeup/skincare/dandan = Kesehatan & Kebersihan Diri (BUKAN Lain-lain).
+   Makeup/skincare/dandan/cushion = Kesehatan & Kebersihan Diri / Wants.
+   JANGAN klarifikasi Need vs Wants, JANGAN tanya terencana vs spontan,
+   JANGAN tanya Likuiditas Sosial untuk makeup/skincare.
    Tumbler/perabot rumah tangga = Tempat Tinggal (BUKAN Proteksi).
    Set needs_clarification=true dan clarification_question singkat (bahasa Indonesia taxonomy).
 12) JANGAN menentukan bucket. Sistem yang menghitung bucket.

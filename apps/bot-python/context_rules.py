@@ -323,6 +323,11 @@ _SKINCARE = (
     "dandan",
     "lip cream",
     "lipcream",
+    "makeup cushion",
+    "bb cushion",
+    "cc cushion",
+    "maybelline",
+    "maybeline",
 )
 
 _HOUSEHOLD_DURABLES = (
@@ -1655,6 +1660,23 @@ def is_gift_expense(text: str) -> bool:
     return True
 
 
+def is_beauty_care_expense(text: str) -> bool:
+    """Makeup/skincare/dandan = Kesehatan Wants, bukan likuiditas sosial / grey area."""
+    lower = _normalize_typos(text)
+    if not _contains(lower, _SKINCARE):
+        return False
+    if is_gift_expense(lower):
+        return False
+    if (
+        is_lending_to_others(lower)
+        or is_social_debt_borrow(lower)
+        or is_social_debt_repay(lower)
+        or is_receivable_repay(lower)
+    ):
+        return False
+    return True
+
+
 def is_denda_sanksi(text: str) -> bool:
     lower = text.lower()
     if _contains(lower, ("denda pajak", "sanksi pajak")):
@@ -2148,6 +2170,13 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         parsed["kategori"] = "Hadiah"
         parsed["sifat"] = "Wants"
         parsed.pop("sub_kategori", None)
+    elif is_beauty_care_expense(combined):
+        parsed["jenis"] = "Pengeluaran"
+        parsed["kategori"] = "Kesehatan & Kebersihan Diri"
+        parsed["sifat"] = "Wants"
+        parsed.pop("sub_kategori", None)
+        parsed["needs_clarification"] = False
+        parsed["clarification_question"] = None
     elif is_household_durable(combined):
         parsed["jenis"] = "Pengeluaran"
         parsed["kategori"] = "Tempat Tinggal"
