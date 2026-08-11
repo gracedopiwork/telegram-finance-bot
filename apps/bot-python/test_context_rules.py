@@ -753,6 +753,40 @@ class ContextRulesTests(unittest.TestCase):
         self.assertEqual(out["jenis"], "Pengeluaran")
         self.assertEqual(out["kategori"], "Transportasi")
 
+    def test_emergency_fund_is_saving(self) -> None:
+        self.assertClass("top up emergency fund 1jt", "Saving/Investment", "Investasi & Tabungan")
+
+    def test_pph_bayar_tetap_kewajiban_pajak(self) -> None:
+        parsed = {
+            "keterangan": "bayar PPh 21 sebesar 2jt",
+            "jenis": "Kewajiban Pajak",
+            "kategori": "Lain-lain",
+            "sifat": "Need",
+        }
+        out = apply_context_rules(parsed, "bayar PPh 21 sebesar 2jt")
+        self.assertEqual(out["jenis"], "Kewajiban Pajak")
+
+    def test_tiket_pesawat_liburan_tetap_traveling(self) -> None:
+        parsed = {
+            "keterangan": "tiket pesawat liburan bali",
+            "jenis": "Pengeluaran",
+            "kategori": "Traveling",
+            "sifat": "Wants",
+        }
+        out = apply_context_rules(parsed, "tiket pesawat liburan bali 1.8jt")
+        self.assertEqual(out["kategori"], "Traveling")
+        self.assertEqual(out["sifat"], "Wants")
+
+    def test_seragam_kerja_need(self) -> None:
+        hit = classify_from_text("beli seragam kerja 250rb")
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Pakaian & Aksesoris")
+        self.assertEqual(hit["sifat"], "Need")
+
+    def test_wifi_rumah_tempat_tinggal(self) -> None:
+        self.assertClass("bayar wifi rumah 350rb", "Pengeluaran", "Tempat Tinggal")
+
 
 if __name__ == "__main__":
     unittest.main()

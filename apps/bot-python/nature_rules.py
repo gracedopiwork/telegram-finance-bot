@@ -8,6 +8,7 @@ from context_rules import (
     household_durable_sifat,
     is_business_transport_destination,
     is_discretionary_social_giving,
+    is_dp_lifestyle_vehicle,
     is_household_durable,
     is_leisure_transport_destination,
     is_ride_subscription,
@@ -159,6 +160,15 @@ def refine_sifat_from_context(parsed: dict[str, Any], source_text: str = "") -> 
     kategori = str(parsed.get("kategori", ""))
     if is_household_durable(combined):
         parsed["sifat"] = household_durable_sifat(combined)
+        return parsed
+    if is_dp_lifestyle_vehicle(combined):
+        parsed["sifat"] = "Wants"
+        return parsed
+    if any(
+        k in combined
+        for k in ("seragam", "sepatu kerja", "tas kerja", "tas sekolah", "sepatu sekolah")
+    ):
+        parsed["sifat"] = "Need"
         return parsed
     if kategori in essential_cats:
         if kategori in {"Makan", "Makanan & Minuman", "Minuman"} and has_discretionary_framing(

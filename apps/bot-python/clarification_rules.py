@@ -476,6 +476,7 @@ def _is_generic_coaching(text: str, category: str) -> str | None:
         "enjoyment",
         "hiburan",
         "pengembangan diri",
+        "public speaking",
     )
     return None if _has_purpose(text, purpose) else "coaching"
 

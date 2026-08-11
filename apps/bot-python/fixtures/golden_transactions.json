@@ -1,0 +1,1314 @@
+{
+  "version": 1,
+  "how_to": "Edit expected di file ini lalu jalankan: python test_golden_transactions.py. Laporan ringkas: python test_golden_transactions.py --report. Field yang dicek: jenis, kategori, sifat, bucket, nominal; opsional impulsif dan needs_clarification.",
+  "buckets": [
+    "Essential Living",
+    "Flexible + Social",
+    "Future Building",
+    "Protection",
+    null
+  ],
+  "cases": [
+    {
+      "id": "I01",
+      "group": "income",
+      "text": "gaji bulan ini 8jt",
+      "expected": {
+        "jenis": "Pemasukan",
+        "kategori": "Gaji",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 8000000
+      },
+      "why": "Pemasukan tidak masuk 4-bucket prescription."
+    },
+    {
+      "id": "I02",
+      "group": "income",
+      "text": "bonus kinerja 2jt",
+      "expected": {
+        "jenis": "Pemasukan",
+        "kategori": "Bonus",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 2000000
+      },
+      "why": "Pemasukan tidak masuk 4-bucket prescription."
+    },
+    {
+      "id": "I03",
+      "group": "income",
+      "text": "honor freelance 1500000",
+      "expected": {
+        "jenis": "Pemasukan",
+        "kategori": "Freelance",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 1500000
+      },
+      "why": "Pemasukan tidak masuk 4-bucket prescription."
+    },
+    {
+      "id": "I04",
+      "group": "income",
+      "text": "terima jasa freelence 6 jt",
+      "expected": {
+        "jenis": "Pemasukan",
+        "kategori": "Freelance",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 6000000
+      },
+      "why": "Pemasukan tidak masuk 4-bucket prescription."
+    },
+    {
+      "id": "I05",
+      "group": "income",
+      "text": "dapat shopee affiliate 50000",
+      "expected": {
+        "jenis": "Pemasukan",
+        "kategori": "Affiliate",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 50000
+      },
+      "why": "Pemasukan tidak masuk 4-bucket prescription."
+    },
+    {
+      "id": "I06",
+      "group": "income",
+      "text": "dividen BBCA cair 200rb",
+      "expected": {
+        "jenis": "Pemasukan",
+        "kategori": "Dividen",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 200000
+      },
+      "why": "Pemasukan tidak masuk 4-bucket prescription."
+    },
+    {
+      "id": "I07",
+      "group": "income",
+      "text": "terima bunga investasi sebesar 5000",
+      "expected": {
+        "jenis": "Pemasukan",
+        "kategori": "Bunga Investasi",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 5000
+      },
+      "why": "Pemasukan tidak masuk 4-bucket prescription."
+    },
+    {
+      "id": "I08",
+      "group": "income",
+      "text": "cashback marketplace 20rb",
+      "expected": {
+        "jenis": "Pemasukan",
+        "kategori": "Cashback",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 20000
+      },
+      "why": "Pemasukan tidak masuk 4-bucket prescription."
+    },
+    {
+      "id": "I09",
+      "group": "income",
+      "text": "refund tiket 100rb",
+      "expected": {
+        "jenis": "Pemasukan",
+        "kategori": "Refund",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 100000
+      },
+      "why": "Pemasukan tidak masuk 4-bucket prescription."
+    },
+    {
+      "id": "I10",
+      "group": "income",
+      "text": "hasil jualan online 500rb",
+      "expected": {
+        "jenis": "Pemasukan",
+        "kategori": "Penjualan",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 500000
+      },
+      "why": "Pemasukan tidak masuk 4-bucket prescription."
+    },
+    {
+      "id": "I11",
+      "group": "income",
+      "text": "terima sewa kontrakan 2jt",
+      "expected": {
+        "jenis": "Pemasukan",
+        "kategori": "Sewa Masuk",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 2000000
+      },
+      "why": "Pemasukan tidak masuk 4-bucket prescription."
+    },
+    {
+      "id": "I12",
+      "group": "income",
+      "text": "transfer masuk dari ortu 1jt",
+      "expected": {
+        "jenis": "Pemasukan",
+        "kategori": "Transfer Masuk",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 1000000
+      },
+      "why": "Pemasukan tidak masuk 4-bucket prescription."
+    },
+    {
+      "id": "S01",
+      "group": "saving",
+      "text": "beli saham BBCA 1jt",
+      "expected": {
+        "jenis": "Saving/Investment",
+        "kategori": "Investasi & Tabungan",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 1000000
+      },
+      "why": "Saving: instrumen/DP aset = Future Building; dana darurat = Protection."
+    },
+    {
+      "id": "S02",
+      "group": "saving",
+      "text": "nabung reksadana 500rb",
+      "expected": {
+        "jenis": "Saving/Investment",
+        "kategori": "Investasi & Tabungan",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 500000
+      },
+      "why": "Saving: instrumen/DP aset = Future Building; dana darurat = Protection."
+    },
+    {
+      "id": "S03",
+      "group": "saving",
+      "text": "top up emergency fund 1jt",
+      "expected": {
+        "jenis": "Saving/Investment",
+        "kategori": "Investasi & Tabungan",
+        "sifat": "Need",
+        "bucket": "Protection",
+        "nominal": 1000000
+      },
+      "why": "Saving: instrumen/DP aset = Future Building; dana darurat = Protection."
+    },
+    {
+      "id": "S04",
+      "group": "saving",
+      "text": "dp rumah 50jt",
+      "expected": {
+        "jenis": "Saving/Investment",
+        "kategori": "Investasi & Tabungan",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 50000000
+      },
+      "why": "Saving: instrumen/DP aset = Future Building; dana darurat = Protection."
+    },
+    {
+      "id": "S05",
+      "group": "saving",
+      "text": "nabung emas 2jt",
+      "expected": {
+        "jenis": "Saving/Investment",
+        "kategori": "Investasi & Tabungan",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 2000000
+      },
+      "why": "Saving: instrumen/DP aset = Future Building; dana darurat = Protection."
+    },
+    {
+      "id": "S06",
+      "group": "saving",
+      "text": "setor deposito 5jt",
+      "expected": {
+        "jenis": "Saving/Investment",
+        "kategori": "Investasi & Tabungan",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 5000000
+      },
+      "why": "Saving: instrumen/DP aset = Future Building; dana darurat = Protection."
+    },
+    {
+      "id": "S07",
+      "group": "saving",
+      "text": "dividen reinvest 100rb",
+      "expected": {
+        "jenis": "Saving/Investment",
+        "kategori": "Investasi & Tabungan",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 100000
+      },
+      "why": "Saving: instrumen/DP aset = Future Building; dana darurat = Protection."
+    },
+    {
+      "id": "S08",
+      "group": "saving",
+      "text": "dp mobil untuk kerja 20jt",
+      "expected": {
+        "jenis": "Saving/Investment",
+        "kategori": "Investasi & Tabungan",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 20000000
+      },
+      "why": "Saving: instrumen/DP aset = Future Building; dana darurat = Protection."
+    },
+    {
+      "id": "E01",
+      "group": "essential",
+      "text": "makan malam 65700",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Makanan & Minuman",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 65700
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E02",
+      "group": "essential",
+      "text": "sarapan nasi uduk 18rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Makanan & Minuman",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 18000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E03",
+      "group": "essential",
+      "text": "beli aqua 1.5L 7k",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Makanan & Minuman",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 7000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E04",
+      "group": "essential",
+      "text": "bayar sewa kos 1500000",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Tempat Tinggal",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 1500000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E05",
+      "group": "essential",
+      "text": "bayar token listrik 200rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Tempat Tinggal",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 200000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E06",
+      "group": "essential",
+      "text": "bayar tagihan air PDAM 85rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Tempat Tinggal",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 85000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E07",
+      "group": "essential",
+      "text": "grab ke kantor 28rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Transportasi",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 28000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E08",
+      "group": "essential",
+      "text": "bensin motor buat ke kantor 50rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Transportasi",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 50000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E09",
+      "group": "essential",
+      "text": "isi pulsa 25rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Komunikasi",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 25000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E10",
+      "group": "essential",
+      "text": "paket data 50rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Komunikasi",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 50000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E11",
+      "group": "essential",
+      "text": "bayar dokter dan obat 350rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Kesehatan & Kebersihan Diri",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 350000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E12",
+      "group": "essential",
+      "text": "laundry/cuci baju 52500",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Kesehatan & Kebersihan Diri",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 52500
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E13",
+      "group": "essential",
+      "text": "bayar uang sekolah anak 2jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Pendidikan",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 2000000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E14",
+      "group": "essential",
+      "text": "bayar cicilan motor 1jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Cicilan & Hutang",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 1000000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E15",
+      "group": "essential",
+      "text": "gaji ART 1.5jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Tempat Tinggal",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 1500000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E16",
+      "group": "essential",
+      "text": "beli sabun dan shampo 45rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Kesehatan & Kebersihan Diri",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 45000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E17",
+      "group": "essential",
+      "text": "fisioterapi resep dokter 400rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Kesehatan & Kebersihan Diri",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 400000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E18",
+      "group": "essential",
+      "text": "beli seragam kerja 250rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Pakaian & Aksesoris",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 250000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E19",
+      "group": "essential",
+      "text": "bayar wifi rumah 350rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Tempat Tinggal",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 350000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E20",
+      "group": "essential",
+      "text": "biaya admin transfer bank 6500",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Komunikasi",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 6500
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E21",
+      "group": "essential",
+      "text": "bayar tilang 250rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Cicilan & Hutang",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 250000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E22",
+      "group": "essential",
+      "text": "bayar cicilan pinjol kebutuhan mendesak 500rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Cicilan & Hutang",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 500000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E23",
+      "group": "essential",
+      "text": "ganti HP utama rusak 4jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Lifestyle & Hiburan",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 4000000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "E24",
+      "group": "essential",
+      "text": "bayar PBB rumah tinggal 1jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Tempat Tinggal",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 1000000
+      },
+      "why": "Kebutuhan wajib harian / cicilan / HP rusak = Essential Living."
+    },
+    {
+      "id": "F01",
+      "group": "flexible",
+      "text": "netflix bulanan 54rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Lifestyle & Hiburan",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 54000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F02",
+      "group": "flexible",
+      "text": "skincare serum 120rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Kesehatan & Kebersihan Diri",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 120000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F03",
+      "group": "flexible",
+      "text": "beli tiket konser 450rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Lifestyle & Hiburan",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 450000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F04",
+      "group": "flexible",
+      "text": "Bayar olahraga gym bulanan + Personal training Rp 455.583",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Lifestyle & Hiburan",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 455583
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F05",
+      "group": "flexible",
+      "text": "grab ke mall nongkrong 25rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Transportasi",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 25000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F06",
+      "group": "flexible",
+      "text": "Grab dari kos ke gym Imam Bonjol 21000",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Transportasi",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 21000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F07",
+      "group": "flexible",
+      "text": "ngopi healing 45rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Makanan & Minuman",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 45000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F08",
+      "group": "flexible",
+      "text": "jajan boba 28rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Makanan & Minuman",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 28000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F09",
+      "group": "flexible",
+      "text": "hotel staycation 1.2jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Traveling",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 1200000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F10",
+      "group": "flexible",
+      "text": "donasi ke bapak grab 5k",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Sosial & Keluarga",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 5000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F11",
+      "group": "flexible",
+      "text": "memberikan tips ke bapak grab 5k",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Hadiah",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 5000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F13",
+      "group": "flexible",
+      "text": "kado ulang tahun 150rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Hadiah",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 150000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F14",
+      "group": "flexible",
+      "text": "beli baju fashion 250rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Pakaian & Aksesoris",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 250000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F15",
+      "group": "flexible",
+      "text": "beli headset 350rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Lifestyle & Hiburan",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 350000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F16",
+      "group": "flexible",
+      "text": "langganan grab unlimited 150rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Transportasi",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 150000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F17",
+      "group": "flexible",
+      "text": "bayar kelas pilates 300rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Lifestyle & Hiburan",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 300000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F18",
+      "group": "flexible",
+      "text": "qurban 2.5jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Sosial & Keluarga",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 2500000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F19",
+      "group": "flexible",
+      "text": "zakat 500rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Sosial & Keluarga",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 500000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F20",
+      "group": "flexible",
+      "text": "tiket pesawat liburan bali 1.8jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Traveling",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 1800000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F21",
+      "group": "flexible",
+      "text": "Upgrade iPhone karena FOMO 15jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Lifestyle & Hiburan",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 15000000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F23",
+      "group": "flexible",
+      "text": "dp mobil kedua upgrade gaya hidup 20jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Cicilan & Hutang",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 20000000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "F24",
+      "group": "flexible",
+      "text": "jajan di grabfood 60k beli kue",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Makanan & Minuman",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 60000
+      },
+      "why": "Lifestyle, jajan, donasi, gym, Grab leisure = Flexible + Social."
+    },
+    {
+      "id": "B01",
+      "group": "future",
+      "text": "Konsumsi meeting untuk take konten bisnis YFD Rp 127.050",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Bisnis & Karir",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 127050
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B02",
+      "group": "future",
+      "text": "makan malem sekalian meeting kerjaan 29/07 213.675",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Bisnis & Karir",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 213675
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B03",
+      "group": "future",
+      "text": "Starbucks meeting klien 85rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Bisnis & Karir",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 85000
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B04",
+      "group": "future",
+      "text": "Bayar jasa freelancer IT dan web developer pelunasan buat proyek YFD Rp 5.750.000",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Bisnis & Karir",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 5750000
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B05",
+      "group": "future",
+      "text": "langganan capcut untuk kerja edit video karena akun sebelumnya gabisa dipake, tidak terencana, 95k",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Bisnis & Karir",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 95000
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B06",
+      "group": "future",
+      "text": "Grab dari kos ke aktivitas networking bisnis di Nusa Dua 45100",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Transportasi",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 45100
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B07",
+      "group": "future",
+      "text": "Tiket pesawat untuk meeting klien di Jakarta 1.5jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Transportasi",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 1500000
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B08",
+      "group": "future",
+      "text": "Bayar seminar financial planning 750rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Pendidikan",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 750000
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B09",
+      "group": "future",
+      "text": "Bayar les piano bulanan 400rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Pendidikan",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 400000
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B10",
+      "group": "future",
+      "text": "Kelas public speaking 500rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Pendidikan",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 500000
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B11",
+      "group": "future",
+      "text": "Coaching karier bersama mentor 1jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Pendidikan",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 1000000
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B12",
+      "group": "future",
+      "text": "Beli buku The Psychology of Money untuk pengembangan diri 150rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Pendidikan",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 150000
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B13",
+      "group": "future",
+      "text": "modal usaha stok 2jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Bisnis & Karir",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 2000000
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B14",
+      "group": "future",
+      "text": "langganan chatgpt untuk kerja 320rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Bisnis & Karir",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 320000
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B15",
+      "group": "future",
+      "text": "bayar website bisnis 1.5jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Bisnis & Karir",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 1500000
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B16",
+      "group": "future",
+      "text": "gojek ke klien untuk bisnis 30rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Transportasi",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 30000
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "B17",
+      "group": "future",
+      "text": "biaya notaris AJB 5jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Biaya Legal, Administrasi & Peristiwa Besar",
+        "sifat": "Need",
+        "bucket": "Future Building",
+        "nominal": 5000000
+      },
+      "why": "Bisnis, self-dev, transport meeting = Future Building."
+    },
+    {
+      "id": "P01",
+      "group": "protection",
+      "text": "bayar BPJS 150rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Proteksi",
+        "sifat": "Need",
+        "bucket": "Protection",
+        "nominal": 150000
+      },
+      "why": "Premi/BPJS = Protection."
+    },
+    {
+      "id": "P02",
+      "group": "protection",
+      "text": "premi asuransi jiwa 500rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Proteksi",
+        "sifat": "Need",
+        "bucket": "Protection",
+        "nominal": 500000
+      },
+      "why": "Premi/BPJS = Protection."
+    },
+    {
+      "id": "P03",
+      "group": "protection",
+      "text": "asuransi mobil all risk 2jt",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Proteksi",
+        "sifat": "Need",
+        "bucket": "Protection",
+        "nominal": 2000000
+      },
+      "why": "Premi/BPJS = Protection."
+    },
+    {
+      "id": "L01",
+      "group": "social",
+      "text": "Di pinjam Catherine 1 jt buat bayar RS, minggu depan",
+      "expected": {
+        "jenis": "Piutang Keluar",
+        "kategori": "Lain-lain",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 1000000
+      },
+      "why": "Piutang/Utang = likuiditas sosial, di luar prescription."
+    },
+    {
+      "id": "L03",
+      "group": "social",
+      "text": "grace balikin uang 500rb",
+      "expected": {
+        "jenis": "Piutang Masuk",
+        "kategori": "Lain-lain",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 500000
+      },
+      "why": "Piutang/Utang = likuiditas sosial, di luar prescription."
+    },
+    {
+      "id": "L04",
+      "group": "social",
+      "text": "pinjam dari ayuti 1jt buat RS, bulan depan",
+      "expected": {
+        "jenis": "Utang Masuk",
+        "kategori": "Lain-lain",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 1000000
+      },
+      "why": "Piutang/Utang = likuiditas sosial, di luar prescription."
+    },
+    {
+      "id": "L05",
+      "group": "social",
+      "text": "bayar utang ke ayuti 1jt",
+      "expected": {
+        "jenis": "Utang Keluar",
+        "kategori": "Lain-lain",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 1000000
+      },
+      "why": "Piutang/Utang = likuiditas sosial, di luar prescription."
+    },
+    {
+      "id": "L06",
+      "group": "social",
+      "text": "sargib mengembalikan uang yang dia pinjam tapi baru 2 jt 5 ratus",
+      "expected": {
+        "jenis": "Piutang Masuk",
+        "kategori": "Lain-lain",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 2500000
+      },
+      "why": "Piutang/Utang = likuiditas sosial, di luar prescription."
+    },
+    {
+      "id": "L07",
+      "group": "social",
+      "text": "saya pinjam kek ayuti 1 jt untuk keperluan bekerja, rencana besok saya kembalikan",
+      "expected": {
+        "jenis": "Utang Masuk",
+        "kategori": "Lain-lain",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 1000000
+      },
+      "why": "Piutang/Utang = likuiditas sosial, di luar prescription."
+    },
+    {
+      "id": "L08",
+      "group": "social",
+      "text": "saya mengembalikan uang ayuti 1 juta yang saya pinjam tadi",
+      "expected": {
+        "jenis": "Utang Keluar",
+        "kategori": "Lain-lain",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 1000000
+      },
+      "why": "Piutang/Utang = likuiditas sosial, di luar prescription."
+    },
+    {
+      "id": "L09",
+      "group": "social",
+      "text": "ngutangin ayuti 1jt buat kerja, minggu depan",
+      "expected": {
+        "jenis": "Piutang Keluar",
+        "kategori": "Lain-lain",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 1000000
+      },
+      "why": "Piutang/Utang = likuiditas sosial, di luar prescription."
+    },
+    {
+      "id": "L11",
+      "group": "social",
+      "text": "pinjam ke ayuti 1jt buat kerja, bulan depan",
+      "expected": {
+        "jenis": "Utang Masuk",
+        "kategori": "Lain-lain",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 1000000
+      },
+      "why": "Piutang/Utang = likuiditas sosial, di luar prescription."
+    },
+    {
+      "id": "L12",
+      "group": "social",
+      "text": "talangin mama 500k buat obat, minggu depan",
+      "expected": {
+        "jenis": "Piutang Keluar",
+        "kategori": "Lain-lain",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 500000
+      },
+      "why": "Piutang/Utang = likuiditas sosial, di luar prescription."
+    },
+    {
+      "id": "X01",
+      "group": "tax",
+      "text": "bayar PPh 21 sebesar 2jt",
+      "expected": {
+        "jenis": "Kewajiban Pajak",
+        "kategori": "Lain-lain",
+        "sifat": "Need",
+        "bucket": null,
+        "nominal": 2000000
+      },
+      "why": "Kewajiban Pajak dikecualikan dari 4 bucket."
+    },
+    {
+      "id": "X02",
+      "group": "grey",
+      "text": "beli kopi 35rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Makanan & Minuman",
+        "nominal": 35000,
+        "needs_clarification": true
+      },
+      "why": "Grey area: bot harus tanya tujuan sebelum bucket final."
+    },
+    {
+      "id": "X03",
+      "group": "grey",
+      "text": "grab 28rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Transportasi",
+        "sifat": "Need",
+        "bucket": "Essential Living",
+        "nominal": 28000,
+        "needs_clarification": true
+      },
+      "why": "Grey area: bot harus tanya tujuan sebelum bucket final."
+    },
+    {
+      "id": "X04",
+      "group": "impulse",
+      "text": "jajan brownies iseng 45rb",
+      "expected": {
+        "jenis": "Pengeluaran",
+        "kategori": "Makanan & Minuman",
+        "sifat": "Wants",
+        "bucket": "Flexible + Social",
+        "nominal": 45000,
+        "impulsif": "Yes"
+      },
+      "why": "Sinyal iseng = impulsif Yes."
+    }
+  ]
+}

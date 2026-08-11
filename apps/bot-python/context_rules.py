@@ -269,6 +269,7 @@ _SAVING_LABELS: tuple[tuple[str, str], ...] = (
     ("bitcoin", "Crypto"),
     ("binance", "Crypto"),
     ("dana darurat", "Dana darurat"),
+    ("emergency fund", "Dana darurat"),
     ("top up bibit", "Reksadana"),
     ("topup bibit", "Reksadana"),
     ("top up ipot", "Saham"),
@@ -507,6 +508,7 @@ _MAKAN = (
 )
 
 _KOPI_JAJAN = (
+    "ngopi",
     "kopi",
     "coffee",
     "starbucks",
@@ -592,6 +594,8 @@ _BUSINESS_BUILDING = (
     "untuk bisnis",
     "untuk usaha",
     "modal usaha",
+    "website bisnis",
+    "website usaha",
     "kebutuhan bisnis",
     # Ekspektasi klien: makan/ngopi + meeting kerja → Bisnis & Karir / Future Building
     "meeting kerja",
@@ -652,6 +656,10 @@ _KESEHATAN = (
     "rehab",
     "rehabilitasi",
     "hydrotherapy",
+    "sabun",
+    "shampo",
+    "shampoo",
+    "pasta gigi",
 )
 
 _FISIOTERAPI_RESEP = (
@@ -710,6 +718,9 @@ _PENDIDIKAN = (
     "iuran idi",
     "bayar idi",
     "iuran idai",
+    "public speaking",
+    "coaching karier",
+    "coaching karir",
 )
 
 _TRAVELING = (
@@ -872,6 +883,8 @@ _DP_LIFESTYLE_HINTS = (
 )
 
 _PPH_KEWAJIBAN = (
+    "pph 21",
+    "pph21",
     "pph 25",
     "pph25",
     "pph 29",
@@ -1334,6 +1347,9 @@ def is_self_development_expense(text: str) -> bool:
         "iuran idi",
         "bayar idi",
         "iuran idai",
+        "public speaking",
+        "coaching karier",
+        "coaching karir",
     )
     return _contains(text, markers)
 
@@ -1868,6 +1884,14 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     direction = detect_cashflow_direction(text)
     # User tulis "Pengeluaran …" → jangan pernah paksa Pemasukan dari keyword kategori.
     skip_income = explicit == "Pengeluaran" or direction == "Pengeluaran"
+    if (
+        is_social_debt_borrow(lower)
+        or is_social_debt_repay(lower)
+        or is_receivable_repay(lower)
+        or is_lending_to_others(lower)
+    ):
+        # Terima/bayar pinjaman orang = likuiditas sosial, bukan Pemasukan/Pengeluaran.
+        skip_income = True
     # User tulis "Pemasukan …" → tetap izinkan income rules (dan skip expense force).
     force_income_only = explicit == "Pemasukan"
 
@@ -2035,12 +2059,22 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need"}
     if is_self_development_expense(lower) or _contains(lower, _PENDIDIKAN):
         return {"jenis": "Pengeluaran", "kategori": "Pendidikan", "sifat": "Need"}
+    if "wifi rumah" in lower or "internet rumah" in lower:
+        return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
     if is_bank_admin_fee(lower) or _contains(lower, _KOMUNIKASI):
         return {"jenis": "Pengeluaran", "kategori": "Komunikasi", "sifat": "Need"}
     if _contains(lower, _LAUNDRY):
         return {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need"}
     if _contains(lower, _PAKAIAN):
-        return {"jenis": "Pengeluaran", "kategori": "Pakaian & Aksesoris", "sifat": "Wants"}
+        work_wear = any(
+            k in lower
+            for k in ("seragam", "sepatu kerja", "tas kerja", "tas sekolah", "sepatu sekolah")
+        )
+        return {
+            "jenis": "Pengeluaran",
+            "kategori": "Pakaian & Aksesoris",
+            "sifat": "Need" if work_wear else "Wants",
+        }
     if _contains(lower, _SEWA_KELUAR):
         return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
     if is_denda_sanksi(lower):
@@ -2155,7 +2189,19 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
             parsed["sifat"] = "Need"
     # Kata kerja arah uang menang jika AI salah (terima ≠ pengeluaran).
-    elif direction and str(parsed.get("jenis") or "").strip() != direction:
+    elif (
+        direction
+        and str(parsed.get("jenis") or "").strip() != direction
+        and str(parsed.get("jenis") or "").strip()
+        not in {
+            "Kewajiban Pajak",
+            "Saving/Investment",
+            "Piutang Keluar",
+            "Piutang Masuk",
+            "Utang Masuk",
+            "Utang Keluar",
+        }
+    ):
         parsed["jenis"] = direction
         kat_l = str(parsed.get("kategori") or "").strip().lower()
         if direction == "Pemasukan" and _has_freelance_marker(combined):
@@ -2296,6 +2342,15 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
 
         # Fashion → Pakaian & Aksesoris (bukan Lifestyle).
         if ai_jenis == "Pengeluaran" and _contains(combined.lower(), _PAKAIAN):
+            work_wear = any(
+                k in combined.lower()
+                for k in ("seragam", "sepatu kerja", "tas kerja", "tas sekolah", "sepatu sekolah")
+            )
+            if work_wear:
+                parsed["kategori"] = "Pakaian & Aksesoris"
+                parsed["sifat"] = "Need"
+                parsed.pop("sub_kategori", None)
+                return parsed
             if ai_kat_l in {
                 "lifestyle & hiburan",
                 "hiburan",
@@ -2308,6 +2363,13 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
                 parsed["sifat"] = "Wants"
                 parsed.pop("sub_kategori", None)
                 return parsed
+
+        # Wifi rumah → Tempat Tinggal (bukan Komunikasi).
+        if ai_jenis == "Pengeluaran" and ("wifi rumah" in combined.lower() or "internet rumah" in combined.lower()):
+            parsed["kategori"] = "Tempat Tinggal"
+            parsed["sifat"] = "Need"
+            parsed.pop("sub_kategori", None)
+            return parsed
 
         # Laundry → Kesehatan & Kebersihan Diri.
         if ai_jenis == "Pengeluaran" and _contains(combined.lower(), _LAUNDRY):
@@ -2327,10 +2389,18 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         if ai_kat_l in {"lainnya", "other", "misc", "umum"}:
             parsed["kategori"] = "Lain-lain"
 
-        # Grab/ojek (termasuk ke gym/cafe) → SELALU Transportasi.
-        # Klien: semua Grab masuk kategori Transport; bucket/sifat ikut tujuan.
+        # Grab/ojek lokal → Transportasi. Tiket pesawat/kereta + liburan tetap Traveling.
         if ai_jenis == "Pengeluaran" and is_transport_ride(combined):
             if not is_food_delivery(combined) and not is_social_giving(combined):
+                local_ride = _contains(
+                    combined.lower(),
+                    ("grab", "gojek", "ojek", "maxim", "grabbike", "grabcar"),
+                )
+                if is_traveling_expense(combined) and not local_ride:
+                    parsed["kategori"] = "Traveling"
+                    parsed["sifat"] = "Wants"
+                    parsed.pop("sub_kategori", None)
+                    return parsed
                 parsed["kategori"] = "Transportasi"
                 parsed["sifat"] = transport_ride_sifat(combined)
                 parsed.pop("sub_kategori", None)
