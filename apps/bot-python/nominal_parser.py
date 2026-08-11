@@ -4,21 +4,23 @@ from __future__ import annotations
 
 import re
 
+# jt + typo dekat: ht (j/h di HP), jta, juta.
+_JT_SUFFIX = r"(?:jt|ht|jta|juta|milyun|miliar)"
 _JT_PATTERN = re.compile(
-    r"(\d+(?:[.,]\d+)?)\s*(?:jt|juta|milyun|miliar)\b",
+    rf"(\d+(?:[.,]\d+)?)\s*{_JT_SUFFIX}\b",
     re.IGNORECASE,
 )
 # "2 jt 5 ratus" / "2 juta 500 rb" / "2 jt setengah"
 _COMPOUND_JT_RATUS = re.compile(
-    r"(\d+(?:[.,]\d+)?)\s*(?:jt|juta)\s+(\d+(?:[.,]\d+)?)\s*ratus\b",
+    rf"(\d+(?:[.,]\d+)?)\s*{_JT_SUFFIX}\s+(\d+(?:[.,]\d+)?)\s*ratus\b",
     re.IGNORECASE,
 )
 _COMPOUND_JT_RIBU = re.compile(
-    r"(\d+(?:[.,]\d+)?)\s*(?:jt|juta)\s+(\d+(?:[.,]\d+)?)\s*(?:rb|br|ribu|k)\b",
+    rf"(\d+(?:[.,]\d+)?)\s*{_JT_SUFFIX}\s+(\d+(?:[.,]\d+)?)\s*(?:rb|br|ribu|k)\b",
     re.IGNORECASE,
 )
 _COMPOUND_JT_HALF = re.compile(
-    r"(\d+(?:[.,]\d+)?)\s*(?:jt|juta)\s+setengah\b",
+    rf"(\d+(?:[.,]\d+)?)\s*{_JT_SUFFIX}\s+setengah\b",
     re.IGNORECASE,
 )
 # k/rb menempel pada angka (50k, 50rb). "br" = typo umum untuk "rb".
@@ -82,7 +84,7 @@ def _has_explicit_scale_suffix(text: str, number_token: str) -> bool:
     """True jika angka diikuti suffix ribu/juta yang valid (bukan huruf k di kata lain)."""
     pattern = (
         rf"{re.escape(number_token)}"
-        rf"(?:\s*(?:rb|br|ribu|k|jt|juta|milyun|miliar)\b|(?:rb|br|k)\b)"
+        rf"(?:\s*(?:rb|br|ribu|k|jt|ht|jta|juta|milyun|miliar)\b|(?:rb|br|k)\b)"
     )
     return bool(re.search(pattern, text, flags=re.IGNORECASE))
 
@@ -216,7 +218,8 @@ def nominal_sanity_warning(
         scaled = f"Rp{amount * 1_000:,}"
         return (
             f"⚠️ Nominal Rp{amount:,} terlihat terlalu kecil untuk tagihan ini.\n"
-            f"Kalau maksudnya {amount}rb, seharusnya {scaled}. Cek lagi ya."
+            f"Kalau maksudnya {amount}rb / {amount}jt, tulis lengkap ya "
+            f"(contoh: {amount}rb = {scaled})."
         )
 
     if amount < 100 and not high_cost:
