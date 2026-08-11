@@ -36,11 +36,23 @@ _SKIP_NAMES = {
     "ke",
     "sama",
     "uang",
+    "duit",
     "rp",
     "rb",
     "jt",
     "juta",
     "ribu",
+    "balik",
+    "balikin",
+    "kembali",
+    "kembalikan",
+    "transfer",
+    "hutang",
+    "utang",
+    "pinjaman",
+    "piutang",
+    "masuk",
+    "keluar",
 }
 
 _NAME_PATTERNS = (
@@ -80,7 +92,7 @@ _NAME_PATTERNS = (
 
 _PURPOSE_PATTERNS = (
     re.compile(
-        r"\b(?:buat|untuk|tujuan|keperluan)\s+(.+?)(?:"
+        r"\b(?:buat|untuk|tujuan|keperluan|kepentingan)\s+(.+?)(?:"
         r"\.\s*|,\s*|\s+besok|\s+lusa|\s+nanti|\s+minggu|\s+bulan|\s+tanggal|"
         r"\s+di\s+transfer|\s+transfer|\s+kembali|$)",
         re.IGNORECASE,
@@ -227,7 +239,21 @@ def _normalize_due_text(text: str) -> str:
 
 
 def _looks_like_due_only(text: str) -> bool:
-    return match_relative_due_days(text) is not None and len(_normalize_due_text(text).split()) <= 6
+    """True hanya jika teks itu tanggal/tempo, bukan tujuan + tempo sekaligus."""
+    if match_relative_due_days(text) is None:
+        return False
+    leftover = _normalize_due_text(text)
+    for phrase in sorted(_DUE_PHRASE_DAYS.keys(), key=len, reverse=True):
+        leftover = leftover.replace(phrase, " ")
+    leftover = re.sub(
+        r"\b(?:besok|lusa|minggu|bulan|sebulan|depan|hari|kembali|bayar|dilunasi|tempo|tgl|tanggal)\b",
+        " ",
+        leftover,
+        flags=re.IGNORECASE,
+    )
+    leftover = re.sub(r"[,\d/.\-]+", " ", leftover)
+    leftover = re.sub(r"\s+", " ", leftover).strip(" .,")
+    return len(leftover) < 3
 
 
 def match_relative_due_days(text: str) -> int | None:

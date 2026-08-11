@@ -200,4 +200,42 @@ class SocialLiquidityTrackerTest extends TestCase
         $this->assertTrue($tracker[0]['is_partial']);
         $this->assertSame(2_500_000, $tracker[0]['amount_remaining']);
     }
+
+    public function test_partial_utang_repay_keeps_remaining(): void
+    {
+        $borrow = BotTransaction::query()->create([
+            'telegram_user_id' => 22,
+            'recorded_at' => now(),
+            'type' => TransactionTaxonomy::TYPE_PAYABLE_IN,
+            'category' => 'Lain-lain',
+            'sub_category' => 'Mama',
+            'amount' => 2_000_000,
+            'nature' => 'Need',
+            'mood' => 'Neutral',
+            'is_impulsive' => false,
+            'notes' => 'Pinjam dari mama 2jt buat kerja',
+            'source' => 'manual',
+        ]);
+        $row = app(SocialLiquidityService::class)->openFromBorrow($borrow);
+        $this->assertSame(2_000_000, (int) $row->amount_remaining);
+
+        $partial = BotTransaction::query()->create([
+            'telegram_user_id' => 22,
+            'recorded_at' => now(),
+            'type' => TransactionTaxonomy::TYPE_PAYABLE_OUT,
+            'category' => 'Lain-lain',
+            'sub_category' => 'Mama',
+            'amount' => 500_000,
+            'nature' => 'Need',
+            'mood' => 'Neutral',
+            'is_impulsive' => false,
+            'notes' => 'Bayar cicilan utang ke mama 500rb',
+            'source' => 'manual',
+        ]);
+        $updated = app(SocialLiquidityService::class)->settleFromRepay($partial);
+
+        $this->assertNotNull($updated);
+        $this->assertSame(BotSocialPayable::STATUS_ACTIVE, $updated->status);
+        $this->assertSame(1_500_000, (int) $updated->amount_remaining);
+    }
 }

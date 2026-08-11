@@ -76,8 +76,7 @@ class CategoryBucketMappingService
             $hasKeywords = $keywords !== [];
             $keywordMatch = false;
             foreach ($keywords as $keyword) {
-                $keyword = mb_strtolower($keyword);
-                if ($keyword !== '' && str_contains($combined, $keyword)) {
+                if (\App\Support\KeywordMatch::contains($combined, $keyword)) {
                     $keywordMatch = true;
                     break;
                 }

@@ -13,6 +13,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from keyword_match import any_keyword, keyword_in
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MAPPINGS_PHP = REPO_ROOT / "apps" / "admin-laravel" / "config" / "category_bucket_mappings_defaults.php"
 BUCKETS_PHP = REPO_ROOT / "apps" / "admin-laravel" / "config" / "category_buckets.php"
@@ -130,7 +132,7 @@ def _category_keys_match(a: str, b: str) -> bool:
 
 
 def _contains_any(haystack: str, keywords: list[str]) -> bool:
-    return any(k and k.lower() in haystack for k in keywords)
+    return any_keyword(haystack, keywords)
 
 
 def mapping_transaction_type(jenis: str) -> str:
@@ -167,6 +169,91 @@ _HOUSEHOLD_LIFESTYLE = (
     "fomo",
     "tambah koleksi",
 )
+
+
+_BEAUTY_MARKERS = (
+    "makeup",
+    "make up",
+    "make-up",
+    "skincare",
+    "skin care",
+    "dandan",
+    "lipstik",
+    "lipstick",
+    "mascara",
+    "foundation",
+    "cushion",
+    "maybelline",
+    "maybeline",
+    "parfum",
+    "facial",
+    "toner wajah",
+    "sunscreen",
+    "serum",
+    "moisturizer",
+)
+_SPORT_MARKERS = (
+    "gym",
+    "yoga",
+    "pilates",
+    "crossfit",
+    "personal trainer",
+    "membership gym",
+)
+_RIDE_MARKERS = ("grab", "gojek", "ojek", "maxim", "grabbike", "grabcar")
+_SCHOOL_WAJIB = ("spp", "ukt", "uang sekolah", "uang kuliah", "buku pelajaran")
+_SELF_DEV_MARKERS = (
+    "seminar",
+    "workshop",
+    "sertifikasi",
+    "conference",
+    "pengembangan diri",
+    "self development",
+    "coaching karier",
+    "public speaking",
+    "les piano",
+    "les musik",
+    "les bahasa",
+    "psychology of money",
+    "buku finansial",
+    "buku financial",
+    "iuran idi",
+    "bayar idi",
+    "iuran organisasi",
+    "mentoring",
+    "piano untuk belajar",
+)
+
+
+def resolve_beauty_care(*, jenis: str, notes: str, kategori: str) -> str | None:
+    if jenis != "Pengeluaran":
+        return None
+    combined = f"{notes} {kategori}".strip().lower()
+    if not any_keyword(combined, _BEAUTY_MARKERS):
+        return None
+    return "Flexible + Social"
+
+
+def resolve_self_development(*, jenis: str, notes: str, kategori: str) -> str | None:
+    if jenis != "Pengeluaran":
+        return None
+    combined = f"{notes} {kategori}".strip().lower()
+    if any_keyword(combined, _SCHOOL_WAJIB):
+        return None
+    if not any_keyword(combined, _SELF_DEV_MARKERS):
+        return None
+    return "Future Building"
+
+
+def resolve_paid_sport(*, jenis: str, notes: str, kategori: str) -> str | None:
+    if jenis != "Pengeluaran":
+        return None
+    combined = f"{notes} {kategori}".strip().lower()
+    if any_keyword(combined, _RIDE_MARKERS):
+        return None
+    if not any_keyword(combined, _SPORT_MARKERS):
+        return None
+    return "Flexible + Social"
 
 
 def resolve_household_durable(
@@ -218,7 +305,7 @@ def resolve_from_mappings(
 
         keywords = _keywords_list(mapping)
         has_keywords = bool(keywords)
-        keyword_match = any(k in combined for k in keywords)
+        keyword_match = any(keyword_in(combined, k) for k in keywords)
 
         if wildcard and not has_keywords:
             return str(mapping["bucket"])
@@ -317,9 +404,18 @@ def resolve_bucket(parsed: dict[str, Any]) -> str | None:
 
     notes = str(parsed.get("keterangan") or parsed.get("notes") or "")
     sifat = str(parsed.get("sifat") or "")
+    beauty = resolve_beauty_care(jenis=jenis, notes=notes, kategori=kategori)
+    if beauty is not None:
+        return beauty
     household = resolve_household_durable(jenis=jenis, sifat=sifat, notes=notes, kategori=kategori)
     if household is not None:
         return household
+    gym = resolve_paid_sport(jenis=jenis, notes=notes, kategori=kategori)
+    if gym is not None:
+        return gym
+    self_dev = resolve_self_development(jenis=jenis, notes=notes, kategori=kategori)
+    if self_dev is not None:
+        return self_dev
     from_map = resolve_from_mappings(
         jenis=jenis,
         kategori=kategori,

@@ -1,12 +1,15 @@
 ﻿"""Rule konteks transaksi YFD — deterministik sebelum/sesudah AI.
 
-Prioritas (YFD AI Taxonomy v1.3):
-0) Jenis eksplisit user ("Pengeluaran"/"Pemasukan" di awal) — menang mutlak
-1) Pemasukan khusus (affiliate, bunga, dividen, refund, hadiah uang diterima)
-2) Saving/Investment (beli/nabung instrumen)
-3) Likuiditas Sosial HANYA jika ada sinyal pinjam/utang/akan kembali (§5)
-4) Pengeluaran: hadiah/kado yang DIBERI = Hadiah (bukan piutang; bukan grey area HP)
-5) Pengeluaran lain (tagihan, konsumsi, sosial, dll.)
+Prioritas eksklusif (YFD AI Taxonomy v1.3) — yang di atas menang, tidak ditabrak yang bawah:
+0) Jenis eksplisit user di awal teks — menang mutlak
+1) Likuiditas sosial (pinjam/utang/akan kembali) mengalahkan Pemasukan
+2) Pemasukan khusus (kecuali skip karena sosial / Pengeluaran eksplisit)
+3) DP aset / Saving-Investment / pajak
+4) Pengeluaran: bisnis jasa → makeup/skincare → proteksi (asuransi/BPJS saja)
+   → hadiah → sosial giving → meeting kerja → traveling → ride/transport
+   → gym membership → household durable → kesehatan/pendidikan/tagihan → makan
+5) Bucket (sistem, bukan AI): exclude income/tax/sosial → beauty Flexible
+   → tumbler/perabot (bukan Protection) → gym Flexible → mapping → legacy
 
 Hadiah vs Likuiditas Sosial: kado/parcel/tip tidak diharapkan kembali.
 HP grey area (§2.18) hanya untuk HP user sendiri, bukan hadiah untuk orang lain.
@@ -16,6 +19,8 @@ from __future__ import annotations
 
 import re
 from typing import Any
+
+from keyword_match import any_keyword
 
 VALID_JENIS = frozenset({
     "Pemasukan",
@@ -37,8 +42,7 @@ _EXPLICIT_JENIS_RE = re.compile(
 
 
 def _contains(text: str, phrases: tuple[str, ...]) -> bool:
-    lower = text.lower()
-    return any(phrase in lower for phrase in phrases)
+    return any_keyword(text, phrases)
 
 
 def _match_any(text: str, patterns: tuple[re.Pattern[str], ...]) -> bool:
@@ -297,7 +301,7 @@ _SAVING_ACTION = (
 
 _ASURANSI = (
     "asuransi",
-    "premi",
+    "premi asuransi",
     "bpjs",
     "bpjs kesehatan",
     "bpjs ketenagakerjaan",
@@ -1355,6 +1359,9 @@ def is_self_development_expense(text: str) -> bool:
         "public speaking",
         "coaching karier",
         "coaching karir",
+        "psychology of money",
+        "buku finansial",
+        "buku financial",
     )
     return _contains(text, markers)
 
@@ -1996,6 +2003,10 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     ):
         return {"jenis": "Pengeluaran", "kategori": "Bisnis & Karir", "sifat": "Need"}
 
+    # Makeup/skincare sebelum Proteksi — "premium" jangan kena kata "premi".
+    if _contains(lower, _SKINCARE):
+        return {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Wants"}
+
     if _contains(lower, _ASURANSI):
         return {"jenis": "Pengeluaran", "kategori": "Proteksi", "sifat": "Need"}
     # Hadiah/kado = belanja, bukan pinjaman sosial & bukan grey area gadget.
@@ -2034,8 +2045,6 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         }
     if _contains(lower, _GYM_LIFESTYLE):
         return {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants"}
-    if _contains(lower, _SKINCARE):
-        return {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Wants"}
     if _contains(lower, _HIBURAN):
         return {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants"}
     if _contains(lower, _SUBSCRIPTION):

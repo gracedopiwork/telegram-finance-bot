@@ -6,6 +6,7 @@ from typing import Any
 
 from context_rules import (
     household_durable_sifat,
+    is_beauty_care_expense,
     is_business_transport_destination,
     is_discretionary_social_giving,
     is_dp_lifestyle_vehicle,
@@ -70,6 +71,13 @@ DISCRETIONARY_WANTS_KEYWORDS = (
     "shopping",
     "belanja baju",
     "skincare",
+    "makeup",
+    "make up",
+    "dandan",
+    "sunscreen",
+    "lipstik",
+    "lipstick",
+    "cushion",
     "netflix",
     "spotify",
     "hiburan",
@@ -158,6 +166,9 @@ def refine_sifat_from_context(parsed: dict[str, Any], source_text: str = "") -> 
         "Kesehatan",
     }
     kategori = str(parsed.get("kategori", ""))
+    if is_beauty_care_expense(combined):
+        parsed["sifat"] = "Wants"
+        return parsed
     if is_household_durable(combined):
         parsed["sifat"] = household_durable_sifat(combined)
         return parsed

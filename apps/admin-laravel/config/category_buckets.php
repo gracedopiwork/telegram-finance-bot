@@ -6,8 +6,8 @@
  */
 return [
     'protection_keywords' => [
-        'bpjs', 'asuransi', 'premi asuransi', 'premi', 'dana darurat', 'emergency fund',
-        'top up emergency', 'critical illness', 'income protection', 'jiwa',
+        'bpjs', 'asuransi', 'premi asuransi', 'dana darurat', 'emergency fund',
+        'top up emergency', 'critical illness', 'income protection', 'asuransi jiwa',
     ],
     'future_building_keywords' => [
         'saham', 'reksa', 'obligasi', 'emas', 'deposito', 'crypto', 'investasi', 'nabung',
@@ -16,7 +16,8 @@ return [
         'pengembangan diri', 'self development', 'mentoring',
         'les piano', 'les musik', 'les bahasa', 'les vokal', 'coaching karier', 'coaching leadership',
         'public speaking', 'chatgpt', 'claude', 'notion', 'canva pro', 'figma', 'laptop kerja',
-        'iuran organisasi', 'keanggotaan profesi', 'idi', 'asosiasi profesi',
+        'iuran organisasi', 'keanggotaan profesi', 'iuran idi', 'bayar idi', 'asosiasi profesi',
+        'psychology of money', 'buku finansial', 'buku financial',
     ],
     'flexible_keywords' => [
         'jajan', 'kopi', 'coffee', 'cafe', 'nongkrong', 'healing',
@@ -37,7 +38,7 @@ return [
         'laptop kerja', 'laptop produktif', 'alat kerja', 'untuk kerja', 'modal kerja',
         'freelancer it', 'website bisnis', 'software bisnis', 'marketing bisnis',
         'modal usaha', 'proyek bisnis', 'konten bisnis',
-        'networking bisnis', 'networking', 'ketemu client', 'ketemu klien', 'ketemu bisnis',
+        'networking bisnis', 'ketemu client', 'ketemu klien', 'ketemu bisnis',
         'meeting client', 'meeting bisnis', 'klien bisnis', 'client bisnis',
         'urusan bisnis', 'keperluan bisnis', 'perjalanan bisnis', 'kerja training',
         'meeting kerja', 'meeting kerjaan', 'rapat kerja', 'meeting klien', 'ngopi meeting',

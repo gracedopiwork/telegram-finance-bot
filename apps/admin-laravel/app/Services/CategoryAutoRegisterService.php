@@ -60,6 +60,10 @@ class CategoryAutoRegisterService
         $resolved = $this->resolveWithoutRegister($categoryInput, $type);
         $notesLower = mb_strtolower(trim($notes));
 
+        if ($type === 'Pengeluaran' && $this->notesLookLikeBeautyCare($notesLower)) {
+            return 'Kesehatan & Kebersihan Diri';
+        }
+
         if ($type === 'Pengeluaran' && $this->notesLookLikeHouseholdDurable($notesLower)) {
             return 'Tempat Tinggal';
         }
@@ -69,6 +73,17 @@ class CategoryAutoRegisterService
         }
 
         return $resolved;
+    }
+
+    private function notesLookLikeBeautyCare(string $notesLower): bool
+    {
+        foreach (['makeup', 'make up', 'skincare', 'skin care', 'dandan', 'lipstik', 'cushion', 'maybelline', 'maybeline'] as $item) {
+            if (str_contains($notesLower, $item)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function notesLookLikeHouseholdDurable(string $notesLower): bool
@@ -169,26 +184,8 @@ class CategoryAutoRegisterService
 
     private function mergeKeywordsFromNotes(CategoryBucketMapping $mapping, string $notes): void
     {
-        $category = mb_strtolower(trim((string) $mapping->category));
-        if ($category === 'proteksi' && $this->notesLookLikeHouseholdDurable(mb_strtolower($notes))) {
-            return;
-        }
-
-        $extra = $this->keywordsFromNotes($notes);
-        if ($extra === []) {
-            return;
-        }
-
-        $current = $mapping->keywordsList();
-        $merged = array_values(array_unique(array_merge($current, $extra)));
-        if (count($merged) === count($current)) {
-            return;
-        }
-
-        $mapping->update([
-            'match_keywords' => implode(',', array_slice($merged, 0, 50)),
-        ]);
-        $this->mappingService->forgetCache();
+        // Mapping resmi tidak boleh diperkaya dari catatan user (tabrakan keyword).
+        unset($mapping, $notes);
     }
 
     private function inferBucket(string $name, string $type, string $nature, string $notes): string
@@ -221,14 +218,12 @@ class CategoryAutoRegisterService
 
     private function keywordsForAutoCategory(string $name, string $notes = ''): string
     {
+        unset($notes);
         $compact = $this->compactKey($name);
-        $keywords = array_values(array_unique(array_filter(array_merge(
-            [
-                mb_strtolower(trim($name)),
-                $compact !== mb_strtolower(trim($name)) ? $compact : '',
-            ],
-            $this->keywordsFromNotes($notes),
-        ))));
+        $keywords = array_values(array_unique(array_filter([
+            mb_strtolower(trim($name)),
+            $compact !== mb_strtolower(trim($name)) ? $compact : '',
+        ])));
 
         return implode(',', array_slice($keywords, 0, 50));
     }

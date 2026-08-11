@@ -64,6 +64,53 @@ class CategoryBucketServiceTest extends TestCase
         }
     }
 
+    public function test_makeup_is_flexible_not_protection_or_essential(): void
+    {
+        $this->assertBucket(
+            'Flexible + Social',
+            TransactionTaxonomy::TYPE_EXPENSE,
+            'Kesehatan & Kebersihan Diri',
+            'Wants',
+            'Beli makeup cushion Maybelline 185rb',
+        );
+        $this->assertBucket(
+            'Flexible + Social',
+            TransactionTaxonomy::TYPE_EXPENSE,
+            'Proteksi',
+            'Need',
+            'Beli cushion premium Maybelline',
+        );
+        $this->assertBucket(
+            'Flexible + Social',
+            TransactionTaxonomy::TYPE_EXPENSE,
+            'Kesehatan & Kebersihan Diri',
+            'Need',
+            'Beli sunscreen 89rb',
+        );
+    }
+
+    public function test_asuransi_jiwa_is_protection_not_stolen_by_household(): void
+    {
+        $this->assertBucket(
+            'Protection',
+            TransactionTaxonomy::TYPE_EXPENSE,
+            'Proteksi',
+            'Need',
+            'Bayar premi asuransi jiwa 500rb',
+        );
+    }
+
+    public function test_grab_to_gym_is_flexible_not_gym_membership(): void
+    {
+        $this->assertBucket(
+            'Flexible + Social',
+            TransactionTaxonomy::TYPE_EXPENSE,
+            'Transportasi',
+            'Wants',
+            'Grab ke gym Imam Bonjol 21000',
+        );
+    }
+
     public function test_tumbler_replacement_is_essential_not_protection(): void
     {
         $this->assertBucket(

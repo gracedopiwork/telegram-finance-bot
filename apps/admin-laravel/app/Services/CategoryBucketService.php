@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BotTransaction;
+use App\Support\KeywordMatch;
 use App\Support\TransactionTaxonomy;
 
 class CategoryBucketService
@@ -16,7 +17,8 @@ class CategoryBucketService
      */
     public function resolve(BotTransaction $row): ?string
     {
-        if ($row->type === TransactionTaxonomy::TYPE_TAX
+        if ($row->type === TransactionTaxonomy::TYPE_INCOME
+            || $row->type === TransactionTaxonomy::TYPE_TAX
             || $row->type === TransactionTaxonomy::TYPE_RECEIVABLE_OUT
             || $row->type === TransactionTaxonomy::TYPE_RECEIVABLE_IN
             || $row->type === TransactionTaxonomy::TYPE_PAYABLE_IN
@@ -24,9 +26,22 @@ class CategoryBucketService
             return null;
         }
 
+        // Urutan eksklusif — jangan sampai Proteksi/mapping menelan konteks lain.
+        $beauty = $this->resolveBeautyCare($row);
+        if ($beauty !== null) {
+            return $beauty;
+        }
         $household = $this->resolveHouseholdDurable($row);
         if ($household !== null) {
             return $household;
+        }
+        $gym = $this->resolvePaidSport($row);
+        if ($gym !== null) {
+            return $gym;
+        }
+        $selfDev = $this->resolveSelfDevelopment($row);
+        if ($selfDev !== null) {
+            return $selfDev;
         }
 
         $fromDb = $this->mappingService->resolveBucket($row);
@@ -35,6 +50,79 @@ class CategoryBucketService
         }
 
         return $this->resolveLegacy($row);
+    }
+
+    /**
+     * Makeup/skincare selalu Flexible — bukan Essential, bukan Protection.
+     */
+    private function resolveBeautyCare(BotTransaction $row): ?string
+    {
+        if ($row->type !== TransactionTaxonomy::TYPE_EXPENSE) {
+            return null;
+        }
+        $combined = mb_strtolower(trim("{$row->notes} {$row->category}"));
+        $markers = [
+            'makeup', 'make up', 'make-up', 'skincare', 'skin care', 'dandan',
+            'lipstik', 'lipstick', 'mascara', 'foundation', 'cushion',
+            'maybelline', 'maybeline', 'parfum', 'facial', 'toner wajah',
+            'sunscreen', 'serum', 'moisturizer',
+        ];
+        if (! KeywordMatch::containsAny($combined, $markers)) {
+            return null;
+        }
+
+        return 'Flexible + Social';
+    }
+
+    /**
+     * Gym/olahraga berbayar = Flexible. Grab/ojek ke gym tetap Transport (mapping).
+     */
+    private function resolvePaidSport(BotTransaction $row): ?string
+    {
+        if ($row->type !== TransactionTaxonomy::TYPE_EXPENSE) {
+            return null;
+        }
+        $combined = mb_strtolower(trim("{$row->notes} {$row->category}"));
+        if (KeywordMatch::containsAny($combined, ['grab', 'gojek', 'ojek', 'maxim', 'grabbike', 'grabcar'])) {
+            return null;
+        }
+        $sports = [
+            'gym', 'yoga', 'pilates', 'crossfit', 'personal trainer',
+            'membership gym',
+        ];
+        if (! KeywordMatch::containsAny($combined, $sports)) {
+            return null;
+        }
+
+        return 'Flexible + Social';
+    }
+
+    /**
+     * Seminar/buku pengembangan/les keterampilan = Future Building.
+     * SPP/uang sekolah tetap Essential (mapping sort 21).
+     */
+    private function resolveSelfDevelopment(BotTransaction $row): ?string
+    {
+        if ($row->type !== TransactionTaxonomy::TYPE_EXPENSE) {
+            return null;
+        }
+        $combined = mb_strtolower(trim("{$row->notes} {$row->category}"));
+        $wajib = ['spp', 'ukt', 'uang sekolah', 'uang kuliah', 'buku pelajaran'];
+        if (KeywordMatch::containsAny($combined, $wajib)) {
+            return null;
+        }
+        $markers = [
+            'seminar', 'workshop', 'sertifikasi', 'conference', 'pengembangan diri',
+            'self development', 'coaching karier', 'public speaking', 'les piano',
+            'les musik', 'les bahasa', 'psychology of money', 'buku finansial',
+            'buku financial', 'iuran idi', 'bayar idi', 'iuran organisasi',
+            'mentoring', 'piano untuk belajar',
+        ];
+        if (! KeywordMatch::containsAny($combined, $markers)) {
+            return null;
+        }
+
+        return 'Future Building';
     }
 
     /**
@@ -165,12 +253,6 @@ class CategoryBucketService
      */
     private function containsAny(string $haystack, array $keywords): bool
     {
-        foreach ($keywords as $keyword) {
-            if ($keyword !== '' && str_contains($haystack, mb_strtolower($keyword))) {
-                return true;
-            }
-        }
-
-        return false;
+        return KeywordMatch::containsAny($haystack, $keywords);
     }
 }

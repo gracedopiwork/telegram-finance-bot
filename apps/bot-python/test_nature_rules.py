@@ -75,6 +75,19 @@ def test_networking_bisnis_transport_is_need():
     assert parsed["sifat"] == "Need"
 
 
+def test_makeup_stays_wants_not_forced_need_by_kesehatan():
+    text = "beli makeup cushion maybeline 185 rb"
+    parsed = {
+        "keterangan": "Makeup cushion Maybelline",
+        "nominal": 185000,
+        "jenis": "Pengeluaran",
+        "kategori": "Kesehatan & Kebersihan Diri",
+        "sifat": "Wants",
+    }
+    refine_sifat_from_context(parsed, text)
+    assert parsed["sifat"] == "Wants"
+
+
 def test_tumbler_ganti_rusak_is_need():
     text = "beli tumbler ganti yang sebelumnya rusak 150rb"
     parsed = {

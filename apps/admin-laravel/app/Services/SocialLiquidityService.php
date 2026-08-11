@@ -484,7 +484,11 @@ class SocialLiquidityService
             '/\b(?:ke|kepada|sama)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
             '/\b(?:dari|oleh)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
         ];
-        $skip = ['saya', 'aku', 'dia', 'teman', 'saudara', 'keluarga', 'orang', 'dulu', 'nanti', 'besok', 'lusa', 'buat', 'untuk', 'uang'];
+        $skip = [
+            'saya', 'aku', 'dia', 'teman', 'saudara', 'keluarga', 'orang', 'dulu', 'nanti',
+            'besok', 'lusa', 'buat', 'untuk', 'uang', 'duit', 'balik', 'balikin', 'kembali',
+            'transfer', 'hutang', 'utang', 'pinjaman', 'piutang', 'masuk', 'keluar',
+        ];
         foreach ($patterns as $pattern) {
             if (preg_match($pattern, $notes, $m)) {
                 $name = trim($m[1], " .,");
