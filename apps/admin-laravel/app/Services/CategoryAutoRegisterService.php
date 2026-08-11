@@ -64,10 +64,6 @@ class CategoryAutoRegisterService
             return 'Kesehatan & Kebersihan Diri';
         }
 
-        if ($type === 'Pengeluaran' && $this->notesLookLikePersonalDrinkware($notesLower)) {
-            return 'Lifestyle & Hiburan';
-        }
-
         if ($type === 'Pengeluaran' && $this->notesLookLikeHouseholdDurable($notesLower)) {
             return 'Tempat Tinggal';
         }
@@ -90,20 +86,9 @@ class CategoryAutoRegisterService
         return false;
     }
 
-    private function notesLookLikePersonalDrinkware(string $notesLower): bool
-    {
-        foreach (['tumbler', 'thumbler', 'termos'] as $item) {
-            if (str_contains($notesLower, $item)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private function notesLookLikeHouseholdDurable(string $notesLower): bool
     {
-        foreach (['kulkas', 'rice cooker', 'mesin cuci', 'gorden', 'sprei', 'perabot'] as $item) {
+        foreach (['tumbler', 'thumbler', 'termos', 'kulkas', 'rice cooker', 'mesin cuci', 'gorden', 'sprei', 'perabot'] as $item) {
             if (str_contains($notesLower, $item)) {
                 return true;
             }

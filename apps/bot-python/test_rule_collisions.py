@@ -46,7 +46,7 @@ class ClassifyCollisionTests(unittest.TestCase):
 
     def test_tumbler_ganti_rusak_essential_not_protection(self) -> None:
         parsed = classify_offline("beli tumbler karena tumbler lama rusak 200 rb")
-        self.assertEqual(parsed["kategori"], "Lifestyle & Hiburan")
+        self.assertEqual(parsed["kategori"], "Tempat Tinggal")
         self.assertEqual(parsed["sifat"], "Need")
         self.assertEqual(parsed["bucket"], "Essential Living")
         mislabeled = resolve_bucket(
@@ -61,7 +61,7 @@ class ClassifyCollisionTests(unittest.TestCase):
 
     def test_tumbler_koleksi_flexible(self) -> None:
         parsed = classify_offline("beli tumbler koleksi 250rb")
-        self.assertEqual(parsed["kategori"], "Lifestyle & Hiburan")
+        self.assertEqual(parsed["kategori"], "Tempat Tinggal")
         self.assertEqual(parsed["sifat"], "Wants")
         self.assertEqual(parsed["bucket"], "Flexible + Social")
 

@@ -116,7 +116,7 @@ class CategoryBucketServiceTest extends TestCase
         $this->assertBucket(
             'Essential Living',
             TransactionTaxonomy::TYPE_EXPENSE,
-            'Lifestyle & Hiburan',
+            'Tempat Tinggal',
             'Need',
             'Beli tumbler karena tumbler lama rusak 200 rb',
         );

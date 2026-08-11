@@ -2062,12 +2062,6 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         }
     if is_household_help_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
-    if is_personal_drinkware(lower):
-        return {
-            "jenis": "Pengeluaran",
-            "kategori": "Lifestyle & Hiburan",
-            "sifat": household_durable_sifat(lower),
-        }
     if is_household_durable(lower):
         return {
             "jenis": "Pengeluaran",
@@ -2199,11 +2193,6 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         parsed.pop("sub_kategori", None)
         parsed["needs_clarification"] = False
         parsed["clarification_question"] = None
-    elif is_personal_drinkware(combined):
-        parsed["jenis"] = "Pengeluaran"
-        parsed["kategori"] = "Lifestyle & Hiburan"
-        parsed["sifat"] = household_durable_sifat(combined)
-        parsed.pop("sub_kategori", None)
     elif is_household_durable(combined):
         parsed["jenis"] = "Pengeluaran"
         parsed["kategori"] = "Tempat Tinggal"
@@ -2633,8 +2622,8 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "langganan capcut untuk kerja edit video 95k" → Pengeluaran / Bisnis & Karir / Need
 - "skincare serum 120rb" → Pengeluaran / Kesehatan & Kebersihan Diri / Wants
 - "beli makeup / skin care 139.5k" → Pengeluaran / Kesehatan & Kebersihan Diri / Wants (BUKAN Lain-lain)
-- "beli tumbler 150rb" → Pengeluaran / Lifestyle & Hiburan — WAJIB klarifikasi rusak vs koleksi (BUKAN Proteksi, BUKAN Tempat Tinggal)
-- "beli tumbler karena tumbler lama rusak 200rb" → Pengeluaran / Lifestyle & Hiburan / Need (Essential Living)
+- "beli tumbler 150rb" → Pengeluaran / Tempat Tinggal — WAJIB klarifikasi rusak vs koleksi (BUKAN Proteksi)
+- "beli tumbler karena tumbler lama rusak 200rb" → Pengeluaran / Tempat Tinggal / Need (Essential Living)
 - "bayar subscription grab paket hemat 14.000" → Pengeluaran / Transportasi / Wants (BUKAN grey area tujuan; BUKAN Likuiditas Sosial)
 - "makan malam 65.700" → Pengeluaran / Makanan & Minuman / Need
 - "grab ke kantor 28rb" → Pengeluaran / Transportasi / Need

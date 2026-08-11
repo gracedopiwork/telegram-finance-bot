@@ -61,7 +61,7 @@ class BucketResolverTests(unittest.TestCase):
         got = resolve_bucket(
             {
                 "jenis": "Pengeluaran",
-                "kategori": "Lifestyle & Hiburan",
+                "kategori": "Tempat Tinggal",
                 "sifat": "Need",
                 "keterangan": "Beli tumbler karena tumbler lama rusak 200 rb",
             }

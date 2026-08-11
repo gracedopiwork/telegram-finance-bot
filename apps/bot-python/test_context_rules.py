@@ -699,8 +699,8 @@ class ContextRulesTests(unittest.TestCase):
         out = apply_context_rules(parsed, "bayar hotel staycation 1jt")
         self.assertEqual(out["kategori"], "Traveling")
 
-    def test_tumbler_lifestyle_bukan_tempat_tinggal(self) -> None:
-        self.assertClass("beli tumbler 150rb", "Pengeluaran", "Lifestyle & Hiburan")
+    def test_tumbler_tempat_tinggal_bukan_proteksi(self) -> None:
+        self.assertClass("beli tumbler 150rb", "Pengeluaran", "Tempat Tinggal")
         out = apply_context_rules(
             {
                 "keterangan": "Beli tumbler",
@@ -710,17 +710,17 @@ class ContextRulesTests(unittest.TestCase):
             },
             "beli tumbler 150rb",
         )
-        self.assertEqual(out["kategori"], "Lifestyle & Hiburan")
+        self.assertEqual(out["kategori"], "Tempat Tinggal")
         self.assertEqual(out["jenis"], "Pengeluaran")
 
     def test_tumbler_ganti_rusak_need(self) -> None:
         hit = classify_from_text("beli tumbler karena tumbler lama rusak 200 rb")
         assert hit is not None
-        self.assertEqual(hit["kategori"], "Lifestyle & Hiburan")
+        self.assertEqual(hit["kategori"], "Tempat Tinggal")
         self.assertEqual(hit["sifat"], "Need")
         hit2 = classify_from_text("beli tumbler ganti yang sebelumnya rusak 150rb")
         assert hit2 is not None
-        self.assertEqual(hit2["kategori"], "Lifestyle & Hiburan")
+        self.assertEqual(hit2["kategori"], "Tempat Tinggal")
         self.assertEqual(hit2["sifat"], "Need")
 
     def test_makeup_kesehatan_bukan_lain_lain(self) -> None:
