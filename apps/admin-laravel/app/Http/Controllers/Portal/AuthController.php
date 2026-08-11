@@ -9,6 +9,7 @@ use App\Services\BaselineClaimService;
 use App\Services\PortalAccessService;
 use App\Services\PortalAutoLoginService;
 use App\Services\PortalOnboardingService;
+use App\Services\PortalPasswordService;
 use App\Support\FinancialBaselineSchema;
 use App\Support\PortalSession;
 use Illuminate\Http\RedirectResponse;
@@ -28,6 +29,17 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
+        $method = (string) $request->input('login_method', 'license');
+        if (! in_array($method, ['license', 'password'], true)) {
+            $method = filled($request->input('password')) && ! filled($request->input('license_key'))
+                ? 'password'
+                : 'license';
+        }
+
+        if ($method === 'password') {
+            return $this->loginWithPassword($request);
+        }
+
         $validated = $request->validate([
             'email' => ['required', 'email'],
             'license_key' => ['required', 'string', 'max:64'],
@@ -67,6 +79,56 @@ class AuthController extends Controller
             ]);
         }
 
+        return $this->completeLicenseLogin($request, $license, $order, $email);
+    }
+
+    private function loginWithPassword(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string', 'max:200'],
+        ]);
+
+        $email = strtolower(trim($validated['email']));
+        $passwords = app(PortalPasswordService::class);
+
+        if (! $passwords->hasPassword($email)) {
+            return back()->withInput()->withErrors([
+                'password' => 'Akun ini belum punya password. Masuk dengan kode lisensi dulu, lalu buat password di menu Akun.',
+            ]);
+        }
+
+        if (! $passwords->verify($email, $validated['password'])) {
+            return back()->withInput()->withErrors([
+                'password' => 'Password salah.',
+            ]);
+        }
+
+        $license = $passwords->resolveLicenseForEmail($email);
+        if ($license === null) {
+            return back()->withInput()->withErrors([
+                'email' => 'Tidak ada lisensi aktif untuk email ini.',
+            ]);
+        }
+
+        $order = Order::query()
+            ->where('license_id', $license->id)
+            ->where('status', 'paid')
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $order) {
+            return back()->withInput()->withErrors([
+                'email' => 'Email tidak cocok dengan order lisensi ini.',
+            ]);
+        }
+
+        return $this->completeLicenseLogin($request, $license, $order, $email);
+    }
+
+    private function completeLicenseLogin(Request $request, License $license, Order $order, string $email): RedirectResponse
+    {
         $access = app(PortalAccessService::class);
         $entitlements = app(\App\Services\LicenseEntitlementService::class);
 
@@ -96,11 +158,9 @@ class AuthController extends Controller
             ]);
         }
 
-        $portalUserId = (int) $license->assigned_user_id;
-
         return $this->establishSession(
             $request,
-            $portalUserId,
+            (int) $license->assigned_user_id,
             $license->assigned_username ?: $order->full_name,
             $email,
             'licensed',

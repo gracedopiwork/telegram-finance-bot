@@ -59,10 +59,12 @@
                             onclick="document.getElementById('mobileDrawer').classList.remove('hidden')">
                         <span class="material-symbols-outlined">menu</span>
                     </button>
-                    <img src="{{ asset($yfd['logo'] ?? 'images/yfd-logo.png') }}" alt="{{ $yfd['short'] ?? 'YFD' }}"
-                         class="h-9 w-auto rounded-lg bg-white border border-slate-200 px-1.5 py-1 shrink-0 lg:hidden">
+                    <a href="{{ route('company.home') }}" class="flex items-center gap-2 min-w-0 lg:hidden hover:opacity-90" title="Kembali ke landing page">
+                        <img src="{{ asset($yfd['logo'] ?? 'images/yfd-logo.png') }}" alt="{{ $yfd['short'] ?? 'YFD' }}"
+                             class="h-9 w-auto rounded-lg bg-white border border-slate-200 px-1.5 py-1 shrink-0">
+                        <div class="text-[10px] uppercase tracking-[0.16em] text-gold-600 font-bold">{{ $yfd['brand'] ?? 'Your Financial Doctor' }}</div>
+                    </a>
                     <div class="min-w-0">
-                        <div class="text-[10px] uppercase tracking-[0.16em] text-gold-600 font-bold lg:hidden">Your Financial Doctor</div>
                         <div class="text-xs text-slate-500 truncate">Halo, {{ $displayName }}</div>
                         <h1 class="text-lg sm:text-xl font-bold text-navy-800 truncate">@yield('heading')</h1>
                     </div>

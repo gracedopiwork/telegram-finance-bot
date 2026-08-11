@@ -23,6 +23,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PublicCheckupController;
+use App\Http\Controllers\Portal\AccountController as PortalAccountController;
 use App\Http\Controllers\Portal\AffiliateController as PortalAffiliateController;
 use App\Http\Controllers\Portal\AuthController as PortalAuthController;
 use App\Http\Controllers\Portal\BaselineController as PortalBaselineController;
@@ -211,6 +212,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
 
     Route::middleware('portal.auth')->group(function () {
         Route::post('/logout', [PortalAuthController::class, 'logout'])->name('logout');
+        Route::get('/akun', [PortalAccountController::class, 'show'])->name('account');
+        Route::post('/akun/password', [PortalAccountController::class, 'updatePassword'])->name('account.password');
         Route::post('/pengaturan/zona-waktu', [PortalTimezoneController::class, 'updateManual'])->name('timezone.manual');
         Route::post('/pengaturan/zona-waktu/auto', [PortalTimezoneController::class, 'updateAuto'])->name('timezone.auto');
         Route::get('/baseline', [PortalBaselineController::class, 'index'])->name('baseline');

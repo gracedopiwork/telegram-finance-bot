@@ -12,13 +12,13 @@
     ));
 @endphp
 <div class="p-5 border-b border-white/10">
-    <div class="flex items-center gap-3">
+    <a href="{{ route('company.home') }}" class="flex items-center gap-3 hover:opacity-90 transition-opacity" title="Kembali ke landing page">
         <img src="{{ asset($yfd['logo'] ?? 'images/yfd-logo.png') }}" alt="{{ $yfd['short'] ?? 'YFD' }}" class="h-11 w-auto rounded-lg bg-white/95 px-1.5 py-1 shrink-0">
         <div class="min-w-0">
-            <div class="text-[10px] uppercase tracking-[0.18em] text-gold-400 font-bold leading-tight">Your Financial Doctor</div>
+            <div class="text-[10px] uppercase tracking-[0.18em] text-gold-400 font-bold leading-tight">{{ $yfd['brand'] ?? 'Your Financial Doctor' }}</div>
             <div class="text-sm font-extrabold leading-tight text-white/95">{{ ($isFtsaOnlyPortalUser ?? false) ? 'FTSA Premium Dashboard' : 'First Aid Dashboard' }}</div>
         </div>
-    </div>
+    </a>
 </div>
 <nav class="p-3 space-y-0.5 flex-1 text-sm overflow-y-auto">
     @if($hasBotPortalAccess ?? false)
@@ -66,6 +66,11 @@
         <span class="text-[9px] bg-white/10 text-gold-400 px-1.5 py-0.5 rounded font-bold">PREMIUM</span>
     </div>
     @endif
+    <a href="{{ route('portal.account') }}"
+       class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'account' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
+        <span class="material-symbols-outlined text-lg opacity-80">manage_accounts</span>
+        <span class="flex-1">AKUN & PASSWORD</span>
+    </a>
 </nav>
 @include('portal.partials.sidebar-timezone')
 <div class="p-4 m-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white/75 italic leading-relaxed">

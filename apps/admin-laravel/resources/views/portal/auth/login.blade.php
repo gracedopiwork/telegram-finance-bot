@@ -64,7 +64,7 @@
                     </div>
                 @endif
 
-                <form method="post" action="{{ route('portal.login.attempt') }}" class="mt-4 space-y-4">
+                <form method="post" action="{{ route('portal.login.attempt') }}" class="mt-4 space-y-4" id="portalLoginForm">
                     @csrf
                     <div>
                         <label class="block text-sm font-semibold text-navy-800 mb-1.5">Email</label>
@@ -72,21 +72,63 @@
                                class="w-full rounded-xl border-slate-300 text-sm py-2.5 focus:ring-navy-500 focus:border-navy-500"
                                placeholder="email@contoh.com">
                     </div>
-                    <div>
+
+                    @php $loginMethod = old('login_method', 'license'); @endphp
+                    <div class="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="login_method" value="license" class="peer sr-only" {{ $loginMethod !== 'password' ? 'checked' : '' }}>
+                            <span class="block text-center text-sm font-semibold rounded-lg py-2 peer-checked:bg-white peer-checked:shadow peer-checked:text-navy-800 text-slate-500">Kode lisensi</span>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="login_method" value="password" class="peer sr-only" {{ $loginMethod === 'password' ? 'checked' : '' }}>
+                            <span class="block text-center text-sm font-semibold rounded-lg py-2 peer-checked:bg-white peer-checked:shadow peer-checked:text-navy-800 text-slate-500">Password</span>
+                        </label>
+                    </div>
+
+                    <div id="loginLicenseField">
                         <label class="block text-sm font-semibold text-navy-800 mb-1.5">Kode Lisensi</label>
-                        <input type="text" name="license_key" value="{{ old('license_key') }}" required
+                        <input type="text" name="license_key" value="{{ old('license_key') }}"
                                class="w-full rounded-xl border-slate-300 text-sm py-2.5 uppercase focus:ring-navy-500 focus:border-navy-500"
-                               placeholder="YFD-XXXX-XXXX">
+                               placeholder="YFD-XXXX-XXXX" autocomplete="off">
                         <p class="text-[11px] text-slate-500 mt-1">
-                            Satu kode lisensi per email. <strong>FTSA saja</strong>: login langsung di sini.
-                            <strong>YFD First Aid</strong>: aktifkan dulu dengan <code class="text-[10px]">/activate</code> di Telegram.
-                            Beli YFD First Aid setelah FTSA? Pakai <strong>kode FTSA yang sama</strong>.
+                            Satu kode lisensi per email. <strong>YFD First Aid</strong>: aktifkan dulu dengan <code class="text-[10px]">/activate</code> di Telegram.
+                        </p>
+                    </div>
+                    <div id="loginPasswordField" class="hidden">
+                        <label class="block text-sm font-semibold text-navy-800 mb-1.5">Password</label>
+                        <input type="password" name="password"
+                               class="w-full rounded-xl border-slate-300 text-sm py-2.5 focus:ring-navy-500 focus:border-navy-500"
+                               placeholder="Password portal" autocomplete="current-password">
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            Belum punya password? Masuk dulu dengan kode lisensi, lalu buat di menu <strong>Akun &amp; Password</strong>.
                         </p>
                     </div>
                     <button type="submit" class="w-full rounded-xl bg-navy-800 text-white font-bold py-3 hover:bg-navy-700 transition-colors">
-                        Masuk dengan Email & Lisensi
+                        Masuk
                     </button>
                 </form>
+                <script>
+                    (function () {
+                        const form = document.getElementById('portalLoginForm');
+                        if (!form) return;
+                        const licenseBox = document.getElementById('loginLicenseField');
+                        const passwordBox = document.getElementById('loginPasswordField');
+                        const licenseInput = form.querySelector('input[name="license_key"]');
+                        const passwordInput = form.querySelector('input[name="password"]');
+                        function sync() {
+                            const method = (form.querySelector('input[name="login_method"]:checked') || {}).value || 'license';
+                            const usePassword = method === 'password';
+                            licenseBox.classList.toggle('hidden', usePassword);
+                            passwordBox.classList.toggle('hidden', !usePassword);
+                            if (licenseInput) licenseInput.required = !usePassword;
+                            if (passwordInput) passwordInput.required = usePassword;
+                        }
+                        form.querySelectorAll('input[name="login_method"]').forEach(function (el) {
+                            el.addEventListener('change', sync);
+                        });
+                        sync();
+                    })();
+                </script>
             </div>
             <p class="text-center text-xs text-slate-500 mt-6">
                 Belum punya lisensi? <a href="{{ route('company.produk') }}" class="text-navy-800 font-semibold hover:underline">Lihat YFD First Aid</a>
