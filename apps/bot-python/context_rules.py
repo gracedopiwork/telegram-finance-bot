@@ -355,6 +355,7 @@ _SKINCARE = (
     "cc cushion",
     "maybelline",
     "maybeline",
+    "cushion",
     "parfum",
     "perfume",
     "facial",
@@ -500,7 +501,18 @@ _SERVIS_KENDARAAN = (
     "ban mobil",
 )
 
-_LISTRIK = ("listrik", "pln", "token listrik", "token pln")
+_LISTRIK = (
+    "listrik",
+    "pln",
+    "token listrik",
+    "token pln",
+    "deterjen",
+    "detergen",
+    "elpiji",
+    "gas elpiji",
+    "gas lpg",
+    "tabung gas",
+)
 
 _AIR_PATTERNS = tuple(
     re.compile(p, re.IGNORECASE)
@@ -602,6 +614,7 @@ _SOCIAL = (
     "kurban",
     "hewan qurban",
     "hewan kurban",
+    "perpuluhan",
 )
 
 _FAMILY_SUPPORT_RE = (
@@ -642,6 +655,7 @@ _HIBURAN = (
 _OBLIGATION_SOCIAL = (
     "sedekah",
     "zakat",
+    "perpuluhan",
     "infaq",
     "infak",
     "wakaf",
@@ -665,6 +679,9 @@ _BUSINESS_BUILDING = (
     "website bisnis",
     "website usaha",
     "kebutuhan bisnis",
+    "bayar domain",
+    "domain website",
+    "hosting",
     # Ekspektasi klien: makan/ngopi + meeting kerja → Bisnis & Karir / Future Building
     "meeting kerja",
     "meeting kerjaan",
@@ -738,6 +755,8 @@ _KEBERSIHAN_DASAR = (
     "nivea",
     "vaseline",
     "vaselin",
+    "body wash",
+    "bodywash",
 )
 
 _KESEHATAN = (
@@ -759,6 +778,10 @@ _KESEHATAN = (
     "hydrotherapy",
     "minoxidil",
     "masker",
+    "rawat gigi",
+    "dokter gigi",
+    "cabut gigi",
+    "tambal gigi",
 ) + _KEBERSIHAN_DASAR
 
 _FISIOTERAPI_RESEP = (
@@ -790,6 +813,7 @@ _GYM_LIFESTYLE = (
     "kelas yoga",
     "pilates",
     "crossfit",
+    "yoga",
     "tenis",
     "padel",
     "coaching tenis",
@@ -875,6 +899,8 @@ _KOMUNIKASI = (
     "telkomsel",
     "xl ",
     "axis",
+    "tarik tunai",
+    "tariktunai",
 )
 
 # Biaya admin bank/transfer → Komunikasi (alias taxonomy: biaya admin / komunikasi & administrasi).
@@ -1319,6 +1345,7 @@ _LEGAL_EVENT = (
 _PAJAK = (
     "pajak",
     "pph",
+    "ppn",
 )
 
 _ELEKTRONIK_PATTERNS = tuple(
@@ -2240,12 +2267,12 @@ def classify_from_text(text: str) -> dict[str, str] | None:
             "kategori": "Pakaian & Aksesoris",
             "sifat": "Need" if work_wear else "Wants",
         }
-    if _contains(lower, _SEWA_KELUAR):
-        return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
     if is_denda_sanksi(lower):
         return {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "sifat": "Need"}
     if _contains(lower, _CICILAN) or is_pinjol_or_cash_loan(lower):
         return {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "sifat": "Need"}
+    if _contains(lower, _SEWA_KELUAR):
+        return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
     if _contains(lower, _PPH_KEWAJIBAN) or (
         _contains(lower, _PAJAK)
         and not _contains(lower, _PBB)

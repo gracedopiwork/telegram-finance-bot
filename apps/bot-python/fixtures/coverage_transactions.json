@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "how_to": "Telegram: /uji2    atau    python test_coverage_transactions.py --report",
+  "cases": [
+    {"id": "N01", "group": "income", "severity": "must", "text": "gajian masuk 7.5jt", "expected": {"jenis": "Pemasukan", "kategori": "Gaji", "bucket": null, "needs_clarification": false}},
+    {"id": "N02", "group": "income", "severity": "must", "text": "THR lebaran 3jt", "expected": {"jenis": "Pemasukan", "kategori": "Bonus", "bucket": null, "needs_clarification": false}},
+    {"id": "N03", "group": "income", "severity": "must", "text": "honor ngisi kelas 2jt", "expected": {"jenis": "Pemasukan", "kategori": "Freelance", "bucket": null, "needs_clarification": false}},
+    {"id": "N04", "group": "income", "severity": "must", "text": "komisi shopee live 75rb", "expected": {"jenis": "Pemasukan", "kategori": "Affiliate", "bucket": null, "needs_clarification": false}},
+    {"id": "N05", "group": "income", "severity": "must", "text": "dividen TLKM cair 300rb", "expected": {"jenis": "Pemasukan", "kategori": "Dividen", "bucket": null, "needs_clarification": false}},
+    {"id": "N06", "group": "income", "severity": "must", "text": "bunga deposito 12rb", "expected": {"jenis": "Pemasukan", "kategori": "Bunga Investasi", "bucket": null, "needs_clarification": false}},
+    {"id": "N07", "group": "income", "severity": "must", "text": "cashback ovo 8rb", "expected": {"jenis": "Pemasukan", "kategori": "Cashback", "bucket": null, "needs_clarification": false}},
+    {"id": "N08", "group": "income", "severity": "must", "text": "refund gojek 15rb", "expected": {"jenis": "Pemasukan", "kategori": "Refund", "bucket": null, "needs_clarification": false}},
+    {"id": "N09", "group": "income", "severity": "must", "text": "omzet toko hari ini 1.2jt", "expected": {"jenis": "Pemasukan", "kategori": "Penjualan", "bucket": null, "needs_clarification": false}},
+    {"id": "N10", "group": "income", "severity": "must", "text": "terima sewa kamar 1.5jt", "expected": {"jenis": "Pemasukan", "kategori": "Sewa Masuk", "bucket": null, "needs_clarification": false}},
+    {"id": "N11", "group": "income", "severity": "must", "text": "transfer masuk dari papa 2jt", "expected": {"jenis": "Pemasukan", "kategori": "Transfer Masuk", "bucket": null, "needs_clarification": false}},
+
+    {"id": "N12", "group": "saving", "severity": "must", "text": "beli reksa dana 1jt", "expected": {"jenis": "Saving/Investment", "kategori": "Investasi & Tabungan", "needs_clarification": false}},
+    {"id": "N13", "group": "saving", "severity": "must", "text": "nabung emas antam 500rb", "expected": {"jenis": "Saving/Investment", "kategori": "Investasi & Tabungan", "needs_clarification": false}},
+    {"id": "N14", "group": "saving", "severity": "must", "text": "topup dana darurat 2jt", "expected": {"jenis": "Saving/Investment", "bucket": "Protection", "needs_clarification": false}},
+
+    {"id": "N15", "group": "food", "severity": "must", "text": "nasi padang 35rb", "expected": {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N16", "group": "food", "severity": "must", "text": "beli galon aqua 22rb", "expected": {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N17", "group": "food", "severity": "must", "text": "gofood ayam geprek 42rb", "expected": {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "needs_clarification": false}},
+    {"id": "N18", "group": "food", "severity": "must", "text": "jajan es teh 8rb", "expected": {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+
+    {"id": "N19", "group": "home", "severity": "must", "text": "bayar kos bulan ini 1.8jt", "expected": {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N20", "group": "home", "severity": "must", "text": "token pln 150rb", "expected": {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N21", "group": "home", "severity": "must", "text": "beli deterjen 28rb", "expected": {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N22", "group": "home", "severity": "must", "text": "ganti rice cooker rusak 800rb", "expected": {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N23", "group": "home", "severity": "must", "text": "bayar gas elpiji 25rb", "expected": {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+
+    {"id": "N24", "group": "ride", "severity": "must", "text": "gojek ke sekolah 18rb", "expected": {"jenis": "Pengeluaran", "kategori": "Transportasi", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N25", "group": "ride", "severity": "must", "text": "maxim ke cafe 22rb", "expected": {"jenis": "Pengeluaran", "kategori": "Transportasi", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+    {"id": "N26", "group": "ride", "severity": "must", "text": "parkir di kantor 10rb", "expected": {"jenis": "Pengeluaran", "kategori": "Transportasi", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N27", "group": "ride", "severity": "must", "text": "isi bensin 60rb", "expected": {"jenis": "Pengeluaran", "kategori": "Transportasi", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N28", "group": "ride", "severity": "must", "text": "grab ke klinik 20rb", "expected": {"jenis": "Pengeluaran", "kategori": "Transportasi", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N29", "group": "ride", "severity": "must", "text": "ojek ke rumah sakit 35rb", "expected": {"jenis": "Pengeluaran", "kategori": "Transportasi", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+
+    {"id": "N30", "group": "comm", "severity": "must", "text": "beli kuota telkomsel 30rb", "expected": {"jenis": "Pengeluaran", "kategori": "Komunikasi", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N31", "group": "comm", "severity": "must", "text": "tarik tunai atm 7500", "expected": {"jenis": "Pengeluaran", "kategori": "Komunikasi", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+
+    {"id": "N32", "group": "health", "severity": "must", "text": "cuci kiloan 40rb", "expected": {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N33", "group": "health", "severity": "must", "text": "beli shampoo dove 32rb", "expected": {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N34", "group": "health", "severity": "must", "text": "beli pasta gigi pepsodent 18rb", "expected": {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N35", "group": "health", "severity": "must", "text": "dry cleaning jas kerja 90rb", "expected": {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N36", "group": "health", "severity": "must", "text": "beli lipstik wardah 65rb", "expected": {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+    {"id": "N37", "group": "health", "severity": "must", "text": "beli cushion 185rb", "expected": {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+    {"id": "N38", "group": "health", "severity": "must", "text": "beli maybelline 99rb", "expected": {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+    {"id": "N39", "group": "health", "severity": "must", "text": "rawat gigi 800rb", "expected": {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N40", "group": "health", "severity": "must", "text": "beli body wash 35rb", "expected": {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+
+    {"id": "N41", "group": "edu", "severity": "must", "text": "bayar UKT semester 8jt", "expected": {"jenis": "Pengeluaran", "kategori": "Pendidikan", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N42", "group": "edu", "severity": "must", "text": "iuran IDI tahunan 1jt", "expected": {"jenis": "Pengeluaran", "kategori": "Pendidikan", "bucket": "Future Building"}},
+    {"id": "N43", "group": "edu", "severity": "must", "text": "workshop excel 350rb", "expected": {"jenis": "Pengeluaran", "kategori": "Pendidikan", "bucket": "Future Building"}},
+    {"id": "N44", "group": "edu", "severity": "must", "text": "les bahasa inggris 450rb", "expected": {"jenis": "Pengeluaran", "kategori": "Pendidikan", "bucket": "Future Building"}},
+
+    {"id": "N45", "group": "protect", "severity": "must", "text": "bayar bpjs ketenagakerjaan 80rb", "expected": {"jenis": "Pengeluaran", "kategori": "Proteksi", "bucket": "Protection", "needs_clarification": false}},
+    {"id": "N46", "group": "protect", "severity": "must", "text": "premi asuransi kesehatan 400rb", "expected": {"jenis": "Pengeluaran", "kategori": "Proteksi", "bucket": "Protection", "needs_clarification": false}},
+
+    {"id": "N47", "group": "life", "severity": "must", "text": "langganan spotify 55rb", "expected": {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+    {"id": "N48", "group": "life", "severity": "must", "text": "nonton bioskop 50rb", "expected": {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+    {"id": "N49", "group": "life", "severity": "must", "text": "membership yoga 280rb", "expected": {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+
+    {"id": "N50", "group": "travel", "severity": "must", "text": "booking hotel yogyakarta 900rb", "expected": {"jenis": "Pengeluaran", "kategori": "Traveling", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+    {"id": "N51", "group": "travel", "severity": "must", "text": "tiket kereta liburan bandung 250rb", "expected": {"jenis": "Pengeluaran", "kategori": "Traveling", "sifat": "Wants", "bucket": "Flexible + Social"}},
+
+    {"id": "N52", "group": "social", "severity": "must", "text": "sedekah jumat 20rb", "expected": {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+    {"id": "N53", "group": "social", "severity": "must", "text": "kasih ke mama 300rb", "expected": {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "bucket": "Flexible + Social", "needs_clarification": false}},
+    {"id": "N54", "group": "social", "severity": "must", "text": "perpuluhan gereja 200rb", "expected": {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+
+    {"id": "N55", "group": "biz", "severity": "must", "text": "iklan instagram untuk bisnis 250rb", "expected": {"jenis": "Pengeluaran", "kategori": "Bisnis & Karir", "bucket": "Future Building", "needs_clarification": false}},
+    {"id": "N56", "group": "biz", "severity": "must", "text": "bayar domain website 150rb", "expected": {"jenis": "Pengeluaran", "kategori": "Bisnis & Karir", "bucket": "Future Building", "needs_clarification": false}},
+
+    {"id": "N57", "group": "gift", "severity": "must", "text": "parcel lebaran 175rb", "expected": {"jenis": "Pengeluaran", "kategori": "Hadiah", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+    {"id": "N58", "group": "gift", "severity": "must", "text": "tip barista 10rb", "expected": {"jenis": "Pengeluaran", "kategori": "Hadiah", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+
+    {"id": "N59", "group": "loan", "severity": "must", "text": "angsuran kpr 4jt", "expected": {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "sifat": "Need", "needs_clarification": true}},
+    {"id": "N60", "group": "loan", "severity": "must", "text": "bayar kartu kredit 2jt", "expected": {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+
+    {"id": "N61", "group": "wear", "severity": "must", "text": "beli sepatu kerja 600rb", "expected": {"jenis": "Pengeluaran", "kategori": "Pakaian & Aksesoris", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "N62", "group": "wear", "severity": "must", "text": "beli kaos oblong 89rb", "expected": {"jenis": "Pengeluaran", "kategori": "Pakaian & Aksesoris", "sifat": "Wants", "bucket": "Flexible + Social"}},
+
+    {"id": "N63", "group": "legal", "severity": "must", "text": "mahar nikah 10jt", "expected": {"jenis": "Pengeluaran", "kategori": "Biaya Legal, Administrasi & Peristiwa Besar", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+    {"id": "N64", "group": "legal", "severity": "must", "text": "biaya notaris balik nama 3jt", "expected": {"jenis": "Pengeluaran", "kategori": "Biaya Legal, Administrasi & Peristiwa Besar", "bucket": "Future Building", "needs_clarification": true}},
+
+    {"id": "N65", "group": "liq", "severity": "must", "text": "minjem ke kakak 2jt buat kuliah, bulan depan", "expected": {"jenis": "Utang Masuk", "bucket": null}},
+    {"id": "N66", "group": "liq", "severity": "must", "text": "kakak balikin uang 2jt", "expected": {"jenis": "Piutang Masuk", "bucket": null}},
+    {"id": "N67", "group": "liq", "severity": "must", "text": "kasih pinjam rina 300rb, besok", "expected": {"jenis": "Piutang Keluar", "bucket": null}},
+    {"id": "N68", "group": "liq", "severity": "must", "text": "lunasi hutang ke rina 300rb", "expected": {"jenis": "Utang Keluar", "bucket": null}},
+
+    {"id": "N69", "group": "tax", "severity": "must", "text": "setor PPh 25 1.5jt", "expected": {"jenis": "Kewajiban Pajak", "bucket": null, "needs_clarification": false}},
+    {"id": "N70", "group": "tax", "severity": "must", "text": "bayar PPN 500rb", "expected": {"jenis": "Kewajiban Pajak", "bucket": null, "needs_clarification": false}},
+
+    {"id": "N71", "group": "hit", "severity": "must", "text": "komisi live tiktok 90rb", "expected": {"jenis": "Pemasukan", "kategori": "Affiliate", "bucket": null, "needs_clarification": false}},
+    {"id": "N72", "group": "hit", "severity": "must", "text": "beli termos ganti yang pecah 180rb", "expected": {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+
+    {"id": "N73", "group": "grey", "severity": "must", "text": "beli laptop 12jt", "expected": {"needs_clarification": true}},
+    {"id": "N74", "group": "grey", "severity": "must", "text": "ngopi 28rb", "expected": {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "needs_clarification": true}},
+    {"id": "N75", "group": "grey", "severity": "must", "text": "gaji sopir pribadi 3jt", "expected": {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "needs_clarification": true}},
+    {"id": "N76", "group": "grey", "severity": "must", "text": "beli hp 5jt", "expected": {"needs_clarification": true}}
+  ]
+}

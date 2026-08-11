@@ -8,15 +8,32 @@ from typing import Any
 
 from offline_classify import classify_offline
 
-FIXTURE = Path(__file__).resolve().parent / "fixtures" / "ambiguous_transactions.json"
+_FIXTURES = Path(__file__).resolve().parent / "fixtures"
 COMPARE_KEYS = ("jenis", "kategori", "sifat", "bucket", "nominal", "needs_clarification")
 
+PACKS: dict[str, dict[str, str]] = {
+    "ambigu": {
+        "title": "Uji ambigu",
+        "file": "ambiguous_transactions.json",
+        "ok_msg": "Semua kasus ambigu sesuai taksonomi.",
+    },
+    "cakup": {
+        "title": "Uji cakupan (data baru)",
+        "file": "coverage_transactions.json",
+        "ok_msg": "Semua kasus cakupan sesuai taksonomi.",
+    },
+}
 
-def load_cases() -> list[dict[str, Any]]:
-    data = json.loads(FIXTURE.read_text(encoding="utf-8"))
+FIXTURE = _FIXTURES / PACKS["ambigu"]["file"]
+
+
+def load_cases(pack: str = "ambigu") -> list[dict[str, Any]]:
+    meta = PACKS.get(pack) or PACKS["ambigu"]
+    path = _FIXTURES / meta["file"]
+    data = json.loads(path.read_text(encoding="utf-8"))
     cases = list(data.get("cases") or [])
     if not cases:
-        raise AssertionError("ambiguous fixture kosong")
+        raise AssertionError(f"fixture kosong: {path.name}")
     return cases
 
 
@@ -37,9 +54,12 @@ def case_diffs(case: dict[str, Any]) -> dict[str, tuple[Any, Any]]:
     return diffs
 
 
-def evaluate_cases(cases: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+def evaluate_cases(
+    cases: list[dict[str, Any]] | None = None,
+    pack: str = "ambigu",
+) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
-    for case in cases or load_cases():
+    for case in cases or load_cases(pack):
         actual = classify_offline(str(case["text"]))
         diffs = case_diffs(case)
         rows.append(
@@ -90,10 +110,12 @@ def _fmt_want(row: dict[str, Any]) -> str:
     return ", ".join(parts)
 
 
-def format_report(result: dict[str, Any] | None = None) -> str:
-    result = result or evaluate_cases()
+def format_report(result: dict[str, Any] | None = None, pack: str = "ambigu") -> str:
+    result = result or evaluate_cases(pack=pack)
+    title = PACKS.get(pack, PACKS["ambigu"])["title"]
+    ok_msg = PACKS.get(pack, PACKS["ambigu"])["ok_msg"]
     lines = [
-        f"Uji ambigu: {result['passed']}/{result['total']} sesuai taksonomi",
+        f"{title}: {result['passed']}/{result['total']} sesuai taksonomi",
         f"Wajib lulus: {result['must_passed']}/{result['must_total']}",
         f"Lubang sisa: {result['watch_total'] - result['watch_passed']}/{result['watch_total']} masih Lain-lain/salah",
         "",
@@ -112,12 +134,12 @@ def format_report(result: dict[str, Any] | None = None) -> str:
             lines.append(f"  {_fmt_want(row)}")
         lines.append("")
     if not result["must_fail"] and not result["watch_fail"]:
-        lines.append("Semua kasus ambigu sesuai taksonomi.")
+        lines.append(ok_msg)
     return "\n".join(lines).strip()
 
 
-def format_telegram_chunks(limit: int = 3500) -> list[str]:
-    text = format_report()
+def format_telegram_chunks(pack: str = "ambigu", limit: int = 3500) -> list[str]:
+    text = format_report(pack=pack)
     if len(text) <= limit:
         return [text]
     chunks: list[str] = []

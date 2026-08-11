@@ -5,6 +5,7 @@ Grey area §2.18 / §3.3 — AI WAJIB konfirmasi konteks sebelum bucket final.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from yfd_taxonomy import grey_area_question
@@ -264,6 +265,11 @@ def _is_generic_transport(text: str, category: str) -> str | None:
         return None
     if not any(word in text for word in ("grab", "gojek", "ojek", "maxim", "parkir", "bensin", "tiket")):
         return None
+    # Bensin/parkir/tol tanpa tujuan = transport rutin, bukan grey area.
+    if any(k in text for k in ("bensin", "parkir", "tol")) and not any(
+        k in text for k in ("grab", "gojek", "ojek", "maxim", "tiket", " ke ", "ke ")
+    ):
+        return None
     purpose = (
         "kantor",
         "office",
@@ -494,6 +500,8 @@ def _is_generic_subscription(text: str, category: str) -> str | None:
         return None
     if category in {"lifestyle & hiburan"} and any(k in text for k in ("netflix", "spotify")):
         return None
+    if category in {"bisnis & karir"} and any(k in text for k in ("domain", "hosting", "website")):
+        return None
     purpose = (
         "kerja",
         "bisnis",
@@ -507,6 +515,8 @@ def _is_generic_subscription(text: str, category: str) -> str | None:
 
 
 def _is_generic_coaching(text: str, category: str) -> str | None:
+    if any(k in text for k in ("honor", "freelance", "gaji", "pemasukan")):
+        return None
     if not any(k in text for k in ("coaching", "les privat", "les ", "mentoring", "kelas ")):
         return None
     # Gym/olahraga berbayar bukan grey ke Essential — selalu Flexible; skip
@@ -532,8 +542,8 @@ def _is_generic_coaching(text: str, category: str) -> str | None:
 
 def _is_generic_art(text: str, category: str) -> str | None:
     helpers = (
-        "art ",
         " gaji art",
+        "bayar art",
         "pembantu",
         "babysitter",
         "baby sitter",
@@ -544,9 +554,9 @@ def _is_generic_art(text: str, category: str) -> str | None:
         "gaji pembantu",
         "gaji babysitter",
     )
-    # "art" alone is noisy — require household-help context
-    hit = any(k in text for k in helpers) or (
-        "art" in text
+    # "art" di dalam "kartu" — jangan substring. Pakai batas kata.
+    hit = any(k in text for k in helpers) or bool(
+        re.search(r"(?<![a-z])art(?![a-z])", text)
         and any(k in text for k in ("gaji", "bayar", "pembantu", "rumah tangga"))
     )
     if not hit and category != "tempat tinggal":
