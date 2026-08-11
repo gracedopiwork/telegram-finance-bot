@@ -81,7 +81,7 @@ class CategoryAutoRegisterService
 
     private function notesLookLikeBasicHygiene(string $notesLower): bool
     {
-        foreach (['handbody', 'hand body', 'hand & body', 'body lotion', 'lotion tubuh', 'deodoran', 'deodorant', 'sabun', 'shampo', 'pasta gigi', 'odol', 'softex', 'pembalut'] as $item) {
+        foreach (['handbody', 'hand body', 'hand & body', 'body lotion', 'lotion tubuh', 'lotion', 'deodoran', 'deodorant', 'sabun', 'shampo', 'pasta gigi', 'odol', 'softex', 'pembalut', 'sikat gigi', 'cotton bud', 'hand sanitizer', 'nivea', 'vaseline'] as $item) {
             if (str_contains($notesLower, $item)) {
                 return true;
             }
@@ -92,7 +92,10 @@ class CategoryAutoRegisterService
 
     private function notesLookLikeBeautyCare(string $notesLower): bool
     {
-        foreach (['makeup', 'make up', 'skincare', 'skin care', 'dandan', 'lipstik', 'cushion', 'maybelline', 'maybeline'] as $item) {
+        if (str_contains($notesLower, 'printer') || str_contains($notesLower, 'fotocopy') || str_contains($notesLower, 'fotokopi')) {
+            return false;
+        }
+        foreach (['makeup', 'make up', 'skincare', 'skin care', 'dandan', 'lipstik', 'cushion', 'maybelline', 'maybeline', 'parfum', 'facial', 'toner', 'pelembab', 'spa', 'potong rambut'] as $item) {
             if (str_contains($notesLower, $item)) {
                 return true;
             }

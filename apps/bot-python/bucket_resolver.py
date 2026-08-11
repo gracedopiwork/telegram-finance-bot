@@ -188,9 +188,14 @@ _BEAUTY_MARKERS = (
     "parfum",
     "facial",
     "toner wajah",
+    "toner",
     "sunscreen",
     "serum",
     "moisturizer",
+    "pelembab",
+    "spa",
+    "potong rambut",
+    "salon rambut",
 )
 _SPORT_MARKERS = (
     "gym",
@@ -199,6 +204,10 @@ _SPORT_MARKERS = (
     "crossfit",
     "personal trainer",
     "membership gym",
+    "tenis",
+    "padel",
+    "coaching tenis",
+    "coaching padel",
 )
 _RIDE_MARKERS = ("grab", "gojek", "ojek", "maxim", "grabbike", "grabcar")
 _SCHOOL_WAJIB = ("spp", "ukt", "uang sekolah", "uang kuliah", "buku pelajaran")

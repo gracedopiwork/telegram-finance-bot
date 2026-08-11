@@ -64,8 +64,8 @@ class CategoryBucketService
         $markers = [
             'makeup', 'make up', 'make-up', 'skincare', 'skin care', 'dandan',
             'lipstik', 'lipstick', 'mascara', 'foundation', 'cushion',
-            'maybelline', 'maybeline', 'parfum', 'facial', 'toner wajah',
-            'sunscreen', 'serum', 'moisturizer',
+            'maybelline', 'maybeline', 'parfum', 'facial', 'toner wajah', 'toner',
+            'sunscreen', 'serum', 'moisturizer', 'pelembab', 'spa', 'potong rambut',
         ];
         if (! KeywordMatch::containsAny($combined, $markers)) {
             return null;
@@ -206,8 +206,8 @@ class CategoryBucketService
 
         // Olahraga berbayar selalu Flexible — jangan kena keyword "les/coaching" Future Building.
         if ($this->containsAny($combined, [
-            'gym', 'pilates', 'yoga', 'crossfit', 'personal trainer', 'coaching tenis',
-            'coaching padel', 'les renang', 'tenis', 'renang', 'padel',
+            'gym', 'pilates', 'yoga', 'crossfit', 'personal trainer',
+            'coaching tenis', 'coaching padel', 'les renang', 'tenis', 'renang', 'padel',
         ])) {
             return 'Flexible + Social';
         }

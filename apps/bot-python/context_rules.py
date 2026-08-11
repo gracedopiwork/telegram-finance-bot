@@ -337,6 +337,7 @@ _SKINCARE = (
     "moisturizer",
     "sunscreen",
     "toner wajah",
+    "toner",
     "makeup",
     "make up",
     "make-up",
@@ -354,6 +355,27 @@ _SKINCARE = (
     "cc cushion",
     "maybelline",
     "maybeline",
+    "parfum",
+    "perfume",
+    "facial",
+    "pelembab",
+    "lotion wajah",
+    "spa",
+    "potong rambut",
+    "cukur rambut",
+    "cukur",
+    "salon rambut",
+    "salon kecantikan",
+    "creambath",
+    "cream bath",
+)
+
+_PRINTER_SUPPLIES = (
+    "printer",
+    "fotocopy",
+    "fotokopi",
+    "tinta printer",
+    "toner printer",
 )
 
 _PERSONAL_DRINKWARE = (
@@ -582,6 +604,19 @@ _SOCIAL = (
     "hewan kurban",
 )
 
+_FAMILY_SUPPORT_RE = (
+    re.compile(
+        r"\b(?:transfer|kirim|bantu|kasih|kasi)\s+(?:ke|kepada|sama)\s+"
+        r"(?:mama|papa|ibu|ayah|bunda|mami|papi|adik|kakak|ortu|nenek|kakek|"
+        r"keluarga|orang\s+tua)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bbantu\s+(?:mama|papa|ibu|ayah|bunda|adik|kakak|ortu|keluarga|orang\s+tua)\b",
+        re.IGNORECASE,
+    ),
+)
+
 _GIFT_MARKERS = (
     "hadiah",
     "kado",
@@ -692,6 +727,17 @@ _KEBERSIHAN_DASAR = (
     "lotion tubuh",
     "lotion badan",
     "lotion tangan",
+    "lotion",
+    "sikat gigi",
+    "cotton bud",
+    "cottonbuds",
+    "cotton stick",
+    "hand sanitizer",
+    "handsanitizer",
+    "sanitizer",
+    "nivea",
+    "vaseline",
+    "vaselin",
 )
 
 _KESEHATAN = (
@@ -711,6 +757,8 @@ _KESEHATAN = (
     "rehab",
     "rehabilitasi",
     "hydrotherapy",
+    "minoxidil",
+    "masker",
 ) + _KEBERSIHAN_DASAR
 
 _FISIOTERAPI_RESEP = (
@@ -742,6 +790,12 @@ _GYM_LIFESTYLE = (
     "kelas yoga",
     "pilates",
     "crossfit",
+    "tenis",
+    "padel",
+    "coaching tenis",
+    "coaching padel",
+    "les tenis",
+    "les padel",
 )
 
 _PENDIDIKAN = (
@@ -1416,10 +1470,25 @@ def is_food_delivery(text: str) -> bool:
     return _contains(text, _FOOD_DELIVERY)
 
 
+def is_family_support_expense(text: str) -> bool:
+    """Transfer/bantu keluarga tanpa janji kembali → Sosial, bukan piutang."""
+    lower = _normalize_typos(text)
+    if (
+        is_lending_to_others(lower)
+        or is_social_debt_borrow(lower)
+        or is_social_debt_repay(lower)
+        or is_receivable_repay(lower)
+    ):
+        return False
+    return _match_any(lower, _FAMILY_SUPPORT_RE)
+
+
 def is_social_giving(text: str) -> bool:
-    """Donasi, sedekah, tip driver/ojek, amplop — bukan makan/transport."""
+    """Donasi, sedekah, tip driver/ojek, amplop, bantu keluarga — bukan makan/transport."""
     lower = text.lower()
     if _contains(lower, _SOCIAL):
+        return True
+    if is_family_support_expense(lower):
         return True
     return _match_any(lower, _TIP_PATTERNS)
 
@@ -1733,6 +1802,8 @@ def is_gift_expense(text: str) -> bool:
 def is_beauty_care_expense(text: str) -> bool:
     """Makeup/skincare/dandan = Kesehatan Wants, bukan likuiditas sosial / grey area."""
     lower = _normalize_typos(text)
+    if _contains(lower, _PRINTER_SUPPLIES):
+        return False
     if not _contains(lower, _SKINCARE):
         return False
     if is_gift_expense(lower):
@@ -2067,7 +2138,7 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         return {"jenis": "Pengeluaran", "kategori": "Bisnis & Karir", "sifat": "Need"}
 
     # Makeup/skincare sebelum Proteksi — "premium" jangan kena kata "premi".
-    if _contains(lower, _SKINCARE):
+    if _contains(lower, _SKINCARE) and not _contains(lower, _PRINTER_SUPPLIES):
         return {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "sifat": "Wants"}
 
     if _contains(lower, _ASURANSI):
@@ -2388,7 +2459,11 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
                 parsed.pop("sub_kategori", None)
                 return parsed
 
-        if ai_jenis == "Pengeluaran" and _contains(combined.lower(), _SKINCARE):
+        if (
+            ai_jenis == "Pengeluaran"
+            and _contains(combined.lower(), _SKINCARE)
+            and not _contains(combined.lower(), _PRINTER_SUPPLIES)
+        ):
             parsed["kategori"] = "Kesehatan & Kebersihan Diri"
             parsed["sifat"] = "Wants"
             parsed.pop("sub_kategori", None)
