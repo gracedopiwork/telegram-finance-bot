@@ -18,6 +18,7 @@ from telegram.ext import (
     filters,
 )
 
+from ambiguous_suite import format_telegram_chunks
 from ai_health import log_ai_health_config, report_ai_event, report_ai_failure
 from claude_ai import analyze_with_claude as claude_parse_json
 from claude_ai import extract_transaction_text_from_image as claude_extract_image_text
@@ -995,7 +996,8 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "/piutang - daftar piutang aktif (tracker)\n"
         "/utang - daftar utang aktif (tracker)\n"
         "/kuota - sisa kuota AI parsing bulan ini\n"
-        "/web - link masuk dashboard (otomatis)\n\n"
+        "/web - link masuk dashboard (otomatis)\n"
+        "/uji - tes kasus ambigu taksonomi (sekali jalan)\n\n"
         "Login dashboard:\n"
         "• **/web** di bot → klik link (tanpa isi form)\n"
         "• Atau buka halaman portal + email & kode lisensi\n\n"
@@ -1372,6 +1374,26 @@ async def confirm_callback_handler(update: Update, context: ContextTypes.DEFAULT
         return
 
 
+async def uji_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
+    user = update.effective_user
+    user_id = user.id if user else 0
+    if not user_id or not is_license_active_for_user(user_id):
+        await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    await update.message.reply_text("Menjalankan paket uji ambigu...")
+    try:
+        chunks = format_telegram_chunks()
+    except Exception as exc:
+        logger.exception("Gagal /uji: %s", exc)
+        await update.message.reply_text("Gagal menjalankan paket uji. Coba lagi sebentar.")
+        return
+    for chunk in chunks:
+        await update.message.reply_text(chunk)
+
+
 async def web_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message:
         return
@@ -1546,6 +1568,7 @@ def main() -> None:
     app.add_handler(CommandHandler("utang", utang_handler))
     app.add_handler(CommandHandler("kuota", kuota_handler))
     app.add_handler(CommandHandler("web", web_handler))
+    app.add_handler(CommandHandler("uji", uji_handler))
     app.add_handler(CallbackQueryHandler(mood_callback_handler, pattern=r"^mood:"))
     app.add_handler(CallbackQueryHandler(confirm_callback_handler, pattern=r"^confirm:"))
     app.add_handler(MessageHandler(filters.PHOTO, photo_handler))
