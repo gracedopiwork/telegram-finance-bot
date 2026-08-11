@@ -18,6 +18,24 @@ class ContextRulesTests(unittest.TestCase):
     def test_affiliate(self) -> None:
         self.assertClass("dapat shopee affiliate 50000", "Pemasukan", "Affiliate")
 
+    def test_komisi_gift_tiktok_adalah_pemasukan_bukan_hadiah(self) -> None:
+        self.assertClass("komisi gift dari TikTok 200rb", "Pemasukan", "Affiliate")
+        self.assertClass("komisi gift 200rb", "Pemasukan", "Affiliate")
+        text = "tiktok 200rb\nKlarifikasi user: komisi gift"
+        self.assertClass(text, "Pemasukan", "Affiliate")
+        out = apply_context_rules(
+            {
+                "keterangan": "Komisi gift dari TikTok",
+                "jenis": "Pengeluaran",
+                "kategori": "Hadiah",
+                "sifat": "Wants",
+            },
+            text,
+        )
+        self.assertEqual(out["jenis"], "Pemasukan")
+        self.assertEqual(out["kategori"], "Affiliate")
+        self.assertEqual(out["sifat"], "Need")
+
     def test_bunga_investasi(self) -> None:
         self.assertClass("terima bunga investasi sebesar 5000", "Pemasukan", "Bunga Investasi")
 

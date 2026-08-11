@@ -92,6 +92,13 @@ _AFFILIATE = (
     "lazada affiliate",
     "shopee komisi",
     "tiktok shop komisi",
+    "komisi gift",
+    "tiktok gift",
+    "gift tiktok",
+    "live gift",
+    "komisi live",
+    "kreator tiktok",
+    "creator tiktok",
 )
 
 _BUNGA = (
@@ -1664,6 +1671,22 @@ def is_gift_expense(text: str) -> bool:
         return False
     if is_received_money_gift(lower):
         return False
+    # Komisi gift TikTok / affiliate = Pemasukan, bukan kado yang diberi.
+    if is_affiliate_income(lower):
+        return False
+    if _contains(
+        lower,
+        (
+            "komisi gift",
+            "tiktok gift",
+            "gift tiktok",
+            "live gift",
+            "komisi live",
+            "kreator",
+            "creator",
+        ),
+    ):
+        return False
     if (
         is_lending_to_others(lower)
         or is_social_debt_borrow(lower)
@@ -2180,6 +2203,14 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
     if explicit and str(parsed.get("jenis") or "").strip() != explicit:
         parsed["jenis"] = explicit
 
+    # Komisi/affiliate (termasuk gift TikTok) = Pemasukan — jangan kena aturan kado.
+    if explicit != "Pengeluaran" and is_affiliate_income(combined):
+        parsed["jenis"] = "Pemasukan"
+        parsed["kategori"] = "Affiliate"
+        parsed["sifat"] = "Need"
+        parsed.pop("sub_kategori", None)
+        return parsed
+
     # Hadiah yang diberi (§4 Hadiah / Flexible) — jangan timpa pinjam/utang yang sudah jelas.
     if is_gift_expense(combined):
         parsed["jenis"] = "Pengeluaran"
@@ -2609,6 +2640,7 @@ def prompt_context_examples() -> str:
     return """
 Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "dapat shopee affiliate 50rb" → Pemasukan / Affiliate / Need
+- "komisi gift dari TikTok 200rb" → Pemasukan / Affiliate / Need (BUKAN Pengeluaran Hadiah)
 - "terima bunga investasi sebesar 5000" → Pemasukan / Bunga Investasi / Need (BUKAN Saving)
 - "dividen BBCA cair 200rb" → Pemasukan / Dividen / Need
 - "beli saham BBCA 1jt" → Saving/Investment / Investasi & Tabungan / Need

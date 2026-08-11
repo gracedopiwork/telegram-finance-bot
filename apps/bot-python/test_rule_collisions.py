@@ -100,6 +100,12 @@ class ClassifyCollisionTests(unittest.TestCase):
         self.assertEqual(parsed["jenis"], "Kewajiban Pajak")
         self.assertIsNone(parsed["bucket"])
 
+    def test_tiktok_gift_commission_is_income_not_hadiah(self) -> None:
+        parsed = classify_offline("komisi gift dari TikTok 200 rb")
+        self.assertEqual(parsed["jenis"], "Pemasukan")
+        self.assertEqual(parsed["kategori"], "Affiliate")
+        self.assertIsNone(parsed["bucket"])
+
     def test_income_excluded(self) -> None:
         parsed = classify_offline("gaji bulan ini 8jt")
         self.assertEqual(parsed["jenis"], "Pemasukan")

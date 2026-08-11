@@ -299,6 +299,8 @@ Aturan:
    - Hadiah/kado/parcel/tip yang DIBERI = Pengeluaran + Hadiah. BUKAN Likuiditas Sosial.
      Beli gadget sebagai hadiah tidak perlu grey area HP rusak vs upgrade.
    - Terima hadiah uang = Pemasukan (bukan kategori Hadiah).
+   - Komisi gift TikTok / live gift / komisi afiliasi = Pemasukan + Affiliate.
+     BUKAN Pengeluaran Hadiah (itu kado yang DIBERI).
    - Pinjam/utang/talangin/nanti dia ganti tetap Likuiditas Sosial meski ada kata keluarga.
    - "utang ke [nama]" tanpa konteks = AMBIGU → needs_clarification (meminjamkan vs berhutang).
    - Hasil investasi (bunga/dividen cair) = Pemasukan, BUKAN Saving/Investment.
