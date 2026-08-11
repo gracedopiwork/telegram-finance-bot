@@ -19,6 +19,12 @@ class ConsultationSlot extends Model
 
     public const HOLD_MINUTES = 45;
 
+    /** Booking paling lambat H-1 agar planner sempat siapkan materi. */
+    public const MIN_LEAD_HOURS = 24;
+
+    /** Klien wajib isi form screening sebelum sesi. */
+    public const INTAKE_FORM_HOURS = 8;
+
     protected $fillable = [
         'advisor_id',
         'starts_at',
@@ -67,7 +73,14 @@ class ConsultationSlot extends Model
     {
         return $query
             ->where('status', self::STATUS_OPEN)
-            ->where('starts_at', '>', now());
+            ->where('starts_at', '>', now()->addHours(self::MIN_LEAD_HOURS));
+    }
+
+    public function isBeyondMinLead(?\DateTimeInterface $at = null): bool
+    {
+        $at = $at ? \Carbon\Carbon::parse($at) : now();
+
+        return $this->starts_at->greaterThan($at->copy()->addHours(self::MIN_LEAD_HOURS));
     }
 
     public function scopeUpcoming(Builder $query): Builder

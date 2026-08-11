@@ -61,9 +61,9 @@ class ConsultationSlotService
                 ->lockForUpdate()
                 ->first();
 
-            if ($locked === null || ! $locked->isOpen() || $locked->starts_at->isPast()) {
+            if ($locked === null || ! $locked->isOpen() || ! $locked->isBeyondMinLead()) {
                 throw ValidationException::withMessages([
-                    'slot_id' => 'Slot ini sudah tidak tersedia. Silakan pilih jadwal lain.',
+                    'slot_id' => 'Slot ini sudah tidak tersedia. Booking paling lambat H-1 (24 jam sebelum sesi) agar planner sempat siapkan materi.',
                 ]);
             }
 
@@ -103,6 +103,32 @@ class ConsultationSlotService
     public function holdAndBuildWaUrl(ConsultationSlot $slot, array $guest): string
     {
         return $this->whatsAppUrl($this->holdSlot($slot, $guest));
+    }
+
+    public function paidGuestWhatsAppUrl(ConsultationSlot $slot): string
+    {
+        $wa = Setting::val('contact.wa_number', '6285111228911') ?: '6285111228911';
+        $service = match ($slot->service_type) {
+            'recovery' => 'Financial Recovery Program',
+            'premarital' => 'Premarital Financial Health Check Up',
+            default => 'Financial Consultation',
+        };
+        $hours = ConsultationSlot::INTAKE_FORM_HOURS;
+        $lines = [
+            'Halo Tim YFD, booking konsultasi saya sudah *lunas*.',
+            '',
+            '*Kode booking:* '.($slot->booking_code ?? '—'),
+            '*Nama:* '.($slot->guest_name ?? '-'),
+            '*Layanan:* '.$service,
+            '*Jadwal:* '.$slot->labelDate().' · '.$slot->starts_at->format('H:i').' WIB',
+            '',
+            'Slot sudah dikunci setelah pembayaran Midtrans.',
+            "Mohon kirim 2 link form screening. Saya akan isi paling lambat {$hours} jam sebelum sesi agar planner sempat pelajari kasus dan fokus solusi saat pertemuan.",
+            '',
+            'Terima kasih.',
+        ];
+
+        return 'https://wa.me/'.$wa.'?text='.rawurlencode(implode("\n", $lines));
     }
 
     public function confirmPayment(ConsultationSlot $slot): void
@@ -282,8 +308,6 @@ class ConsultationSlotService
         $lines[] = '*Jadwal:* '.$slot->labelDate().' · '.$slot->starts_at->format('H:i').' WIB';
         if ($showDoctor) {
             $lines[] = '*Dokter:* '.$advisorName.' (tetap sama untuk sesi berikutnya)';
-        } else {
-            $lines[] = '*Dokter:* dikonfirmasi admin setelah booking';
         }
         if ($slot->financial_stage) {
             $lines[] = '*Tahap finansial:* '.$slot->financial_stage;

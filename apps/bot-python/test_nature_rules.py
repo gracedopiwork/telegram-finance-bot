@@ -73,3 +73,29 @@ def test_networking_bisnis_transport_is_need():
     }
     refine_sifat_from_context(parsed, text)
     assert parsed["sifat"] == "Need"
+
+
+def test_tumbler_ganti_rusak_is_need():
+    text = "beli tumbler ganti yang sebelumnya rusak 150rb"
+    parsed = {
+        "keterangan": "Beli tumbler",
+        "nominal": 150000,
+        "jenis": "Pengeluaran",
+        "kategori": "Tempat Tinggal",
+        "sifat": "Wants",
+    }
+    refine_sifat_from_context(parsed, text)
+    assert parsed["sifat"] == "Need"
+
+
+def test_grab_subscription_stays_wants():
+    text = "bayar subscription grab untuk dapat paket hemat 14000"
+    parsed = {
+        "keterangan": "Subscription Grab",
+        "nominal": 14000,
+        "jenis": "Pengeluaran",
+        "kategori": "Transportasi",
+        "sifat": "Wants",
+    }
+    refine_sifat_from_context(parsed, text)
+    assert parsed["sifat"] == "Wants"

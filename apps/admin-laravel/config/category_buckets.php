@@ -29,6 +29,7 @@ return [
     'essential_context_keywords' => [
         'hp rusak', 'handphone rusak', 'ganti hp', 'hp pecah', 'layar pecah', 'hp mati',
         'fisioterapi', 'rehab', 'rehabilitasi', 'resep dokter',
+        'tumbler rusak', 'ganti tumbler', 'kulkas rusak', 'perabot rusak',
     ],
     // Meeting kerja / konsumsi bisnis → Future Building (bukan Essential Living).
     'future_building_context_keywords' => [

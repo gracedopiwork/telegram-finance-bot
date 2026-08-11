@@ -50,6 +50,9 @@ FUNCTIONAL_REPLACEMENT_KEYWORDS = (
     "gak bisa dipake",
     "gabisa dipakai",
     "gabisa dipake",
+    "sebelumnya rusak",
+    "yg rusak",
+    "yang sebelumnya rusak",
     "tidak berfungsi",
     "sudah tidak aktif",
     "akun sebelumnya",
@@ -120,6 +123,7 @@ _UNPLANNED_TERENCANA = (
     "gak terencana",
     "ga terencana",
     "belum terencana",
+    "tanpa rencana",
     "ga rencanain",
     "gak rencanain",
     "nggak rencanain",
@@ -127,13 +131,26 @@ _UNPLANNED_TERENCANA = (
 )
 
 PLANNED_PURCHASE_KEYWORDS = (
+    "terencana",
+    "terencan",
+    "trencana",
+    "direncanakan",
+    "di rencanakan",
     "sudah rencanain",
     "udah rencanain",
     "sudah direncanakan",
     "udah direncanakan",
     "sudah rencanakan",
+    "udah rencanakan",
+    "sudah rencana",
+    "udah rencana",
+    "ada rencana",
+    "rencanain",
     "tabungan buat ini",
     "langganan bulanan",
+    "sudah niat",
+    "udah niat",
+    "planned",
 )
 
 # Acara sosial terencana — bukan impulsif meski nominal besar / mood Happy.
@@ -217,9 +234,18 @@ def has_planned_purchase_signal(combined: str) -> bool:
     lower = combined.lower()
     if any(keyword in lower for keyword in _UNPLANNED_TERENCANA):
         return False
-    if "terencana" in lower:
-        return True
     return any(keyword in lower for keyword in PLANNED_PURCHASE_KEYWORDS)
+
+
+def stamp_planned_cue(parsed: dict[str, Any], source_text: str = "") -> dict[str, Any]:
+    """AI sering drop kata 'terencana' dari keterangan — simpan cue-nya."""
+    combined = _combined_text(parsed, source_text)
+    if not has_planned_purchase_signal(combined):
+        return parsed
+    note = str(parsed.get("keterangan") or "").strip()
+    if note and not has_planned_purchase_signal(note):
+        parsed["keterangan"] = f"{note} (terencana)"
+    return parsed
 
 
 def is_essential_obligation(parsed: dict[str, Any], combined: str) -> bool:
@@ -301,16 +327,17 @@ def resolve_impulsif(
     if is_planned_social(combined):
         return "No"
 
-    if is_discretionary_social_giving(combined):
-        return "Yes"
+    if is_functional_replacement(combined):
+        return "No"
 
     if is_essential_obligation(parsed, combined):
         return "No"
 
-    if is_functional_replacement(combined):
-        return "No"
-
     if has_explicit_impulse_signal(combined):
+        return "Yes"
+
+    # Tip/hadiah kecil tanpa kata terencana → Yes. Hadiah bernominal besar jangan dipaksa Yes.
+    if is_discretionary_social_giving(combined) and 0 < nominal < 100_000:
         return "Yes"
 
     # Comfort spending emosional: jajan/snack karena capek → Yes meski nominal kecil.
@@ -337,6 +364,13 @@ def resolve_impulsif(
         return "No"
 
     if trust_ai and ai_suggested in VALID_IMPULSIF:
+        kategori = str(parsed.get("kategori") or "").strip().lower()
+        if (
+            ai_suggested == "Yes"
+            and kategori == "hadiah"
+            and not has_explicit_impulse_signal(combined)
+        ):
+            return "No"
         return ai_suggested
 
     return infer_impulsif_fallback(parsed, combined)

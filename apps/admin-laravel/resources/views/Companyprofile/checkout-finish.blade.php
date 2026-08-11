@@ -39,7 +39,9 @@
         @if($order->status === 'paid' && $isConsultation)
             <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
                 Pembayaran <strong>lunas</strong>. Jadwal konsultasi Anda sudah dikunci.
-                Tim YFD akan menghubungi Anda untuk konfirmasi sesi.
+                Admin akan mengirim <strong>2 link form</strong> via WhatsApp — mohon diisi
+                paling lambat <strong>{{ \App\Models\ConsultationSlot::INTAKE_FORM_HOURS }} jam sebelum sesi</strong>
+                agar planner sempat pelajari kasus dan fokus ke solusi saat pertemuan.
             </p>
             @if($order->consultationSlot)
                 <div class="bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 max-w-lg mx-auto text-left mb-6">
@@ -202,8 +204,9 @@
         <a href="{{ route('company.home') }}" class="btn btn-outline-primary">
             <span class="material-symbols-outlined text-[18px]">home</span> Kembali ke Beranda
         </a>
-        <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="btn btn-outline-primary">
-            <span class="material-symbols-outlined text-[18px]">chat</span> Chat Tim YFD via WA
+        <a href="{{ $consultationWaUrl ?? $waBookingUrl }}" target="_blank" rel="noopener" class="btn btn-outline-primary">
+            <span class="material-symbols-outlined text-[18px]">chat</span>
+            {{ !empty($consultationWaUrl) ? 'Buka ringkasan booking di WhatsApp' : 'Chat Tim YFD via WA' }}
         </a>
     </div>
 </section>

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from impulsive_rules import resolve_impulsif
+from impulsive_rules import resolve_impulsif, stamp_planned_cue
 
 
 class ImpulsiveRulesTests(unittest.TestCase):
@@ -149,6 +149,25 @@ class ImpulsiveRulesTests(unittest.TestCase):
             ),
             "No",
         )
+
+    def test_hadiah_terencana_survives_ai_strip_and_clarification(self) -> None:
+        parsed = {
+            "keterangan": "Beli hadiah iPhone 15 juta untuk adik",
+            "jenis": "Pengeluaran",
+            "kategori": "Hadiah",
+            "sifat": "Wants",
+            "nominal": 15_000_000,
+        }
+        text = (
+            "beli hadiah iphone 15 jt buat adik. terencana\n"
+            "Klarifikasi user: ganti hp utama"
+        )
+        self.assertEqual(
+            resolve_impulsif(parsed, text, ai_suggested="Yes", trust_ai=True),
+            "No",
+        )
+        stamped = stamp_planned_cue(dict(parsed), text)
+        self.assertIn("terencana", stamped["keterangan"].lower())
 
     def test_tidak_terencana_tetap_impulsif(self) -> None:
         parsed = {

@@ -9,7 +9,7 @@ from typing import Any
 
 from yfd_taxonomy import grey_area_question
 from social_meta import social_missing_details_question
-from context_rules import is_gift_expense
+from context_rules import is_gift_expense, is_household_durable, is_ride_subscription
 
 
 def _is_gadget_grey_question(question: str) -> bool:
@@ -58,6 +58,21 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
     if parsed.get("needs_clarification") is True and ai_question:
         if gift and (
             _is_gadget_grey_question(ai_question) or _is_social_liquidity_question(ai_question)
+        ):
+            ai_question = ""
+        # Langganan ojek bukan grey area tujuan ride / software subscription.
+        if is_ride_subscription(text):
+            ai_question = ""
+        # Jangan pakai pertanyaan tracker utang jika jenis bukan likuiditas sosial.
+        if _is_social_liquidity_question(ai_question) and jenis not in {
+            "Piutang Keluar",
+            "Utang Masuk",
+            "Piutang Masuk",
+            "Utang Keluar",
+        }:
+            ai_question = ""
+        if is_household_durable(text) and (
+            _is_social_liquidity_question(ai_question) or "proteksi" in ai_question.lower()
         ):
             ai_question = ""
         if ai_question:
@@ -194,6 +209,8 @@ def _is_generic_coffee(text: str, category: str) -> str | None:
 
 
 def _is_generic_transport(text: str, category: str) -> str | None:
+    if is_ride_subscription(text):
+        return None
     if category not in {"transport", "transportasi"}:
         return None
     if not any(word in text for word in ("grab", "gojek", "ojek", "maxim", "parkir", "bensin", "tiket")):
@@ -326,6 +343,10 @@ def _is_generic_perabot(text: str, category: str) -> str | None:
         "gorden",
         "panci",
         "piring",
+        "tumbler",
+        "thumbler",
+        "termos",
+        "sprei",
         "sofa",
         "lemari",
         "kasur",
@@ -404,6 +425,8 @@ def _is_generic_hp(text: str, category: str) -> str | None:
 
 
 def _is_generic_subscription(text: str, category: str) -> str | None:
+    if is_ride_subscription(text):
+        return None
     subs = (
         "chatgpt",
         "claude",

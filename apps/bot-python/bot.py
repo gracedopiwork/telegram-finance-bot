@@ -55,6 +55,7 @@ from impulsive_rules import (
     PAYDAY_SPLURGE_KEYWORDS,
     REWARD_SPENDING_KEYWORDS,
     resolve_impulsif,
+    stamp_planned_cue,
 )
 from nature_rules import refine_sifat_from_context
 from yfd_taxonomy import attach_taxonomy_flags
@@ -261,6 +262,7 @@ def finalize_parsed_transaction(
     normalize_saving_fields(parsed, source_text)
     refine_sifat_from_context(parsed, source_text)
     attach_taxonomy_flags(parsed, source_text)
+    stamp_planned_cue(parsed, source_text)
     ai_val = str(parsed.get("impulsif", "")).strip() if trust_ai_impulsif else None
     parsed["impulsif"] = resolve_impulsif(
         parsed,
@@ -892,11 +894,11 @@ async def process_note_input(
 
     if user_id:
         question = clarification_question(parsed, text)
-        social_open = social_missing_details_question(parsed, text) is not None
+        social_q = social_missing_details_question(parsed, text)
         should_ask = question and (
             not clarification_resolved
             or parsed.get("needs_clarification") is True
-            or social_open
+            or (social_q is not None and question == social_q)
         )
         if should_ask:
             PENDING_CONFIRMATIONS.pop(user_id, None)
@@ -907,7 +909,7 @@ async def process_note_input(
             }
             header = (
                 "Aku perlu memastikan data Likuiditas Sosial dulu:"
-                if social_open
+                if social_q and question == social_q
                 else "Aku perlu memastikan dulu:"
             )
             await message.reply_text(

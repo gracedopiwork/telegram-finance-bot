@@ -15,7 +15,7 @@ return [
     'included_hours' => 1,
     'fhcu_valid_months' => 3,
     'multi_session_note' => 'Satu kasus bisa membutuhkan lebih dari satu pertemuan — tim YFD akan menjelaskan rencana sesi setelah screening.',
-    'overtime_disclosure' => 'Sesi standar 1 jam. Jika sesi diperpanjang (maks. 2 jam total), dikenakan biaya overtime sesuai tahap finansial Anda — ditagihkan via payment gateway setelah sesi.',
+    'overtime_disclosure' => 'Sesi standar 1 jam. Jika sesi diperpanjang (maks. 2 jam total), dikenakan biaya Over time sesuai tahap finansial Anda — ditagihkan via payment gateway setelah sesi.',
 
     'stages' => [
         'surviving' => [

@@ -294,6 +294,37 @@ class ClarificationRulesTests(unittest.TestCase):
         )
         self.assertIsNone(question)
 
+    def test_grab_subscription_skips_transport_destination(self) -> None:
+        text = "Tgl 8/8/2026 bayar subscription grab untuk dapat paket hemat 14.000"
+        question = clarification_question(
+            {
+                "jenis": "Pengeluaran",
+                "kategori": "Transportasi",
+                "keterangan": "Subscription Grab",
+                "needs_clarification": True,
+                "clarification_question": (
+                    "Transport ini untuk tujuan wajib (kantor/sekolah/klinik), "
+                    "lifestyle/sosial (cafe/mall/healing), atau bisnis/kerja/networking?"
+                ),
+            },
+            text,
+        )
+        self.assertIsNone(question)
+
+    def test_tumbler_requires_perabot_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Proteksi", "keterangan": "Beli tumbler"},
+            "beli tumbler 150rb",
+        )
+        self.assertIn("rusak", question or "")
+
+    def test_tumbler_ganti_rusak_no_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Tempat Tinggal", "keterangan": "Ganti tumbler rusak"},
+            "beli tumbler ganti yang sebelumnya rusak 150rb",
+        )
+        self.assertIsNone(question)
+
 
 if __name__ == "__main__":
     unittest.main()

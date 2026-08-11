@@ -310,6 +310,47 @@ _SKINCARE = (
     "moisturizer",
     "sunscreen",
     "toner wajah",
+    "makeup",
+    "make up",
+    "make-up",
+    "lipstik",
+    "lipstick",
+    "mascara",
+    "foundation",
+    "bedak",
+    "blush",
+    "dandan",
+    "lip cream",
+    "lipcream",
+)
+
+_HOUSEHOLD_DURABLES = (
+    "tumbler",
+    "thumbler",
+    "termos",
+    "rice cooker",
+    "penanak nasi",
+    "kulkas",
+    "mesin cuci",
+    "bedcover",
+    "gorden",
+    "sprei",
+    "perabot",
+)
+
+_RIDE_SUBSCRIPTION = (
+    "subscription grab",
+    "grab subscription",
+    "langganan grab",
+    "grab unlimited",
+    "grabunlimited",
+    "paket hemat grab",
+    "grab paket hemat",
+    "grabhemat",
+    "subscription gojek",
+    "gojek subscription",
+    "langganan gojek",
+    "gojek unlimited",
 )
 
 _SUBSCRIPTION = (
@@ -1335,9 +1376,43 @@ def is_business_building_expense(text: str) -> bool:
     return _match_any(lower, _WORK_MEETING_RE)
 
 
+def is_ride_subscription(text: str) -> bool:
+    """Langganan ojek (Grab Unlimited / paket hemat) — bukan ride sekali jalan."""
+    return _contains(text.lower(), _RIDE_SUBSCRIPTION)
+
+
+def is_household_durable(text: str) -> bool:
+    """Peralatan rumah tangga durable — Tempat Tinggal, grey area rusak vs koleksi."""
+    return _contains(text.lower(), _HOUSEHOLD_DURABLES)
+
+
+def household_durable_sifat(text: str) -> str:
+    lower = text.lower()
+    if _contains(lower, ("koleksi", "ikuti tren", "ikut tren", "upgrade", "fomo", "tambah koleksi")):
+        return "Wants"
+    if _contains(
+        lower,
+        (
+            "rusak",
+            "pecah",
+            "bocor",
+            "tidak layak",
+            "belum memadai",
+            "ganti yang",
+            "ganti yg",
+            "mengganti",
+            "sebelumnya rusak",
+        ),
+    ):
+        return "Need"
+    return "Wants"
+
+
 def is_transport_ride(text: str) -> bool:
-    """Ojek/bensin/dll — bukan GrabFood/GoFood."""
+    """Ojek/bensin/dll — bukan GrabFood/GoFood / langganan paket."""
     if is_food_delivery(text):
+        return False
+    if is_ride_subscription(text):
         return False
     return _match_any(text, _TRANSPORT_PATTERNS)
 
@@ -1900,6 +1975,9 @@ def classify_from_text(text: str) -> dict[str, str] | None:
                 and _contains(lower, ("grab", "gojek", "ojek", "maxim", "grabbike", "grabcar"))
             ):
                 return {"jenis": "Pengeluaran", "kategori": "Traveling", "sifat": "Wants"}
+    # Langganan ojek (Grab Unlimited) — bukan ride sekali jalan / bukan grey area tujuan.
+    if is_ride_subscription(lower):
+        return {"jenis": "Pengeluaran", "kategori": "Transportasi", "sifat": "Wants"}
     # Ride Grab/ojek dulu — "grab ke gym" tetap Transportasi (bucket Flexible),
     # bukan Lifestyle. Bayar membership gym tanpa ride → Lifestyle di bawah.
     if _contains(lower, _SERVIS_KENDARAAN) or is_transport_ride(lower):
@@ -1922,6 +2000,12 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         }
     if is_household_help_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
+    if is_household_durable(lower):
+        return {
+            "jenis": "Pengeluaran",
+            "kategori": "Tempat Tinggal",
+            "sifat": household_durable_sifat(lower),
+        }
     if _contains(lower, _LISTRIK) or is_water_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
     # Air minum/galon sebelum jajan — "beli aqua" sering salah jadi Jajan.
@@ -2030,6 +2114,16 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         parsed["kategori"] = "Hadiah"
         parsed["sifat"] = "Wants"
         parsed.pop("sub_kategori", None)
+    elif is_household_durable(combined):
+        parsed["jenis"] = "Pengeluaran"
+        parsed["kategori"] = "Tempat Tinggal"
+        parsed["sifat"] = household_durable_sifat(combined)
+        parsed.pop("sub_kategori", None)
+    elif is_ride_subscription(combined):
+        parsed["jenis"] = "Pengeluaran"
+        parsed["kategori"] = "Transportasi"
+        parsed["sifat"] = "Wants"
+        parsed.pop("sub_kategori", None)
     # Likuiditas Sosial: Piutang Masuk dulu agar "X balikin hutang" tidak jadi Utang Keluar.
     elif is_receivable_repay(lower_combined):
         parsed["jenis"] = "Piutang Masuk"
@@ -2126,6 +2220,12 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
             if detect_cashflow_direction(combined) != "Pemasukan":
                 parsed["jenis"] = "Pengeluaran"
                 ai_jenis = "Pengeluaran"
+
+        if ai_jenis == "Pengeluaran" and _contains(combined.lower(), _SKINCARE):
+            parsed["kategori"] = "Kesehatan & Kebersihan Diri"
+            parsed["sifat"] = "Wants"
+            parsed.pop("sub_kategori", None)
+            return parsed
 
         # Donasi/tip/hadiah spontan sering salah jadi Makan/Transport/Need.
         if ai_jenis == "Pengeluaran" and is_social_giving(combined):
@@ -2406,6 +2506,10 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "netflix bulanan 54rb" → Pengeluaran / Lifestyle & Hiburan / Wants
 - "langganan capcut untuk kerja edit video 95k" → Pengeluaran / Bisnis & Karir / Need
 - "skincare serum 120rb" → Pengeluaran / Kesehatan & Kebersihan Diri / Wants
+- "beli makeup / skin care 139.5k" → Pengeluaran / Kesehatan & Kebersihan Diri / Wants (BUKAN Lain-lain)
+- "beli tumbler 150rb" → Pengeluaran / Tempat Tinggal — WAJIB klarifikasi rusak vs koleksi (BUKAN Proteksi)
+- "beli tumbler ganti yang rusak 150rb" → Pengeluaran / Tempat Tinggal / Need (Essential)
+- "bayar subscription grab paket hemat 14.000" → Pengeluaran / Transportasi / Wants (BUKAN grey area tujuan; BUKAN Likuiditas Sosial)
 - "makan malam 65.700" → Pengeluaran / Makanan & Minuman / Need
 - "grab ke kantor 28rb" → Pengeluaran / Transportasi / Need
 - "grab dari kos ke gym 21rb" → Pengeluaran / Transportasi / Wants (bucket Flexible; BUKAN Lifestyle)

@@ -143,7 +143,7 @@ final class ConsultationPricing
         $session = (int) ($tier['session_price'] ?? $tier['price_min'] ?? 0);
         $ot = (int) ($tier['overtime_price'] ?? 0);
         if ($ot > 0) {
-            return self::formatRupiah($session).' /jam · OT '.self::formatRupiah($ot).'/jam';
+            return self::formatRupiah($session).' /jam · Over time '.self::formatRupiah($ot).'/jam';
         }
 
         $min = (int) ($tier['price_min'] ?? 0);

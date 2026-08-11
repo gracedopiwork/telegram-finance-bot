@@ -79,7 +79,13 @@ def _kategori_aliases() -> dict[str, str]:
         "serum": "Kesehatan & Kebersihan Diri",
         "make up": "Kesehatan & Kebersihan Diri",
         "makeup": "Kesehatan & Kebersihan Diri",
+        "kecantikan": "Kesehatan & Kebersihan Diri",
+        "perawatan & kecantikan": "Kesehatan & Kebersihan Diri",
+        "dandan": "Kesehatan & Kebersihan Diri",
+        "lipstik": "Kesehatan & Kebersihan Diri",
         "parfum": "Kesehatan & Kebersihan Diri",
+        "tumbler": "Tempat Tinggal",
+        "perabot": "Tempat Tinggal",
         "pendidikan": "Pendidikan",
         "saham": "Investasi & Tabungan",
         "reksadana": "Investasi & Tabungan",
@@ -303,11 +309,15 @@ Aturan:
      * Starbucks/kopi + meeting kerja/klien → Bisnis & Karir (Need).
      * Starbucks/kopi healing/santai → Makanan & Minuman (Wants).
    - Tempat Tinggal: kos, KPR tinggal, listrik, air, gas, PBB, ART/driver/babysitter, perlengkapan rumah.
+     * Tumbler/kulkas/rice cooker/perabot = Tempat Tinggal (BUKAN Proteksi). Grey area rusak vs koleksi.
+     * Ganti yang rusak/belum memadai → Need (Essential). Tambah koleksi/tren → Wants (Flexible).
    - Transportasi: ojek/grab/parkir/bensin (bukan pesanan makanan); bucket mengikuti tujuan perjalanan.
      * Grab ke gym = Transportasi Wants (bukan Lifestyle). Membership gym = Lifestyle.
+     * Langganan Grab/Gojek (subscription/paket hemat) = Transportasi Wants — BUKAN grey area tujuan ride,
+       BUKAN Likuiditas Sosial.
    - Komunikasi: pulsa, kuota, internet HP, biaya admin bank/ATM/transfer.
    - Kesehatan & Kebersihan Diri: dokter, obat, sabun, laundry (semua laundry = Need);
-     skincare premium = Wants; fisioterapi resep dokter = Need (tanpa resep = grey area).
+     skincare/makeup/dandan = Wants (BUKAN Lain-lain); fisioterapi resep dokter = Need (tanpa resep = grey area).
    - Pendidikan: SPP/UKT ATAU seminar/workshop/sertifikasi/conference/pengembangan diri /
      iuran organisasi profesi (IDI). Pengembangan diri SELALU Future Building di sistem
      (Need atau Wants — bucket sama).
@@ -349,6 +359,10 @@ Aturan:
    coaching skill vs hobi; transport tujuan; ART menunjang kerja vs kenyamanan; pinjol mendesak vs konsumsi;
    notaris aset induk; pakaian kerja vs fashion; fisioterapi resep vs pilihan sendiri.
    JANGAN klarifikasi HP/laptop rusak vs upgrade jika transaksi adalah hadiah/kado.
+   JANGAN tanya tujuan ride (kantor/lifestyle/bisnis) untuk langganan Grab/Gojek/paket hemat.
+   JANGAN pakai pertanyaan Likuiditas Sosial kecuali jenis memang Piutang/Utang.
+   Makeup/skincare/dandan = Kesehatan & Kebersihan Diri (BUKAN Lain-lain).
+   Tumbler/perabot rumah tangga = Tempat Tinggal (BUKAN Proteksi).
    Set needs_clarification=true dan clarification_question singkat (bahasa Indonesia taxonomy).
 12) JANGAN menentukan bucket. Sistem yang menghitung bucket.
 """

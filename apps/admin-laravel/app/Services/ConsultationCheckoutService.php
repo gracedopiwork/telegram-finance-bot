@@ -287,6 +287,8 @@ class ConsultationCheckoutService
         }
         $lines[] = '';
         $lines[] = 'Pembayaran sudah diverifikasi sistem. Tidak perlu konfirmasi transfer manual.';
+        $lines[] = '';
+        $lines[] = 'Tindak lanjut admin: kirim 2 link form screening ke klien. Klien wajib isi paling lambat '.ConsultationSlot::INTAKE_FORM_HOURS.' jam sebelum sesi.';
 
         $url = 'https://wa.me/'.$wa.'?text='.rawurlencode(implode("\n", $lines));
 

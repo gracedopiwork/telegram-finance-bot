@@ -699,6 +699,60 @@ class ContextRulesTests(unittest.TestCase):
         out = apply_context_rules(parsed, "bayar hotel staycation 1jt")
         self.assertEqual(out["kategori"], "Traveling")
 
+    def test_tumbler_tempat_tinggal_bukan_proteksi(self) -> None:
+        self.assertClass("beli tumbler 150rb", "Pengeluaran", "Tempat Tinggal")
+        out = apply_context_rules(
+            {
+                "keterangan": "Beli tumbler",
+                "jenis": "Pengeluaran",
+                "kategori": "Proteksi",
+                "sifat": "Need",
+            },
+            "beli tumbler 150rb",
+        )
+        self.assertEqual(out["kategori"], "Tempat Tinggal")
+        self.assertEqual(out["jenis"], "Pengeluaran")
+
+    def test_tumbler_ganti_rusak_need(self) -> None:
+        hit = classify_from_text("beli tumbler ganti yang sebelumnya rusak 150rb")
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Tempat Tinggal")
+        self.assertEqual(hit["sifat"], "Need")
+
+    def test_makeup_kesehatan_bukan_lain_lain(self) -> None:
+        self.assertClass("beli makeup 139.5k", "Pengeluaran", "Kesehatan & Kebersihan Diri")
+        self.assertClass("beli skin care 139.5k", "Pengeluaran", "Kesehatan & Kebersihan Diri")
+        out = apply_context_rules(
+            {
+                "keterangan": "Makeup / skin care",
+                "jenis": "Pengeluaran",
+                "kategori": "Lain-lain",
+                "sifat": "Wants",
+            },
+            "makeup atau skin care 139.5k",
+        )
+        self.assertEqual(out["kategori"], "Kesehatan & Kebersihan Diri")
+        self.assertEqual(out["sifat"], "Wants")
+
+    def test_grab_subscription_transport_bukan_tujuan_ride(self) -> None:
+        hit = classify_from_text(
+            "Tgl 8/8/2026 bayar subscription grab untuk dapat paket hemat 14.000"
+        )
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Transportasi")
+        self.assertEqual(hit["sifat"], "Wants")
+        out = apply_context_rules(
+            {
+                "keterangan": "Subscription Grab",
+                "jenis": "Piutang Keluar",
+                "kategori": "Lain-lain",
+                "sifat": "Need",
+            },
+            "bayar subscription grab untuk dapat paket hemat 14.000",
+        )
+        self.assertEqual(out["jenis"], "Pengeluaran")
+        self.assertEqual(out["kategori"], "Transportasi")
+
 
 if __name__ == "__main__":
     unittest.main()

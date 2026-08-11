@@ -269,12 +269,12 @@
                                 </p>
                             @else
                                 <p class="font-caption text-caption text-on-surface-variant leading-relaxed">
-                                    Dokter yang menangani (dr Ayuti / dr Catherine) dikonfirmasi admin setelah booking.
-                                </p>
-                                <p class="font-caption text-caption text-on-surface-variant leading-relaxed">
                                     Satu kasus bisa membutuhkan lebih dari satu pertemuan — tim YFD akan menjelaskan rencana sesi setelah screening.
                                 </p>
                             @endif
+                            <p class="font-caption text-caption text-on-surface-variant leading-relaxed">
+                                Booking paling lambat H-1 (24 jam sebelum sesi) agar planner sempat pelajari kasus dan siapkan materi.
+                            </p>
                         </div>
                     </div>
 

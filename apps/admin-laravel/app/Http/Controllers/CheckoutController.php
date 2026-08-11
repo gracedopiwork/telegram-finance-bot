@@ -211,12 +211,17 @@ class CheckoutController extends Controller
 
         if ($order !== null && $order->status === 'pending') {
             $paymentSync->syncOrderFromApi($order);
-            $order->refresh()->load('license');
+            $order->refresh()->load(['license', 'consultationSlot']);
         }
 
         $notifier = app(OrderDeliveryNotifier::class);
         $channels = $notifier->enabledChannels();
         $orderContext = $order ? app(\App\Services\PortalOnboardingService::class)->orderDeliveryContext($order) : null;
+        $consultationWaUrl = null;
+        if ($order && $order->isConsultationOrder() && $order->consultationSlot) {
+            $consultationWaUrl = app(\App\Services\ConsultationSlotService::class)
+                ->paidGuestWhatsAppUrl($order->consultationSlot);
+        }
 
         return view('Companyprofile.checkout-finish', [
             'active' => 'produk',
@@ -224,6 +229,7 @@ class CheckoutController extends Controller
             'orderContext' => $orderContext,
             'deliveryChannelLabel' => $notifier->primaryChannelLabel(),
             'deliveryViaEmail' => in_array('email', $channels, true),
+            'consultationWaUrl' => $consultationWaUrl,
         ]);
     }
 

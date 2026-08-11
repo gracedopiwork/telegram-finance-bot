@@ -5,9 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 from context_rules import (
+    household_durable_sifat,
     is_business_transport_destination,
     is_discretionary_social_giving,
+    is_household_durable,
     is_leisure_transport_destination,
+    is_ride_subscription,
 )
 
 VALID_SIFAT = frozenset({"Need", "Wants"})
@@ -154,13 +157,18 @@ def refine_sifat_from_context(parsed: dict[str, Any], source_text: str = "") -> 
         "Kesehatan",
     }
     kategori = str(parsed.get("kategori", ""))
+    if is_household_durable(combined):
+        parsed["sifat"] = household_durable_sifat(combined)
+        return parsed
     if kategori in essential_cats:
         if kategori in {"Makan", "Makanan & Minuman", "Minuman"} and has_discretionary_framing(
             combined
         ):
             parsed["sifat"] = "Wants"
         elif kategori in {"Transport", "Transportasi"}:
-            if is_leisure_transport_destination(combined):
+            if is_ride_subscription(combined):
+                parsed["sifat"] = "Wants"
+            elif is_leisure_transport_destination(combined):
                 parsed["sifat"] = "Wants"
             elif is_business_transport_destination(combined):
                 parsed["sifat"] = "Need"
