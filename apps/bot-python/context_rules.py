@@ -334,10 +334,12 @@ _SKINCARE = (
     "maybeline",
 )
 
-_HOUSEHOLD_DURABLES = (
+_PERSONAL_DRINKWARE = (
     "tumbler",
     "thumbler",
     "termos",
+)
+_HOUSEHOLD_DURABLES = (
     "rice cooker",
     "penanak nasi",
     "kulkas",
@@ -1409,9 +1411,14 @@ def is_ride_subscription(text: str) -> bool:
     return _contains(text.lower(), _RIDE_SUBSCRIPTION)
 
 
+def is_personal_drinkware(text: str) -> bool:
+    """Tumbler/termos = item pribadi, bukan kos/listrik (bukan Tempat Tinggal)."""
+    return _contains(text.lower(), _PERSONAL_DRINKWARE)
+
+
 def is_household_durable(text: str) -> bool:
-    """Peralatan rumah tangga durable — Tempat Tinggal, grey area rusak vs koleksi."""
-    return _contains(text.lower(), _HOUSEHOLD_DURABLES)
+    """Perabot rumah ATAU tumbler — grey area rusak vs koleksi."""
+    return is_personal_drinkware(text) or _contains(text.lower(), _HOUSEHOLD_DURABLES)
 
 
 def household_durable_sifat(text: str) -> str:
@@ -2055,6 +2062,12 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         }
     if is_household_help_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need"}
+    if is_personal_drinkware(lower):
+        return {
+            "jenis": "Pengeluaran",
+            "kategori": "Lifestyle & Hiburan",
+            "sifat": household_durable_sifat(lower),
+        }
     if is_household_durable(lower):
         return {
             "jenis": "Pengeluaran",
@@ -2186,6 +2199,11 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         parsed.pop("sub_kategori", None)
         parsed["needs_clarification"] = False
         parsed["clarification_question"] = None
+    elif is_personal_drinkware(combined):
+        parsed["jenis"] = "Pengeluaran"
+        parsed["kategori"] = "Lifestyle & Hiburan"
+        parsed["sifat"] = household_durable_sifat(combined)
+        parsed.pop("sub_kategori", None)
     elif is_household_durable(combined):
         parsed["jenis"] = "Pengeluaran"
         parsed["kategori"] = "Tempat Tinggal"
@@ -2615,8 +2633,8 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "langganan capcut untuk kerja edit video 95k" → Pengeluaran / Bisnis & Karir / Need
 - "skincare serum 120rb" → Pengeluaran / Kesehatan & Kebersihan Diri / Wants
 - "beli makeup / skin care 139.5k" → Pengeluaran / Kesehatan & Kebersihan Diri / Wants (BUKAN Lain-lain)
-- "beli tumbler 150rb" → Pengeluaran / Tempat Tinggal — WAJIB klarifikasi rusak vs koleksi (BUKAN Proteksi)
-- "beli tumbler ganti yang rusak 150rb" → Pengeluaran / Tempat Tinggal / Need (Essential)
+- "beli tumbler 150rb" → Pengeluaran / Lifestyle & Hiburan — WAJIB klarifikasi rusak vs koleksi (BUKAN Proteksi, BUKAN Tempat Tinggal)
+- "beli tumbler karena tumbler lama rusak 200rb" → Pengeluaran / Lifestyle & Hiburan / Need (Essential Living)
 - "bayar subscription grab paket hemat 14.000" → Pengeluaran / Transportasi / Wants (BUKAN grey area tujuan; BUKAN Likuiditas Sosial)
 - "makan malam 65.700" → Pengeluaran / Makanan & Minuman / Need
 - "grab ke kantor 28rb" → Pengeluaran / Transportasi / Need

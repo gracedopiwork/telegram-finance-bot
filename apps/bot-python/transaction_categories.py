@@ -84,7 +84,9 @@ def _kategori_aliases() -> dict[str, str]:
         "dandan": "Kesehatan & Kebersihan Diri",
         "lipstik": "Kesehatan & Kebersihan Diri",
         "parfum": "Kesehatan & Kebersihan Diri",
-        "tumbler": "Tempat Tinggal",
+        "tumbler": "Lifestyle & Hiburan",
+        "thumbler": "Lifestyle & Hiburan",
+        "termos": "Lifestyle & Hiburan",
         "perabot": "Tempat Tinggal",
         "pendidikan": "Pendidikan",
         "saham": "Investasi & Tabungan",
@@ -308,9 +310,9 @@ Aturan:
    - Makanan & Minuman: makan harian, jajan, kopi, boba, GoFood/GrabFood.
      * Starbucks/kopi + meeting kerja/klien → Bisnis & Karir (Need).
      * Starbucks/kopi healing/santai → Makanan & Minuman (Wants).
-   - Tempat Tinggal: kos, KPR tinggal, listrik, air, gas, PBB, ART/driver/babysitter, perlengkapan rumah.
-     * Tumbler/kulkas/rice cooker/perabot = Tempat Tinggal (BUKAN Proteksi). Grey area rusak vs koleksi.
-     * Ganti yang rusak/belum memadai → Need (Essential). Tambah koleksi/tren → Wants (Flexible).
+   - Tempat Tinggal: kos, KPR tinggal, listrik, air, gas, PBB, ART/driver/babysitter,
+     kulkas/rice cooker/mesin cuci/perabot rumah (BUKAN tumbler, BUKAN Proteksi).
+     * Ganti perabot rusak/belum memadai → Need (Essential). Tambah koleksi/tren → Wants (Flexible).
    - Transportasi: ojek/grab/parkir/bensin (bukan pesanan makanan); bucket mengikuti tujuan perjalanan.
      * Grab ke gym = Transportasi Wants (bukan Lifestyle). Membership gym = Lifestyle.
      * Langganan Grab/Gojek (subscription/paket hemat) = Transportasi Wants — BUKAN grey area tujuan ride,
@@ -323,7 +325,9 @@ Aturan:
      (Need atau Wants — bucket sama).
    - Investasi & Tabungan: saham, reksadana, emas, dana darurat (jenis Saving/Investment).
    - Proteksi: BPJS, premi asuransi jiwa/kesehatan/kendaraan/aset.
-   - Lifestyle & Hiburan: Netflix, konser, gym/pilates berbayar, gadget upgrade.
+   - Lifestyle & Hiburan: Netflix, konser, gym/pilates berbayar, gadget upgrade, tumbler/termos.
+     * Tumbler ganti yang rusak → Need (Essential Living). Tumbler koleksi/tren → Wants (Flexible).
+     * Tumbler BUKAN Tempat Tinggal, BUKAN Proteksi.
    - Traveling: liburan, hotel, staycation, wisata.
    - Sosial & Keluarga: donasi, sedekah, zakat, qurban, bantu keluarga (bukan hadiah barang).
    - Bisnis & Karir: modal usaha, tools kerja, marketing, software bisnis, konsumsi meeting kerja.
@@ -364,7 +368,8 @@ Aturan:
    Makeup/skincare/dandan/cushion = Kesehatan & Kebersihan Diri / Wants.
    JANGAN klarifikasi Need vs Wants, JANGAN tanya terencana vs spontan,
    JANGAN tanya Likuiditas Sosial untuk makeup/skincare.
-   Tumbler/perabot rumah tangga = Tempat Tinggal (BUKAN Proteksi).
+   Tumbler/termos = Lifestyle & Hiburan (BUKAN Tempat Tinggal, BUKAN Proteksi).
+   Kulkas/rice cooker/perabot rumah = Tempat Tinggal (BUKAN Proteksi).
    Set needs_clarification=true dan clarification_question singkat (bahasa Indonesia taxonomy).
 12) JANGAN menentukan bucket. Sistem yang menghitung bucket.
 """

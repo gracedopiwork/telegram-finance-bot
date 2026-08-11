@@ -361,8 +361,8 @@ class ClarificationRulesTests(unittest.TestCase):
 
     def test_tumbler_ganti_rusak_no_clarification(self) -> None:
         question = clarification_question(
-            {"kategori": "Tempat Tinggal", "keterangan": "Ganti tumbler rusak"},
-            "beli tumbler ganti yang sebelumnya rusak 150rb",
+            {"kategori": "Lifestyle & Hiburan", "keterangan": "Ganti tumbler rusak"},
+            "beli tumbler karena tumbler lama rusak 200 rb",
         )
         self.assertIsNone(question)
 

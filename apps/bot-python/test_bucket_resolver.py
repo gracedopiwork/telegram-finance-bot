@@ -61,9 +61,9 @@ class BucketResolverTests(unittest.TestCase):
         got = resolve_bucket(
             {
                 "jenis": "Pengeluaran",
-                "kategori": "Tempat Tinggal",
+                "kategori": "Lifestyle & Hiburan",
                 "sifat": "Need",
-                "keterangan": "Beli tumbler ganti yang rusak",
+                "keterangan": "Beli tumbler karena tumbler lama rusak 200 rb",
             }
         )
         self.assertEqual(got, "Essential Living")

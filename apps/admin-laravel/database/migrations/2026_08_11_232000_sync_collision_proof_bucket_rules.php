@@ -17,7 +17,7 @@ return new class extends Migration
             return;
         }
 
-        $syncSorts = [19, 20, 21, 22, 25, 34, 40, 59, 274];
+        $syncSorts = [19, 20, 21, 22, 24, 25, 34, 40, 59, 274];
         foreach ((array) config('category_bucket_mappings_defaults', []) as $index => $row) {
             if (! is_array($row)) {
                 continue;
