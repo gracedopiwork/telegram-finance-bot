@@ -11,6 +11,7 @@ from typing import Any
 from yfd_taxonomy import grey_area_question
 from social_meta import social_missing_details_question
 from context_rules import (
+    detect_social_liquidity_jenis,
     is_beauty_care_expense,
     is_gift_expense,
     is_household_durable,
@@ -95,6 +96,21 @@ def _is_social_liquidity_question(question: str) -> bool:
     )
 
 
+def _is_social_open_details_question(question: str) -> bool:
+    """Tujuan/jatuh tempo pinjaman baru — bukan 'utang mana yang dicicil'."""
+    q = (question or "").lower()
+    return any(
+        hint in q
+        for hint in (
+            "tujuan pinjaman",
+            "kapan dikembalikan",
+            "kapan dibayar balik",
+            "siapa yang meminjam",
+            "dari siapa pinjaman",
+        )
+    )
+
+
 def clarification_question(parsed: dict[str, Any], source_text: str) -> str | None:
     """Return a concise follow-up question when purpose changes the YFD bucket."""
     text = f"{source_text} {parsed.get('keterangan', '')}".lower()
@@ -104,8 +120,16 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
         category == "hadiah" and jenis in {"", "Pengeluaran"}
     )
 
+    detected_social = detect_social_liquidity_jenis(text) or detect_social_liquidity_jenis(source_text)
+    settle = detected_social in {"Utang Keluar", "Piutang Masuk"} or jenis in {
+        "Utang Keluar",
+        "Piutang Masuk",
+    }
+
     ai_question = str(parsed.get("clarification_question") or "").strip()
     if parsed.get("needs_clarification") is True and ai_question:
+        if settle and _is_social_open_details_question(ai_question):
+            ai_question = ""
         if gift and (
             _is_gadget_grey_question(ai_question) or _is_social_liquidity_question(ai_question)
         ):
@@ -132,8 +156,8 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
         if ai_question:
             return ai_question
 
-    # Hadiah / makeup bukan pinjaman — jangan tanya tracker utang/piutang.
-    if not gift and not is_beauty_care_expense(text):
+    # Hadiah / makeup / pelunasan bukan pinjaman baru — jangan tanya tracker buka utang.
+    if not gift and not is_beauty_care_expense(text) and not settle:
         social_q = social_missing_details_question(parsed, source_text)
         if social_q:
             return social_q

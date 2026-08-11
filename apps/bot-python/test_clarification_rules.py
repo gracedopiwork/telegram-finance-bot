@@ -124,6 +124,24 @@ class ClarificationRulesTests(unittest.TestCase):
         )
         self.assertIn("rusak", question or "")
 
+    def test_repay_skips_open_loan_clarification(self) -> None:
+        text = "mengembalikan uang mama 2.500.000 yang saya pinjam"
+        question = clarification_question(
+            {
+                "jenis": "Piutang Keluar",
+                "kategori": "Lain-lain",
+                "keterangan": "Mengembalikan uang mama yang sudah dipinjam",
+                "needs_clarification": True,
+                "clarification_question": (
+                    "Untuk tracker Likuiditas Sosial, sebutkan tujuan pinjaman dan "
+                    "kapan dikembalikan (contoh: kepentingan kerja, kembali besok). "
+                    "Ketik 'default' jika belum pasti."
+                ),
+            },
+            text,
+        )
+        self.assertIsNone(question)
+
     def test_hadiah_iphone_skips_hp_and_social_clarification(self) -> None:
         text = "Hadiah beli iphone 15 jt buat Keluarga. Terencana"
         question = clarification_question(
@@ -319,7 +337,10 @@ class ClarificationRulesTests(unittest.TestCase):
             {"kategori": "Lain-lain", "keterangan": "Pinjam ke mama"},
             "pinjem duit ke mama 250k",
         )
-        self.assertIsNone(question)
+        q = (question or "").lower()
+        self.assertNotIn("piutang keluar", q)
+        self.assertNotIn("menerima pinjaman", q)
+        self.assertIn("tujuan", q)
 
     def test_bayar_utang_no_arah_clarification(self) -> None:
         question = clarification_question(
@@ -333,7 +354,9 @@ class ClarificationRulesTests(unittest.TestCase):
             {"kategori": "Lain-lain", "keterangan": "Utang ke Ayuti"},
             "utang ke ayuti 1 juta\nKlarifikasi user: saya pinjamkan",
         )
-        self.assertIsNone(question)
+        q = (question or "").lower()
+        self.assertNotIn("menerima pinjaman", q)
+        self.assertNotIn("atau kamu yang", q)
 
     def test_grab_subscription_skips_transport_destination(self) -> None:
         text = "Tgl 8/8/2026 bayar subscription grab untuk dapat paket hemat 14.000"

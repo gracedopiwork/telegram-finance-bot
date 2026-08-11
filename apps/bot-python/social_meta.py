@@ -556,11 +556,17 @@ def _dedupe_keterangan(note: str) -> str:
 
 def social_missing_details_question(parsed: dict[str, Any], source_text: str = "") -> str | None:
     """Tanya nama / tujuan / kapan dikembalikan untuk buka piutang atau utang."""
-    jenis = str(parsed.get("jenis") or "").strip()
+    text = f"{source_text} {parsed.get('keterangan', '')}"
+    from context_rules import detect_social_liquidity_jenis
+
+    detected = detect_social_liquidity_jenis(text)
+    # Pelunasan (Utang Keluar / Piutang Masuk) memakai tujuan & jatuh tempo
+    # dari baris tracker yang sudah ada — jangan tanya lagi.
+    if detected in {"Utang Keluar", "Piutang Masuk"}:
+        return None
+    jenis = detected or str(parsed.get("jenis") or "").strip()
     if jenis not in _SOCIAL_OPEN_TYPES:
         return None
-
-    text = f"{source_text} {parsed.get('keterangan', '')}"
     if user_skipped_social_details(text):
         return None
 

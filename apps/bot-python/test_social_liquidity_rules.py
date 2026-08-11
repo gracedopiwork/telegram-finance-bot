@@ -147,6 +147,7 @@ class SocialLiquidityRulesTests(unittest.TestCase):
     def test_utang_keluar_variasi(self) -> None:
         samples = (
             "mengembalikan uang mama 2.500.000 yang sudah saya pinjam",
+            "mengembalikan uang mama 2.500.000 yang saya pinjam",
             "kembalikan ke mama 2 jt 5 ratus",
             "balikin ke mama 2500000",
             "bayar ke mama 2.5jt",

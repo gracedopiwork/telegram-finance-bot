@@ -43,6 +43,20 @@ class SocialMetaTest(unittest.TestCase):
         self.assertEqual(parsed.get("sub_kategori"), "Grace")
         self.assertTrue(parsed.get("social_expected_back_at"))
 
+    def test_repay_does_not_ask_purpose_even_if_ai_says_piutang_keluar(self) -> None:
+        text = "mengembalikan uang mama 2.500.000 yang saya pinjam"
+        parsed = {
+            "jenis": "Piutang Keluar",
+            "keterangan": "Mengembalikan uang mama yang sudah dipinjam",
+            "needs_clarification": True,
+            "clarification_question": (
+                "Untuk tracker Likuiditas Sosial, sebutkan tujuan pinjaman dan "
+                "kapan dikembalikan (contoh: kepentingan kerja, kembali besok). "
+                "Ketik 'default' jika belum pasti."
+            ),
+        }
+        self.assertIsNone(social_missing_details_question(parsed, text))
+
     def test_asks_purpose_and_due_when_only_name(self) -> None:
         parsed = {"jenis": "Utang Masuk", "keterangan": "pinjam dari ayuti 1jt"}
         q = social_missing_details_question(parsed, "pinjam dari ayuti 1jt")

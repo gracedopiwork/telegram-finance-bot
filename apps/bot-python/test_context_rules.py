@@ -338,6 +338,22 @@ class ContextRulesTests(unittest.TestCase):
             "Lain-lain",
         )
         self.assertClass(
+            "mengembalikan uang mama 2.500.000 yang saya pinjam",
+            "Utang Keluar",
+            "Lain-lain",
+        )
+        parsed = {
+            "keterangan": "Mengembalikan uang mama yang sudah dipinjam",
+            "jenis": "Piutang Keluar",
+            "kategori": "Lain-lain",
+            "sifat": "Need",
+            "needs_clarification": True,
+            "clarification_question": "tujuan pinjaman dan kapan dikembalikan",
+        }
+        out = apply_context_rules(parsed, "mengembalikan uang mama 2.500.000 yang saya pinjam")
+        self.assertEqual(out["jenis"], "Utang Keluar")
+        self.assertFalse(out.get("needs_clarification"))
+        self.assertClass(
             "saya mengembalikan uang ayuti 1 juta yang saya pinjam tadi",
             "Utang Keluar",
             "Lain-lain",

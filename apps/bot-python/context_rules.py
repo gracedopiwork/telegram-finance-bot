@@ -2413,6 +2413,9 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
             parsed["sifat"] = "Need"
         parsed.pop("sub_kategori", None)
+        if social_jenis in {"Utang Keluar", "Piutang Masuk"}:
+            parsed["needs_clarification"] = False
+            parsed["clarification_question"] = None
         return parsed
 
     # Hadiah yang diberi (§4 Hadiah / Flexible) — jangan timpa pinjam/utang yang sudah jelas.

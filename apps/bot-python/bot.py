@@ -534,8 +534,8 @@ def normalize_ai_result(data: Dict[str, Any], source_text: str = "") -> Dict[str
 
     data["keterangan"] = str(data["keterangan"]).strip()
     normalize_taxonomy(data)
-    normalize_category_fields(data)
-    normalize_saving_fields(data, data["keterangan"])
+    normalize_category_fields(data, source_text)
+    normalize_saving_fields(data, combined)
 
     if data["jenis"] not in VALID_JENIS:
         raise ValueError("invalid_jenis")
@@ -899,6 +899,7 @@ async def process_note_input(
         await notify_quota_exhausted_if_needed(message, user_id)
 
     if user_id:
+        apply_context_rules(parsed, text)
         question = clarification_question(parsed, text)
         social_q = social_missing_details_question(parsed, text)
         settle_q = None

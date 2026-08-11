@@ -293,7 +293,9 @@ Aturan:
    - Utang Masuk: saya pinjam / pinjam ke/dari/sama / pinjam uang [nama] (tanpa ke/dari) / ngutang / terima pinjaman — cash naik, BUKAN Pemasukan, BUKAN Pengeluaran.
      * "saya pinjam uang ayuti 5jt" = Utang Masuk meski tanpa kata ke/dari.
      * Tujuan pinjaman (kuliah, obat, RS, kerja) dan jatuh tempo (kembali bulan depan) BUKAN jenis. Jangan jadi Pendidikan/Kesehatan.
-   - Utang Keluar: bayar/lunasi/balikin utang ke X / saya kembalikan uang yang saya pinjam — BUKAN Pengeluaran 4-bucket.
+   - Utang Keluar: bayar/lunasi/balikin utang ke X / mengembalikan uang [nama] yang saya pinjam — BUKAN Pengeluaran 4-bucket.
+     * "mengembalikan uang mama 2.5jt yang saya pinjam" = Utang Keluar (pelunasan). BUKAN Piutang Masuk, BUKAN Piutang Keluar.
+     * Pelunasan: JANGAN tanya tujuan pinjaman / kapan dikembalikan. Tracker sudah punya data itu.
      * Cicilan lembaga (pinjol/KPR/kartu kredit/paylater) tetap Pengeluaran + Cicilan & Hutang.
    - PRINSIP: Likuiditas Sosial hanya mengubah kas & piutang/hutang. Belanja dari dana pinjaman (mis. bayar RS / bayar kuliah) tetap Pengeluaran + bucket — itu transaksi TERPISAH, bukan catatan pinjamnya.
    - Hadiah/kado/parcel/tip yang DIBERI = Pengeluaran + Hadiah. BUKAN Likuiditas Sosial.
