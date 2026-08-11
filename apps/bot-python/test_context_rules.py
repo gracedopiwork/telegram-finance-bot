@@ -196,7 +196,11 @@ class ContextRulesTests(unittest.TestCase):
 
     def test_utang_ke_orang_ambiguous_no_auto_class(self) -> None:
         self.assertIsNone(classify_from_text("utang ke ayuti 1 juta"))
-        self.assertIsNone(classify_from_text("pinjam ke ayuti 1jt"))
+
+    def test_pinjam_ke_adalah_utang_masuk(self) -> None:
+        self.assertClass("pinjam ke ayuti 1jt", "Utang Masuk", "Lain-lain")
+        self.assertClass("pinjem duit ke mama 250k", "Utang Masuk", "Lain-lain")
+        self.assertClass("ngutang sama mama 250k", "Utang Masuk", "Lain-lain")
 
     def test_bayar_utang_ke_adalah_hutang_keluar(self) -> None:
         self.assertClass("bayar utang ke ayuti 1jt", "Utang Keluar", "Lain-lain")
@@ -255,6 +259,8 @@ class ContextRulesTests(unittest.TestCase):
             "Piutang Masuk",
             "Lain-lain",
         )
+        self.assertClass("dibalikin ayuti 500k", "Piutang Masuk", "Lain-lain")
+        self.assertClass("Ayuti balikin hutang 500k", "Piutang Masuk", "Lain-lain")
 
     def test_grace_kembalikan_adalah_piutang_masuk(self) -> None:
         self.assertClass(
@@ -304,6 +310,99 @@ class ContextRulesTests(unittest.TestCase):
             "saya mengembalikan uang ayuti 1 juta yang saya pinjam tadi",
         )
         self.assertEqual(out["jenis"], "Utang Keluar")
+
+    def test_apply_rules_dibalikin_jadi_piutang_masuk(self) -> None:
+        parsed = {
+            "keterangan": "Dibalikin Ayuti",
+            "jenis": "Utang Keluar",
+            "kategori": "Lain-lain",
+            "sifat": "Need",
+        }
+        out = apply_context_rules(parsed, "dibalikin ayuti 500k")
+        self.assertEqual(out["jenis"], "Piutang Masuk")
+
+    def test_apply_rules_pinjem_ke_mama_jadi_utang_masuk(self) -> None:
+        parsed = {
+            "keterangan": "Pinjem duit ke mama",
+            "jenis": "Pengeluaran",
+            "kategori": "Lain-lain",
+            "sifat": "Need",
+        }
+        out = apply_context_rules(parsed, "pinjem duit ke mama 250k")
+        self.assertEqual(out["jenis"], "Utang Masuk")
+
+    def test_utang_masuk_semua_variasi_umum(self) -> None:
+        samples = (
+            "pinjam ke mama 250k",
+            "pinjem duit ke mama 250k",
+            "minjem ke mama 250k",
+            "minjam uang ke mama 250k",
+            "ngutang sama mama 250k",
+            "ngutang ke mama 250k",
+            "ngutang dari mama 250k",
+            "pinjam dari mama 250k",
+            "pinjam kek mama 250k",
+            "saya pinjam ke mama 250k",
+            "aku ngutang sama mama 250k",
+            "terima pinjaman dari mama 250k",
+            "dapet pinjaman mama 250k",
+            "saya yang berhutang ke mama 250k",
+        )
+        for text in samples:
+            with self.subTest(text=text):
+                self.assertClass(text, "Utang Masuk", "Lain-lain")
+
+    def test_piutang_masuk_semua_variasi_umum(self) -> None:
+        samples = (
+            "dibalikin ayuti 500k",
+            "dikembalikan ayuti 500k",
+            "ayuti balikin hutang 500k",
+            "ayuti kembalikan hutang 500k",
+            "ayuti balikin uang 500k",
+            "ayuti bayar balik 500k",
+            "ayuti lunasi hutang 500k",
+            "transfer balik dari ayuti 500k",
+            "tf balik dari ayuti 500k",
+            "uang dibalikin ayuti 500k",
+            "catherine bayar balik pinjaman 500k",
+            "grace kembalikan uang 500k",
+        )
+        for text in samples:
+            with self.subTest(text=text):
+                self.assertClass(text, "Piutang Masuk", "Lain-lain")
+
+    def test_piutang_keluar_semua_variasi_umum(self) -> None:
+        samples = (
+            "pinjamin ayuti 500k",
+            "pinjamkan ayuti 500k",
+            "ngutangin ayuti 500k",
+            "di pinjam ayuti 500k",
+            "dipinjam catherine 500k",
+            "talangin mama 500k",
+            "kasih pinjam ayuti 500k",
+            "aku pinjamin ayuti 500k",
+            "saya pinjamkan ayuti 500k",
+            "bayarkan dulu buat ayuti 500k",
+        )
+        for text in samples:
+            with self.subTest(text=text):
+                self.assertClass(text, "Piutang Keluar", "Lain-lain")
+
+    def test_utang_keluar_semua_variasi_umum(self) -> None:
+        samples = (
+            "bayar utang ke ayuti 500k",
+            "bayar hutang ke mama 500k",
+            "lunasi hutang ke ayuti 500k",
+            "lunasin utang ke mama 500k",
+            "balikin utang ke ayuti 500k",
+            "saya kembalikan uang ke ayuti 500k",
+            "aku balikin hutang ke mama 500k",
+            "saya mengembalikan uang ayuti yang saya pinjam 500k",
+            "nyicil hutang ke ayuti 500k",
+        )
+        for text in samples:
+            with self.subTest(text=text):
+                self.assertClass(text, "Utang Keluar", "Lain-lain")
 
     def test_dp_rumah_saving_future(self) -> None:
         hit = classify_from_text("dp rumah 50jt")

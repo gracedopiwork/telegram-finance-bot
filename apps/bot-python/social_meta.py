@@ -44,22 +44,35 @@ _SKIP_NAMES = {
 
 _NAME_PATTERNS = (
     re.compile(
-        r"\b(?:di\s*pinjam|dipinjam|dipinjami|pinjamin|pinjami|pinjamkan|ngutangin|ngutangi|utangin|hutangin)\s+"
+        r"\b(?:di\s*pinjam|dipinjam|dipinjami|dipinjemin|pinjamin|pinjami|pinjamkan|pinjemin|"
+        r"ngutangin|ngutangi|utangin|hutangin|minjamin|talangin|nombokin)\s+"
         r"([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:pinjam|utang|hutang|ngutang|minjem)\s+(?:dari|ke|kepada|sama)\s+"
+        r"\b(?:pinjam|pinjem|minjem|minjam|utang|hutang|ngutang)\s+"
+        r"(?:duit|uang|dana)?\s*(?:dari|ke|kek|kepada|sama|dengan)\s+"
         r"([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:transfer|bantu|talangin|bayarkan)\s+(?:ke|kepada|sama)?\s*"
+        r"\b(?:transfer|tf|bantu|talangin|bayarkan|bayarin|kirim)\s+(?:ke|kepada|sama)?\s*"
         r"([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:dari|oleh|ke|kepada|sama)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})",
+        r"\b(?:dari|oleh|ke|kek|kepada|sama|dengan)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:dibalikin|dikembalikan|dibayar\s+balik)\s+(?:oleh\s+|dari\s+)?"
+        r"([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})\s+"
+        r"(?:balikin|kembalikan|ngembaliin|lunasi|lunasin|bayar\s+balik)\s+"
+        r"(?:hutang|utang|uang|duit|pinjaman|piutang)\b",
         re.IGNORECASE,
     ),
 )
@@ -258,7 +271,37 @@ def enrich_social_liquidity_fields(parsed: dict[str, Any], source_text: str = ""
     if extras:
         parsed["keterangan"] = (note + " | " + ", ".join(extras)).strip(" |")
 
+    parsed["keterangan"] = _dedupe_keterangan(str(parsed.get("keterangan") or note))
     return parsed
+
+
+def _dedupe_keterangan(note: str) -> str:
+    """Hindari 'Pinjam dari mama … | buat … Pinjam dari mama …'."""
+    text = re.sub(r"\s+", " ", (note or "").strip())
+    if not text:
+        return text
+    parts = [p.strip(" |,") for p in text.split("|")]
+    seen: list[str] = []
+    for part in parts:
+        if not part:
+            continue
+        key = part.lower()
+        duplicate = False
+        kept: list[str] = []
+        for existing in seen:
+            ex = existing.lower()
+            if key == ex or key in ex:
+                duplicate = True
+                break
+            if ex in key and len(ex) >= 12:
+                continue
+            kept.append(existing)
+        if duplicate:
+            continue
+        seen = kept
+        seen.append(part)
+    merged = " | ".join(seen)
+    return re.sub(r"(.{12,}?)\s+\1", r"\1", merged, flags=re.IGNORECASE).strip(" |")
 
 
 def social_missing_details_question(parsed: dict[str, Any], source_text: str = "") -> str | None:

@@ -855,6 +855,13 @@ _PAJAK_KENDARAAN = (
     "pajak motor",
 )
 
+# Subjek orang pertama vs nama orang lain (untuk arah cashflow).
+_SELF = r"(?:saya|aku|gue|gw|kami|kita)"
+_NOT_SELF = r"(?!saya\b|aku\b|gue\b|gw\b|kami\b|kita\b)"
+_PERSON = r"([a-zà-ÿ][\wà-ÿ.\-]{1,40})"
+_PREP_FROM = r"(?:dari|ke|kek|kepada|sama|dengan|pada)"
+_MONEY = r"(?:duit|uang|dana|pinjaman)?"
+
 # Likuiditas Sosial §5 — uang KELUAR dipinjamkan ke orang lain
 # JANGAN masukkan "utang ke" / "pinjam ke" (itu = saya berhutang).
 # JANGAN pakai sinyal pelunasan ("kembalikan uang") — itu Piutang Masuk.
@@ -863,23 +870,59 @@ _PIUTANG_KELUAR = (
     "di pinjam",
     "dipinjam",
     "dipinjami",
+    "dipinjemin",
     "pinjamin",
     "pinjami",
     "pinjamkan",
+    "pinjemin",
+    "minjemin",
+    "minjamin",
+    "minjami",
+    "minjamkan",
     "ngutangin",
     "ngutangi",
+    "ngutangin",
     "utangin",
     "hutangin",
     "talang dulu",
     "talangin",
+    "nombokin",
+    "nombok dulu",
+    "bayarin dulu",
     "bayarkan dulu",
     "lunasin dulu buat",
     "aku yang bayar dulu",
+    "saya yang bayar dulu",
+    "aku yang cover",
     "nanti dia ganti",
     "nanti diganti",
     "nanti dia bayar balik",
     "nanti bayar balik",
+    "nanti dia balikin",
     "sementara aku yang cover",
+    "kasih pinjam",
+    "kasi pinjam",
+    "kasih utang",
+    "kasi utang",
+    "aku pinjamin",
+    "saya pinjamin",
+    "aku pinjamkan",
+    "saya pinjamkan",
+)
+
+_PIUTANG_KELUAR_PATTERNS = (
+    re.compile(rf"\b{_SELF}\s+(?:yang\s+)?(?:pinjamkan|pinjamin|pinjami|pinjemin|minjamin)\b", re.IGNORECASE),
+    re.compile(rf"\b{_SELF}\s+(?:ngutangin|ngutangi|utangin|hutangin|talangin|nombokin)\b", re.IGNORECASE),
+    # Wajib suffix i/in/kan atau "di pinjam" — jangan cocokkan "pinjam ke mama".
+    re.compile(rf"\b(?:di\s+)?pinjam(?:i|in|kan)\s+{_PERSON}\b", re.IGNORECASE),
+    re.compile(rf"\bdipinjam(?:i|in|kan)?\s+{_PERSON}\b", re.IGNORECASE),
+    re.compile(r"\b(?:kasih|kasi|kasihin)\s+(?:pinjam|utang|hutang)\b", re.IGNORECASE),
+    re.compile(
+        r"\b(?:transfer|kirim|bantu)\s+(?:ke|kepada|sama)\s+"
+        + _PERSON
+        + r"\b.*\b(?:nanti|ganti|balik|pinjam)",
+        re.IGNORECASE,
+    ),
 )
 
 # Utang sosial (KBBI) — terima pinjaman (cash bertambah, bukan Pemasukan)
@@ -888,26 +931,59 @@ _UTANG_MASUK = (
     "utang masuk",
     "hutang masuk",
     "ngutang dari",
+    "ngutang sama",
+    "ngutang ke",
     "utang dari",
+    "utang sama",
+    "hutang dari",
+    "hutang sama",
     "pinjam dari",
     "pinjam kek",
+    "pinjam sama",
+    "pinjam duit ke",
+    "pinjam uang ke",
     "minjem dari",
     "minjem kek",
+    "minjem sama",
+    "minjam dari",
+    "minjam sama",
     "terima pinjaman",
     "dapat pinjaman",
     "dapet pinjaman",
+    "nerima pinjaman",
+    "kasih utang sama saya",
+    "aku yang utang",
+    "saya yang utang",
+    "aku yang hutang",
+    "saya yang berhutang",
 )
 
 _UTANG_MASUK_PATTERNS = (
     re.compile(
-        r"\b(?:saya|aku|gue|gw)\s+pinjam(?!kan|i|in)\s+(?:ke|kek|dari|sama|kepada)\b",
+        rf"\b{_SELF}\s+pinjam(?!kan|i|in)\s+(?:{_MONEY}\s+)?{_PREP_FROM}\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:saya|aku|gue|gw)\s+(?:minjem|utang|ngutang|hutang)\s+(?:ke|kek|dari|sama|kepada)\b",
+        rf"\b{_SELF}\s+(?:minjem|minjam|utang|ngutang|hutang|berhutang|berutang)\s+{_PREP_FROM}\b",
         re.IGNORECASE,
     ),
-    re.compile(r"\b(?:pinjam|minjem)\s+kek\b", re.IGNORECASE),
+    # "pinjam ke mama" / "pinjem duit ke mama" = kita yang berhutang.
+    re.compile(
+        rf"\bpinjam(?!kan|i|in)\s+(?:(?:duit|uang|dana)\s+)?{_PREP_FROM}\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\b(?:ngutang|minjam|minjem)\s+{_PREP_FROM}\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\b(?:utang|hutang)\s+(?:dari|sama|dengan)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(rf"\b{_SELF}\s+(?:yang\s+)?(?:berhutang|berutang|ngutang)\b", re.IGNORECASE),
+    re.compile(r"\b(?:terima|nerima|dapat|dapet)\s+(?:uang\s+)?pinjaman\b", re.IGNORECASE),
+    re.compile(rf"\b(?:dipinjami|dipinjemin)\s+(?:oleh\s+)?{_PERSON}\b", re.IGNORECASE),
+    re.compile(r"\b(?:pinjam|minjam|minjem)\s+kek\b", re.IGNORECASE),
 )
 
 # Utang sosial — bayar balik ke orang (cash turun; bukan Cicilan bank/pinjol)
@@ -928,47 +1004,62 @@ _UTANG_KELUAR = (
     "lunasin hutang",
     "balikin utang ke",
     "balikin hutang ke",
-    "kembalikan hutang",
-    "kembalikan utang",
+    "kembalikan hutang ke",
+    "kembalikan utang ke",
     "bayar balik utang",
     "bayar balik hutang",
+    "nyicil hutang ke",
+    "cicil utang ke",
+    "saya balikin",
+    "aku balikin",
+    "saya kembalikan",
+    "aku kembalikan",
+    "saya mengembalikan",
 )
 
 _UTANG_KELUAR_PATTERNS = (
     re.compile(
-        r"\b(?:saya|aku|gue|gw)\s+(?:mengembalikan|kembalikan|balikin)\b",
+        rf"\b{_SELF}\s+(?:mengembalikan|kembalikan|balikin|ngembalikan|ngembaliin)\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:mengembalikan|kembalikan)\s+uang\b.*\b(?:yang\s+)?(?:saya|aku|gue|gw)\s+pinjam\b",
+        rf"\b(?:mengembalikan|kembalikan|balikin)\s+(?:uang|duit|dana)\b.*\b(?:yang\s+)?{_SELF}\s+pinjam\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\byang\s+(?:saya|aku|gue|gw)\s+pinjam\b.*\b(?:mengembalikan|kembalikan)\b",
+        rf"\byang\s+{_SELF}\s+pinjam\b.*\b(?:mengembalikan|kembalikan|balikin)\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:bayar|lunasi|lunasin|balikin|kembalikan|mengembalikan)\s+(?:utang|hutang|pinjaman)\s+(?:ke|kepada|sama)\b",
+        rf"\b(?:bayar|lunasi|lunasin|balikin|kembalikan|mengembalikan|nyicil|cicil)\s+"
+        rf"(?:utang|hutang|pinjaman)\s+(?:ke|kepada|sama)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\b{_SELF}\s+(?:bayar|lunasi|lunasin)\s+(?:utang|hutang|pinjaman)\b",
         re.IGNORECASE,
     ),
 )
 
-# "utang ke X" / "pinjam ke X" tanpa sinyal pinjamkan ATAU terima/bayar → AMBIGU
+# "utang ke X" tanpa sinyal pinjamkan ATAU terima/bayar → AMBIGU
+# "pinjam ke" / "ngutang ke" = kita berhutang (lihat _UTANG_MASUK_PATTERNS).
 _AMBIGUOUS_UTANG_PATTERNS = (
-    re.compile(r"\b(?:ng)?utang\s+ke\b", re.IGNORECASE),
+    re.compile(r"\butang\s+ke\b", re.IGNORECASE),
     re.compile(r"\bhutang\s+ke\b", re.IGNORECASE),
     re.compile(r"\bberhutang\s+(?:ke|pada|sama)\b", re.IGNORECASE),
     re.compile(r"\bberutang\s+(?:ke|pada|sama)\b", re.IGNORECASE),
-    re.compile(r"\bpinjam\s+ke\b", re.IGNORECASE),
 )
 
 # Piutang Masuk — orang lain melunasi yang sebelumnya kita pinjamkan
 _PIUTANG_MASUK = (
     "piutang masuk",
     "dibayar balik",
+    "dibayarin balik",
     "bayar balik",
     "transfer balik",
+    "tf balik",
     "ganti uang dari",
+    "ganti duit dari",
     "cicil hutang dari",
     "ngembalikan pinjaman",
     "mengembalikan pinjaman",
@@ -977,34 +1068,62 @@ _PIUTANG_MASUK = (
     "kembalikan pinjaman",
     "balikin pinjaman",
     "balikin uang",
+    "balikin duit",
+    "ngembaliin uang",
+    "ngembaliin duit",
     "pelunasan piutang",
     "terima pelunasan",
     "uang dikembalikan",
+    "uang dibalikin",
+    "duit dibalikin",
     "sudah dikembalikan",
     "udah dikembalikan",
+    "udah dibalikin",
     "sudah balik",
     "udah balik",
+    "udah lunas",
+    "sudah lunas dari",
 )
 
 _PIUTANG_MASUK_PATTERNS = (
-    re.compile(r"\b(?:meng)?kembalikan\s+(?:uang|pinjaman|piutang)\b", re.IGNORECASE),
-    re.compile(r"\bbalikin\s+(?:uang|pinjaman|piutang)\b", re.IGNORECASE),
+    re.compile(r"\b(?:meng)?kembalikan\s+(?:uang|duit|dana|pinjaman|piutang)\b", re.IGNORECASE),
+    re.compile(r"\b(?:balikin|ngembaliin|ngembalikan)\s+(?:uang|duit|dana|pinjaman|piutang)\b", re.IGNORECASE),
     # Nama orang + kembalikan — jangan cocokkan "saya/aku kembalikan" (itu utang kita).
     re.compile(
-        r"\b(?!saya\b|aku\b|gue\b|gw\b|kami\b|kita\b)([a-zà-ÿ][\wà-ÿ.\-]{1,40})\s+(?:meng)?kembalikan\b",
+        rf"\b{_NOT_SELF}{_PERSON}\s+(?:meng)?kembalikan\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?!saya\b|aku\b|gue\b|gw\b|kami\b|kita\b)([a-zà-ÿ][\wà-ÿ.\-]{1,40})\s+balikin\b",
+        rf"\b{_NOT_SELF}{_PERSON}\s+(?:balikin|ngembaliin|ngembalikan)\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?!saya\b|aku\b|gue\b|gw\b|kami\b|kita\b)([a-zà-ÿ][\wà-ÿ.\-]{1,40})\s+bayar\s+balik\b",
+        rf"\b{_NOT_SELF}{_PERSON}\s+(?:bayar|bayarin)\s+balik\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\b{_NOT_SELF}{_PERSON}\s+(?:lunasi|lunasin|melunasi)\s+(?:hutang|utang|pinjaman|piutang)\b",
         re.IGNORECASE,
     ),
     re.compile(r"\bdikembalikan\b", re.IGNORECASE),
+    re.compile(r"\bdibalikin\b", re.IGNORECASE),
+    re.compile(r"\bdibayar\s+balik\b", re.IGNORECASE),
+    # "Ayuti balikin hutang" = orang lain lunasi ke kita (Piutang Masuk).
     re.compile(
-        r"\b(?:uang|pinjaman)\s+(?:yang\s+)?dipinjam\s+sebelumnya\b",
+        rf"\b{_NOT_SELF}{_PERSON}\s+"
+        r"(?:balikin|kembalikan|mengembalikan|ngembaliin)\s+(?:hutang|utang|pinjaman|uang|duit)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\b(?:dibalikin|dikembalikan|dibayar\s+balik)\s+(?:oleh\s+|dari\s+)?(?!ke\b){_PERSON}\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:uang|duit|pinjaman)\s+(?:yang\s+)?(?:di)?pinjam(?:kan)?\s+sebelumnya\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\b(?:transfer|tf|kirim)\s+balik\s+(?:dari\s+)?{_PERSON}\b",
         re.IGNORECASE,
     ),
 )
@@ -1285,13 +1404,16 @@ def is_lending_to_others(text: str) -> bool:
         return True
     if _contains(lower, _PIUTANG_KELUAR):
         return True
-    return False
+    return any(p.search(lower) for p in _PIUTANG_KELUAR_PATTERNS)
 
 
 def is_social_debt_borrow(text: str) -> bool:
     """Terima pinjaman sosial — Utang Masuk (cash bertambah; bukan Pemasukan)."""
     lower = _normalize_typos(text)
     if is_social_debt_repay(lower):
+        return False
+    # "kasih pinjam X" = kita meminjamkan, bukan kita yang utang.
+    if re.search(r"\b(?:kasih|kasi|kasihin)\s+pinjam\b", lower):
         return False
     # Pinjam oleh kita menang atas sinyal "kembalikan" di rencana pelunasan.
     if any(p.search(lower) for p in _UTANG_MASUK_PATTERNS):
@@ -1324,6 +1446,9 @@ def is_social_debt_borrow(text: str) -> bool:
 def is_social_debt_repay(text: str) -> bool:
     """Bayar balik pinjaman sosial — Utang Keluar (bukan Cicilan bank/pinjol)."""
     lower = _normalize_typos(text)
+    # Orang lain yang mengembalikan = Piutang Masuk, bukan kita lunasi utang.
+    if is_receivable_repay(lower):
+        return False
     if is_pinjol_or_cash_loan(lower) or _contains(lower, _CICILAN):
         if not _contains(lower, _UTANG_KELUAR) and not any(p.search(lower) for p in _UTANG_KELUAR_PATTERNS):
             return False
@@ -1361,11 +1486,14 @@ def is_explicit_debt_repayment(text: str) -> bool:
 
 
 def is_ambiguous_utang_ke_person(text: str) -> bool:
-    """utang/pinjam ke [nama] tanpa sinyal jelas → wajib klarifikasi."""
+    """utang ke [nama] tanpa sinyal jelas → wajib klarifikasi.
+
+    "pinjam ke X" / "ngutang sama X" dianggap Utang Masuk (kita yang berhutang).
+    "utang ke X" tetap dua makna (meminjamkan vs berhutang).
+    """
     lower = _normalize_typos(text)
     if "klarifikasi user:" in lower:
         return False
-    # "saya pinjam ke X" jelas Utang Masuk.
     if any(p.search(lower) for p in _UTANG_MASUK_PATTERNS):
         return False
     if (
@@ -1522,9 +1650,30 @@ def is_saving_action(text: str) -> bool:
 
 
 def _normalize_typos(text: str) -> str:
-    """Normalisasi typo umum sebelum matching keyword."""
+    """Normalisasi typo/slang umum sebelum matching keyword."""
     lower = text.lower()
-    return lower.replace("freelence", "freelance").replace("freelanc ", "freelance ")
+    lower = lower.replace("freelence", "freelance").replace("freelanc ", "freelance ")
+    replacements = (
+        (r"\bpinjem\b", "pinjam"),
+        (r"\bminjem\b", "pinjam"),
+        (r"\bminjam\b", "pinjam"),
+        (r"\bnyicil\b", "cicil"),
+        (r"\bnyicilin\b", "cicil"),
+        (r"\blunasin\b", "lunasi"),
+        (r"\bbayarin\b", "bayarkan"),
+        (r"\bngutangin\b", "ngutangin"),
+        (r"\bngutangi\b", "ngutangin"),
+        (r"\bdibalikin\b", "dikembalikan"),
+        (r"\bdikembaliin\b", "dikembalikan"),
+        (r"\bngembaliin\b", "kembalikan"),
+        (r"\bngembalikan\b", "kembalikan"),
+        (r"\bbalikin\b", "kembalikan"),
+        (r"\bkek\b", "ke"),
+        (r"\bkepada\b", "ke"),
+    )
+    for pattern, repl in replacements:
+        lower = re.sub(pattern, repl, lower)
+    return lower
 
 
 def detect_cashflow_direction(text: str) -> str | None:
@@ -1720,6 +1869,10 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     # Air minum/galon sebelum jajan — "beli aqua" sering salah jadi Jajan.
     if is_drinking_water_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
+    # Piutang Masuk dulu: "Ayuti balikin hutang" / "dibalikin ayuti"
+    # jangan tertangkap sebagai Utang Keluar ("kembalikan hutang").
+    if is_receivable_repay(lower):
+        return {"jenis": "Piutang Masuk", "kategori": "Lain-lain", "sifat": "Need"}
     # Hutang sosial: bayar balik → Utang Keluar; terima pinjaman → Utang Masuk
     if is_social_debt_repay(lower):
         return {"jenis": "Utang Keluar", "kategori": "Lain-lain", "sifat": "Need"}
@@ -1728,9 +1881,6 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     # Frasa ambigu "utang ke X" → jangan tebak di layer keyword (klarifikasi dulu)
     if is_ambiguous_utang_ke_person(lower):
         return None
-    # Piutang: pelunasan dulu, baru pinjamkan (hindari "dipinjam" di teks kembalikan)
-    if is_receivable_repay(lower):
-        return {"jenis": "Piutang Masuk", "kategori": "Lain-lain", "sifat": "Need"}
     if is_lending_to_others(lower):
         return {"jenis": "Piutang Keluar", "kategori": "Lain-lain", "sifat": "Need"}
     if is_fisioterapi_expense(lower):
@@ -1816,8 +1966,13 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
     if explicit and str(parsed.get("jenis") or "").strip() != explicit:
         parsed["jenis"] = explicit
 
-    # Likuiditas Sosial: Hutang + Piutang (bukan Pemasukan/Pengeluaran prescription).
-    if is_social_debt_repay(lower_combined):
+    # Likuiditas Sosial: Piutang Masuk dulu agar "X balikin hutang" tidak jadi Utang Keluar.
+    if is_receivable_repay(lower_combined):
+        parsed["jenis"] = "Piutang Masuk"
+        parsed["kategori"] = "Lain-lain"
+        if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
+            parsed["sifat"] = "Need"
+    elif is_social_debt_repay(lower_combined):
         parsed["jenis"] = "Utang Keluar"
         parsed["kategori"] = "Lain-lain"
         if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
@@ -1829,11 +1984,6 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
             parsed["sifat"] = "Need"
         parsed.pop("sub_kategori", None)
-    elif is_receivable_repay(lower_combined):
-        parsed["jenis"] = "Piutang Masuk"
-        parsed["kategori"] = "Lain-lain"
-        if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
-            parsed["sifat"] = "Need"
     elif is_lending_to_others(lower_combined):
         parsed["jenis"] = "Piutang Keluar"
         if not str(parsed.get("kategori") or "").strip() or str(parsed.get("kategori") or "").strip().lower() in {
@@ -2199,6 +2349,10 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "Di pinjam Catherine 1 jt buat bayar RS" → Piutang Keluar (BUKAN Kesehatan; likuiditas sosial)
 - "Grace kembalikan uang yang dipinjam sebelumnya 2,7jt" → Piutang Masuk (pelunasan; BUKAN Piutang Keluar / BUKAN Pemasukan)
 - "utang ke Ayuti 1jt" → AMBIGU — tanya: meminjamkan (Piutang Keluar) atau berhutang/terima pinjaman (Utang Masuk)
+- "pinjam/pinjem/minjem ke mama" / "ngutang sama/dari mama" / "terima pinjaman dari mama" → Utang Masuk
+- "dibalikin ayuti" / "Ayuti balikin/kembalikan/bayar balik hutang" / "transfer balik dari ayuti" → Piutang Masuk
+- "pinjamin/ngutangin/talangin/kasih pinjam X" → Piutang Keluar
+- "bayar/lunasi/balikin utang ke X" / "saya kembalikan yang saya pinjam" → Utang Keluar
 - "pinjam dari Ayuti 1jt" / "ngutang dari Ayuti 1jt" → Utang Masuk (likuiditas naik; BUKAN Pemasukan)
 - "bayar utang ke Ayuti 1jt" → Utang Keluar (bayar balik; BUKAN Pengeluaran 4-bucket)
 - "pinjamin Ayuti 1jt" / "ngutangin Ayuti 1jt" → Piutang Keluar (saya yang meminjamkan)

@@ -68,6 +68,31 @@ class SocialMetaTest(unittest.TestCase):
         self.assertIsNotNone(q)
         self.assertIn("nama", (q or "").lower() + "siapa")
 
+    def test_dedupe_keterangan_on_clarification_reply(self) -> None:
+        parsed = {
+            "jenis": "Utang Masuk",
+            "kategori": "Lain-lain",
+            "nominal": 52_000_000,
+            "keterangan": (
+                "Pinjam dari mama untuk kepentingan bisnis | buat Kepentingan bisnis, "
+                "kembali belum Tau kapan Pinjam dari mama untuk kepentingan bisnis"
+            ),
+        }
+        enrich_social_liquidity_fields(
+            parsed,
+            "Pinjam dari mama 52jt\nKlarifikasi user: Kepentingan bisnis, kembali belum Tau kapan",
+        )
+        note = parsed["keterangan"].lower()
+        self.assertEqual(note.count("pinjam dari mama"), 1)
+        self.assertIn("kepentingan bisnis", note)
+
+    def test_counterparty_pinjem_ke_mama(self) -> None:
+        self.assertEqual(extract_counterparty("pinjem duit ke mama 250k").lower(), "mama")
+        self.assertEqual(extract_counterparty("dibalikin ayuti 500k").lower(), "ayuti")
+        self.assertEqual(extract_counterparty("ngutang sama mama 250k").lower(), "mama")
+        self.assertEqual(extract_counterparty("ayuti balikin hutang 500k").lower(), "ayuti")
+        self.assertEqual(extract_counterparty("transfer balik dari ayuti 500k").lower(), "ayuti")
+
 
 if __name__ == "__main__":
     unittest.main()
