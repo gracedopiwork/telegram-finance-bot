@@ -34,6 +34,21 @@ VALID_JENIS = frozenset({
 })
 VALID_SIFAT = frozenset({"Need", "Wants"})
 
+# AI "Lain-lain" / alias = tidak tahu. Bukan keputusan taksonomi.
+_DUMP_CATEGORIES = frozenset({
+    "",
+    "lain-lain",
+    "lain lain",
+    "lainnya",
+    "other",
+    "misc",
+    "umum",
+})
+
+
+def _is_dump_category(kategori: str) -> bool:
+    return str(kategori or "").strip().lower() in _DUMP_CATEGORIES
+
 _EXPLICIT_JENIS_RE = re.compile(
     r"^\s*(pengeluaran|pemasukan|saving(?:\s*/\s*investment)?|kewajiban\s*pajak|"
     r"piutang\s*keluar|piutang\s*masuk|utang\s*masuk|utang\s*keluar|hutang\s*masuk|hutang\s*keluar)\b",
@@ -657,6 +672,28 @@ _TIP_PATTERNS = tuple(
     )
 )
 
+# §2.5 kebersihan dasar → Essential Need. Sunscreen tetap di _SKINCARE (Flexible).
+_KEBERSIHAN_DASAR = (
+    "sabun",
+    "sabun mandi",
+    "shampo",
+    "shampoo",
+    "pasta gigi",
+    "odol",
+    "softex",
+    "pembalut",
+    "deodoran",
+    "deodorant",
+    "handbody",
+    "hand body",
+    "hand & body",
+    "hand and body",
+    "body lotion",
+    "lotion tubuh",
+    "lotion badan",
+    "lotion tangan",
+)
+
 _KESEHATAN = (
     "obat",
     "apotek",
@@ -674,11 +711,7 @@ _KESEHATAN = (
     "rehab",
     "rehabilitasi",
     "hydrotherapy",
-    "sabun",
-    "shampo",
-    "shampoo",
-    "pasta gigi",
-)
+) + _KEBERSIHAN_DASAR
 
 _FISIOTERAPI_RESEP = (
     "resep dokter",
@@ -2343,6 +2376,18 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
                 parsed["jenis"] = "Pengeluaran"
                 ai_jenis = "Pengeluaran"
 
+        # Layer 1 keyword > AI dump. "Lain-lain" berarti model tidak tahu,
+        # bukan izin menimpa taksonomi yang sudah ada di classify_from_text.
+        if _is_dump_category(ai_kat_l):
+            rule_hit = classify_from_text(combined)
+            rule_kat = str((rule_hit or {}).get("kategori") or "").strip()
+            if rule_hit and rule_kat and not _is_dump_category(rule_kat):
+                parsed["jenis"] = rule_hit["jenis"]
+                parsed["kategori"] = rule_kat
+                parsed["sifat"] = rule_hit["sifat"]
+                parsed.pop("sub_kategori", None)
+                return parsed
+
         if ai_jenis == "Pengeluaran" and _contains(combined.lower(), _SKINCARE):
             parsed["kategori"] = "Kesehatan & Kebersihan Diri"
             parsed["sifat"] = "Wants"
@@ -2677,6 +2722,7 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "gofood nasi padang 45rb" → Pengeluaran / Makanan & Minuman / Need (BUKAN Transportasi)
 - "bayar sewa kos 1.5jt" → Pengeluaran / Tempat Tinggal / Need
 - "obat demam 45rb" → Pengeluaran / Kesehatan & Kebersihan Diri / Need
+- "beli handbody / sabun / shampo / deodoran / pasta gigi" → Pengeluaran / Kesehatan & Kebersihan Diri / Need (kebersihan dasar; BUKAN Lain-lain; BUKAN perawatan kecantikan)
 - "pulsa 50rb" → Pengeluaran / Komunikasi / Need
 - "admin bank 10 rb" → Pengeluaran / Komunikasi / Need (biaya admin/transfer; BUKAN Lain-lain)
 - "biaya transfer BCA 6.500" → Pengeluaran / Komunikasi / Need

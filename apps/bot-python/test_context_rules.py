@@ -741,6 +741,50 @@ class ContextRulesTests(unittest.TestCase):
         self.assertEqual(hit2["kategori"], "Tempat Tinggal")
         self.assertEqual(hit2["sifat"], "Need")
 
+    def test_kebersihan_dasar_bukan_lain_lain(self) -> None:
+        notes = (
+            "beli handbody 500 rb",
+            "beli sabun mandi 25rb",
+            "beli shampo 40rb",
+            "beli pasta gigi 18rb",
+            "beli deodoran 35rb",
+            "beli softex 22rb",
+            "beli body lotion 50rb",
+        )
+        for text in notes:
+            with self.subTest(text=text):
+                self.assertClass(text, "Pengeluaran", "Kesehatan & Kebersihan Diri")
+                hit = classify_from_text(text)
+                assert hit is not None
+                self.assertEqual(hit["sifat"], "Need")
+                out = apply_context_rules(
+                    {
+                        "keterangan": text,
+                        "jenis": "Pengeluaran",
+                        "kategori": "Lain-lain",
+                        "sifat": "Wants",
+                    },
+                    text,
+                )
+                self.assertEqual(out["kategori"], "Kesehatan & Kebersihan Diri")
+                self.assertEqual(out["sifat"], "Need")
+
+    def test_ai_dump_lain_lain_yields_to_keyword_rule(self) -> None:
+        out = apply_context_rules(
+            {
+                "keterangan": "beli handbody 500 rb",
+                "jenis": "Pengeluaran",
+                "kategori": "Lain-lain",
+                "sifat": "Wants",
+            },
+            "beli handbody 500 rb",
+        )
+        self.assertEqual(out["kategori"], "Kesehatan & Kebersihan Diri")
+        self.assertEqual(out["sifat"], "Need")
+
+    def test_grab_ke_apotek_tetap_transportasi(self) -> None:
+        self.assertClass("grab ke apotek 22rb", "Pengeluaran", "Transportasi")
+
     def test_makeup_kesehatan_bukan_lain_lain(self) -> None:
         self.assertClass("beli makeup 139.5k", "Pengeluaran", "Kesehatan & Kebersihan Diri")
 

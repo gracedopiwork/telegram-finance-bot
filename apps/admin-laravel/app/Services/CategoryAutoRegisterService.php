@@ -64,6 +64,10 @@ class CategoryAutoRegisterService
             return 'Kesehatan & Kebersihan Diri';
         }
 
+        if ($type === 'Pengeluaran' && $this->notesLookLikeBasicHygiene($notesLower)) {
+            return 'Kesehatan & Kebersihan Diri';
+        }
+
         if ($type === 'Pengeluaran' && $this->notesLookLikeHouseholdDurable($notesLower)) {
             return 'Tempat Tinggal';
         }
@@ -73,6 +77,17 @@ class CategoryAutoRegisterService
         }
 
         return $resolved;
+    }
+
+    private function notesLookLikeBasicHygiene(string $notesLower): bool
+    {
+        foreach (['handbody', 'hand body', 'hand & body', 'body lotion', 'lotion tubuh', 'deodoran', 'deodorant', 'sabun', 'shampo', 'pasta gigi', 'odol', 'softex', 'pembalut'] as $item) {
+            if (str_contains($notesLower, $item)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function notesLookLikeBeautyCare(string $notesLower): bool

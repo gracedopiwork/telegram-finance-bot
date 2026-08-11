@@ -100,6 +100,30 @@ class ClassifyCollisionTests(unittest.TestCase):
         self.assertEqual(parsed["jenis"], "Kewajiban Pajak")
         self.assertIsNone(parsed["bucket"])
 
+    def test_kebersihan_dasar_is_hygiene_essential(self) -> None:
+        for text in (
+            "beli handbody 500 rb",
+            "beli sabun mandi 25rb",
+            "beli deodoran 35rb",
+            "beli pasta gigi 18rb",
+        ):
+            with self.subTest(text=text):
+                parsed = classify_offline(text)
+                self.assertEqual(parsed["jenis"], "Pengeluaran")
+                self.assertEqual(parsed["kategori"], "Kesehatan & Kebersihan Diri")
+                self.assertEqual(parsed["sifat"], "Need")
+                self.assertEqual(parsed["bucket"], "Essential Living")
+
+    def test_grab_ke_apotek_not_kesehatan(self) -> None:
+        parsed = classify_offline("grab ke apotek 22rb")
+        self.assertEqual(parsed["kategori"], "Transportasi")
+        self.assertNotEqual(parsed["kategori"], "Kesehatan & Kebersihan Diri")
+
+    def test_talangin_obat_stays_piutang(self) -> None:
+        parsed = classify_offline("talangin mama 500k buat obat, minggu depan")
+        self.assertEqual(parsed["jenis"], "Piutang Keluar")
+        self.assertEqual(parsed["kategori"], "Lain-lain")
+
     def test_tiktok_gift_commission_is_income_not_hadiah(self) -> None:
         parsed = classify_offline("komisi gift dari TikTok 200 rb")
         self.assertEqual(parsed["jenis"], "Pemasukan")

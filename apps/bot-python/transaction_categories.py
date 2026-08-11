@@ -321,7 +321,7 @@ Aturan:
      * Langganan Grab/Gojek (subscription/paket hemat) = Transportasi Wants — BUKAN grey area tujuan ride,
        BUKAN Likuiditas Sosial.
    - Komunikasi: pulsa, kuota, internet HP, biaya admin bank/ATM/transfer.
-   - Kesehatan & Kebersihan Diri: dokter, obat, sabun, laundry (semua laundry = Need);
+   - Kesehatan & Kebersihan Diri: dokter, obat, sabun, handbody, deodoran, laundry (semua laundry = Need);
      skincare/makeup/dandan = Wants (BUKAN Lain-lain); fisioterapi resep dokter = Need (tanpa resep = grey area).
    - Pendidikan: SPP/UKT ATAU seminar/workshop/sertifikasi/conference/pengembangan diri /
      iuran organisasi profesi (IDI). Pengembangan diri SELALU Future Building di sistem
