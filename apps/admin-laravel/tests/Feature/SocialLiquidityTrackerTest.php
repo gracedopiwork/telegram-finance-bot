@@ -258,4 +258,94 @@ class SocialLiquidityTrackerTest extends TestCase
         $this->assertSame(BotSocialPayable::STATUS_ACTIVE, $updated->status);
         $this->assertSame(1_500_000, (int) $updated->amount_remaining);
     }
+
+    public function test_partial_repay_hits_mama_not_other_payable(): void
+    {
+        $ayuti = BotTransaction::query()->create([
+            'telegram_user_id' => 33,
+            'recorded_at' => now(),
+            'type' => TransactionTaxonomy::TYPE_PAYABLE_IN,
+            'category' => 'Lain-lain',
+            'sub_category' => 'Ayuti',
+            'amount' => 5_000_000,
+            'nature' => 'Need',
+            'mood' => 'Neutral',
+            'is_impulsive' => false,
+            'notes' => 'Pinjam dari Ayuti 5jt buat kuliah',
+            'source' => 'manual',
+        ]);
+        $mama = BotTransaction::query()->create([
+            'telegram_user_id' => 33,
+            'recorded_at' => now(),
+            'type' => TransactionTaxonomy::TYPE_PAYABLE_IN,
+            'category' => 'Lain-lain',
+            'sub_category' => 'mama',
+            'amount' => 5_000_000,
+            'nature' => 'Need',
+            'mood' => 'Neutral',
+            'is_impulsive' => false,
+            'notes' => 'Pinjam dari mama 5jt buat kuliah',
+            'source' => 'manual',
+        ]);
+        $svc = app(SocialLiquidityService::class);
+        $svc->openFromBorrow($ayuti);
+        $mamaRow = $svc->openFromBorrow($mama);
+
+        $repay = BotTransaction::query()->create([
+            'telegram_user_id' => 33,
+            'recorded_at' => now(),
+            'type' => TransactionTaxonomy::TYPE_PAYABLE_OUT,
+            'category' => 'Lain-lain',
+            'sub_category' => '',
+            'amount' => 2_500_000,
+            'nature' => 'Need',
+            'mood' => 'Neutral',
+            'is_impulsive' => false,
+            'notes' => 'kembalikan ke mama 2 jt 5 ratus',
+            'source' => 'manual',
+        ]);
+        $updated = $svc->settleFromRepay($repay);
+
+        $this->assertNotNull($updated);
+        $this->assertSame($mamaRow->id, $updated->id);
+        $this->assertSame(2_500_000, (int) $updated->amount_remaining);
+        $this->assertSame(5_000_000, (int) $svc->openFromBorrow($ayuti)->fresh()->amount_remaining);
+    }
+
+    public function test_ibu_alias_matches_mama_payable(): void
+    {
+        $borrow = BotTransaction::query()->create([
+            'telegram_user_id' => 34,
+            'recorded_at' => now(),
+            'type' => TransactionTaxonomy::TYPE_PAYABLE_IN,
+            'category' => 'Lain-lain',
+            'sub_category' => 'mama',
+            'amount' => 5_000_000,
+            'nature' => 'Need',
+            'mood' => 'Neutral',
+            'is_impulsive' => false,
+            'notes' => 'Pinjam dari mama 5jt',
+            'source' => 'manual',
+        ]);
+        $svc = app(SocialLiquidityService::class);
+        $row = $svc->openFromBorrow($borrow);
+
+        $repay = BotTransaction::query()->create([
+            'telegram_user_id' => 34,
+            'recorded_at' => now(),
+            'type' => TransactionTaxonomy::TYPE_PAYABLE_OUT,
+            'category' => 'Lain-lain',
+            'sub_category' => 'ibu',
+            'amount' => 2_500_000,
+            'nature' => 'Need',
+            'mood' => 'Neutral',
+            'is_impulsive' => false,
+            'notes' => 'bayar utang ke ibu 2.5jt',
+            'source' => 'manual',
+        ]);
+        $updated = $svc->settleFromRepay($repay);
+        $this->assertNotNull($updated);
+        $this->assertSame($row->id, $updated->id);
+        $this->assertSame(2_500_000, (int) $updated->amount_remaining);
+    }
 }

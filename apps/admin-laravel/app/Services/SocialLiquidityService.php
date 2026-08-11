@@ -622,64 +622,89 @@ class SocialLiquidityService
         return $base->copy()->startOfDay()->addDays($this->defaultDueDays($amount));
     }
 
+    private function normalizeCounterparty(string $name): string
+    {
+        $n = mb_strtolower(trim($name));
+        $aliases = [
+            'mamah' => 'mama',
+            'mami' => 'mama',
+            'ibu' => 'mama',
+            'bunda' => 'mama',
+            'bun' => 'mama',
+            'papi' => 'papa',
+            'ayah' => 'papa',
+            'bapak' => 'papa',
+            'abi' => 'papa',
+            'adek' => 'adik',
+            'kak' => 'kakak',
+        ];
+
+        return $aliases[$n] ?? $n;
+    }
+
+    private function counterpartiesMatch(string $left, string $right): bool
+    {
+        $a = $this->normalizeCounterparty($left);
+        $b = $this->normalizeCounterparty($right);
+        if ($a === '' || $b === '') {
+            return false;
+        }
+        if ($a === $b) {
+            return true;
+        }
+
+        return str_contains($a, $b) || str_contains($b, $a);
+    }
+
     private function findActiveReceivable(BotTransaction $transaction): ?BotSocialReceivable
     {
-        $name = $this->extractCounterparty((string) $transaction->notes, (string) $transaction->sub_category);
-        $amount = (int) $transaction->amount;
-        $userId = (int) $transaction->telegram_user_id;
-
-        $query = BotSocialReceivable::query()
-            ->forUser($userId)
-            ->active()
-            ->orderBy('created_at');
-
-        if ($name !== '') {
-            $match = (clone $query)
-                ->whereRaw('LOWER(counterparty_name) = ?', [mb_strtolower($name)])
-                ->get()
-                ->first(fn (BotSocialReceivable $row) => $row->remainingAmount() > 0);
-            if ($match !== null) {
-                return $match;
-            }
-        }
-
-        $withRoom = (clone $query)->get()
-            ->first(fn (BotSocialReceivable $row) => $row->remainingAmount() >= $amount);
-        if ($withRoom !== null) {
-            return $withRoom;
-        }
-
-        return $query->get()->first(fn (BotSocialReceivable $row) => $row->remainingAmount() > 0);
+        return $this->matchActiveSocialRow(
+            BotSocialReceivable::query()
+                ->forUser((int) $transaction->telegram_user_id)
+                ->active()
+                ->orderBy('created_at')
+                ->get(),
+            $transaction,
+        );
     }
 
     private function findActivePayable(BotTransaction $transaction): ?BotSocialPayable
     {
+        return $this->matchActiveSocialRow(
+            BotSocialPayable::query()
+                ->forUser((int) $transaction->telegram_user_id)
+                ->active()
+                ->orderBy('created_at')
+                ->get(),
+            $transaction,
+        );
+    }
+
+    /**
+     * @param  Collection<int, BotSocialReceivable|BotSocialPayable>  $rows
+     */
+    private function matchActiveSocialRow(Collection $rows, BotTransaction $transaction): BotSocialReceivable|BotSocialPayable|null
+    {
         $name = $this->extractCounterparty((string) $transaction->notes, (string) $transaction->sub_category);
         $amount = (int) $transaction->amount;
-        $userId = (int) $transaction->telegram_user_id;
-
-        $query = BotSocialPayable::query()
-            ->forUser($userId)
-            ->active()
-            ->orderBy('created_at');
+        $open = $rows->filter(fn ($row) => $row->remainingAmount() > 0)->values();
 
         if ($name !== '') {
-            $match = (clone $query)
-                ->whereRaw('LOWER(counterparty_name) = ?', [mb_strtolower($name)])
-                ->get()
-                ->first(fn (BotSocialPayable $row) => $row->remainingAmount() > 0);
-            if ($match !== null) {
-                return $match;
-            }
+            return $open->first(
+                fn ($row) => $this->counterpartiesMatch($name, (string) $row->counterparty_name)
+            );
         }
 
-        $withRoom = (clone $query)->get()
-            ->first(fn (BotSocialPayable $row) => $row->remainingAmount() >= $amount);
-        if ($withRoom !== null) {
-            return $withRoom;
+        if ($open->count() === 1) {
+            return $open->first();
         }
 
-        return $query->get()->first(fn (BotSocialPayable $row) => $row->remainingAmount() > 0);
+        $withRoom = $open->filter(fn ($row) => $row->remainingAmount() >= $amount)->values();
+        if ($withRoom->count() === 1) {
+            return $withRoom->first();
+        }
+
+        return null;
     }
 
     /**

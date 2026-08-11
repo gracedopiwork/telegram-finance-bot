@@ -1252,6 +1252,9 @@ _UTANG_KELUAR = (
     "saya kembalikan",
     "aku kembalikan",
     "saya mengembalikan",
+    "kembalikan ke",
+    "balikin ke",
+    "cicil ke",
 )
 
 _UTANG_KELUAR_PATTERNS = (
@@ -1278,6 +1281,24 @@ _UTANG_KELUAR_PATTERNS = (
     ),
     re.compile(
         rf"\bkembalikan\s+(?:uang|duit|dana).*\byang\s+{_SELF}\s+pinjam\b",
+        re.IGNORECASE,
+    ),
+    # "kembalikan ke mama" / "balikin ke mama" (setelah normalisasi balikin→kembalikan)
+    re.compile(
+        rf"\b(?:mengembalikan|kembalikan)\s+(?:(?:uang|duit|dana)\s+)?{_PREP_FROM}\s+{_PERSON}\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\b(?:cicil|nyicil)\s+(?:(?:utang|hutang|pinjaman)\s+)?{_PREP_FROM}\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\bbayar\s+(?:{_AMOUNT_GAP})?{_PREP_FROM}\s+"
+        rf"(?:mama|mamah|mami|ibu|bunda|papa|ayah|bapak|adik|adek|kakak)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bbayar\s+(?:mama|mamah|mami|ibu|bunda)\b",
         re.IGNORECASE,
     ),
 )
