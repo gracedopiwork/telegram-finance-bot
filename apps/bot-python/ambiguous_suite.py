@@ -22,6 +22,11 @@ PACKS: dict[str, dict[str, str]] = {
         "file": "coverage_transactions.json",
         "ok_msg": "Semua kasus cakupan sesuai taksonomi.",
     },
+    "sosial": {
+        "title": "Uji piutang & utang",
+        "file": "social_liquidity_transactions.json",
+        "ok_msg": "Semua kasus piutang/utang sesuai 4 arah likuiditas sosial.",
+    },
 }
 
 FIXTURE = _FIXTURES / PACKS["ambigu"]["file"]
