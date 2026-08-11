@@ -472,29 +472,46 @@ class SocialLiquidityService
 
     public function extractCounterparty(string $notes, string $subCategory = ''): string
     {
-        $sub = trim($subCategory);
-        if ($sub !== '' && $sub !== '-') {
-            return mb_substr($sub, 0, 120);
-        }
-
-        $patterns = [
-            '/\b(?:di\s*pinjam|dipinjam|dipinjami|pinjamin|pinjami|pinjamkan|ngutangin|ngutangi|utangin|hutangin)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
-            '/\b(?:pinjam|utang|hutang|ngutang|minjem)\s+(?:dari|ke|kepada|sama)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
-            '/\b(?:transfer|bantu|talangin|bayarkan)\s+(?:ke|kepada|sama)?\s*([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
-            '/\b(?:ke|kepada|sama)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
-            '/\b(?:dari|oleh)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
-        ];
         $skip = [
             'saya', 'aku', 'dia', 'teman', 'saudara', 'keluarga', 'orang', 'dulu', 'nanti',
             'besok', 'lusa', 'buat', 'untuk', 'uang', 'duit', 'balik', 'balikin', 'kembali',
             'transfer', 'hutang', 'utang', 'pinjaman', 'piutang', 'masuk', 'keluar',
+            'dokter', 'rs', 'rumahsakit', 'rumah', 'sakit', 'apotek', 'klinik', 'puskesmas',
+            'sekolah', 'kuliah', 'kampus', 'universitas', 'biaya', 'kebutuhan', 'kepentingan',
+            'keperluan', 'kerja', 'bisnis', 'obat', 'lab', 'igd', 'ugd', 'kantor', 'bank',
+            'kos', 'bulan', 'tanggal', 'tgl', 'ini', 'itu',
+        ];
+
+        $sub = trim($subCategory);
+        if ($sub !== '' && $sub !== '-' && ! in_array(mb_strtolower($sub), $skip, true)) {
+            return mb_substr($sub, 0, 120);
+        }
+
+        $patterns = [
+            '/\bmeminjamkan\s+(?:(?:duit|uang|dana)\s+)?(?:kepada|ke|sama)?\s*([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
+            '/\b(?:di\s*pinjam|dipinjam|dipinjami|pinjamin|pinjami|pinjamkan|ngutangin|ngutangi|utangin|hutangin)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
+            '/\b(?:pinjam|utang|hutang|ngutang|minjem)\s+(?:dari|ke|kepada|sama)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
+            '/\b(?:pinjam|pinjem|minjem)\s+(?:duit|uang|dana)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
+            '/\b(?:transfer|bantu|talangin|bayarkan)\s+(?:ke|kepada|sama)?\s*([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
+            '/\b(?:kepada|sama|dari|oleh)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
+            '/\bke\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})/iu',
         ];
         foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $notes, $m)) {
-                $name = trim($m[1], " .,");
-                if ($name !== '' && ! in_array(mb_strtolower($name), $skip, true) && ! ctype_digit($name)) {
-                    return mb_substr($name, 0, 120);
+            if (! preg_match_all($pattern, $notes, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE)) {
+                continue;
+            }
+            foreach ($matches as $m) {
+                $name = trim($m[1][0], " .,");
+                if ($name === '' || in_array(mb_strtolower($name), $skip, true) || ctype_digit($name)) {
+                    continue;
                 }
+                $bytePos = (int) $m[0][1];
+                $prefix = mb_strtolower(substr($notes, max(0, $bytePos - 48), min(48, $bytePos)));
+                if (preg_match('/(?:untuk|buat|biaya|keperluan|kepentingan|tujuan)\s+(?:ke\s+)?$/u', $prefix)) {
+                    continue;
+                }
+
+                return mb_substr($name, 0, 120);
             }
         }
 

@@ -115,6 +115,26 @@ class SocialLiquidityTrackerTest extends TestCase
         $this->assertStringContainsString('ditagih', mb_strtolower($tracker[0]['follow_up']));
     }
 
+    public function test_counterparty_ignores_purpose_dokter(): void
+    {
+        $svc = app(SocialLiquidityService::class);
+        $this->assertSame(
+            'Ayuti',
+            $svc->extractCounterparty('saya meminjamkan uang kepada ayuti Meminjamkan Ayuti untuk biaya ke dokter')
+        );
+        $this->assertSame(
+            'Sargib',
+            $svc->extractCounterparty('Meminjamkan Sargib untuk ke dokter')
+        );
+        $this->assertSame(
+            'Ayuti',
+            $svc->extractCounterparty(
+                'Meminjamkan Ayuti untuk biaya ke dokter',
+                'dokter'
+            )
+        );
+    }
+
     public function test_utang_masuk_opens_payable_with_due(): void
     {
         $tx = BotTransaction::query()->create([

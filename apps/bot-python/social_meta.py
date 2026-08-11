@@ -53,9 +53,50 @@ _SKIP_NAMES = {
     "piutang",
     "masuk",
     "keluar",
+    # Tujuan/tempat — "biaya ke dokter" bukan nama lawan transaksi.
+    "dokter",
+    "rs",
+    "rumahsakit",
+    "rumah",
+    "sakit",
+    "apotek",
+    "klinik",
+    "puskesmas",
+    "sekolah",
+    "kuliah",
+    "kampus",
+    "universitas",
+    "biaya",
+    "kebutuhan",
+    "kepentingan",
+    "keperluan",
+    "kerja",
+    "bisnis",
+    "obat",
+    "lab",
+    "igd",
+    "ugd",
+    "kantor",
+    "bank",
+    "kos",
+    "bulan",
+    "tanggal",
+    "tgl",
+    "ini",
+    "itu",
 }
 
+_PURPOSE_PREFIX = re.compile(
+    r"(?:untuk|buat|biaya|keperluan|kepentingan|tujuan)\s+(?:ke\s+)?$",
+    re.IGNORECASE,
+)
+
 _NAME_PATTERNS = (
+    re.compile(
+        r"\bmeminjamkan\s+(?:(?:duit|uang|dana)\s+)?(?:kepada|ke|kek|sama|dengan)?\s*"
+        r"([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})",
+        re.IGNORECASE,
+    ),
     re.compile(
         r"\b(?:di\s*pinjam|dipinjam|dipinjami|dipinjemin|pinjamin|pinjami|pinjamkan|pinjemin|"
         r"ngutangin|ngutangi|utangin|hutangin|minjamin|talangin|nombokin)\s+"
@@ -69,12 +110,21 @@ _NAME_PATTERNS = (
         re.IGNORECASE,
     ),
     re.compile(
+        r"\b(?:pinjam|pinjem|minjem|minjam)\s+(?:duit|uang|dana)\s+"
+        r"([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})",
+        re.IGNORECASE,
+    ),
+    re.compile(
         r"\b(?:transfer|tf|bantu|talangin|bayarkan|bayarin|kirim)\s+(?:ke|kepada|sama)?\s*"
         r"([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:dari|oleh|ke|kek|kepada|sama|dengan)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})",
+        r"\b(?:dari|oleh|kepada|sama|dengan)\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bke\s+([A-Za-zÀ-ÿ][\wÀ-ÿ.\-]{1,40})",
         re.IGNORECASE,
     ),
     re.compile(
@@ -171,13 +221,23 @@ def default_due_days(amount: int) -> int:
     return 90
 
 
+def _is_person_name(name: str) -> bool:
+    token = (name or "").strip(" .,")
+    if not token or token.isdigit() or token.lower() in _SKIP_NAMES:
+        return False
+    return True
+
+
 def extract_counterparty(text: str) -> str:
+    raw = text or ""
     for pattern in _NAME_PATTERNS:
-        match = pattern.search(text or "")
-        if not match:
-            continue
-        name = match.group(1).strip(" .,")
-        if name and name.lower() not in _SKIP_NAMES and not name.isdigit():
+        for match in pattern.finditer(raw):
+            name = match.group(1).strip(" .,")
+            if not _is_person_name(name):
+                continue
+            prefix = raw[: match.start()]
+            if _PURPOSE_PREFIX.search(prefix[-40:] if len(prefix) > 40 else prefix):
+                continue
             return name[:120]
     return ""
 
