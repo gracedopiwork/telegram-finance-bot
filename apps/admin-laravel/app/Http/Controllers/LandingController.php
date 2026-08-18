@@ -435,6 +435,14 @@ class LandingController extends Controller
         ]);
     }
 
+    public function privacy()
+    {
+        return view('Companyprofile.privacy', [
+            'active' => 'informasi',
+            'privacy' => config('portal_privacy'),
+        ]);
+    }
+
     public function bundle(string $slug)
     {
         $key = match ($slug) {

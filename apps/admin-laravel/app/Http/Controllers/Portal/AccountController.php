@@ -19,6 +19,8 @@ class AccountController extends Controller
             'active' => 'account',
             'email' => $email,
             'hasPassword' => $passwords->hasPassword($email),
+            'privacy' => config('portal_privacy'),
+            'guide' => config('portal_guide'),
         ]);
     }
 

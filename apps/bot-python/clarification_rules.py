@@ -14,8 +14,10 @@ from context_rules import (
     detect_social_liquidity_jenis,
     is_beauty_care_expense,
     is_gift_expense,
+    is_gym_income_tool,
     is_household_durable,
     is_ride_subscription,
+    is_transport_ride,
 )
 
 
@@ -180,6 +182,7 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
         _is_generic_laptop,
         _is_generic_hp,
         _is_generic_subscription,
+        _is_generic_gym,
         _is_generic_coaching,
         _is_generic_art,
         _is_generic_notaris,
@@ -541,12 +544,47 @@ def _is_generic_subscription(text: str, category: str) -> str | None:
     return None if _has_purpose(text, purpose) else "subscription"
 
 
+def _is_generic_gym(text: str, category: str) -> str | None:
+    """§2.18 gym: Future Building hanya jika fisik = alat penghasil uang (PT/atlet)."""
+    if is_transport_ride(text) or is_ride_subscription(text):
+        return None
+    gym_markers = (
+        "gym",
+        "fitness",
+        "membership gym",
+        "pilates",
+        "yoga",
+        "crossfit",
+        "personal training",
+        "personal trainer",
+        "kebugaran",
+    )
+    if category not in {"lifestyle & hiburan", ""} and not any(k in text for k in gym_markers):
+        return None
+    if not any(k in text for k in gym_markers):
+        return None
+    if is_gym_income_tool(text):
+        return None
+    purpose = (
+        "kebugaran pribadi",
+        "kebugaran biasa",
+        "olahraga pribadi",
+        "sumber penghasilan",
+        "alat kerja langsung",
+        "personal trainer atau atlet",
+        "atlet profesional",
+        "instruktur kebugaran",
+        "instruktur fitness",
+    )
+    return None if _has_purpose(text, purpose) else "gym"
+
+
 def _is_generic_coaching(text: str, category: str) -> str | None:
     if any(k in text for k in ("honor", "freelance", "gaji", "pemasukan")):
         return None
     if not any(k in text for k in ("coaching", "les privat", "les ", "mentoring", "kelas ")):
         return None
-    # Gym/olahraga berbayar bukan grey ke Essential — selalu Flexible; skip
+    # Gym/olahraga berbayar punya grey sendiri (PT/atlet vs kebugaran pribadi).
     if any(k in text for k in ("gym", "pilates", "yoga", "tenis", "padel", "renang", "fitness")):
         return None
     if category in {"lifestyle & hiburan"}:

@@ -823,6 +823,21 @@ _GYM_LIFESTYLE = (
     "les padel",
 )
 
+# Gym = Future Building HANYA jika fisik latihan = alat penghasil uang (bukan bayar PT).
+_GYM_INCOME_TOOL = (
+    "sumber penghasilan",
+    "alat kerja langsung",
+    "saya personal trainer",
+    "aku personal trainer",
+    "saya atlet",
+    "aku atlet",
+    "atlet profesional",
+    "instruktur kebugaran",
+    "instruktur fitness",
+    "fitness instructor",
+    "untuk kerja sebagai pelatih",
+)
+
 _PENDIDIKAN = (
     "spp",
     "uang sekolah",
@@ -1643,6 +1658,35 @@ def household_durable_sifat(text: str) -> str:
     return "Wants"
 
 
+def is_gym_lifestyle_expense(text: str) -> bool:
+    """Membership/kelas gym — bukan ongkos Grab ke gym."""
+    if is_transport_ride(text) or is_ride_subscription(text):
+        return False
+    return _contains(text.lower(), _GYM_LIFESTYLE)
+
+
+def is_gym_income_tool(text: str) -> bool:
+    """Gym sebagai alat kerja fisik (PT/atlet), bukan bayar personal training."""
+    lower = text.lower()
+    if _contains(lower, _GYM_INCOME_TOOL):
+        return True
+    if "klarifikasi user:" in lower:
+        after = lower.split("klarifikasi user:", 1)[-1]
+        if any(k in after for k in ("kebugaran pribadi", "kebugaran biasa", "olahraga pribadi")):
+            return False
+        return any(
+            k in after
+            for k in (
+                "personal trainer",
+                "atlet",
+                "instruktur",
+                "sumber penghasilan",
+                "alat kerja",
+            )
+        )
+    return False
+
+
 def is_transport_ride(text: str) -> bool:
     """Ojek/bensin/dll — bukan GrabFood/GoFood / langganan paket."""
     if is_food_delivery(text):
@@ -2313,7 +2357,11 @@ def classify_from_text(text: str) -> dict[str, str] | None:
             "sifat": transport_ride_sifat(lower),
         }
     if _contains(lower, _GYM_LIFESTYLE):
-        return {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants"}
+        return {
+            "jenis": "Pengeluaran",
+            "kategori": "Lifestyle & Hiburan",
+            "sifat": "Need" if is_gym_income_tool(lower) else "Wants",
+        }
     if _contains(lower, _HIBURAN):
         return {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants"}
     if _contains(lower, _SUBSCRIPTION):
@@ -2471,6 +2519,41 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         parsed["kategori"] = "Transportasi"
         parsed["sifat"] = "Wants"
         parsed.pop("sub_kategori", None)
+    elif is_gym_lifestyle_expense(combined) and is_gym_income_tool(combined):
+        parsed["jenis"] = "Pengeluaran"
+        parsed["kategori"] = "Lifestyle & Hiburan"
+        parsed["sifat"] = "Need"
+        parsed.pop("sub_kategori", None)
+    # Likuiditas Sosial: Piutang Masuk dulu agar "X balikin hutang" tidak jadi Utang Keluar.
+    elif is_receivable_repay(lower_combined):
+        parsed["jenis"] = "Piutang Masuk"
+        parsed["kategori"] = "Lain-lain"
+        if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
+            parsed["sifat"] = "Need"
+    elif is_social_debt_repay(lower_combined):
+        parsed["jenis"] = "Utang Keluar"
+        parsed["kategori"] = "Lain-lain"
+        if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
+            parsed["sifat"] = "Need"
+        parsed.pop("sub_kategori", None)
+    elif is_social_debt_borrow(lower_combined):
+        parsed["jenis"] = "Utang Masuk"
+        parsed["kategori"] = "Lain-lain"
+        if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
+            parsed["sifat"] = "Need"
+        parsed.pop("sub_kategori", None)
+    elif is_lending_to_others(lower_combined):
+        parsed["jenis"] = "Piutang Keluar"
+        if not str(parsed.get("kategori") or "").strip() or str(parsed.get("kategori") or "").strip().lower() in {
+            "sosial & keluarga",
+            "cicilan & hutang",
+            "lain-lain",
+            "lainnya",
+            "pemasukan",
+        }:
+            parsed["kategori"] = "Lain-lain"
+        if str(parsed.get("sifat") or "").strip() not in {"Need", "Wants"}:
+            parsed["sifat"] = "Need"
     # Kata kerja arah uang menang jika AI salah (terima ≠ pengeluaran).
     elif (
         direction
@@ -2713,7 +2796,7 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
             and not is_transport_ride(combined)
         ):
             parsed["kategori"] = "Lifestyle & Hiburan"
-            parsed["sifat"] = "Wants"
+            parsed["sifat"] = "Need" if is_gym_income_tool(combined) else "Wants"
             parsed.pop("sub_kategori", None)
             return parsed
 
@@ -2918,6 +3001,7 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "kasih tip gojek 10rb" → Pengeluaran / Hadiah / Wants
 - "beli tiket konser 450rb" → Pengeluaran / Lifestyle & Hiburan / Wants
 - "bayar olahraga gym bulanan + personal training 455rb" → Pengeluaran / Lifestyle & Hiburan / Wants
+- "membership gym, saya personal trainer" → Pengeluaran / Lifestyle & Hiburan / Need (Future Building)
 - "konsumsi meeting untuk take konten bisnis YFD 127rb" → Pengeluaran / Bisnis & Karir / Need → Future Building
 - "makan malem sekalian meeting kerjaan 213rb" → Pengeluaran / Bisnis & Karir / Need → Future Building
 - "makan malem sambil meeting untuk kerja 213rb" → Pengeluaran / Bisnis & Karir / Need → Future Building

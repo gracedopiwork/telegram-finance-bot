@@ -89,6 +89,20 @@
                         @endif
                     </form>
                     @endif
+                    @if(!($isFtsaOnlyPortalUser ?? false))
+                    <a href="{{ route('portal.affiliate') }}"
+                       class="inline-flex items-center gap-1 text-sm {{ ($active ?? '') === 'affiliate' ? 'text-navy-800 font-semibold' : 'text-slate-600 hover:text-navy-800' }} px-2 py-2"
+                       title="Referral & komisi">
+                        <span class="material-symbols-outlined text-lg">diversity_3</span>
+                        <span class="hidden sm:inline">Referral</span>
+                    </a>
+                    @endif
+                    <a href="{{ route('portal.account') }}"
+                       class="inline-flex items-center gap-1 text-sm {{ ($active ?? '') === 'account' ? 'text-navy-800 font-semibold' : 'text-slate-600 hover:text-navy-800' }} px-2 py-2"
+                       title="Akun, privacy dan panduan">
+                        <span class="material-symbols-outlined text-lg">manage_accounts</span>
+                        <span class="hidden sm:inline">Akun</span>
+                    </a>
                     <form method="post" action="{{ route('portal.logout') }}">
                         @csrf
                         <button type="submit" class="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-red-600 px-2 py-2">

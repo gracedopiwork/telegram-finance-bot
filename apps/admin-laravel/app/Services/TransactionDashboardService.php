@@ -1000,7 +1000,7 @@ class TransactionDashboardService
             return null;
         }
 
-        return [
+        $data = [
             'stage_label' => $baseline->stage_label,
             'financial_stage' => $baseline->financial_stage,
             'current_goal' => $baseline->current_goal,
@@ -1022,6 +1022,15 @@ class TransactionDashboardService
             'assessed_at' => $baseline->assessed_at->format('d M Y'),
             'has_financial_snapshot' => $this->baselineHasFinancialSnapshot($baseline),
         ];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('financial_baselines', 'job_type')) {
+            $data['job_type'] = $baseline->job_type;
+            $data['job_type_label'] = $baseline->jobTypeLabel();
+            $data['tax_scheme'] = $baseline->tax_scheme;
+            $data['tax_scheme_label'] = $baseline->taxSchemeLabel();
+        }
+
+        return $data;
     }
 
     private function baselineHasFinancialSnapshot(FinancialBaseline $baseline): bool

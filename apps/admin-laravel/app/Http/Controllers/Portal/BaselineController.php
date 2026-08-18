@@ -439,6 +439,12 @@ class BaselineController extends Controller
             'answers_json' => $result['answers'],
         ];
 
+        if (\Illuminate\Support\Facades\Schema::hasColumn('financial_baselines', 'job_type')) {
+            $jobType = $this->normalizeJobType($snapshot['job_type'] ?? null);
+            $payload['job_type'] = $jobType;
+            $payload['tax_scheme'] = $this->taxSchemeForJobType($jobType);
+        }
+
         $flags = $this->protectionFlagsFromPolicies($payload['protection_policies'] ?? null);
         $payload['has_bpjs'] = $payload['has_bpjs'] || $flags['has_bpjs'];
         $payload['has_health_insurance'] = $payload['has_health_insurance'] || $flags['has_health_insurance'];
@@ -469,6 +475,8 @@ class BaselineController extends Controller
     {
         foreach ([
             'current_goal',
+            'job_type',
+            'tax_scheme',
             'avg_monthly_income',
             'emergency_fund',
             'cash_savings',
@@ -482,6 +490,9 @@ class BaselineController extends Controller
             'has_life_insurance',
             'protection_policies',
         ] as $field) {
+            if (! array_key_exists($field, $payload)) {
+                continue;
+            }
             if (($payload[$field] === null || $payload[$field] === false || $payload[$field] === []) && $existing->{$field} !== null) {
                 $payload[$field] = $existing->{$field};
             }
@@ -627,6 +638,25 @@ class BaselineController extends Controller
         }
 
         return (int) $value;
+    }
+
+    private function normalizeJobType(mixed $value): ?string
+    {
+        $value = is_string($value) ? trim($value) : '';
+        if (in_array($value, [FinancialBaseline::JOB_EMPLOYEE, FinancialBaseline::JOB_SELF_EMPLOYED], true)) {
+            return $value;
+        }
+
+        return null;
+    }
+
+    private function taxSchemeForJobType(?string $jobType): ?string
+    {
+        return match ($jobType) {
+            FinancialBaseline::JOB_EMPLOYEE => 'inactive',
+            FinancialBaseline::JOB_SELF_EMPLOYED => 'norma',
+            default => null,
+        };
     }
 
     /**

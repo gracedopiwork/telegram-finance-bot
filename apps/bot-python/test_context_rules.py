@@ -595,6 +595,25 @@ class ContextRulesTests(unittest.TestCase):
             "Pengeluaran",
             "Lifestyle & Hiburan",
         )
+        hit = classify_from_text("Bayar olahraga gym bulanan + Personal training Rp 455.583")
+        assert hit is not None
+        self.assertEqual(hit["sifat"], "Wants")
+
+    def test_gym_income_tool_need(self) -> None:
+        hit = classify_from_text("membership gym, saya personal trainer 450rb")
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Lifestyle & Hiburan")
+        self.assertEqual(hit["sifat"], "Need")
+        out = apply_context_rules(
+            {
+                "keterangan": "Membership gym",
+                "jenis": "Pengeluaran",
+                "kategori": "Lifestyle & Hiburan",
+                "sifat": "Wants",
+            },
+            "membership gym\nKlarifikasi user: saya personal trainer",
+        )
+        self.assertEqual(out["sifat"], "Need")
 
     def test_konsumsi_meeting_bisnis(self) -> None:
         self.assertClass(

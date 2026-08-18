@@ -251,6 +251,22 @@
                     <input type="text" name="snapshot[current_goal]" value="{{ $snapshotValue('current_goal') }}"
                            class="w-full rounded-lg border-slate-300 text-sm" placeholder="Contoh: Dana darurat 6 bulan + lunasi kartu kredit">
                 </div>
+                @if(\Illuminate\Support\Facades\Schema::hasColumn('financial_baselines', 'job_type'))
+                <fieldset>
+                    <legend class="text-sm font-semibold text-navy-800 mb-1">Pekerjaan kamu saat ini seperti apa?</legend>
+                    <p class="text-xs text-slate-500 mb-3">Dasar perhitungan pajak First Aid (taxonomy 5B.7). Bisa diganti nanti.</p>
+                    <div class="space-y-2">
+                        @foreach(\App\Models\FinancialBaseline::jobTypeOptions() as $value => $label)
+                            <label class="flex items-start gap-2 text-sm rounded-xl border border-slate-200 px-3 py-2.5 cursor-pointer hover:bg-slate-50">
+                                <input type="radio" name="snapshot[job_type]" value="{{ $value }}"
+                                       class="mt-1 border-slate-300 text-navy-600"
+                                       @checked(old('snapshot.job_type', $existingBaseline?->job_type) === $value)>
+                                <span>{{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </fieldset>
+                @endif
                 <div class="grid sm:grid-cols-2 gap-4">
                     @foreach($snapshotFields as $field => $label)
                         <div>

@@ -10,6 +10,8 @@ from context_rules import (
     is_business_transport_destination,
     is_discretionary_social_giving,
     is_dp_lifestyle_vehicle,
+    is_gym_income_tool,
+    is_gym_lifestyle_expense,
     is_household_durable,
     is_leisure_transport_destination,
     is_ride_subscription,
@@ -180,6 +182,8 @@ def refine_sifat_from_context(parsed: dict[str, Any], source_text: str = "") -> 
         for k in ("seragam", "sepatu kerja", "tas kerja", "tas sekolah", "sepatu sekolah")
     ):
         parsed["sifat"] = "Need"
+    if is_gym_lifestyle_expense(combined):
+        parsed["sifat"] = "Need" if is_gym_income_tool(combined) else "Wants"
         return parsed
     if kategori in essential_cats:
         if kategori in {"Makan", "Makanan & Minuman", "Minuman"} and has_discretionary_framing(

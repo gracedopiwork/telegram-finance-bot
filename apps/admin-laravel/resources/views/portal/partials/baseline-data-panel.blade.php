@@ -24,6 +24,15 @@
                 <div class="font-medium text-navy-800 mt-1">{{ \App\Support\RupiahFormat::formatText($baseline['current_goal']) }}</div>
             </div>
         @endif
+        @if(!empty($baseline['job_type_label']) && ($baseline['job_type_label'] ?? 'Belum diisi') !== 'Belum diisi')
+            <div class="sm:col-span-2 lg:col-span-4 rounded-xl bg-navy-50 border border-navy-100 p-3">
+                <div class="text-xs font-bold text-navy-700 uppercase">Pengaturan pekerjaan (basis pajak)</div>
+                <div class="font-medium text-navy-800 mt-1">{{ $baseline['job_type_label'] }}</div>
+                @if(!empty($baseline['tax_scheme_label']))
+                    <div class="text-xs text-slate-500 mt-1">Skema default: {{ $baseline['tax_scheme_label'] }}</div>
+                @endif
+            </div>
+        @endif
         @foreach([
             'avg_monthly_income' => 'Pendapatan/bulan',
             'emergency_fund' => 'Dana darurat',

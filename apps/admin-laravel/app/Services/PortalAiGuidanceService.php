@@ -304,16 +304,18 @@ class PortalAiGuidanceService
             ? ($weeklyStored['payload']['clinical_summary'] ?? $fallback['clinical_summary'])
             : $fallback['clinical_summary'];
 
-        $doctors = $monthlyStored !== null
+        $doctorsReleased = $this->monthlyDoctorsNoteReleased($month, $monthlyStored['generated_at'] ?? null);
+
+        $doctors = ($monthlyStored !== null && $doctorsReleased)
             ? ($monthlyStored['payload']['doctors_note'] ?? $fallback['doctors_note'])
             : $this->pendingDoctorsNote($month, $fallback['doctors_note']);
 
         $clinicalPending = $weeklyStored === null;
-        $doctorsPending = $monthlyStored === null;
+        $doctorsPending = $monthlyStored === null || ! $doctorsReleased;
 
         $aiSource = 'rules';
         $weeklyAi = $weeklyStored !== null && ($weeklyStored['ai_source'] ?? '') === 'ai';
-        $monthlyAi = ($monthlyStored['ai_source'] ?? '') === 'ai';
+        $monthlyAi = $doctorsReleased && $monthlyStored !== null && ($monthlyStored['ai_source'] ?? '') === 'ai';
         if ($weeklyAi && $monthlyAi) {
             $aiSource = 'ai';
         } elseif ($weeklyAi || $monthlyAi) {
@@ -328,7 +330,9 @@ class PortalAiGuidanceService
             'clinical_pending' => $clinicalPending,
             'doctors_pending' => $doctorsPending,
             'clinical_generated_at' => $weeklyStored['generated_at'] ?? null,
-            'doctors_generated_at' => $monthlyStored['generated_at'] ?? null,
+            'doctors_generated_at' => ($monthlyStored !== null && $doctorsReleased)
+                ? ($monthlyStored['generated_at'] ?? null)
+                : null,
         ];
     }
 
@@ -488,9 +492,35 @@ class PortalAiGuidanceService
 
         return array_merge($fallback, [
             'summary' => "Rekomendasi dokter untuk periode ini akan dirilis pada {$release} pukul 22.00 WIB.",
-            'interpretation' => 'Doctor\'s note bulanan di-generate otomatis agar konsisten setiap periode.',
-            'priority' => 'Lanjutkan pencatatan transaksi hingga akhir bulan untuk analisis yang lebih akurat.',
+            'interpretation' => 'Doctor\'s Note bulanan dibuat otomatis di akhir bulan, memakai Budget Prescription yang sama dengan clinical summary. Clinical summary mingguan tetap update lebih dulu.',
+            'priority' => 'Lanjutkan pencatatan transaksi hingga akhir bulan. Angka Aktual vs Ideal di Budget Prescription sudah memakai data terbaru.',
+            'findings' => [],
         ]);
+    }
+
+    private function monthlyDoctorsNoteReleased(string $monthKey, ?string $generatedAt): bool
+    {
+        $tz = (string) config('portal_ai.guidance_timezone', 'Asia/Jakarta');
+        $releaseTime = (string) config('portal_ai.guidance_monthly_time', '22:00');
+        try {
+            $month = \Carbon\Carbon::createFromFormat('Y-m', $monthKey, $tz)->startOfMonth();
+        } catch (\Throwable) {
+            return $generatedAt !== null && $generatedAt !== '';
+        }
+
+        $releaseAt = $month->copy()->endOfMonth();
+        try {
+            $releaseAt->setTimeFromTimeString($releaseTime);
+        } catch (\Throwable) {
+            $releaseAt->setTime(22, 0);
+        }
+
+        $now = now($tz);
+        if ($now->lt($releaseAt) && $month->isSameMonth($now)) {
+            return false;
+        }
+
+        return $generatedAt !== null && $generatedAt !== '';
     }
 
     /**

@@ -101,6 +101,19 @@ def test_tumbler_ganti_rusak_is_need():
     assert parsed["sifat"] == "Need"
 
 
+def test_gym_income_tool_is_need():
+    text = "membership gym, saya personal trainer"
+    parsed = {
+        "keterangan": "Membership gym",
+        "nominal": 450000,
+        "jenis": "Pengeluaran",
+        "kategori": "Lifestyle & Hiburan",
+        "sifat": "Wants",
+    }
+    refine_sifat_from_context(parsed, text)
+    assert parsed["sifat"] == "Need"
+
+
 def test_grab_subscription_stays_wants():
     text = "bayar subscription grab untuk dapat paket hemat 14000"
     parsed = {

@@ -322,6 +322,8 @@ Aturan:
      * Grab ke gym = Transportasi Wants (bukan Lifestyle). Membership gym = Lifestyle.
      * Langganan Grab/Gojek (subscription/paket hemat) = Transportasi Wants — BUKAN grey area tujuan ride,
        BUKAN Likuiditas Sosial.
+     * Gym/olahraga berbayar = Flexible + Social, KECUALI fisik latihan = alat penghasil uang
+       (kamu personal trainer / atlet profesional) → Future Building. WAJIB klarifikasi.
    - Komunikasi: pulsa, kuota, internet HP, biaya admin bank/ATM/transfer.
    - Kesehatan & Kebersihan Diri: dokter, obat, sabun, handbody, deodoran, sikat gigi, laundry (semua laundry = Need);
      skincare/makeup/dandan/parfum/facial/toner/spa = Wants (BUKAN Lain-lain); fisioterapi resep dokter = Need (tanpa resep = grey area).
@@ -331,6 +333,7 @@ Aturan:
    - Investasi & Tabungan: saham, reksadana, emas, dana darurat (jenis Saving/Investment).
    - Proteksi: BPJS, premi asuransi jiwa/kesehatan/kendaraan/aset.
    - Lifestyle & Hiburan: Netflix, konser, gym/pilates berbayar, gadget upgrade.
+     * Gym untuk kebugaran pribadi = Wants. Gym alat kerja fisik (PT/atlet) = Need + klarifikasi.
    - Traveling: liburan, hotel, staycation, wisata.
    - Sosial & Keluarga: donasi, sedekah, zakat, qurban, bantu keluarga (bukan hadiah barang).
    - Bisnis & Karir: modal usaha, tools kerja, marketing, software bisnis, konsumsi meeting kerja.

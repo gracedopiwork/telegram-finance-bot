@@ -258,6 +258,28 @@ class ClarificationRulesTests(unittest.TestCase):
         )
         self.assertIsNone(question)
 
+    def test_generic_gym_requires_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Lifestyle & Hiburan", "keterangan": "Membership gym"},
+            "bayar membership gym bulanan 450rb",
+        )
+        self.assertIn("sumber penghasilanmu", question or "")
+        self.assertIn("kebugaran pribadi", question or "")
+
+    def test_grab_ke_gym_skips_gym_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Transportasi", "keterangan": "Grab ke gym"},
+            "grab ke gym 21rb",
+        )
+        self.assertNotIn("sumber penghasilanmu", question or "")
+
+    def test_gym_personal_trainer_job_no_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Lifestyle & Hiburan", "keterangan": "Gym"},
+            "membership gym, saya personal trainer",
+        )
+        self.assertIsNone(question)
+
     def test_generic_coaching_requires_clarification(self) -> None:
         question = clarification_question(
             {"kategori": "Pendidikan", "keterangan": "Bayar coaching"},

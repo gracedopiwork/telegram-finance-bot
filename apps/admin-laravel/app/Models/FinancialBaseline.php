@@ -17,6 +17,8 @@ class FinancialBaseline extends Model
         'financial_stage',
         'stage_label',
         'current_goal',
+        'job_type',
+        'tax_scheme',
         'avg_monthly_income',
         'emergency_fund',
         'cash_savings',
@@ -84,6 +86,34 @@ class FinancialBaseline extends Model
             ->where('telegram_user_id', $telegramUserId)
             ->orderByDesc('assessed_at')
             ->first();
+    }
+
+    public const JOB_EMPLOYEE = 'employee';
+
+    public const JOB_SELF_EMPLOYED = 'self_employed';
+
+    public static function jobTypeOptions(): array
+    {
+        return [
+            self::JOB_EMPLOYEE => 'Karyawan murni (gaji, PPh 21/TER sudah dipotong pemberi kerja)',
+            self::JOB_SELF_EMPLOYED => 'Ada pekerjaan bebas/usaha (praktik, freelancer, pemilik usaha, kombinasi dengan gaji)',
+        ];
+    }
+
+    public function jobTypeLabel(): string
+    {
+        return self::jobTypeOptions()[$this->job_type] ?? 'Belum diisi';
+    }
+
+    public function taxSchemeLabel(): string
+    {
+        return match ($this->tax_scheme) {
+            'inactive' => 'Pajak First Aid tidak aktif (default karyawan)',
+            'norma' => 'Norma penghitungan (default pekerjaan bebas/usaha)',
+            'pembukuan' => 'Pembukuan',
+            'umkm_final' => 'PPh Final UMKM 0,5%',
+            default => 'Belum diatur',
+        };
     }
 
     public function isReviewDue(): bool

@@ -64,6 +64,17 @@ class CategoryBucketServiceTest extends TestCase
         }
     }
 
+    public function test_gym_income_tool_is_future_building(): void
+    {
+        $this->assertBucket(
+            'Future Building',
+            TransactionTaxonomy::TYPE_EXPENSE,
+            'Lifestyle & Hiburan',
+            'Need',
+            'membership gym, saya personal trainer',
+        );
+    }
+
     public function test_makeup_is_flexible_not_protection_or_essential(): void
     {
         $this->assertBucket(

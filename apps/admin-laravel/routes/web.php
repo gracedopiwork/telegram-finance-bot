@@ -58,6 +58,7 @@ Route::get('/pertemuan',     [LandingController::class, 'pertemuan'])->name('com
 Route::post('/pertemuan/book', [LandingController::class, 'bookPertemuan'])->name('company.pertemuan.book');
 Route::get('/pertemuan/slots', [LandingController::class, 'pertemuanSlots'])->name('company.pertemuan.slots');
 Route::get('/informasi',     [LandingController::class, 'informasi'])->name('company.informasi');
+Route::get('/kebijakan-privasi', [LandingController::class, 'privacy'])->name('company.privacy');
 
 // Alias backward-compat untuk nama route lama 'landing'
 Route::get('/landing',       [LandingController::class, 'home'])->name('landing');

@@ -73,7 +73,9 @@
         @else
             <p class="text-sm text-slate-600">
                 Belum ada Doctor's Note untuk periode ini.
-                Rekomendasi bulanan dirilis otomatis <strong>akhir bulan pukul 22.00 WIB</strong>.
+                Rekomendasi bulanan dirilis otomatis <strong>akhir bulan pukul 22.00 WIB</strong>
+                dari Budget Prescription yang sama dengan clinical summary.
+                Clinical summary minggu ke-{{ $clinicalWeek }} sudah memakai data aktual.
             </p>
         @endif
     </div>

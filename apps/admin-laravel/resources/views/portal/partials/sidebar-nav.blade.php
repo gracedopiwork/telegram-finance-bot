@@ -45,13 +45,6 @@
         <span class="flex-1">{{ ($isFtsaOnlyPortalUser ?? false) ? 'HASIL FTSA' : 'BEHAVIORAL FINANCIAL DASHBOARD' }}</span>
     </a>
     @if(!($isFtsaOnlyPortalUser ?? false))
-    <a href="{{ route('portal.affiliate') }}"
-       class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'affiliate' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
-        <span class="material-symbols-outlined text-lg opacity-80">diversity_3</span>
-        <span class="flex-1">REFERRAL & KOMISI</span>
-    </a>
-    @endif
-    @if(!($isFtsaOnlyPortalUser ?? false))
     <a href="{{ route('portal.premium') }}"
        class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'premium' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
         <span class="material-symbols-outlined text-lg opacity-80">monitor_heart</span>
@@ -66,11 +59,6 @@
         <span class="text-[9px] bg-white/10 text-gold-400 px-1.5 py-0.5 rounded font-bold">PREMIUM</span>
     </div>
     @endif
-    <a href="{{ route('portal.account') }}"
-       class="flex items-center gap-2 rounded-lg px-3 py-3 {{ $active === 'account' ? 'nav-active font-semibold' : 'hover:bg-white/10' }}">
-        <span class="material-symbols-outlined text-lg opacity-80">manage_accounts</span>
-        <span class="flex-1">AKUN & PASSWORD</span>
-    </a>
 </nav>
 @include('portal.partials.sidebar-timezone')
 <div class="p-4 m-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white/75 italic leading-relaxed">

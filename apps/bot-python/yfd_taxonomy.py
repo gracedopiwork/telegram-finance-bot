@@ -131,6 +131,14 @@ GREY_AREA_ITEMS: dict[str, dict[str, str]] = {
             "atau hobi/enjoyment?"
         ),
     },
+    "gym": {
+        "label": "gym/olahraga berbayar",
+        "question": (
+            "Apakah gym ini untuk menjaga/meningkatkan kemampuan fisik yang "
+            "langsung jadi sumber penghasilanmu (misalnya kamu personal trainer atau atlet), "
+            "atau untuk kebugaran pribadi?"
+        ),
+    },
     "transport": {
         "label": "transportasi",
         "question": (

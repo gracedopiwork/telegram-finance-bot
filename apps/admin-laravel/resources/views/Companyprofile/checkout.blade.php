@@ -98,8 +98,10 @@
                     </button>
                     <a href="{{ route('company.produk') }}" class="text-[13px] text-on-surface-variant hover:text-primary">← Kembali ke produk</a>
                 </div>
-                <p class="text-[11.5px] text-on-surface-variant mt-4">
-                    Dengan melanjutkan Anda menyetujui ketentuan layanan YFD. Pembayaran diproses oleh Midtrans (PT Midtrans, lisensi BI).
+                <p class="text-[11.5px] text-on-surface-variant mt-4 leading-relaxed">
+                    {{ config('portal_privacy.purchase_summary') }}
+                    <a href="{{ route('company.privacy') }}" class="text-primary font-semibold hover:underline">Baca kebijakan privasi lengkap</a>.
+                    Pembayaran diproses oleh Midtrans (PT Midtrans, lisensi BI).
                 </p>
             </div>
         </div>
