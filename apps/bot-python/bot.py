@@ -584,9 +584,12 @@ def analyze_with_claude(user_text: str) -> Dict[str, Any]:
 
 def extract_transaction_text_from_image(image_path: str, mime_type: str = "image/jpeg") -> str:
     prompt = (
-        "Ekstrak isi transaksi dari gambar struk/nota/foto belanja jadi satu kalimat singkat bahasa Indonesia "
-        "yang berisi keterangan dan nominal (contoh: 'Makan siang 45000'). "
-        "Fokus pada total bayar/total harga jika ada. Jangan isi mood. "
+        "Ekstrak isi transaksi dari gambar struk/nota/foto belanja jadi satu kalimat bahasa Indonesia. "
+        "Sebutkan SEMUA item utama yang terbaca (contoh: 'Belanja snack, kopi sachet, dan roti di Koperasi Grand Sari Nusa 56000'). "
+        "Gunakan TOTAL BAYAR / GRAND TOTAL yang tercetak di struk sebagai nominal. "
+        "Jika ada baris 'Total', 'Grand Total', atau 'Jumlah' — pakai angka itu, BUKAN penjumlahan manual. "
+        "Jika total tidak terbaca, jumlahkan item yang terbaca. "
+        "Jangan isi mood. "
         "Hanya balas INVALID_IMAGE jika benar-benar tidak ada angka/teks transaksi yang terbaca."
     )
     with open(image_path, "rb") as image_file:
