@@ -443,6 +443,14 @@ class LandingController extends Controller
         ]);
     }
 
+    public function guide()
+    {
+        return view('Companyprofile.guide', [
+            'active' => 'informasi',
+            'guide' => config('portal_guide'),
+        ]);
+    }
+
     public function bundle(string $slug)
     {
         $key = match ($slug) {

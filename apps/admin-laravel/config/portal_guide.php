@@ -34,7 +34,7 @@ return [
         [
             'id' => 'contoh-membingungkan',
             'title' => '6. Contoh Transaksi yang Sering Membingungkan',
-            'body' => "Ngopi di cafe buat meeting kerja → Future Building. Ngopi buat healing → Flexible + Social.\n\nLaptop kerja utama rusak, harus ganti → Future Building/Essential (tergantung fungsi kerja). Upgrade laptop karena tren → Flexible + Social.\n\nDP kendaraan untuk mobilitas kerja utama → Future Building. DP kendaraan kedua untuk gaya hidup → Flexible + Social.\n\nBayar iuran organisasi profesi yang wajib untuk praktik → Future Building.\n\nGym untuk kebugaran pribadi → Flexible + Social. Gym sebagai alat kerja fisik (kamu personal trainer atau atlet) → Future Building.\n\nPola yang sama selalu berlaku: cek dulu tujuannya, baru tentukan bucket-nya.",
+            'body' => "Ngopi di cafe buat meeting kerja → Essential Living. Ngopi buat healing → Flexible + Social.\n\nLaptop kerja utama rusak, harus ganti → Future Building/Essential (tergantung fungsi kerja). Upgrade laptop karena tren → Flexible + Social.\n\nDP kendaraan untuk mobilitas kerja utama → Future Building. DP kendaraan kedua untuk gaya hidup → Flexible + Social.\n\nBayar iuran organisasi profesi yang wajib untuk praktik → Future Building.\n\nGym untuk kebugaran pribadi → Flexible + Social. Gym sebagai alat kerja fisik (kamu personal trainer atau atlet) → Future Building.\n\nPola yang sama selalu berlaku: cek dulu tujuannya, baru tentukan bucket-nya.",
         ],
         [
             'id' => 'essential',
@@ -59,7 +59,7 @@ return [
         [
             'id' => 'faq-pointer',
             'title' => '11. FAQ: Kenapa Transaksi Saya Masuk Bucket Ini?',
-            'body' => 'Cara tercepat: buka transaksi yang kamu maksud, lalu lihat kategori, sifat, dan tujuan yang tercatat. Kalau masih belum jelas, baca FAQ di bagian bawah halaman ini.',
+            'body' => 'Cara tercepat: di bot, tekan tombol “Kenapa masuk bucket ini?” setelah preview klasifikasi — First Aid akan jelaskan berdasarkan kategori, sifat, dan tujuan yang tercatat. Kalau masih belum jelas, baca FAQ di bagian bawah halaman ini.',
         ],
         [
             'id' => 'dashboard',
@@ -102,4 +102,24 @@ return [
             'a' => 'Karena tujuan itulah yang menentukan bucket, bukan nama barang atau tempat kamu bertransaksi. Pertanyaan ini singkat dan hanya muncul untuk transaksi yang konteksnya memang bisa dua arah — bukan untuk semua transaksi.',
         ],
     ],
+
+    /** Ringkas 2–3 kalimat untuk /panduan di bot (Bagian 6.0). */
+    'bot_summaries' => [
+        'financial-health' => 'Financial Health = kondisi keuangan menyeluruh lewat 4 bucket, bukan cuma total pengeluaran.',
+        'cara-kerja' => 'Catat transaksi → kategori + sifat → bucket otomatis → Dashboard & Budget Prescription.',
+        'empat-bucket' => 'Essential Living, Future Building, Protection, Flexible + Social — fungsi uang, bukan label “penting”.',
+        'bucket-ditentukan' => 'Bucket dari kategori + sifat + aturan YFD. Grey area: bot tanya tujuan dulu.',
+        'tujuan-bukan-barang' => 'Barang sama bisa bucket beda. Yang menentukan = tujuan penggunaan uang.',
+        'contoh-membingungkan' => 'Cek tujuan dulu: meeting vs healing, kerja vs gaya hidup, PT/atlet vs gym pribadi.',
+        'essential' => 'Bertahan hidup & kemampuan kerja hari ini. Tes: kalau dihentikan, hidup/kerja terganggu serius?',
+        'future' => 'Naikkan aset atau kapasitas penghasilan. Termasuk kursus & gym alat kerja (PT/atlet).',
+        'protection' => 'Kurangi risiko finansial besar: BPJS, asuransi, dana darurat. Cukup memadai, tak perlu besar.',
+        'flexible' => 'Kualitas hidup & sosial — bukan buruk. Jaga proporsinya tetap seimbang.',
+        'faq-pointer' => 'Di bot: tombol “Kenapa masuk bucket ini?” setelah klasifikasi. Atau baca FAQ lengkap di web.',
+        'dashboard' => 'Proporsi 4 bucket vs target sehat + tren. Transaksi besar sekali-kali ditampilkan terpisah.',
+        'prescription' => 'Resep alokasi per bucket sesuai kondisi Financial Health-mu — bukan angka generik.',
+    ],
+
+    'support_wa' => '+62 851-1122-8911',
+    'support_wa_url' => 'https://wa.me/6285111228911',
 ];

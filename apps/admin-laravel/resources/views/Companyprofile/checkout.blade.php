@@ -92,6 +92,10 @@
                 </div>
 
                 <div class="mt-7 flex flex-wrap gap-3 items-center">
+                    <a href="{{ route('company.privacy') }}" class="btn btn-outline-primary btn-lg">
+                        <span class="material-symbols-outlined text-[20px]">menu_book</span>
+                        Baca Kebijakan Lengkap
+                    </a>
                     <button type="submit" class="btn btn-primary btn-lg">
                         <span class="material-symbols-outlined text-[20px]">lock</span>
                         Lanjut ke Pembayaran
@@ -99,6 +103,7 @@
                     <a href="{{ route('company.produk') }}" class="text-[13px] text-on-surface-variant hover:text-primary">← Kembali ke produk</a>
                 </div>
                 <p class="text-[11.5px] text-on-surface-variant mt-4 leading-relaxed">
+                    Sebelum kamu lanjut ke pembayaran, ini ringkasan bagaimana YFD First Aid memproses datamu:
                     {{ config('portal_privacy.purchase_summary') }}
                     <a href="{{ route('company.privacy') }}" class="text-primary font-semibold hover:underline">Baca kebijakan privasi lengkap</a>.
                     Pembayaran diproses oleh Midtrans (PT Midtrans, lisensi BI).

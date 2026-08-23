@@ -52,10 +52,13 @@ Belum ada pemisahan teknis “hanya transaksi bulan ini” vs “seluruh riwayat
 
 ## 8. Bagaimana consent disimpan dan diberi versioning (Lapis 1 & Lapis 2)?
 
-- **Lapis 1 (pra-pembelian):** teks ringkasan kebijakan di halaman beli / tautan kebijakan lengkap. Tidak terikat `user_id` (belum ada akun).
-- **Lapis 2 (pasca-aktivasi):** syarat produk — checkbox consent di bot sebelum onboarding. **Record consent terikat user_id** (`consent_version`, waktu, metode Bot/Web) masih dalam implementasi; kebijakan user-facing sudah ada di portal *Akun, privacy dan panduan*.
+- **Lapis 1 (pra-pembelian):** ringkasan + tombol *Baca Kebijakan Lengkap* di halaman checkout; halaman `/kebijakan-privasi` read-only (teks Bagian 15). Tidak terikat `user_id`.
+- **Lapis 2 (pasca-aktivasi):** setelah `/activate` + nama panggilan, bot menampilkan kebijakan lengkap + 6 checkbox. Tombol *Saya Setuju & Lanjutkan* hanya aktif setelah semua dicentang. Record disimpan di tabel `user_data_consents`:
+  - `telegram_user_id`, `consent_version`, `consented_at`, `status` (accepted/withdrawn), `method` (bot|web), `consent_text_version`, `checkbox_ids`
+- Alternatif Web: form checkbox yang sama di portal *Akun, privacy dan panduan* (`method=web`).
+- API internal: `GET/POST /api/bot/consent` (token bot).
 
-Kalau OJK bertanya “apakah sudah ada log consent per user hari ini”: sebutkan jujur status rollout bot Lapis 2, dan bahwa teks kebijakan versi `1.1` (14 Agustus 2026) sudah dipublikasikan di portal.
+Kalau OJK bertanya “apakah sudah ada log consent per user”: ya, untuk user yang sudah melewati Lapis 2 setelah rollout ini; teks kebijakan versi `1.1` (14 Agustus 2026).
 
 ## 9. Di mana data First Aid di-hosting — Indonesia atau luar negeri?
 
@@ -71,8 +74,8 @@ Transfer ke pemroses luar negeri perlu dicek legal (UU PDP transfer lintas negar
 ## 10. Siapa yang menerima alert pertama kali jika ada indikasi insiden, dan bagaimana sampai ke penanggung jawab data dalam hitungan jam?
 
 - **Penanggung jawab data (dokumen):** dr. Ayuti Bulaan, QWP & dr. Catherina, QWP — kontak operasional WhatsApp Admin `+62 851-1122-8911`.
-- **Deteksi teknis saat ini:** log server / health check; **belum ada** pipeline otomatis “jam pertama insiden diketahui” dengan countdown 72 jam.
-- **Kewajiban 3×24 jam (Pasal 46 UU PDP)** tetap berlaku. Yang wajib disiapkan segera (bukan fitur user): SOP internal, template notifikasi user, draf lapor otoritas, dan satu orang on-call yang mencatat timestamp “pertama kali diketahui”.
+- **Deteksi teknis saat ini:** log server / health check; tabel `privacy_incident_logs` untuk mencatat `first_known_at` (patokan hitung mundur 72 jam) secara manual. Pipeline deteksi otomatis belum ada.
+- **Kewajiban 3×24 jam (Pasal 46 UU PDP)** tetap berlaku. Yang wajib disiapkan segera (bukan fitur user): SOP internal, template notifikasi user, draf lapor otoritas, dan satu orang on-call yang mencatat timestamp “pertama kali diketahui” ke `privacy_incident_logs`.
 
 ---
 
@@ -82,7 +85,7 @@ Transfer ke pemroses luar negeri perlu dicek legal (UU PDP transfer lintas negar
 |---|---|
 | Isolasi data antar user di portal | Ada (sesi + filter `telegram_user_id`) |
 | Auth bot vs web | Ada, terpisah |
-| Consent user-facing | Teks kebijakan di portal; record Lapis 2 menyusul |
+| Consent user-facing | Teks kebijakan di portal + Lapis 2 record (`user_data_consents`) |
 | Akses internal berizin per kasus | Manual via WA, belum ACL otomatis |
 | Hosting app/DB | VPS Indonesia |
 | Subprocessor luar negeri | Claude, Telegram, Midtrans |

@@ -82,6 +82,31 @@
             Permintaan akses, koreksi, hapus data, atau tarik persetujuan: WhatsApp Admin YFD
             <strong>{{ $privacy['contact_wa'] ?? '+62 851-1122-8911' }}</strong>.
         </p>
+
+        @if(!empty($consentAccepted))
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                Persetujuan versi {{ $privacy['version'] ?? '' }} sudah tercatat
+                @if(!empty($consentLatest))
+                    ({{ $consentLatest->method }} · {{ optional($consentLatest->consented_at)->timezone(config('app.timezone'))->format('d M Y H:i') }})
+                @endif.
+            </div>
+        @else
+            <form method="post" action="{{ route('portal.account.consent') }}" class="space-y-3 border-t pt-4" id="consent-form">
+                @csrf
+                <p class="text-sm font-semibold text-navy-800">Persetujuan aktif (Lapis 2)</p>
+                <p class="text-xs text-slate-500">Centang semua poin, lalu lanjut. Ini jadi bukti consent yang terikat ke akunmu.</p>
+                @foreach(($privacy['checkboxes'] ?? []) as $box)
+                    <label class="flex items-start gap-3 text-sm text-slate-700 leading-relaxed">
+                        <input type="checkbox" name="checkbox_ids[]" value="{{ $box['id'] }}" required
+                               class="mt-1 rounded border-slate-300 text-navy-800 focus:ring-navy-500">
+                        <span>{{ $box['label'] }}</span>
+                    </label>
+                @endforeach
+                <button type="submit" class="w-full rounded-xl bg-navy-800 text-white font-bold py-3 hover:bg-navy-700 transition-colors">
+                    Saya Setuju &amp; Lanjutkan
+                </button>
+            </form>
+        @endif
     </div>
 
     <div id="panduan" class="rounded-2xl border bg-white p-6 space-y-4">

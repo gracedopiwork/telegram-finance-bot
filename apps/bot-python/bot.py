@@ -24,6 +24,25 @@ from claude_ai import analyze_with_claude as claude_parse_json
 from claude_ai import extract_transaction_text_from_image as claude_extract_image_text
 from laravel_api import log_laravel_api_config
 from license_activate import activate_license_via_api
+from consent_api import fetch_consent_status, submit_consent
+from bucket_explain import explain_bucket_choice
+from onboarding_api import fetch_onboarding_status
+from onboarding_flow import (
+    BUCKET_DETAILS,
+    FEATURE_BLURBS,
+    buckets_keyboard,
+    features_keyboard,
+    panduan_toc_keyboard,
+    persist_step,
+    resume_onboarding,
+    send_buckets_intro,
+    send_features,
+    send_financial_health,
+    send_home,
+    send_purpose,
+    send_welcome,
+    user_onboarding_done,
+)
 from nominal_parser import parse_nominal_from_text, reconcile_nominal, nominal_sanity_warning
 from ai_quota import (
     format_quota_exhausted_notice,
@@ -103,9 +122,19 @@ VALID_SIFAT = {"Need", "Wants"}
 VALID_MOOD = {"Happy", "Neutral", "Sad", "Stressed", "Angry", "Tired"}
 VALID_IMPULSIF = {"Yes", "No"}
 PENDING_NAME_USERS: set[int] = set()
+PENDING_CONSENT: Dict[int, Dict[str, Any]] = {}
+CONSENT_OK_CACHE: set[int] = set()
+ACTIVATE_FAIL_COUNTS: Dict[int, int] = {}
 PENDING_MOOD_WAIT: Dict[int, Dict[str, Any]] = {}
 PENDING_CONFIRMATIONS: Dict[int, Dict[str, Any]] = {}
 PENDING_CLARIFICATIONS: Dict[int, Dict[str, Any]] = {}
+
+CONSENT_GATE_TEXT = (
+    "Sebelum pakai fitur, kamu perlu menyetujui *Privasi Data & Persetujuan* "
+    "(centang semua poin, lalu ketuk *Saya Setuju & Lanjutkan*)."
+)
+SUPPORT_WA = "+62 851-1122-8911"
+SUPPORT_WA_URL = "https://wa.me/6285111228911"
 
 MOOD_PROMPT_TEXT = (
     "Pilih mood kamu saat transaksi ini:\n"
@@ -299,6 +328,121 @@ def build_mood_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(buttons)
 
 
+def user_has_consent(user_id: int) -> bool:
+    if user_id in CONSENT_OK_CACHE:
+        return True
+    ok, data = fetch_consent_status(user_id)
+    if not ok:
+        return False
+    if data.get("accepted"):
+        CONSENT_OK_CACHE.add(user_id)
+        return True
+    return False
+
+
+def build_consent_keyboard(state: Dict[str, Any]) -> InlineKeyboardMarkup:
+    checkboxes = state.get("checkboxes") or []
+    checked = state.get("checked") or set()
+    rows: list[list[InlineKeyboardButton]] = []
+    for index, item in enumerate(checkboxes, start=1):
+        cid = str(item.get("id") or "")
+        if not cid:
+            continue
+        mark = "✅" if cid in checked else "☐"
+        rows.append(
+            [InlineKeyboardButton(f"{mark} Poin {index}", callback_data=f"consent:toggle:{cid}")]
+        )
+    all_done = len(checkboxes) > 0 and len(checked) >= len(checkboxes)
+    submit_label = "✅ Saya Setuju & Lanjutkan" if all_done else "⏳ Centang semua poin dulu"
+    rows.append([InlineKeyboardButton(submit_label, callback_data="consent:submit")])
+    return InlineKeyboardMarkup(rows)
+
+
+def format_consent_body(data: Dict[str, Any]) -> list[str]:
+    """Pecah teks kebijakan supaya muat batas Telegram."""
+    title = str(data.get("title") or "Privasi Data & Persetujuan Penggunaan YFD First Aid")
+    intro = str(data.get("intro") or "")
+    version = str(data.get("consent_text_version") or data.get("consent_version") or "")
+    chunks: list[str] = [
+        f"*{title}*\nVersi {version}\n\n{intro}".strip()
+    ]
+    for section in data.get("sections") or []:
+        heading = str(section.get("heading") or "").strip()
+        body = str(section.get("body") or "").strip()
+        if not heading and not body:
+            continue
+        chunks.append(f"*{heading}*\n{body}")
+    lines = ["*Centang semua poin di bawah ini:*"]
+    for index, item in enumerate(data.get("checkboxes") or [], start=1):
+        label = str(item.get("label") or "").strip()
+        if label:
+            lines.append(f"{index}. {label}")
+    contact = str(data.get("contact_wa") or "+62 851-1122-8911")
+    lines.append(f"\nKontak hak subjek data: WhatsApp Admin YFD {contact}")
+    chunks.append("\n".join(lines))
+    return chunks
+
+
+async def begin_consent_flow(message, user_id: int) -> None:
+    ok, data = fetch_consent_status(user_id)
+    if not ok:
+        await message.reply_text(
+            "Belum bisa memuat formulir persetujuan privasi.\n"
+            f"{data.get('message') or 'Coba lagi sebentar.'}"
+        )
+        return
+    if data.get("accepted"):
+        CONSENT_OK_CACHE.add(user_id)
+        PENDING_CONSENT.pop(user_id, None)
+        return
+
+    checkboxes = list(data.get("checkboxes") or [])
+    PENDING_CONSENT[user_id] = {
+        "checked": set(),
+        "checkboxes": checkboxes,
+        "version": data.get("consent_version"),
+    }
+    for chunk in format_consent_body(data):
+        await message.reply_text(chunk, parse_mode="Markdown")
+    await message.reply_text(
+        CONSENT_GATE_TEXT,
+        parse_mode="Markdown",
+        reply_markup=build_consent_keyboard(PENDING_CONSENT[user_id]),
+    )
+
+
+async def ensure_consent_or_prompt(message, user_id: int) -> bool:
+    """True jika consent versi saat ini sudah ada; False jika user masih harus menyetujui."""
+    if user_id in PENDING_CONSENT:
+        await message.reply_text(
+            CONSENT_GATE_TEXT,
+            parse_mode="Markdown",
+            reply_markup=build_consent_keyboard(PENDING_CONSENT[user_id]),
+        )
+        return False
+    if user_has_consent(user_id):
+        return True
+    await begin_consent_flow(message, user_id)
+    return False
+
+
+async def ensure_onboarding_or_prompt(message, user_id: int) -> bool:
+    """True jika Welcome/Kenalan sudah selesai; False jika masih di tengah onboarding."""
+    if user_onboarding_done(user_id):
+        return True
+    name = get_user_display_name(user_id) or "Kamu"
+    await resume_onboarding(message, name, user_id)
+    return False
+
+
+async def ensure_ready_or_prompt(message, user_id: int) -> bool:
+    if not await ensure_consent_or_prompt(message, user_id):
+        return False
+    if not await ensure_onboarding_or_prompt(message, user_id):
+        return False
+    return True
+
+
 async def prompt_mood_selection(message, user_id: int, *, intro: str) -> None:
     await message.reply_text(intro + "\n\n" + MOOD_PROMPT_TEXT, reply_markup=build_mood_keyboard())
 
@@ -344,7 +488,10 @@ def build_confirmation_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton("✅ Benar, simpan", callback_data="confirm:yes"),
             InlineKeyboardButton("✏️ Salah, ulangi", callback_data="confirm:no"),
-        ]
+        ],
+        [
+            InlineKeyboardButton("❓ Kenapa masuk bucket ini?", callback_data="why:bucket"),
+        ],
     ]
     return InlineKeyboardMarkup(buttons)
 
@@ -1007,6 +1154,9 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.message.reply_text("Lisensi aktif. Kamu mau dipanggil siapa?")
         return
 
+    if not await ensure_ready_or_prompt(update.message, user_id):
+        return
+
     await update.message.reply_text(
         f"Halo {preferred_name}, perintah yang tersedia:\n"
         "/catat - catat transaksi baru\n"
@@ -1017,6 +1167,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "/utang - daftar utang aktif (tracker)\n"
         "/kuota - sisa kuota AI parsing bulan ini\n"
         "/web - link masuk dashboard (otomatis)\n"
+        "/panduan - panduan First Aid (ringkas + link web)\n"
         "/uji - tes kasus ambigu taksonomi (sekali jalan)\n"
         "/uji2 - tes cakupan data baru (semua jenis/kategori)\n"
         "/uji3 - tes piutang & utang (4 arah likuiditas sosial)\n\n"
@@ -1037,6 +1188,9 @@ async def catat_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     user_id = user.id if user else 0
     if not user_id or not is_license_active_for_user(user_id):
         await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    if not await ensure_ready_or_prompt(update.message, user_id):
         return
 
     text = " ".join(context.args).strip() if context.args else ""
@@ -1069,9 +1223,15 @@ async def activate_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         key, user_id, user.username if user else None
     )
     if not ok:
+        ACTIVATE_FAIL_COUNTS[user_id] = ACTIVATE_FAIL_COUNTS.get(user_id, 0) + 1
+        fails = ACTIVATE_FAIL_COUNTS[user_id]
         mapping = {
             "bot_not_purchased": "Lisensi ini belum termasuk paket YFD First Aid. Beli YFD First Aid di Telegram dulu untuk aktivasi.",
-            "license_not_found": "Kode lisensi tidak ditemukan.",
+            "license_not_found": (
+                "Kode lisensi ini belum kami kenali.\n"
+                "Coba cek kembali kode di email atau halaman pembayaran kamu, lalu kirim ulang dengan format:\n"
+                "`/activate KODE-LISENSI-ANDA`"
+            ),
             "license_not_active": "Lisensi tidak aktif (mungkin suspended).",
             "license_expired": "Lisensi sudah expired.",
             "license_used_by_other_user": "Lisensi sudah terpakai oleh akun Telegram lain.",
@@ -1079,9 +1239,20 @@ async def activate_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             "network_error": "Aktivasi gagal (koneksi server). Coba lagi atau hubungi admin YFD.",
         }
         code = str(payload.get("error", ""))
-        await update.message.reply_text(mapping.get(code, payload.get("message", "Aktivasi gagal.")))
+        msg = mapping.get(code, payload.get("message", "Aktivasi gagal."))
+        if fails >= 3:
+            await update.message.reply_text(
+                "Sepertinya kode ini masih belum berhasil. Supaya kamu nggak stuck, "
+                "tim kami siap bantu langsung.\n\n"
+                f"Hubungi support di WhatsApp Admin YFD {SUPPORT_WA} "
+                f"({SUPPORT_WA_URL}) dan sertakan email pembelian kamu ya.",
+                parse_mode="Markdown",
+            )
+            return
+        await update.message.reply_text(msg, parse_mode="Markdown")
         return
 
+    ACTIVATE_FAIL_COUNTS.pop(user_id, None)
     activated_key = str(payload.get("license_key", key)).strip().upper()
     if user:
         PENDING_NAME_USERS.add(user.id)
@@ -1092,11 +1263,13 @@ async def activate_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         else ""
     )
     await update.message.reply_text(
-        f"Lisensi aktif. Kode: `{activated_key}`\nSekarang kamu mau dipanggil siapa?\n\n"
-        "Setelah ini:\n"
-        "1) Ketik `/web` untuk masuk dashboard\n"
-        "2) **Wajib** isi *Baseline Data (Diagnostik)* di menu portal\n"
-        "3) Baru `/catat` transaksi harian"
+        f"Lisensi kamu sudah aktif! Kode: `{activated_key}`\n\n"
+        "Sebelum kita mulai, aku mau kenalan dulu. Aku boleh panggil kamu siapa?\n\n"
+        "Setelah nama & persetujuan privasi:\n"
+        "1) Welcome & pilihan kenalan sistem\n"
+        "2) `/web` untuk dashboard\n"
+        "3) Isi *Baseline Data* di portal\n"
+        "4) Baru `/catat` transaksi harian"
         f"{extra}",
         parse_mode="Markdown",
     )
@@ -1124,6 +1297,9 @@ async def hariini_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     user_id = user.id if user else 0
     if not user_id or not is_license_active_for_user(user_id):
         await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    if not await ensure_ready_or_prompt(update.message, user_id):
         return
 
     try:
@@ -1180,6 +1356,9 @@ async def _social_list_handler(update: Update, kind: str) -> None:
         await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
         return
 
+    if not await ensure_ready_or_prompt(update.message, user_id):
+        return
+
     ok, payload, err = fetch_social_liquidity(user_id, kind=kind)
     if not ok:
         await update.message.reply_text(
@@ -1217,8 +1396,9 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         PENDING_NAME_USERS.discard(user_id)
         await update.message.reply_text(
             f"Siap, aku panggil kamu {text[:80]}.\n"
-            "Sekarang kamu bisa kirim teks atau foto struk untuk catat transaksi."
+            "Berikutnya: baca & setujui kebijakan privasi dulu ya."
         )
+        await begin_consent_flow(update.message, user_id)
         return
 
     if not is_license_active_for_user(user_id):
@@ -1229,6 +1409,14 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 "`/activate KODE-LISENSI-ANDA`",
                 parse_mode="Markdown",
             )
+        return
+
+    if user_id in PENDING_CONSENT or not user_has_consent(user_id):
+        await ensure_consent_or_prompt(update.message, user_id)
+        return
+
+    if not user_onboarding_done(user_id):
+        await ensure_onboarding_or_prompt(update.message, user_id)
         return
 
     if user_id in PENDING_CLARIFICATIONS:
@@ -1400,6 +1588,228 @@ async def confirm_callback_handler(update: Update, context: ContextTypes.DEFAULT
         return
 
 
+async def consent_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    if not query or not query.data:
+        return
+
+    user = query.from_user
+    user_id = user.id if user else 0
+    if not user_id:
+        await query.answer()
+        return
+
+    state = PENDING_CONSENT.get(user_id)
+    if not state:
+        await query.answer()
+        try:
+            await query.edit_message_text(
+                "Formulir persetujuan sudah tidak aktif. Ketik /start untuk memuat ulang."
+            )
+        except Exception:
+            pass
+        return
+
+    data = query.data
+    if data.startswith("consent:toggle:"):
+        await query.answer()
+        cid = data.split(":", 2)[2]
+        checked = state.setdefault("checked", set())
+        if cid in checked:
+            checked.discard(cid)
+        else:
+            checked.add(cid)
+        try:
+            await query.edit_message_reply_markup(reply_markup=build_consent_keyboard(state))
+        except Exception:
+            pass
+        return
+
+    if data != "consent:submit":
+        await query.answer()
+        return
+
+    checkboxes = state.get("checkboxes") or []
+    checked = state.get("checked") or set()
+    required_ids = [str(item.get("id")) for item in checkboxes if item.get("id")]
+    if len(checked) < len(required_ids) or any(cid not in checked for cid in required_ids):
+        await query.answer("Centang semua poin dulu ya.", show_alert=True)
+        return
+
+    await query.answer()
+    ok, payload = submit_consent(user_id, required_ids, method="bot")
+    if not ok:
+        await query.message.reply_text(
+            "Gagal menyimpan persetujuan.\n"
+            f"{payload.get('message') or 'Coba lagi sebentar.'}"
+        )
+        return
+
+    PENDING_CONSENT.pop(user_id, None)
+    CONSENT_OK_CACHE.add(user_id)
+    try:
+        await query.edit_message_text(
+            "Persetujuan tersimpan. Terima kasih — lanjut ke pengenalan singkat ya."
+        )
+    except Exception:
+        await query.message.reply_text(
+            "Persetujuan tersimpan. Terima kasih — lanjut ke pengenalan singkat ya."
+        )
+    preferred_name = get_user_display_name(user_id) or "Kamu"
+    await send_welcome(query.message, preferred_name, user_id)
+
+
+async def why_bucket_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    if not query or not query.data:
+        return
+    await query.answer()
+    user = query.from_user
+    user_id = user.id if user else 0
+    if not user_id:
+        return
+    pending = PENDING_CONFIRMATIONS.get(user_id)
+    if not pending:
+        await query.message.reply_text(
+            "Tidak ada transaksi yang sedang dipreview. Catat transaksi dulu, lalu tekan tombolnya di layar konfirmasi."
+        )
+        return
+    parsed = pending.get("parsed") or {}
+    await query.message.reply_text(
+        explain_bucket_choice(parsed),
+        parse_mode="Markdown",
+    )
+
+
+async def onboarding_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    if not query or not query.data:
+        return
+    await query.answer()
+    user = query.from_user
+    user_id = user.id if user else 0
+    if not user_id:
+        return
+    name = get_user_display_name(user_id) or "Kamu"
+    data = query.data
+    msg = query.message
+
+    if data == "onb:kenalan":
+        await send_financial_health(msg, user_id)
+        return
+    if data == "onb:langsung":
+        await send_home(msg, name, user_id)
+        return
+    if data == "onb:buckets":
+        await send_buckets_intro(msg, user_id)
+        return
+    if data.startswith("onb:bucket:"):
+        key = data.split(":", 2)[2]
+        text = BUCKET_DETAILS.get(key)
+        if text:
+            await msg.reply_text(text, parse_mode="Markdown", reply_markup=buckets_keyboard())
+        return
+    if data == "onb:purpose":
+        await send_purpose(msg, user_id)
+        return
+    if data == "onb:features":
+        await send_features(msg, user_id)
+        return
+    if data.startswith("onb:feature:"):
+        key = data.split(":", 2)[2]
+        blurb = FEATURE_BLURBS.get(key)
+        if blurb:
+            await msg.reply_text(blurb, reply_markup=features_keyboard())
+        return
+    if data == "onb:home":
+        await send_home(msg, name, user_id)
+        return
+    if data.startswith("onb:go:"):
+        persist_step(user_id, "done")
+        action = data.split(":", 2)[2]
+        if action == "catat":
+            await msg.reply_text(
+                "Siap. Kirim teks transaksi (contoh: `makan malam 50rb`) atau foto struk.",
+                parse_mode="Markdown",
+            )
+            return
+        if action == "check":
+            await msg.reply_text(
+                "Untuk Financial Health Check / baseline, ketik /web lalu buka menu Diagnostik di portal."
+            )
+            return
+        if action == "dashboard":
+            await msg.reply_text("Ketik /web untuk buka dashboard (login otomatis).")
+            return
+        if action == "panduan":
+            await send_panduan_menu(msg, user_id)
+            return
+
+
+async def send_panduan_menu(message, user_id: int) -> None:
+    ok, data = fetch_onboarding_status(user_id)
+    guide_url = str((data or {}).get("guide_url") or "").rstrip("/")
+    topics = list((data or {}).get("topics") or []) if ok else []
+    summaries = dict((data or {}).get("bot_summaries") or {}) if ok else {}
+    if not guide_url:
+        app_url = (os.getenv("LARAVEL_APP_URL") or os.getenv("APP_URL") or "").strip().rstrip("/")
+        guide_url = f"{app_url}/panduan" if app_url else ""
+
+    lines = ["*Panduan First Aid* (ringkas)\nPilih topik, atau buka versi lengkap di web:"]
+    if summaries and topics:
+        for topic in topics[:6]:
+            tid = str(topic.get("id") or "")
+            title = str(topic.get("title") or tid)
+            summary = summaries.get(tid, "")
+            if summary:
+                lines.append(f"• {title}: {summary}")
+    await message.reply_text(
+        "\n".join(lines),
+        parse_mode="Markdown",
+        reply_markup=panduan_toc_keyboard(guide_url, topics),
+    )
+
+
+async def panduan_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    if not query or not query.data:
+        return
+    await query.answer()
+    user = query.from_user
+    user_id = user.id if user else 0
+    if not user_id or not query.data.startswith("panduan:topic:"):
+        return
+    tid = query.data.split(":", 2)[2]
+    ok, data = fetch_onboarding_status(user_id)
+    if not ok:
+        await query.message.reply_text("Gagal memuat panduan. Coba /panduan lagi.")
+        return
+    summaries = dict(data.get("bot_summaries") or {})
+    topics = {str(t.get("id")): t for t in (data.get("topics") or [])}
+    guide_url = str(data.get("guide_url") or "").rstrip("/")
+    topic = topics.get(tid) or {}
+    title = str(topic.get("title") or tid)
+    summary = summaries.get(tid) or str(topic.get("body") or "")[:280]
+    link = f"{guide_url}#{tid}" if guide_url else ""
+    text = f"*{title}*\n{summary}"
+    if link:
+        text += f"\n\nBaca lengkap: {link}"
+    await query.message.reply_text(text, parse_mode="Markdown")
+
+
+async def panduan_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
+    user = update.effective_user
+    user_id = user.id if user else 0
+    if not user_id or not is_license_active_for_user(user_id):
+        await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+    if not await ensure_consent_or_prompt(update.message, user_id):
+        return
+    await send_panduan_menu(update.message, user_id)
+
+
 async def uji_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message:
         return
@@ -1552,6 +1962,9 @@ async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
         return
 
+    if not await ensure_ready_or_prompt(update.message, user_id):
+        return
+
     largest_photo = update.message.photo[-1]
     await process_struk_image_message(
         update.message,
@@ -1578,6 +1991,9 @@ async def document_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
     if not is_license_active_for_user(user_id):
         await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    if not await ensure_ready_or_prompt(update.message, user_id):
         return
 
     await process_struk_image_message(
@@ -1620,11 +2036,16 @@ def main() -> None:
     app.add_handler(CommandHandler("utang", utang_handler))
     app.add_handler(CommandHandler("kuota", kuota_handler))
     app.add_handler(CommandHandler("web", web_handler))
+    app.add_handler(CommandHandler("panduan", panduan_handler))
     app.add_handler(CommandHandler("uji", uji_handler))
     app.add_handler(CommandHandler("uji2", uji2_handler))
     app.add_handler(CommandHandler("uji3", uji3_handler))
     app.add_handler(CallbackQueryHandler(mood_callback_handler, pattern=r"^mood:"))
     app.add_handler(CallbackQueryHandler(confirm_callback_handler, pattern=r"^confirm:"))
+    app.add_handler(CallbackQueryHandler(consent_callback_handler, pattern=r"^consent:"))
+    app.add_handler(CallbackQueryHandler(why_bucket_callback_handler, pattern=r"^why:"))
+    app.add_handler(CallbackQueryHandler(onboarding_callback_handler, pattern=r"^onb:"))
+    app.add_handler(CallbackQueryHandler(panduan_callback_handler, pattern=r"^panduan:"))
     app.add_handler(MessageHandler(filters.PHOTO, photo_handler))
     app.add_handler(MessageHandler(filters.Document.ALL, document_handler))
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, voice_handler))

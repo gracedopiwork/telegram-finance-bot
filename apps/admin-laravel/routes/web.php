@@ -59,6 +59,7 @@ Route::post('/pertemuan/book', [LandingController::class, 'bookPertemuan'])->nam
 Route::get('/pertemuan/slots', [LandingController::class, 'pertemuanSlots'])->name('company.pertemuan.slots');
 Route::get('/informasi',     [LandingController::class, 'informasi'])->name('company.informasi');
 Route::get('/kebijakan-privasi', [LandingController::class, 'privacy'])->name('company.privacy');
+Route::get('/panduan', [LandingController::class, 'guide'])->name('company.guide');
 
 // Alias backward-compat untuk nama route lama 'landing'
 Route::get('/landing',       [LandingController::class, 'home'])->name('landing');
@@ -215,6 +216,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::post('/logout', [PortalAuthController::class, 'logout'])->name('logout');
         Route::get('/akun', [PortalAccountController::class, 'show'])->name('account');
         Route::post('/akun/password', [PortalAccountController::class, 'updatePassword'])->name('account.password');
+        Route::post('/akun/consent', [PortalAccountController::class, 'storeConsent'])->name('account.consent');
         Route::post('/pengaturan/zona-waktu', [PortalTimezoneController::class, 'updateManual'])->name('timezone.manual');
         Route::post('/pengaturan/zona-waktu/auto', [PortalTimezoneController::class, 'updateAuto'])->name('timezone.auto');
         Route::get('/baseline', [PortalBaselineController::class, 'index'])->name('baseline');

@@ -49,4 +49,36 @@ return [
         ],
     ],
     'purchase_summary' => 'Data transaksi dan Financial Health kamu bersifat pribadi, tidak bisa dilihat pengguna lain, dan hanya diakses tim internal jika benar-benar diperlukan untuk layanan kamu dan dengan persetujuanmu.',
+
+    /**
+     * Checkbox Lapis 2 (Bagian 16) — semua wajib dicentang sebelum lanjut.
+     *
+     * @var list<array{id: string, label: string}>
+     */
+    'checkboxes' => [
+        [
+            'id' => 'read_understand',
+            'label' => 'Saya telah membaca dan memahami informasi mengenai penggunaan dan akses data dalam YFD First Aid.',
+        ],
+        [
+            'id' => 'use_for_features',
+            'label' => 'Saya memahami bahwa data yang saya masukkan dapat digunakan untuk menjalankan fitur, dashboard, analisis, dan layanan terkait yang saya gunakan.',
+        ],
+        [
+            'id' => 'not_for_other_users',
+            'label' => 'Saya memahami bahwa data saya tidak ditujukan untuk dapat diakses oleh pengguna lain.',
+        ],
+        [
+            'id' => 'internal_access_with_consent',
+            'label' => 'Saya memahami dan menyetujui bahwa, apabila diperlukan untuk memberikan atau mendukung layanan yang saya gunakan, pihak internal YFD dapat meminta akses terhadap data saya, hanya setelah persetujuan saya dan sejauh diperlukan.',
+        ],
+        [
+            'id' => 'rights_and_no_refund',
+            'label' => 'Saya memahami hak saya untuk mengakses, mengoreksi, menghapus data, dan menarik persetujuan kapan pun — serta memahami bahwa penarikan persetujuan tidak mengembalikan biaya yang sudah saya bayarkan.',
+        ],
+        [
+            'id' => 'agree_processing',
+            'label' => 'Saya menyetujui pemrosesan data saya untuk penggunaan YFD First Aid sesuai informasi yang telah dijelaskan.',
+        ],
+    ],
 ];
