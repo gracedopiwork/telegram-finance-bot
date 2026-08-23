@@ -58,10 +58,28 @@ class AffiliateService
 
     public function taxPercent(?string $npwp): float
     {
-        $hasNpwp = filled(trim((string) $npwp));
-        $key = $hasNpwp ? 'affiliate.tax_with_npwp_percent' : 'affiliate.tax_without_npwp_percent';
+        // Legacy: NPWP tidak lagi memengaruhi tarif. Default ke tarif individu.
+        return $this->taxPercentForPayeeType(Affiliate::PAYEE_INDIVIDUAL);
+    }
 
-        return max(0, (float) Setting::val($key, '0'));
+    public function taxPercentForPayeeType(?string $payeeType): float
+    {
+        $type = $this->normalizePayeeType($payeeType);
+        $key = $type === Affiliate::PAYEE_CORPORATE
+            ? 'affiliate.tax_corporate_percent'
+            : 'affiliate.tax_individual_percent';
+        $default = $type === Affiliate::PAYEE_CORPORATE ? '2' : '2.5';
+
+        return max(0, (float) Setting::val($key, $default));
+    }
+
+    public function normalizePayeeType(?string $payeeType): string
+    {
+        $type = strtolower(trim((string) $payeeType));
+
+        return $type === Affiliate::PAYEE_CORPORATE
+            ? Affiliate::PAYEE_CORPORATE
+            : Affiliate::PAYEE_INDIVIDUAL;
     }
 
     public function findActiveByCode(?string $code): ?Affiliate
@@ -295,6 +313,7 @@ class AffiliateService
         ?string $bankName = null,
         ?string $bankAccountNumber = null,
         ?string $bankAccountName = null,
+        ?string $payeeType = null,
     ): AffiliateClaim
     {
         $available = $affiliate->commissions()->where('status', 'available')->get();
@@ -317,6 +336,7 @@ class AffiliateService
         $bankName = trim((string) ($bankName ?: $affiliate->bank_name));
         $bankAccountNumber = preg_replace('/\s+/', '', trim((string) ($bankAccountNumber ?: $affiliate->bank_account_number))) ?? '';
         $bankAccountName = trim((string) ($bankAccountName ?: $affiliate->bank_account_name));
+        $payeeType = $this->normalizePayeeType($payeeType ?: $affiliate->payee_type);
 
         if ($bankName === '' || $bankAccountNumber === '' || $bankAccountName === '') {
             throw ValidationException::withMessages([
@@ -325,12 +345,13 @@ class AffiliateService
         }
 
         $affiliate->npwp = $npwp !== '' ? $npwp : $affiliate->npwp;
+        $affiliate->payee_type = $payeeType;
         $affiliate->bank_name = $bankName;
         $affiliate->bank_account_number = $bankAccountNumber;
         $affiliate->bank_account_name = $bankAccountName;
         $affiliate->save();
 
-        $taxPercent = $this->taxPercent($npwp);
+        $taxPercent = $this->taxPercentForPayeeType($payeeType);
         $taxAmount = (int) round($gross * ($taxPercent / 100));
         $net = max(0, $gross - $taxAmount);
 
@@ -342,6 +363,7 @@ class AffiliateService
             $taxAmount,
             $net,
             $npwp,
+            $payeeType,
             $bankName,
             $bankAccountNumber,
             $bankAccountName,
@@ -353,6 +375,7 @@ class AffiliateService
                 'tax_amount' => $taxAmount,
                 'net_amount' => $net,
                 'npwp_snapshot' => $npwp !== '' ? $npwp : null,
+                'payee_type' => $payeeType,
                 'bank_name' => $bankName,
                 'bank_account_number' => $bankAccountNumber,
                 'bank_account_name' => $bankAccountName,

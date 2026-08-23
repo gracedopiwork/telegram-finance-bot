@@ -253,19 +253,26 @@
                 </div>
                 @if(\Illuminate\Support\Facades\Schema::hasColumn('financial_baselines', 'job_type'))
                 <fieldset>
-                    <legend class="text-sm font-semibold text-navy-800 mb-1">Pekerjaan kamu saat ini seperti apa?</legend>
-                    <p class="text-xs text-slate-500 mb-3">Dasar perhitungan pajak First Aid (taxonomy 5B.7). Bisa diganti nanti.</p>
+                    <legend class="text-sm font-semibold text-navy-800 mb-1">Pekerjaan kamu saat ini seperti apa? <span class="text-red-500">*</span></legend>
+                    <p class="text-xs text-slate-500 mb-3">Wajib diisi — dasar logika perhitungan pajak di Dashboard (taxonomy 5B.7). Bisa diganti nanti.</p>
                     <div class="space-y-2">
                         @foreach(\App\Models\FinancialBaseline::jobTypeOptions() as $value => $label)
                             <label class="flex items-start gap-2 text-sm rounded-xl border border-slate-200 px-3 py-2.5 cursor-pointer hover:bg-slate-50">
-                                <input type="radio" name="snapshot[job_type]" value="{{ $value }}"
+                                <input type="radio" name="snapshot[job_type]" value="{{ $value }}" required
                                        class="mt-1 border-slate-300 text-navy-600"
                                        @checked(old('snapshot.job_type', $existingBaseline?->job_type) === $value)>
                                 <span>{{ $label }}</span>
                             </label>
                         @endforeach
                     </div>
+                    @error('snapshot.job_type')
+                        <p class="text-xs text-red-600 mt-2">{{ $message }}</p>
+                    @enderror
                 </fieldset>
+                @else
+                <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    Field pekerjaan belum tersedia di database. Admin: jalankan <code class="text-xs">php artisan migrate --force</code>.
+                </div>
                 @endif
                 <div class="grid sm:grid-cols-2 gap-4">
                     @foreach($snapshotFields as $field => $label)

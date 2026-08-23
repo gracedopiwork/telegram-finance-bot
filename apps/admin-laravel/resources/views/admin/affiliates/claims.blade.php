@@ -31,6 +31,7 @@
                     <th>Pajak</th>
                     <th>Net</th>
                     <th>NPWP</th>
+                    <th>Jenis</th>
                     <th>Status</th>
                     <th>Aksi</th>
                 </tr>
@@ -58,6 +59,9 @@
                         <td>Rp {{ number_format($claim->tax_amount, 0, ',', '.') }} ({{ $claim->tax_percent }}%)</td>
                         <td><strong>Rp {{ number_format($claim->net_amount, 0, ',', '.') }}</strong></td>
                         <td>{{ $claim->npwp_snapshot ?: '—' }}</td>
+                        <td class="small">
+                            {{ ($claim->payee_type ?? '') === 'corporate' ? 'Entitas 2%' : 'Individu 2.5%' }}
+                        </td>
                         <td><span class="badge badge-{{ $badge }}">{{ $label }}</span></td>
                         <td style="min-width:220px">
                             @if($claim->status === 'pending')
@@ -86,7 +90,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="9" class="text-center text-muted py-4">Tidak ada klaim.</td></tr>
+                    <tr><td colspan="10" class="text-center text-muted py-4">Tidak ada klaim.</td></tr>
                 @endforelse
             </tbody>
         </table>

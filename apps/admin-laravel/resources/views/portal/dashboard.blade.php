@@ -70,6 +70,7 @@
             @if($doctorsGeneratedAt)
                 <p class="text-xs text-slate-500">Terakhir dibuat: {{ $doctorsGeneratedAt->format('d/m/Y H:i') }}</p>
             @endif
+            @include('portal.partials.ai-guidance-disclaimer')
         @else
             <p class="text-sm text-slate-600">
                 Belum ada Doctor's Note untuk periode ini.
@@ -77,6 +78,7 @@
                 dari Budget Prescription yang sama dengan clinical summary.
                 Clinical summary minggu ke-{{ $clinicalWeek }} sudah memakai data aktual.
             </p>
+            @include('portal.partials.ai-guidance-disclaimer')
         @endif
     </div>
 

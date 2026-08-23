@@ -107,14 +107,30 @@
                 <div class="text-sm font-bold text-navy-800">Ajukan klaim pencairan</div>
                 <p class="text-xs text-slate-500 mt-1">
                     Minimal Rp {{ number_format($minClaim, 0, ',', '.') }}.
-                    Pajak: {{ rtrim(rtrim(number_format($taxWithNpwp, 2, '.', ''), '0'), '.') }}% (ada NPWP) /
-                    {{ rtrim(rtrim(number_format($taxWithoutNpwp, 2, '.', ''), '0'), '.') }}% (tanpa NPWP).
+                    Individu (NIK): {{ rtrim(rtrim(number_format($taxIndividual ?? 2.5, 2, '.', ''), '0'), '.') }}% ·
+                    Entitas/Badan Usaha: {{ rtrim(rtrim(number_format($taxCorporate ?? 2, 2, '.', ''), '0'), '.') }}%.
                     Wajib isi rekening tujuan transfer. Admin proses manual setelah disetujui.
                 </p>
             </div>
         </div>
         <form method="POST" action="{{ route('portal.affiliate.claim') }}" class="space-y-4">
             @csrf
+            <fieldset>
+                <legend class="block text-xs font-semibold text-slate-600 mb-2">Jenis penerima <span class="text-red-500">*</span></legend>
+                <div class="flex flex-wrap gap-4">
+                    @php $currentPayee = old('payee_type', $affiliate->payee_type ?? 'individual'); @endphp
+                    <label class="inline-flex items-center gap-2 text-sm">
+                        <input type="radio" name="payee_type" value="individual" class="border-slate-300 text-navy-600"
+                               @checked($currentPayee === 'individual') required>
+                        Individu (NIK) — pajak {{ rtrim(rtrim(number_format($taxIndividual ?? 2.5, 2, '.', ''), '0'), '.') }}%
+                    </label>
+                    <label class="inline-flex items-center gap-2 text-sm">
+                        <input type="radio" name="payee_type" value="corporate" class="border-slate-300 text-navy-600"
+                               @checked($currentPayee === 'corporate')>
+                        Entitas/Badan Usaha — pajak {{ rtrim(rtrim(number_format($taxCorporate ?? 2, 2, '.', ''), '0'), '.') }}%
+                    </label>
+                </div>
+            </fieldset>
             <div class="grid sm:grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Nama bank <span class="text-red-500">*</span></label>
@@ -134,7 +150,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">NPWP (opsional)</label>
                     <input type="text" name="npwp" value="{{ old('npwp', $affiliate->npwp) }}" maxlength="32"
-                           class="w-full rounded-xl border-slate-200 text-sm" placeholder="Opsional — memengaruhi % pajak klaim">
+                           class="w-full rounded-xl border-slate-200 text-sm" placeholder="Opsional — untuk arsip admin">
                 </div>
             </div>
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

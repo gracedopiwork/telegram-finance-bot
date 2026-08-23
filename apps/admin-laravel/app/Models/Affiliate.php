@@ -8,12 +8,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Affiliate extends Model
 {
+    public const PAYEE_INDIVIDUAL = 'individual';
+
+    public const PAYEE_CORPORATE = 'corporate';
+
     protected $fillable = [
         'license_id',
         'email',
         'name',
         'referral_code',
         'npwp',
+        'payee_type',
         'bank_name',
         'bank_account_number',
         'bank_account_name',

@@ -15,6 +15,7 @@ class AffiliateClaim extends Model
         'tax_amount',
         'net_amount',
         'npwp_snapshot',
+        'payee_type',
         'bank_name',
         'bank_account_number',
         'bank_account_name',

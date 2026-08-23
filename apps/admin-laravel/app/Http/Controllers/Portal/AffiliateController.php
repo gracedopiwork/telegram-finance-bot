@@ -69,8 +69,8 @@ class AffiliateController extends Controller
             'commissionAmount' => $affiliates->commissionAmount(),
             'discountAmount' => $affiliates->discountAmount(),
             'minClaim' => $affiliates->minClaimAmount(),
-            'taxWithNpwp' => $affiliates->taxPercent('123'),
-            'taxWithoutNpwp' => $affiliates->taxPercent(null),
+            'taxIndividual' => $affiliates->taxPercentForPayeeType(\App\Models\Affiliate::PAYEE_INDIVIDUAL),
+            'taxCorporate' => $affiliates->taxPercentForPayeeType(\App\Models\Affiliate::PAYEE_CORPORATE),
         ]);
     }
 
@@ -82,6 +82,7 @@ class AffiliateController extends Controller
         }
 
         $data = $request->validate([
+            'payee_type' => ['required', 'string', 'in:individual,corporate'],
             'npwp' => ['nullable', 'string', 'max:32'],
             'bank_name' => ['required', 'string', 'max:80'],
             'bank_account_number' => ['required', 'string', 'max:64'],
@@ -100,6 +101,7 @@ class AffiliateController extends Controller
             $data['bank_name'],
             $data['bank_account_number'],
             $data['bank_account_name'],
+            $data['payee_type'],
         );
 
         return redirect()->route('portal.affiliate')

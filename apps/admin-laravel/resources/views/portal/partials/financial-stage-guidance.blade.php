@@ -50,6 +50,7 @@
                     <li class="flex gap-2"><span>✔</span><span>{{ $note }}</span></li>
                 @endforeach
             </ul>
+            @include('portal.partials.ai-guidance-disclaimer', ['extraClass' => 'mt-3 border-t border-emerald-100 pt-3 text-emerald-800/80'])
         </div>
     @endif
 

@@ -105,6 +105,7 @@
                     Unlock FTSA Premium untuk mendapatkan Doctor's Note behavioral yang dipersonalisasi dari profil FTSA Anda.
                 </p>
             @endif
+            @include('portal.partials.ai-guidance-disclaimer')
         </div>
 
         <div class="bg-white rounded-xl border border-slate-200 p-5">
@@ -160,6 +161,7 @@
         @else
             <p class="text-sm text-slate-500">–</p>
         @endif
+        @include('portal.partials.ai-guidance-disclaimer')
     </div>
 
     {{-- 3. Behavioral summary (kumulatif mingguan) --}}

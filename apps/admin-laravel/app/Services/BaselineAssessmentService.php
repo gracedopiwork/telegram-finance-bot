@@ -212,6 +212,7 @@ class BaselineAssessmentService
     {
         return [
             'snapshot.current_goal' => 'nullable|string|max:512',
+            'snapshot.job_type' => 'required|string|in:employee,self_employed',
             'snapshot.avg_monthly_income' => 'nullable|integer|min:0',
             'snapshot.emergency_fund' => 'nullable|integer|min:0',
             'snapshot.cash_savings' => 'nullable|integer|min:0',
