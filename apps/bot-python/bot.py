@@ -8,7 +8,7 @@ from typing import Any, Dict
 
 import mysql.connector
 from dotenv import load_dotenv
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import BotCommand, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     ApplicationBuilder,
     CallbackQueryHandler,
@@ -122,6 +122,7 @@ VALID_SIFAT = {"Need", "Wants"}
 VALID_MOOD = {"Happy", "Neutral", "Sad", "Stressed", "Angry", "Tired"}
 VALID_IMPULSIF = {"Yes", "No"}
 PENDING_NAME_USERS: set[int] = set()
+PENDING_RENAME_USERS: set[int] = set()
 PENDING_CONSENT: Dict[int, Dict[str, Any]] = {}
 CONSENT_OK_CACHE: set[int] = set()
 ACTIVATE_FAIL_COUNTS: Dict[int, int] = {}
@@ -656,6 +657,43 @@ def get_user_display_name(user_id: int) -> str | None:
     return value or None
 
 
+def normalize_display_name(text: str) -> str | None:
+    name = " ".join((text or "").split()).strip()
+    if len(name) < 2:
+        return None
+    return name[:80]
+
+
+def start_rename_prompt_text(user_id: int) -> str:
+    current = get_user_display_name(user_id)
+    if current:
+        return (
+            f"Sekarang aku panggil kamu {current}.\n"
+            "Kirim nama panggilan baru (minimal 2 huruf), atau ketik batal."
+        )
+    return "Kamu mau dipanggil siapa? Kirim nama panggilan (minimal 2 huruf), atau ketik batal."
+
+
+async def prompt_rename(message, user_id: int) -> None:
+    PENDING_RENAME_USERS.add(user_id)
+    await message.reply_text(start_rename_prompt_text(user_id))
+
+
+async def apply_rename(message, user_id: int, raw_name: str, *, first_time: bool) -> bool:
+    name = normalize_display_name(raw_name)
+    if not name:
+        await message.reply_text("Nama panggilan minimal 2 karakter. Coba lagi ya.")
+        return False
+    set_user_display_name(user_id, name)
+    PENDING_NAME_USERS.discard(user_id)
+    PENDING_RENAME_USERS.discard(user_id)
+    await message.reply_text(f"Siap, mulai sekarang aku panggil kamu {name}.")
+    if first_time:
+        await message.reply_text("Berikutnya: baca & setujui kebijakan privasi dulu ya.")
+        await begin_consent_flow(message, user_id)
+    return True
+
+
 def extract_json(raw_text: str) -> Dict[str, Any]:
     cleaned = raw_text.strip()
     cleaned = re.sub(r"^```json\s*|\s*```$", "", cleaned, flags=re.IGNORECASE | re.DOTALL).strip()
@@ -1160,6 +1198,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.message.reply_text(
         f"Halo {preferred_name}, perintah yang tersedia:\n"
         "/catat - catat transaksi baru\n"
+        "/nama - ubah nama panggilan\n"
         "/activate - aktivasi lisensi\n"
         "/hapuskilat - hapus data terakhir\n"
         "/hariini - rangkuman pengeluaran hari ini\n"
@@ -1388,17 +1427,16 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     text = (update.message.text or "").strip()
 
-    if user_id in PENDING_NAME_USERS:
-        if len(text) < 2:
-            await update.message.reply_text("Nama panggilan minimal 2 karakter. Coba lagi ya.")
+    if user_id in PENDING_RENAME_USERS:
+        if text.lower() in {"batal", "cancel", "batalkan"}:
+            PENDING_RENAME_USERS.discard(user_id)
+            await update.message.reply_text("Penggantian nama dibatalkan.")
             return
-        set_user_display_name(user_id, text[:80])
-        PENDING_NAME_USERS.discard(user_id)
-        await update.message.reply_text(
-            f"Siap, aku panggil kamu {text[:80]}.\n"
-            "Berikutnya: baca & setujui kebijakan privasi dulu ya."
-        )
-        await begin_consent_flow(update.message, user_id)
+        await apply_rename(update.message, user_id, text, first_time=False)
+        return
+
+    if user_id in PENDING_NAME_USERS:
+        await apply_rename(update.message, user_id, text, first_time=True)
         return
 
     if not is_license_active_for_user(user_id):
@@ -1744,6 +1782,9 @@ async def onboarding_callback_handler(update: Update, context: ContextTypes.DEFA
         if action == "panduan":
             await send_panduan_menu(msg, user_id)
             return
+        if action == "nama":
+            await prompt_rename(msg, user_id)
+            return
 
 
 async def send_panduan_menu(message, user_id: int) -> None:
@@ -1795,6 +1836,30 @@ async def panduan_callback_handler(update: Update, context: ContextTypes.DEFAULT
     if link:
         text += f"\n\nBaca lengkap: {link}"
     await query.message.reply_text(text, parse_mode="Markdown")
+
+
+async def nama_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
+    user = update.effective_user
+    user_id = user.id if user else 0
+    if not user_id or not is_license_active_for_user(user_id):
+        await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    if user_id in PENDING_NAME_USERS:
+        raw = " ".join(context.args).strip() if context.args else ""
+        if raw:
+            await apply_rename(update.message, user_id, raw, first_time=True)
+            return
+        await update.message.reply_text("Kirim nama panggilanmu dulu ya (minimal 2 huruf).")
+        return
+
+    raw = " ".join(context.args).strip() if context.args else ""
+    if raw:
+        await apply_rename(update.message, user_id, raw, first_time=False)
+        return
+    await prompt_rename(update.message, user_id)
 
 
 async def panduan_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -2023,12 +2088,31 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     )
 
 
+async def post_init(application) -> None:
+    await application.bot.set_my_commands(
+        [
+            BotCommand("start", "Menu perintah"),
+            BotCommand("catat", "Catat transaksi"),
+            BotCommand("nama", "Ubah nama panggilan"),
+            BotCommand("hariini", "Rangkuman hari ini"),
+            BotCommand("piutang", "Daftar piutang aktif"),
+            BotCommand("utang", "Daftar utang aktif"),
+            BotCommand("web", "Buka dashboard"),
+            BotCommand("panduan", "Panduan First Aid"),
+            BotCommand("kuota", "Sisa kuota AI"),
+            BotCommand("hapuskilat", "Hapus transaksi terakhir"),
+            BotCommand("activate", "Aktivasi lisensi"),
+        ]
+    )
+
+
 def main() -> None:
     token = get_env("TELEGRAM_BOT_TOKEN")
-    app = ApplicationBuilder().token(token).build()
+    app = ApplicationBuilder().token(token).post_init(post_init).build()
 
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("catat", catat_handler))
+    app.add_handler(CommandHandler("nama", nama_handler))
     app.add_handler(CommandHandler("activate", activate_handler))
     app.add_handler(CommandHandler("hapuskilat", hapuskilat_handler))
     app.add_handler(CommandHandler("hariini", hariini_handler))

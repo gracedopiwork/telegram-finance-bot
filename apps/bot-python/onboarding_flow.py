@@ -163,6 +163,7 @@ def home_keyboard() -> InlineKeyboardMarkup:
                 InlineKeyboardButton("📊 Buka Dashboard", callback_data="onb:go:dashboard"),
                 InlineKeyboardButton("📖 Panduan", callback_data="onb:go:panduan"),
             ],
+            [InlineKeyboardButton("✏️ Ubah Nama", callback_data="onb:go:nama")],
         ]
     )
 
