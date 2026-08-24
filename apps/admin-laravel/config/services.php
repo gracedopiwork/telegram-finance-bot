@@ -45,6 +45,18 @@ return [
         'enabled_payments' => env('MIDTRANS_ENABLED_PAYMENTS', 'other_qris'),
     ],
 
+    'pivot' => [
+        'client_id' => env('PIVOT_CLIENT_ID'),
+        'client_secret' => env('PIVOT_CLIENT_SECRET'),
+        'callback_key' => env('PIVOT_CALLBACK_KEY'),
+        'is_production' => env('PIVOT_IS_PRODUCTION', false),
+        // Kosong = otomatis api.pivot-payment.com / api-stg.pivot-payment.com
+        'base_url' => env('PIVOT_BASE_URL'),
+        // Redirect setelah bayar (default: APP_URL/checkout/finish/done)
+        'finish_url' => env('PIVOT_FINISH_URL'),
+        'statement_descriptor' => env('PIVOT_STATEMENT_DESCRIPTOR', 'YFD'),
+    ],
+
     'telegram' => [
         'bot_url' => env('TELEGRAM_BOT_URL'),
         'bot_username' => env('TELEGRAM_BOT_USERNAME'),

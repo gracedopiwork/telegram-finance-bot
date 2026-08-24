@@ -396,7 +396,7 @@
                         @if($isPremarital)
                             Pilih dokter dulu, lalu jadwal. Dokter yang sama menangani semua sesi pasangan.
                         @else
-                            Pilih jadwal available, lalu bayar via Midtrans. Setelah LUNAS, sistem mengunci slot dan memberi tahu admin.
+                            Pilih jadwal available, lalu bayar via Pivot. Setelah LUNAS, sistem mengunci slot dan memberi tahu admin.
                         @endif
                     </p>
                 </div>

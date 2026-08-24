@@ -25,7 +25,7 @@
                             <label>Code (slug)<span class="text-danger">*</span></label>
                             <input type="text" name="code" class="form-control @error('code') is-invalid @enderror"
                                    value="{{ old('code', $product->code) }}" placeholder="yfd-bot-telegram" required>
-                            <small class="form-text text-muted">Unik. Untuk URL & Midtrans order_id.</small>
+                            <small class="form-text text-muted">Unik. Untuk URL & Pivot clientReferenceId.</small>
                             @error('code')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="form-group col-md-8">
@@ -164,7 +164,8 @@
                         <label>Cara Beli<span class="text-danger">*</span></label>
                         <select name="billing_mode" id="billingMode" class="form-control">
                             @foreach([
-                                'midtrans' => 'Midtrans (otomatis)',
+                                'pivot'    => 'Pivot (otomatis)',
+                                'midtrans' => 'Midtrans (legacy)',
                                 'wa'       => 'Arahkan ke WhatsApp',
                                 'url'      => 'Link Eksternal',
                                 'soon'     => 'Coming Soon — tampil di website, tidak bisa dibeli',

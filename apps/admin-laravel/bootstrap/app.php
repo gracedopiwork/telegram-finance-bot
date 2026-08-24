@@ -51,9 +51,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\RedirectLegacyHosts::class,
         ]);
-        // Midtrans POST tanpa CSRF token — exclude di level middleware + di route.
+        // Payment gateway webhooks (POST tanpa CSRF).
         $middleware->validateCsrfTokens(except: [
             'webhooks/midtrans',
+            'webhooks/pivot',
         ]);
         $middleware->redirectGuestsTo(fn (\Illuminate\Http\Request $request) => $request->is('admin') || $request->is('admin/*')
             ? route('admin.login')

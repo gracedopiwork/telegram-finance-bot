@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\CpDigitalProduct;
 use App\Models\Order;
-use App\Services\MidtransPaymentSyncService;
-use App\Services\MidtransService;
 use App\Services\OrderDeliveryNotifier;
+use App\Services\PivotPaymentSyncService;
+use App\Services\PivotService;
 use App\Support\PhoneNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -23,7 +23,7 @@ class CheckoutController extends Controller
     {
         $product = CpDigitalProduct::active()->where('code', $code)->firstOrFail();
 
-        abort_if($product->billing_mode !== 'midtrans', 404, 'Produk ini belum dapat dibeli.');
+        abort_if(! $this->isGatewayProduct($product), 404, 'Produk ini belum dapat dibeli.');
 
         $affiliateService = app(\App\Services\AffiliateService::class);
         $ref = request('ref');
@@ -38,24 +38,18 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Buat order + Midtrans Snap, redirect user ke payment page.
-     *
-     * Mendukung dua mode:
-     * 1) Produk digital baru (param: product) — utama
-     * 2) Plan legacy YFD bot SaaS (param: plan)  — backward-compat
+     * Buat order + Pivot redirect payment.
      */
-    public function store(Request $request, MidtransService $midtransService)
+    public function store(Request $request, PivotService $pivot)
     {
-        // ── Mode 1: produk digital ──────────────────────────────────────────
         if ($request->filled('product')) {
-            return $this->checkoutDigitalProduct($request, $midtransService);
+            return $this->checkoutDigitalProduct($request, $pivot);
         }
 
-        // ── Mode 2: legacy plan checkout (backward compat) ──────────────────
-        return $this->checkoutLegacyPlan($request, $midtransService);
+        return $this->checkoutLegacyPlan($request, $pivot);
     }
 
-    private function checkoutDigitalProduct(Request $request, MidtransService $midtransService)
+    private function checkoutDigitalProduct(Request $request, PivotService $pivot)
     {
         $validated = $request->validate([
             'product'    => ['required', 'string', 'exists:cp_digital_products,code'],
@@ -67,7 +61,7 @@ class CheckoutController extends Controller
         ]);
 
         $product = CpDigitalProduct::active()->where('code', $validated['product'])->firstOrFail();
-        abort_if($product->billing_mode !== 'midtrans', 422, 'Produk ini belum dapat dibeli.');
+        abort_if(! $this->isGatewayProduct($product), 422, 'Produk ini belum dapat dibeli.');
 
         $baseAmount = $product->effective_price;
         abort_if($baseAmount <= 0, 422, 'Harga produk belum diatur.');
@@ -89,7 +83,7 @@ class CheckoutController extends Controller
             'telegram_username'  => $validated['telegram_username'] ?? null,
             'referral_code'      => $pricing['referral_code'],
             'affiliate_id'       => $pricing['affiliate']?->id,
-            'plan'               => $product->code,           // simpan kode juga untuk kompatibilitas
+            'plan'               => $product->code,
             'digital_product_id' => $product->id,
             'product_name'       => $product->name,
             'amount'             => $finalAmount,
@@ -98,11 +92,11 @@ class CheckoutController extends Controller
             'referral_discount'  => $pricing['referral_discount'],
             'currency'           => $product->currency ?? 'IDR',
             'status'             => 'pending',
-            'payment_gateway'    => 'midtrans',
+            'payment_gateway'    => 'pivot',
         ]);
 
         try {
-            $payment = $midtransService->createSnapTransaction([
+            $payment = $pivot->createRedirectPayment([
                 'order_id'     => $order->order_code,
                 'gross_amount' => $order->amount,
                 'full_name'    => $order->full_name,
@@ -115,18 +109,18 @@ class CheckoutController extends Controller
                     'name'     => Str::limit($product->name, 50),
                 ]],
             ]);
-            $order->payment_token = $payment['token'] ?? null;
-            $order->payment_url   = $payment['redirect_url'] ?? null;
+            $order->payment_token = $payment['id'] ?? null;
+            $order->payment_url   = $payment['payment_url'] ?? null;
             $order->save();
         } catch (\Throwable $e) {
-            Log::warning('Midtrans Snap gagal (produk digital)', [
+            Log::warning('Pivot payment gagal (produk digital)', [
                 'order_code' => $order->order_code,
                 'error'      => $e->getMessage(),
             ]);
 
             return redirect()
                 ->route('company.produk')
-                ->with('success', "Order {$order->order_code} dibuat, namun gagal membuat link bayar otomatis. Tim YFD akan menghubungi Anda via WA. Cek konfigurasi Midtrans.");
+                ->with('success', "Order {$order->order_code} dibuat, namun gagal membuat link bayar otomatis. Tim YFD akan menghubungi Anda via WA. Cek konfigurasi Pivot.");
         }
 
         if ($order->payment_url) {
@@ -135,10 +129,10 @@ class CheckoutController extends Controller
 
         return redirect()
             ->route('company.produk')
-            ->with('success', "Order {$order->order_code} dibuat. Lanjutkan pembayaran di channel Midtrans Anda.");
+            ->with('success', "Order {$order->order_code} dibuat. Lanjutkan pembayaran di channel Pivot Anda.");
     }
 
-    private function checkoutLegacyPlan(Request $request, MidtransService $midtransService)
+    private function checkoutLegacyPlan(Request $request, PivotService $pivot)
     {
         $validated = $request->validate([
             'full_name'         => ['required', 'string', 'max:120'],
@@ -165,29 +159,29 @@ class CheckoutController extends Controller
             'original_price'    => $amountMap[$validated['plan']],
             'currency'          => 'IDR',
             'status'            => 'pending',
-            'payment_gateway'   => 'midtrans',
+            'payment_gateway'   => 'pivot',
         ]);
 
         try {
-            $payment = $midtransService->createSnapTransaction([
+            $payment = $pivot->createRedirectPayment([
                 'order_id'     => $order->order_code,
                 'gross_amount' => $order->amount,
                 'full_name'    => $order->full_name,
                 'email'        => $order->email,
                 'phone'        => $order->phone,
             ]);
-            $order->payment_token = $payment['token'] ?? null;
-            $order->payment_url   = $payment['redirect_url'] ?? null;
+            $order->payment_token = $payment['id'] ?? null;
+            $order->payment_url   = $payment['payment_url'] ?? null;
             $order->save();
         } catch (\Throwable $e) {
-            Log::warning('Midtrans Snap gagal (legacy plan)', [
+            Log::warning('Pivot payment gagal (legacy plan)', [
                 'order_code' => $order->order_code,
                 'error'      => $e->getMessage(),
             ]);
 
             return redirect()
                 ->route('landing')
-                ->with('success', "Order {$order->order_code} dibuat, namun gagal membuat link bayar otomatis. Cek konfigurasi Midtrans.");
+                ->with('success', "Order {$order->order_code} dibuat, namun gagal membuat link bayar otomatis. Cek konfigurasi Pivot.");
         }
 
         if ($order->payment_url) {
@@ -196,16 +190,16 @@ class CheckoutController extends Controller
 
         return redirect()
             ->route('landing')
-            ->with('success', "Order {$order->order_code} dibuat. Lanjutkan pembayaran di channel Midtrans Anda.");
+            ->with('success', "Order {$order->order_code} dibuat. Lanjutkan pembayaran di channel Pivot Anda.");
     }
 
     /**
-     * Halaman setelah pembayaran (redirect dari Midtrans).
+     * Halaman setelah pembayaran (redirect dari Pivot).
      */
-    public function finish(Request $request, MidtransPaymentSyncService $paymentSync): View
+    public function finish(Request $request, PivotPaymentSyncService $paymentSync): View
     {
         $orderCode = $request->query('order_id');
-            $order = $orderCode
+        $order = $orderCode
             ? Order::with(['license', 'consultationSlot'])->where('order_code', $orderCode)->first()
             : null;
 
@@ -231,6 +225,11 @@ class CheckoutController extends Controller
             'deliveryViaEmail' => in_array('email', $channels, true),
             'consultationWaUrl' => $consultationWaUrl,
         ]);
+    }
+
+    private function isGatewayProduct(CpDigitalProduct $product): bool
+    {
+        return in_array((string) $product->billing_mode, ['pivot', 'midtrans'], true);
     }
 
     private function normalizePhone(string $phone): string

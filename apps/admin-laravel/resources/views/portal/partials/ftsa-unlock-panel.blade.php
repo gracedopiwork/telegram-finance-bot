@@ -1,7 +1,7 @@
 @if(!($ftsaUnlocked ?? false))
 @php
     $checkoutService = app(\App\Services\PortalCheckoutService::class);
-    $midtrans = app(\App\Services\MidtransService::class);
+    $pivot = app(\App\Services\PivotService::class);
     try {
         $ftsaProduct = $checkoutService->product();
     } catch (\Throwable $e) {
@@ -11,7 +11,7 @@
     $variant = $variant ?? 'banner';
     $formId = 'ftsa-checkout-'.md5($variant.(string) $portalEmail);
     $priceLabel = $ftsaProduct ? \App\Support\RupiahFormat::format($ftsaProduct->effective_price) : null;
-    $canPay = $ftsaProduct !== null && $midtrans->clientKey() !== '';
+    $canPay = $ftsaProduct !== null && $pivot->isReady();
 @endphp
 
 @if($variant === 'embedded')

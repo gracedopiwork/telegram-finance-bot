@@ -15,7 +15,7 @@ class PortalCheckoutService
     public const BOT_PRODUCT_CODE = 'yfd-bot-telegram';
 
     public function __construct(
-        private readonly MidtransService $midtrans,
+        private readonly PivotService $pivot,
         private readonly LicenseEntitlementService $entitlements,
         private readonly LicenseProvisioningService $provisioning,
         private readonly PortalOnboardingService $onboarding,
@@ -57,9 +57,9 @@ class PortalCheckoutService
     }
 
     /**
-     * @return array{order: Order, snap_token: string}
+     * @return array{order: Order, payment_url: string}
      */
-    public function createFtsaSnapCheckout(string $email, int $telegramUserId, string $fullName): array
+    public function createFtsaCheckout(string $email, int $telegramUserId, string $fullName): array
     {
         if ($this->entitlements->hasActiveFtsaEntitlement($telegramUserId)
             || $this->entitlements->hasActiveFtsaEntitlementForEmail($email)) {
@@ -69,10 +69,16 @@ class PortalCheckoutService
         }
 
         $product = $this->product();
-        abort_if($product->billing_mode !== 'midtrans', 422, 'Produk ini belum dapat dibeli.');
+        abort_if(! $this->isGatewayProduct($product), 422, 'Produk ini belum dapat dibeli.');
 
         $finalAmount = $product->effective_price;
         abort_if($finalAmount <= 0, 422, 'Harga produk belum diatur.');
+
+        if (! $this->pivot->isReady()) {
+            throw ValidationException::withMessages([
+                'payment' => 'Pembayaran belum dikonfigurasi di server. Hubungi tim YFD.',
+            ]);
+        }
 
         $phone = $this->suggestPhone($email);
         $existingLicense = $this->provisioning->findExistingLicenseForEmail($email);
@@ -93,12 +99,12 @@ class PortalCheckoutService
             'discount_amount' => max(0, (int) $product->price - $finalAmount),
             'currency' => $product->currency ?? 'IDR',
             'status' => 'pending',
-            'payment_gateway' => 'midtrans',
+            'payment_gateway' => 'pivot',
             'license_id' => $licenseId,
         ]);
 
         try {
-            $payment = $this->midtrans->createSnapTransaction([
+            $payment = $this->pivot->createRedirectPayment([
                 'order_id' => $order->order_code,
                 'gross_amount' => $order->amount,
                 'full_name' => $order->full_name,
@@ -110,12 +116,15 @@ class PortalCheckoutService
                     'quantity' => 1,
                     'name' => Str::limit($product->name, 50),
                 ]],
+                'success_return_url' => $this->portalReturnUrl($order->order_code, 'success'),
+                'failure_return_url' => $this->portalReturnUrl($order->order_code, 'failure'),
+                'expiration_return_url' => $this->portalReturnUrl($order->order_code, 'expired'),
             ]);
-            $order->payment_token = $payment['token'] ?? null;
-            $order->payment_url = $payment['redirect_url'] ?? null;
+            $order->payment_token = $payment['id'] ?? null;
+            $order->payment_url = $payment['payment_url'] ?? null;
             $order->save();
         } catch (\Throwable $e) {
-            Log::warning('Portal FTSA Snap gagal', [
+            Log::warning('Portal FTSA Pivot gagal', [
                 'order_code' => $order->order_code,
                 'error' => $e->getMessage(),
             ]);
@@ -125,20 +134,20 @@ class PortalCheckoutService
             ]);
         }
 
-        $token = (string) ($order->payment_token ?? '');
-        if ($token === '') {
+        $url = (string) ($order->payment_url ?? '');
+        if ($url === '') {
             throw ValidationException::withMessages([
-                'payment' => 'Token pembayaran tidak tersedia. Cek konfigurasi Midtrans.',
+                'payment' => 'Link pembayaran tidak tersedia. Cek konfigurasi Pivot.',
             ]);
         }
 
-        return ['order' => $order, 'snap_token' => $token];
+        return ['order' => $order, 'payment_url' => $url];
     }
 
     /**
-     * @return array{order: Order, snap_token: string}
+     * @return array{order: Order, payment_url: string}
      */
-    public function createBotSnapCheckout(string $email, int $telegramUserId, string $fullName): array
+    public function createBotCheckout(string $email, int $telegramUserId, string $fullName): array
     {
         if (! $this->canUpgradeBotInPortal($email, $telegramUserId)) {
             throw ValidationException::withMessages([
@@ -146,14 +155,14 @@ class PortalCheckoutService
             ]);
         }
 
-        if (! $this->midtrans->isSnapReady()) {
+        if (! $this->pivot->isReady()) {
             throw ValidationException::withMessages([
-                'payment' => 'Midtrans belum dikonfigurasi di server. Hubungi tim YFD.',
+                'payment' => 'Pivot belum dikonfigurasi di server. Hubungi tim YFD.',
             ]);
         }
 
         $product = $this->botProduct();
-        abort_if($product->billing_mode !== 'midtrans', 422, 'Produk ini belum dapat dibeli.');
+        abort_if(! $this->isGatewayProduct($product), 422, 'Produk ini belum dapat dibeli.');
 
         $finalAmount = $product->effective_price;
         abort_if($finalAmount <= 0, 422, 'Harga produk belum diatur.');
@@ -176,12 +185,12 @@ class PortalCheckoutService
             'discount_amount' => max(0, (int) $product->price - $finalAmount),
             'currency' => $product->currency ?? 'IDR',
             'status' => 'pending',
-            'payment_gateway' => 'midtrans',
+            'payment_gateway' => 'pivot',
             'license_id' => $licenseId,
         ]);
 
         try {
-            $payment = $this->midtrans->createSnapTransaction([
+            $payment = $this->pivot->createRedirectPayment([
                 'order_id' => $order->order_code,
                 'gross_amount' => $order->amount,
                 'full_name' => $order->full_name,
@@ -193,12 +202,15 @@ class PortalCheckoutService
                     'quantity' => 1,
                     'name' => Str::limit($product->name, 50),
                 ]],
+                'success_return_url' => $this->portalReturnUrl($order->order_code, 'success'),
+                'failure_return_url' => $this->portalReturnUrl($order->order_code, 'failure'),
+                'expiration_return_url' => $this->portalReturnUrl($order->order_code, 'expired'),
             ]);
-            $order->payment_token = $payment['token'] ?? null;
-            $order->payment_url = $payment['redirect_url'] ?? null;
+            $order->payment_token = $payment['id'] ?? null;
+            $order->payment_url = $payment['payment_url'] ?? null;
             $order->save();
         } catch (\Throwable $e) {
-            Log::warning('Portal bot Snap gagal', [
+            Log::warning('Portal bot Pivot gagal', [
                 'order_code' => $order->order_code,
                 'error' => $e->getMessage(),
             ]);
@@ -208,14 +220,30 @@ class PortalCheckoutService
             ]);
         }
 
-        $token = (string) ($order->payment_token ?? '');
-        if ($token === '') {
+        $url = (string) ($order->payment_url ?? '');
+        if ($url === '') {
             throw ValidationException::withMessages([
-                'payment' => 'Token pembayaran tidak tersedia. Cek konfigurasi Midtrans.',
+                'payment' => 'Link pembayaran tidak tersedia. Cek konfigurasi Pivot.',
             ]);
         }
 
-        return ['order' => $order, 'snap_token' => $token];
+        return ['order' => $order, 'payment_url' => $url];
+    }
+
+    /** @deprecated Use createFtsaCheckout */
+    public function createFtsaSnapCheckout(string $email, int $telegramUserId, string $fullName): array
+    {
+        $result = $this->createFtsaCheckout($email, $telegramUserId, $fullName);
+
+        return ['order' => $result['order'], 'snap_token' => '', 'payment_url' => $result['payment_url']];
+    }
+
+    /** @deprecated Use createBotCheckout */
+    public function createBotSnapCheckout(string $email, int $telegramUserId, string $fullName): array
+    {
+        $result = $this->createBotCheckout($email, $telegramUserId, $fullName);
+
+        return ['order' => $result['order'], 'snap_token' => '', 'payment_url' => $result['payment_url']];
     }
 
     public function canUpgradeBotInPortal(string $email, int $telegramUserId = 0): bool
@@ -227,6 +255,7 @@ class PortalCheckoutService
      * @return array{
      *     can_pay: bool,
      *     product_missing: bool,
+     *     pivot_ready: bool,
      *     midtrans_ready: bool,
      *     eligible: bool
      * }
@@ -234,7 +263,7 @@ class PortalCheckoutService
     public function botUpgradeEligibility(string $email, int $telegramUserId = 0): array
     {
         $email = strtolower(trim($email));
-        $midtransReady = $this->midtrans->isSnapReady();
+        $pivotReady = $this->pivot->isReady();
 
         $productMissing = false;
         try {
@@ -247,7 +276,8 @@ class PortalCheckoutService
             return [
                 'can_pay' => false,
                 'product_missing' => $productMissing,
-                'midtrans_ready' => $midtransReady,
+                'pivot_ready' => $pivotReady,
+                'midtrans_ready' => $pivotReady,
                 'eligible' => false,
             ];
         }
@@ -263,9 +293,10 @@ class PortalCheckoutService
         }
 
         return [
-            'can_pay' => ! $productMissing && $midtransReady && $eligible,
+            'can_pay' => ! $productMissing && $pivotReady && $eligible,
             'product_missing' => $productMissing,
-            'midtrans_ready' => $midtransReady,
+            'pivot_ready' => $pivotReady,
+            'midtrans_ready' => $pivotReady,
             'eligible' => $eligible,
         ];
     }
@@ -275,4 +306,16 @@ class PortalCheckoutService
         return strtolower(trim((string) $order->email)) === strtolower(trim($email));
     }
 
+    private function isGatewayProduct(CpDigitalProduct $product): bool
+    {
+        return in_array((string) $product->billing_mode, ['pivot', 'midtrans'], true);
+    }
+
+    private function portalReturnUrl(string $orderCode, string $result): string
+    {
+        return route('checkout.finish', [
+            'order_id' => $orderCode,
+            'result' => $result,
+        ]);
+    }
 }

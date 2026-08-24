@@ -1,7 +1,7 @@
 @extends('Companyprofile.layouts.main')
 
 @section('title', "Checkout — {$product->name}")
-@section('description', "Selesaikan pembelian {$product->name}. Pembayaran aman lewat Midtrans — QRIS saja.")
+@section('description', "Selesaikan pembelian {$product->name}. Pembayaran aman lewat Pivot.")
 
 @section('content')
 
@@ -13,7 +13,7 @@
             <span class="text-primary font-semibold">Checkout</span>
         </nav>
         <h1 class="font-heading text-headline-lg text-primary">Checkout</h1>
-        <p class="text-body-md text-on-surface-variant mt-1">Lengkapi data Anda. Setelah submit, Anda diarahkan ke halaman pembayaran Midtrans (QRIS).</p>
+        <p class="text-body-md text-on-surface-variant mt-1">Lengkapi data Anda. Setelah submit, Anda diarahkan ke halaman pembayaran Pivot.</p>
     </div>
 </section>
 
@@ -106,7 +106,7 @@
                     Sebelum kamu lanjut ke pembayaran, ini ringkasan bagaimana YFD First Aid memproses datamu:
                     {{ config('portal_privacy.purchase_summary') }}
                     <a href="{{ route('company.privacy') }}" class="text-primary font-semibold hover:underline">Baca kebijakan privasi lengkap</a>.
-                    Pembayaran diproses oleh Midtrans (PT Midtrans, lisensi BI).
+                    Pembayaran diproses oleh Pivot Payment.
                 </p>
             </div>
         </div>

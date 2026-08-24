@@ -125,7 +125,7 @@
 
                 {{-- CTA buttons --}}
                 <div class="flex flex-wrap gap-3">
-                    @if($featured->billing_mode === 'midtrans')
+                    @if(in_array($featured->billing_mode, ['midtrans', 'pivot'], true))
                         <a href="{{ route('checkout.show', $featured->code) }}" class="btn btn-primary btn-lg">
                             <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
                             {{ $featured->cta_label ?? 'Beli Sekarang' }}
@@ -248,7 +248,7 @@
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         @foreach([
-            ['no' => '01', 'ic' => 'shopping_cart',    'title' => 'Beli & Bayar Online',     'desc' => 'Klik Beli Sekarang, isi form, bayar via QRIS Midtrans.'],
+            ['no' => '01', 'ic' => 'shopping_cart',    'title' => 'Beli & Bayar Online',     'desc' => 'Klik Beli Sekarang, isi form, bayar via halaman Pivot.'],
             ['no' => '02', 'ic' => 'verified_user',    'title' => 'Aktivasi di Bot',         'desc' => 'Salin kode lisensi. Di YFD First Aid: /activate KODE-LISENSI.'],
             ['no' => '03', 'ic' => 'forum',            'title' => 'Catat via Chat',          'desc' => 'Chat: "bensin 50rb", "gajian 5jt". AI parse kategori, mood & impulsif.'],
             ['no' => '04', 'ic' => 'dashboard',        'title' => 'Lihat Dashboard',         'desc' => 'Login portal → isi baseline → lihat Financial & Behavioral Dashboard + insight.'],
@@ -387,7 +387,7 @@
                     </div>
                 @endif
 
-                @if($p->billing_mode === 'midtrans')
+                @if(in_array($p->billing_mode, ['midtrans', 'pivot'], true))
                     <a href="{{ route('checkout.show', $p->code) }}" class="btn btn-primary btn-sm justify-center mt-auto">
                         <span class="material-symbols-outlined text-[18px]">shopping_cart</span> {{ $p->cta_label ?? 'Beli' }}
                     </a>

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Services\MidtransPaymentSyncService;
+use App\Services\PivotPaymentSyncService;
 use App\Services\PortalAccessService;
 use App\Services\PortalCheckoutService;
 use App\Services\PortalFeatureService;
@@ -26,7 +26,7 @@ class CheckoutController extends Controller
         }
 
         try {
-            $result = $checkout->createFtsaSnapCheckout(
+            $result = $checkout->createFtsaCheckout(
                 $email,
                 $telegramUserId,
                 $fullName,
@@ -39,7 +39,7 @@ class CheckoutController extends Controller
         }
 
         return response()->json([
-            'snap_token' => $result['snap_token'],
+            'payment_url' => $result['payment_url'],
             'order_code' => $result['order']->order_code,
             'status_url' => route('portal.checkout.ftsa.status', ['order' => $result['order']->order_code]),
         ]);
@@ -48,7 +48,7 @@ class CheckoutController extends Controller
     public function ftsaStatus(
         Request $request,
         string $order,
-        MidtransPaymentSyncService $paymentSync,
+        PivotPaymentSyncService $paymentSync,
         PortalCheckoutService $checkout,
         PortalFeatureService $features,
     ): JsonResponse {
@@ -87,7 +87,7 @@ class CheckoutController extends Controller
         }
 
         try {
-            $result = $checkout->createBotSnapCheckout(
+            $result = $checkout->createBotCheckout(
                 $email,
                 $telegramUserId,
                 $fullName,
@@ -100,7 +100,7 @@ class CheckoutController extends Controller
         }
 
         return response()->json([
-            'snap_token' => $result['snap_token'],
+            'payment_url' => $result['payment_url'],
             'order_code' => $result['order']->order_code,
             'status_url' => route('portal.checkout.bot.status', ['order' => $result['order']->order_code]),
         ]);
@@ -109,7 +109,7 @@ class CheckoutController extends Controller
     public function botStatus(
         Request $request,
         string $order,
-        MidtransPaymentSyncService $paymentSync,
+        PivotPaymentSyncService $paymentSync,
         PortalCheckoutService $checkout,
         PortalAccessService $access,
     ): JsonResponse {

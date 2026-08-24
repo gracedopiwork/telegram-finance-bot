@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\ClaudeJsonService;
-use App\Services\MidtransService;
+use App\Services\PivotService;
 use App\Services\PortalCheckoutService;
 use App\Support\FinancialBaselineSchema;
 use Illuminate\Console\Command;
@@ -13,10 +13,10 @@ class PortalHealthCheckCommand extends Command
 {
     protected $signature = 'portal:health-check {email? : Opsional — cek kelayakan upgrade bot untuk email ini}';
 
-    protected $description = 'Cek kesiapan database portal, integrasi Midtrans, dan Claude AI';
+    protected $description = 'Cek kesiapan database portal, integrasi Pivot, dan Claude AI';
 
     public function handle(
-        MidtransService $midtrans,
+        PivotService $pivot,
         ClaudeJsonService $claude,
         PortalCheckoutService $checkout,
     ): int {
@@ -44,11 +44,11 @@ class PortalHealthCheckCommand extends Command
             $this->info('✓ config baseline_assessment terbaca');
         }
 
-        if ($midtrans->isSnapReady()) {
-            $env = config('services.midtrans.is_production') ? 'production' : 'sandbox';
-            $this->info("✓ Midtrans Snap siap ({$env})");
+        if ($pivot->isReady()) {
+            $env = config('services.pivot.is_production') ? 'production' : 'sandbox';
+            $this->info("✓ Pivot siap ({$env}) — {$pivot->baseUrl()}");
         } else {
-            $this->error('✗ Midtrans belum siap — isi MIDTRANS_CLIENT_KEY dan MIDTRANS_SERVER_KEY di .env lalu php artisan config:clear');
+            $this->error('✗ Pivot belum siap — isi PIVOT_CLIENT_ID dan PIVOT_CLIENT_SECRET di .env lalu php artisan config:clear');
             $ok = false;
         }
 
@@ -65,7 +65,7 @@ class PortalHealthCheckCommand extends Command
             $this->line('');
             $this->line("Upgrade bot untuk {$email}:");
             $this->line('  eligible: '.($status['eligible'] ? 'yes' : 'no'));
-            $this->line('  midtrans_ready: '.($status['midtrans_ready'] ? 'yes' : 'no'));
+            $this->line('  pivot_ready: '.($status['pivot_ready'] ? 'yes' : 'no'));
             $this->line('  can_pay: '.($status['can_pay'] ? 'yes' : 'no'));
         }
 

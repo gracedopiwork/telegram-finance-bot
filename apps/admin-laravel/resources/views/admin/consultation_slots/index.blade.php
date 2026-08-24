@@ -1,7 +1,7 @@
 @extends('admin.layouts.page')
 
 @section('page_heading', 'Jadwal Konsultasi')
-@section('page_subheading', 'Slot available dokter — hold → bayar Midtrans → konfirmasi otomatis')
+@section('page_subheading', 'Slot available dokter — hold → bayar Pivot → konfirmasi otomatis')
 
 @section('page_actions')
 <a href="{{ route('admin.consultation-slots.create') }}" class="btn btn-success btn-sm"><i class="fas fa-plus mr-1"></i> Tambah Slot</a>
@@ -93,7 +93,7 @@
                             @endif
                             @if($slot->status === 'confirmed')
                                 <form action="{{ route('admin.consultation-slots.overtime', $slot) }}" method="POST" class="d-inline"
-                                      onsubmit="return confirm('Buat invoice overtime Midtrans (+1 jam) untuk booking ini?')">
+                                      onsubmit="return confirm('Buat invoice overtime Pivot (+1 jam) untuk booking ini?')">
                                     @csrf
                                     <button class="btn btn-sm btn-outline-primary" title="Invoice overtime"><i class="fas fa-clock"></i></button>
                                 </form>

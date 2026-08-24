@@ -43,8 +43,8 @@
             <p class="text-xs text-sky-800/80 mt-2">
                 @if($upgradeStatus['product_missing'])
                     Produk YFD First Aid belum aktif di katalog. Hubungi tim YFD.
-                @elseif(! $upgradeStatus['midtrans_ready'])
-                    Pembayaran belum siap — pastikan <code class="text-[11px]">MIDTRANS_CLIENT_KEY</code> dan <code class="text-[11px]">MIDTRANS_SERVER_KEY</code> aktif di server, lalu jalankan <code class="text-[11px]">php artisan config:clear</code>.
+                @elseif(! $upgradeStatus['pivot_ready'] && ! $upgradeStatus['midtrans_ready'])
+                    Pembayaran belum siap — pastikan <code class="text-[11px]">PIVOT_CLIENT_ID</code> dan <code class="text-[11px]">PIVOT_CLIENT_SECRET</code> aktif di server, lalu jalankan <code class="text-[11px]">php artisan config:clear</code>.
                 @elseif(! $upgradeStatus['eligible'])
                     Upgrade tidak tersedia untuk lisensi ini (FTSA belum aktif atau bot sudah dibeli).
                 @else

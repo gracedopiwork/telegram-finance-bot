@@ -93,7 +93,16 @@ class DigitalProductMenuService
     private function resolveLink(CpDigitalProduct $product): array
     {
         return match ($product->billing_mode) {
-            'midtrans' => ['route' => null, 'url' => route('checkout.show', $product->code), 'new_tab' => false],
+            'midtrans' => [
+                'route' => null,
+                'url' => route('checkout.show', $product->code),
+                'new_tab' => false,
+            ],
+            'pivot' => [
+                'route' => null,
+                'url' => route('checkout.show', $product->code),
+                'new_tab' => false,
+            ],
             'url' => [
                 'route' => null,
                 'url' => $product->cta_url ?: route('company.produk'),

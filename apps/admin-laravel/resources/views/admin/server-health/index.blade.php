@@ -225,7 +225,7 @@
             <div class="card-header"><h3 class="card-title mb-0">Integrasi</h3></div>
             <div class="card-body">
                 <ul class="mb-0">
-                    <li>Midtrans: <strong>{{ ($integrations['midtrans'] ?? false) ? 'Siap' : 'Belum' }}</strong></li>
+                    <li>Pivot: <strong>{{ ($integrations['pivot'] ?? $integrations['midtrans'] ?? false) ? 'Siap' : 'Belum' }}</strong></li>
                     <li>Claude API: <strong>{{ ($integrations['claude'] ?? false) ? 'Siap' : 'Belum' }}</strong></li>
                     <li>AI health (7 hari): <strong>{{ $aiHealth['label'] ?? '—' }}</strong></li>
                 </ul>

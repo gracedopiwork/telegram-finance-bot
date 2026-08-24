@@ -66,7 +66,8 @@
                         <td class="text-center">
                             @php
                                 $modeMap = [
-                                    'midtrans' => ['Midtrans', 'badge-success', 'fa-credit-card'],
+                                    'pivot' => ['Pivot', 'badge-success', 'fa-credit-card'],
+                                    'midtrans' => ['Midtrans', 'badge-secondary', 'fa-credit-card'],
                                     'wa'       => ['WhatsApp', 'badge-success', 'fa-whatsapp'],
                                     'url'      => ['External', 'badge-info',    'fa-external-link-alt'],
                                     'soon'     => ['Coming Soon', 'badge-secondary', 'fa-clock'],
@@ -88,8 +89,8 @@
                                 <form method="post" action="{{ route('admin.digital-products.billing-mode', $p) }}" class="d-inline">
                                     @csrf
                                     @method('PATCH')
-                                    <input type="hidden" name="billing_mode" value="midtrans">
-                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Aktifkan jual (Midtrans)">
+                                    <input type="hidden" name="billing_mode" value="pivot">
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Aktifkan jual (Pivot)">
                                         <i class="fas fa-store"></i>
                                     </button>
                                 </form>

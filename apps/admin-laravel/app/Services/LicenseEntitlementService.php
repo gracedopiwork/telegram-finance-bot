@@ -183,7 +183,7 @@ class LicenseEntitlementService
         $featured = CpDigitalProduct::query()
             ->active()
             ->featured()
-            ->where('billing_mode', 'midtrans')
+            ->whereIn('billing_mode', ['pivot', 'midtrans'])
             ->whereNotIn('code', $ftsaCodes)
             ->pluck('code')
             ->all();

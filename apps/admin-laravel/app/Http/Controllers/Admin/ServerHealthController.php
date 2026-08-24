@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\AiHealthService;
 use App\Services\ClaudeJsonService;
-use App\Services\MidtransService;
+use App\Services\PivotService;
 use App\Services\ServerHealthService;
 use Illuminate\View\View;
 
@@ -14,7 +14,7 @@ class ServerHealthController extends Controller
     public function index(
         ServerHealthService $serverHealth,
         AiHealthService $aiHealth,
-        MidtransService $midtrans,
+        PivotService $pivot,
         ClaudeJsonService $claude,
     ): View {
         return view('admin.server-health.index', [
@@ -22,7 +22,8 @@ class ServerHealthController extends Controller
             'costs' => $serverHealth->costProjection(),
             'aiHealth' => $aiHealth->summary(),
             'integrations' => [
-                'midtrans' => $midtrans->isSnapReady(),
+                'pivot' => $pivot->isReady(),
+                'midtrans' => $pivot->isReady(),
                 'claude' => $claude->isConfigured(),
             ],
         ]);

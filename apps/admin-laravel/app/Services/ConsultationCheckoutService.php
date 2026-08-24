@@ -18,11 +18,11 @@ class ConsultationCheckoutService
 
     public function __construct(
         private ConsultationSlotService $slots,
-        private MidtransService $midtrans,
+        private PivotService $pivot,
     ) {}
 
     /**
-     * Hold slot + create Midtrans Snap payment for consultation session.
+     * Hold slot + create Pivot redirect payment for consultation session.
      *
      * @param  array{
      *   name: string,
@@ -38,7 +38,7 @@ class ConsultationCheckoutService
      */
     public function holdAndCreateSessionPayment(ConsultationSlot $slot, array $guest): array
     {
-        if (! $this->midtrans->isSnapReady()) {
+        if (! $this->pivot->isReady()) {
             throw ValidationException::withMessages([
                 'payment' => 'Payment gateway belum siap. Hubungi admin YFD.',
             ]);
@@ -97,7 +97,7 @@ class ConsultationCheckoutService
                 'discount_amount' => 0,
                 'currency' => 'IDR',
                 'status' => 'pending',
-                'payment_gateway' => 'midtrans',
+                'payment_gateway' => 'pivot',
                 'consultation_slot_id' => $held->id,
                 'admin_note' => 'Booking '.$held->booking_code.' · tahap '.$stageKey,
             ]);
@@ -108,7 +108,7 @@ class ConsultationCheckoutService
             return $order;
         });
 
-        $snap = $this->midtrans->createSnapTransaction([
+        $payment = $this->pivot->createRedirectPayment([
             'order_id' => $order->order_code,
             'gross_amount' => $amount,
             'full_name' => $order->full_name,
@@ -122,8 +122,8 @@ class ConsultationCheckoutService
             ]],
         ]);
 
-        $order->payment_token = $snap['token'] ?? null;
-        $order->payment_url = $snap['redirect_url'] ?? null;
+        $order->payment_token = $payment['id'] ?? null;
+        $order->payment_url = $payment['payment_url'] ?? null;
         $order->save();
 
         if (! filled($order->payment_url)) {
@@ -140,7 +140,7 @@ class ConsultationCheckoutService
     }
 
     /**
-     * Admin generates overtime Midtrans invoice after session.
+     * Admin generates overtime Pivot invoice after session.
      *
      * @return array{order: Order, payment_url: string}
      */
@@ -163,7 +163,7 @@ class ConsultationCheckoutService
             ]);
         }
 
-        if (! $this->midtrans->isSnapReady()) {
+        if (! $this->pivot->isReady()) {
             throw ValidationException::withMessages([
                 'payment' => 'Payment gateway belum siap.',
             ]);
@@ -187,12 +187,12 @@ class ConsultationCheckoutService
             'discount_amount' => 0,
             'currency' => 'IDR',
             'status' => 'pending',
-            'payment_gateway' => 'midtrans',
+            'payment_gateway' => 'pivot',
             'consultation_slot_id' => $slot->id,
             'admin_note' => 'Overtime untuk booking '.($slot->booking_code ?? '#'.$slot->id),
         ]);
 
-        $snap = $this->midtrans->createSnapTransaction([
+        $payment = $this->pivot->createRedirectPayment([
             'order_id' => $order->order_code,
             'gross_amount' => $amount,
             'full_name' => $order->full_name,
@@ -206,8 +206,8 @@ class ConsultationCheckoutService
             ]],
         ]);
 
-        $order->payment_token = $snap['token'] ?? null;
-        $order->payment_url = $snap['redirect_url'] ?? null;
+        $order->payment_token = $payment['id'] ?? null;
+        $order->payment_url = $payment['payment_url'] ?? null;
         $order->save();
 
         if (! filled($order->payment_url)) {
@@ -262,7 +262,7 @@ class ConsultationCheckoutService
             '',
             '*Kode booking:* '.($slot->booking_code ?? '—'),
             '*Order:* '.$order->order_code,
-            '*Status bayar:* LUNAS via Midtrans',
+            '*Status bayar:* LUNAS via Pivot',
             '*Nominal:* '.$order->amountLabel(),
             '',
             '*Nama:* '.($slot->guest_name ?? $order->full_name),

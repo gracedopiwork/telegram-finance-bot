@@ -9,7 +9,8 @@ use App\Models\License;
 use App\Models\Order;
 use App\Services\CustomerDataPurgeService;
 use App\Services\MidtransPaymentSyncService;
-use App\Services\MidtransService;
+use App\Services\PivotPaymentSyncService;
+use App\Services\PivotService;
 use App\Services\LicenseEntitlementService;
 use App\Services\LicenseProvisioningService;
 use App\Services\OrderDeliveryNotifier;
@@ -212,7 +213,8 @@ class OrdersController extends Controller
             'referrerAffiliate' => $order->affiliate,
             'telegramBotUrl' => TelegramBotUrl::resolve(),
             'deliveryChannelLabel' => app(OrderDeliveryNotifier::class)->primaryChannelLabel(),
-            'midtransNotificationUrl' => app(MidtransService::class)->notificationUrl(),
+            'midtransNotificationUrl' => app(PivotService::class)->notificationUrl(),
+            'pivotNotificationUrl' => app(PivotService::class)->notificationUrl(),
         ]);
     }
 
@@ -292,7 +294,7 @@ class OrdersController extends Controller
         return back()->with('success', $msg);
     }
 
-    public function syncPayment(Order $order, MidtransPaymentSyncService $sync)
+    public function syncPayment(Order $order, PivotPaymentSyncService $pivotSync, MidtransPaymentSyncService $midtransSync)
     {
         if ($order->status === 'paid') {
             $order->loadMissing(['digitalProduct', 'license']);
@@ -310,7 +312,10 @@ class OrdersController extends Controller
                 ->with('success', 'Order sudah lunas. Lisensi & hak akses disinkronkan ulang.');
         }
 
-        $result = $sync->syncOrderFromApi($order);
+        $gateway = strtolower((string) ($order->payment_gateway ?? 'pivot'));
+        $result = $gateway === 'midtrans'
+            ? $midtransSync->syncOrderFromApi($order)
+            : $pivotSync->syncOrderFromApi($order);
 
         if (! $result['synced']) {
             return redirect()->route('admin.orders.show', $order)

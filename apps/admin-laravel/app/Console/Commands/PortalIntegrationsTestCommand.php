@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\ClaudeJsonService;
-use App\Services\MidtransService;
+use App\Services\PivotService;
 use App\Services\PortalCheckoutService;
 use Illuminate\Console\Command;
 
@@ -11,11 +11,11 @@ class PortalIntegrationsTestCommand extends Command
 {
     protected $signature = 'portal:test-integrations {email? : Opsional — cek kelayakan upgrade bot}';
 
-    protected $description = 'Diagnosa Claude AI dan Midtrans — baca config runtime dan tes koneksi';
+    protected $description = 'Diagnosa Claude AI dan Pivot — baca config runtime dan tes koneksi';
 
     public function handle(
         ClaudeJsonService $claude,
-        MidtransService $midtrans,
+        PivotService $pivot,
         PortalCheckoutService $checkout,
     ): int {
         $ok = true;
@@ -24,16 +24,17 @@ class PortalIntegrationsTestCommand extends Command
 
         $apiKey = trim((string) config('portal_ai.api_key', ''));
         $aiEnabled = (bool) config('portal_ai.enabled', true);
-        $clientKey = $midtrans->clientKey();
-        $serverKey = trim((string) config('services.midtrans.server_key', ''));
-        $isProduction = (bool) config('services.midtrans.is_production', false);
+        $clientId = $pivot->clientId();
+        $clientSecret = $pivot->clientSecret();
+        $isProduction = (bool) config('services.pivot.is_production', false);
 
         $this->line('PORTAL_AI_ENABLED: '.($aiEnabled ? 'true' : 'false'));
         $this->line('ANTHROPIC_API_KEY terbaca: '.($apiKey !== '' ? 'yes ('.$this->mask($apiKey).')' : 'KOSONG'));
-        $this->line('MIDTRANS_CLIENT_KEY terbaca: '.($clientKey !== '' ? 'yes ('.$this->mask($clientKey).')' : 'KOSONG'));
-        $this->line('MIDTRANS_SERVER_KEY terbaca: '.($serverKey !== '' ? 'yes ('.$this->mask($serverKey).')' : 'KOSONG'));
-        $this->line('MIDTRANS_IS_PRODUCTION: '.($isProduction ? 'true' : 'false'));
-        $this->line('Midtrans Snap siap: '.($midtrans->isSnapReady() ? 'yes' : 'no'));
+        $this->line('PIVOT_CLIENT_ID terbaca: '.($clientId !== '' ? 'yes ('.$this->mask($clientId).')' : 'KOSONG'));
+        $this->line('PIVOT_CLIENT_SECRET terbaca: '.($clientSecret !== '' ? 'yes ('.$this->mask($clientSecret).')' : 'KOSONG'));
+        $this->line('PIVOT_IS_PRODUCTION: '.($isProduction ? 'true' : 'false'));
+        $this->line('Pivot base URL: '.$pivot->baseUrl());
+        $this->line('Pivot siap: '.($pivot->isReady() ? 'yes' : 'no'));
         $this->line('Claude dikonfigurasi: '.($claude->isConfigured() ? 'yes' : 'no'));
 
         try {
@@ -102,7 +103,7 @@ class PortalIntegrationsTestCommand extends Command
             }
         }
 
-        if (! $midtrans->isSnapReady()) {
+        if (! $pivot->isReady()) {
             $ok = false;
         }
 

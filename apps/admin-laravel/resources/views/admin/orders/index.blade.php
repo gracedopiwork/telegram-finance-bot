@@ -1,7 +1,7 @@
 @extends('admin.layouts.page')
 
 @section('page_heading', 'Order & Pembayaran')
-@section('page_subheading', 'Daftar pembelian produk (Midtrans) & akses gratis admin.')
+@section('page_subheading', 'Daftar pembelian produk (Pivot) & akses gratis admin.')
 
 @section('page_actions')
 <a href="{{ route('admin.orders.create') }}" class="btn btn-success btn-sm">
@@ -112,7 +112,7 @@
                             <a href="{{ route('admin.orders.show', $o) }}" class="font-weight-bold text-success">{{ $o->order_code }}</a>
                             <br>
                             <small class="text-muted">
-                                <i class="fab fa-cc-stripe"></i> {{ $o->payment_gateway ?? 'midtrans' }}
+                                <i class="fab fa-cc-stripe"></i> {{ $o->payment_gateway ?? 'pivot' }}
                                 @if($o->isAdminComplimentary())
                                     <span class="badge badge-info ml-1">Admin gratis</span>
                                 @endif

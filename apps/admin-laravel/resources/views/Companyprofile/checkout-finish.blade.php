@@ -145,7 +145,7 @@
         @else
             <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-8">
                 @if($order->status === 'pending')
-                    Status pembayaran dikonfirmasi Midtrans dalam beberapa menit. Halaman ini <strong>otomatis dimuat ulang</strong> setiap 12 detik
+                    Status pembayaran dikonfirmasi Pivot dalam beberapa menit. Halaman ini <strong>otomatis dimuat ulang</strong> setiap 12 detik
                     sampai status berubah.
                     @if($isConsultation)
                         Setelah <strong>lunas</strong>, jadwal konsultasi terkunci otomatis.
@@ -190,13 +190,13 @@
         </div>
     @else
         <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-8">
-            Pembayaran sudah disubmit. Jika Anda punya kode order dari Midtrans, buka kembali link selesai bayar dari aplikasi pembayaran atau hubungi tim YFD.
+            Pembayaran sudah disubmit. Jika Anda punya kode order, buka kembali link selesai bayar dari aplikasi pembayaran atau hubungi tim YFD.
         </p>
     @endif
 
     <div class="flex flex-wrap gap-3 justify-center">
         @if(!$isFtsaOnly && !empty($telegramBotUrl))
-            {{-- Pakai https://t.me/... saja. tg:// sering gagal di HP (WebView Midtrans / Chrome). --}}
+            {{-- Pakai https://t.me/... saja. tg:// sering gagal di HP (WebView payment / Chrome). --}}
             <a href="{{ $telegramBotUrl }}" target="_blank" rel="noopener" class="btn btn-primary">
                 <span class="material-symbols-outlined text-[18px]">smart_toy</span> Buka bot di Telegram
             </a>

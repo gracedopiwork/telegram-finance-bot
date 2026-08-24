@@ -84,6 +84,9 @@ Route::get('/checkout/finish/done', [CheckoutController::class, 'finish'])->name
 Route::match(['get', 'post'], '/webhooks/midtrans', [WebhookController::class, 'midtrans'])
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])
     ->name('webhooks.midtrans');
+Route::match(['get', 'post'], '/webhooks/pivot', [WebhookController::class, 'pivot'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])
+    ->name('webhooks.pivot');
 
 /*
 |--------------------------------------------------------------------------

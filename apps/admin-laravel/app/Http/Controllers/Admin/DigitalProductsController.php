@@ -23,7 +23,7 @@ class DigitalProductsController extends Controller
                 'icon'         => 'auto_awesome',
                 'currency'     => 'IDR',
                 'period'       => 'per tahun',
-                'billing_mode' => 'midtrans',
+                'billing_mode' => 'pivot',
                 'cta_label'    => 'Beli Sekarang',
                 'is_active'    => true,
                 'sort'         => 0,
@@ -61,7 +61,7 @@ class DigitalProductsController extends Controller
     public function updateBillingMode(Request $request, CpDigitalProduct $digital_product)
     {
         $data = $request->validate([
-            'billing_mode' => 'required|in:midtrans,wa,url,soon',
+            'billing_mode' => 'required|in:pivot,midtrans,wa,url,soon',
         ]);
 
         $payload = ['billing_mode' => $data['billing_mode']];
@@ -119,7 +119,7 @@ class DigitalProductsController extends Controller
             'currency'         => 'nullable|string|size:3',
             'period'           => 'nullable|string|max:60',
             'features_text'    => 'nullable|string',
-            'billing_mode'     => 'required|in:midtrans,wa,url,soon',
+            'billing_mode'     => 'required|in:pivot,midtrans,wa,url,soon',
             'cta_label'        => 'nullable|string|max:80',
             'cta_url'          => 'nullable|url|max:255',
             'meta_title'               => 'nullable|string|max:255',

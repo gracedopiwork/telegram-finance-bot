@@ -41,7 +41,7 @@
                         <form action="{{ route('admin.orders.syncPayment', $order) }}" method="POST" class="d-inline">
                             @csrf
                             <button type="submit" class="btn btn-sm btn-warning">
-                                <i class="fas fa-sync mr-1"></i>Sync Midtrans
+                                <i class="fas fa-sync mr-1"></i>Sync Payment
                             </button>
                         </form>
                     @endif
@@ -134,15 +134,15 @@
         {{-- Webhook events log --}}
         <div class="card card-outline card-success">
             <div class="card-header">
-                <h3 class="card-title mb-0"><i class="fas fa-rss mr-2"></i>Log Webhook Midtrans</h3>
+                <h3 class="card-title mb-0"><i class="fas fa-rss mr-2"></i>Log Webhook Payment</h3>
                 <span class="badge badge-secondary float-right">{{ $order->paymentEvents->count() }} event</span>
             </div>
             <div class="card-body p-0">
                 @if($order->paymentEvents->isEmpty())
                     <div class="text-muted text-center py-4 small">
-                        Belum ada event webhook. Midtrans harus dikonfigurasi mengirim notifikasi ke:<br>
-                        <code>{{ $midtransNotificationUrl ?? url('/webhooks/midtrans') }}</code><br>
-                        <span class="text-warning">Jika sudah bayar tapi status masih Menunggu, klik <strong>Sync Midtrans</strong> di panel kanan.</span>
+                        Belum ada event webhook. Pivot harus dikonfigurasi mengirim notifikasi ke:<br>
+                        <code>{{ $pivotNotificationUrl ?? $midtransNotificationUrl ?? url('/webhooks/pivot') }}</code><br>
+                        <span class="text-warning">Jika sudah bayar tapi status masih Menunggu, klik <strong>Sync Payment</strong> di panel kanan.</span>
                     </div>
                 @else
                     <div class="timeline timeline-inverse p-3">
@@ -394,7 +394,7 @@
             <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-credit-card mr-2"></i>Pembayaran</h3></div>
             <div class="card-body p-0">
                 <table class="table table-sm mb-0">
-                    <tr><th width="120">Gateway</th><td>{{ $order->payment_gateway ?? 'midtrans' }}</td></tr>
+                    <tr><th width="120">Gateway</th><td>{{ $order->payment_gateway ?? 'pivot' }}</td></tr>
                     <tr><th>Order Code</th><td><code>{{ $order->order_code }}</code></td></tr>
                     @if($order->payment_reference)
                         <tr><th>Trx ID</th><td><code class="small">{{ $order->payment_reference }}</code></td></tr>
