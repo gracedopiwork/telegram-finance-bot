@@ -1,9 +1,15 @@
 @extends('admin.layouts.page')
 
 @section('page_heading', 'Hasil FTSA')
-@section('page_subheading', 'Jawaban kuesioner FTSA 1–32, skor domain, dan archetype behavioral')
+@section('page_subheading', 'Jawaban kuesioner FTSA 1–32, skor domain, dan archetype behavioral. Export menyertakan isian tiap pertanyaan.')
 
 @section('page_actions')
+<a href="{{ route('admin.ftsa-results.export', request()->query() + ['format' => 'xlsx', 'layout' => 'wide']) }}" class="btn btn-success btn-sm mr-1">
+    <i class="fas fa-file-excel mr-1"></i> Export Excel (lengkap)
+</a>
+<a href="{{ route('admin.ftsa-results.export', request()->query() + ['format' => 'csv', 'layout' => 'long']) }}" class="btn btn-outline-success btn-sm mr-1">
+    <i class="fas fa-file-csv mr-1"></i> Export CSV (per jawaban)
+</a>
 <a href="{{ route('admin.diagnostic-results.index') }}" class="btn btn-outline-secondary btn-sm mr-1">
     <i class="fas fa-poll mr-1"></i> Hasil Diagnostik
 </a>
@@ -94,8 +100,11 @@
                             <span class="badge badge-light">{{ $ftsaMeta['filled'] }}/{{ $ftsaMeta['total'] }}</span>
                         </td>
                         <td class="text-right text-nowrap">
-                            <a href="{{ route('admin.ftsa-results.show', $row) }}" class="btn btn-sm btn-outline-primary">
+                            <a href="{{ route('admin.ftsa-results.show', $row) }}" class="btn btn-sm btn-outline-primary" title="Lihat">
                                 <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{{ route('admin.ftsa-results.export-one', $row) }}" class="btn btn-sm btn-outline-success" title="Download Excel">
+                                <i class="fas fa-download"></i>
                             </a>
                             @include('admin.partials.delete-form', [
                                 'action' => route('admin.ftsa-results.destroy', $row),

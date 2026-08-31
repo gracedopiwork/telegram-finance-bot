@@ -168,6 +168,8 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('diagnostic-results/{financial_baseline}', [DiagnosticResultsController::class, 'show'])->name('diagnostic-results.show');
     Route::delete('diagnostic-results/{financial_baseline}', [DiagnosticResultsController::class, 'destroy'])->name('diagnostic-results.destroy');
     Route::get('ftsa-results', [FtsaResultsController::class, 'index'])->name('ftsa-results.index');
+    Route::get('ftsa-results/export', [FtsaResultsController::class, 'export'])->name('ftsa-results.export');
+    Route::get('ftsa-results/{financial_baseline}/export', [FtsaResultsController::class, 'exportOne'])->name('ftsa-results.export-one');
     Route::get('ftsa-results/{financial_baseline}', [FtsaResultsController::class, 'show'])->name('ftsa-results.show');
     Route::delete('ftsa-results/{financial_baseline}', [FtsaResultsController::class, 'destroy'])->name('ftsa-results.destroy');
     Route::get('ftsa-questions', [FtsaQuestionsController::class, 'index'])->name('ftsa-questions.index');
