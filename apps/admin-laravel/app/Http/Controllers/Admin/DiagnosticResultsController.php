@@ -6,42 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Models\FinancialBaseline;
 use App\Services\DiagnosticAnswerSummaryService;
 use App\Services\DiagnosticConfigService;
+use App\Services\DiagnosticResultsExportService;
 use App\Services\FtsaAnswerSummaryService;
 use App\Support\FinancialBaselineSchema;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class DiagnosticResultsController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = FinancialBaseline::query()->orderByDesc('assessed_at');
-
-        $search = trim((string) $request->input('search', ''));
-        if ($search !== '') {
-            $needle = '%'.strtolower($search).'%';
-            $query->where(function ($q) use ($search, $needle) {
-                $q->whereRaw('LOWER(email) LIKE ?', [$needle])
-                    ->orWhere('stage_label', 'like', '%'.$search.'%')
-                    ->orWhere('financial_stage', 'like', '%'.$search.'%');
-                if (ctype_digit($search)) {
-                    $q->orWhere('telegram_user_id', (int) $search);
-                }
-            });
-        }
-
-        if ($stage = $request->input('stage')) {
-            $query->where('financial_stage', $stage);
-        }
-
-        if ($source = $request->input('source')) {
-            if ($source === 'landing') {
-                $query->whereNull('telegram_user_id');
-            } elseif ($source === 'portal') {
-                $query->whereNotNull('telegram_user_id');
-            }
-        }
+        $query = app(DiagnosticResultsExportService::class)->filteredQuery($request);
 
         $results = $query->paginate(25)->withQueryString();
         $stages = app(DiagnosticConfigService::class)->stageLabels();
@@ -52,6 +29,48 @@ class DiagnosticResultsController extends Controller
             'stages' => $stages,
             'summaryService' => $summaryService,
             'schemaReady' => FinancialBaselineSchema::isReady(),
+        ]);
+    }
+
+    public function export(Request $request): Response
+    {
+        $format = strtolower((string) $request->input('format', 'xlsx'));
+        $layout = strtolower((string) $request->input('layout', 'wide'));
+        if (! in_array($format, ['xlsx', 'csv'], true)) {
+            $format = 'xlsx';
+        }
+        if (! in_array($layout, ['wide', 'long'], true)) {
+            $layout = 'wide';
+        }
+
+        $exporter = app(DiagnosticResultsExportService::class);
+        $table = $layout === 'long'
+            ? $exporter->buildLongTable($request)
+            : $exporter->buildWideTable($request);
+
+        $stamp = now()->format('Ymd_His');
+        $baseName = $layout === 'long'
+            ? "hasil-diagnostik-per-jawaban-{$stamp}"
+            : "hasil-diagnostik-lengkap-{$stamp}";
+
+        if ($format === 'csv') {
+            $csv = $exporter->toCsv($table['headers'], $table['rows']);
+
+            return response($csv, 200, [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename=\"{$baseName}.csv\"",
+            ]);
+        }
+
+        $xlsx = $exporter->toXlsx(
+            $table['headers'],
+            $table['rows'],
+            $layout === 'long' ? 'Per Jawaban' : 'Diagnostik'
+        );
+
+        return response($xlsx, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename=\"{$baseName}.xlsx\"",
         ]);
     }
 

@@ -61,9 +61,8 @@ def _resolve_year(month: int, day: int, *, today: date) -> int:
 
 
 def _to_recorded_at(d: date, *, now: datetime | None = None, tz: ZoneInfo = DEFAULT_TZ) -> datetime:
-    """Pakai jam sekarang (zona lokal) pada tanggal yang dipilih, lalu simpan aware."""
-    local_now = (now or datetime.now(tz)).astimezone(tz)
-    return datetime(d.year, d.month, d.day, local_now.hour, local_now.minute, local_now.second, tzinfo=tz)
+    """Simpan tanggal lokal di tengah hari agar tidak geser hari saat dikonversi UTC."""
+    return datetime(d.year, d.month, d.day, 12, 0, 0, tzinfo=tz)
 
 
 def extract_transaction_date(

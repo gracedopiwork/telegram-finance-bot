@@ -54,3 +54,17 @@ def test_apply_prefers_text_over_ai():
 def test_label():
     dt = extract_transaction_date("tgl 2/7 makan 50k", now=NOW)
     assert format_recorded_at_label(dt) == "02/07/2026"
+
+
+def test_tgl_with_year_when_today_is_next_month():
+    """Kasus: catat 1 Sep, teks 'Tgl 31/08/2026' harus tetap 31 Agustus."""
+    now = datetime(2026, 9, 1, 0, 43, tzinfo=TZ)
+    dt = extract_transaction_date(
+        "Tgl 31/08/2026 grab dari the meru klinik ke kos 26.4k",
+        now=now,
+    )
+    assert dt is not None
+    local = dt.astimezone(TZ)
+    assert local.date().isoformat() == "2026-08-31"
+    assert local.hour == 12
+    assert format_recorded_at_label(dt) == "31/08/2026"

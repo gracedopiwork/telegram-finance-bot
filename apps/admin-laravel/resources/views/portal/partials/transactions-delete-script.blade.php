@@ -173,19 +173,63 @@
     const filterCategory = document.getElementById('tx-filter-category');
     const filterBucket = document.getElementById('tx-filter-bucket');
     const filterCount = document.getElementById('tx-filter-count');
+    const filterTotal = document.getElementById('tx-filter-total');
+    const filterTotalDetail = document.getElementById('tx-filter-total-detail');
+    const headerNominalTotal = document.getElementById('tx-nominal-header-total');
+    const footNominal = document.getElementById('tx-foot-nominal');
+    const footDetail = document.getElementById('tx-foot-detail');
     let sortKey = null;
     let sortDir = 1; // 1 asc, -1 desc
+
+    function formatRp(n) {
+        return 'Rp ' + Math.round(Number(n) || 0).toLocaleString('id-ID');
+    }
 
     function visibleRows() {
         if (!tbody) return [];
         return Array.from(tbody.querySelectorAll('[data-tx-row]')).filter((r) => r.style.display !== 'none');
     }
 
+    function summarizeVisible() {
+        const rows = visibleRows();
+        let total = 0;
+        const byType = {};
+        rows.forEach((row) => {
+            const amount = Number(row.dataset.txAmount || 0);
+            const type = (row.dataset.txType || 'Lainnya').trim() || 'Lainnya';
+            total += amount;
+            byType[type] = (byType[type] || 0) + amount;
+        });
+        return { rows: rows.length, total, byType };
+    }
+
     function updateFilterCount() {
-        if (!filterCount || !tbody) return;
+        if (!tbody) return;
         const all = tbody.querySelectorAll('[data-tx-row]').length;
-        const shown = visibleRows().length;
-        filterCount.textContent = shown === all ? `${all} baris` : `${shown} dari ${all} baris`;
+        const summary = summarizeVisible();
+        const shown = summary.rows;
+
+        if (filterCount) {
+            filterCount.textContent = shown === all ? `${all} baris` : `${shown} dari ${all} baris`;
+        }
+
+        const totalLabel = formatRp(summary.total);
+        if (filterTotal) {
+            filterTotal.textContent = shown ? `Total Nominal: ${totalLabel}` : 'Total Nominal: —';
+        }
+        if (headerNominalTotal) {
+            headerNominalTotal.textContent = shown ? totalLabel : '—';
+        }
+        if (footNominal) {
+            footNominal.textContent = shown ? totalLabel : '—';
+        }
+
+        const typeParts = Object.entries(summary.byType)
+            .sort((a, b) => b[1] - a[1])
+            .map(([type, amount]) => `${type} ${formatRp(amount)}`);
+        const detail = typeParts.length > 1 ? typeParts.join(' · ') : '';
+        if (filterTotalDetail) filterTotalDetail.textContent = detail;
+        if (footDetail) footDetail.textContent = detail;
     }
 
     function applyFilters() {
@@ -251,6 +295,12 @@
     if (filterCategory) filterCategory.addEventListener('change', applyFilters);
     if (filterBucket) filterBucket.addEventListener('change', applyFilters);
     updateFilterCount();
+
+    // Refresh total setelah hapus baris (tanpa reload penuh).
+    if (tbody) {
+        const mo = new MutationObserver(() => updateFilterCount());
+        mo.observe(tbody, { childList: true, subtree: false });
+    }
 })();
 </script>
 @endpush

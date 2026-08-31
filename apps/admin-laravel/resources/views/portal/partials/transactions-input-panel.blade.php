@@ -100,7 +100,11 @@
             <p class="text-xs text-slate-500 pb-2">
                 Klik header kolom untuk sort. Filter bucket mis. <strong>Essential Living</strong> untuk evaluasi alokasi.
             </p>
-            <p id="tx-filter-count" class="text-xs font-semibold text-navy-800 pb-2 ml-auto"></p>
+            <div class="ml-auto flex flex-col items-end gap-0.5 pb-1">
+                <p id="tx-filter-count" class="text-xs font-semibold text-navy-800"></p>
+                <p id="tx-filter-total" class="text-sm font-bold text-navy-900 tabular-nums"></p>
+                <p id="tx-filter-total-detail" class="text-[11px] text-slate-500"></p>
+            </div>
         </div>
         <div class="overflow-x-auto">
             <table id="tx-table" class="w-full text-sm">
@@ -127,9 +131,12 @@
                             </button>
                         </th>
                         <th class="px-4 py-3 font-semibold text-right">
-                            <button type="button" class="tx-sort inline-flex items-center gap-0.5 hover:text-navy-800 ml-auto" data-sort="amount" data-type="number">
-                                Nominal <span class="material-symbols-outlined text-sm tx-sort-icon opacity-40">unfold_more</span>
-                            </button>
+                            <div class="flex flex-col items-end gap-0.5">
+                                <button type="button" class="tx-sort inline-flex items-center gap-0.5 hover:text-navy-800" data-sort="amount" data-type="number">
+                                    Nominal <span class="material-symbols-outlined text-sm tx-sort-icon opacity-40">unfold_more</span>
+                                </button>
+                                <span id="tx-nominal-header-total" class="text-[11px] font-bold text-navy-800 tabular-nums normal-case tracking-normal"></span>
+                            </div>
                         </th>
                         <th class="px-4 py-3 font-semibold hidden lg:table-cell">
                             <button type="button" class="tx-sort inline-flex items-center gap-0.5 hover:text-navy-800" data-sort="bucket" data-type="text">
@@ -201,6 +208,17 @@
                     </tr>
                 @endforeach
                 </tbody>
+                <tfoot id="tx-table-foot" class="bg-slate-50 border-t-2 border-slate-200">
+                    <tr>
+                        <td colspan="4" class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Total tampilan
+                        </td>
+                        <td id="tx-foot-nominal" class="px-4 py-3 text-right font-bold text-navy-900 tabular-nums"></td>
+                        <td colspan="6" class="px-4 py-3 text-xs text-slate-500">
+                            <span id="tx-foot-detail"></span>
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     @endif

@@ -115,6 +115,33 @@ FOOD_CATEGORIES = frozenset({
     "Minuman",
 })
 
+# Jajan/snack singkat sering tanpa kata "spontan" — tanya user bila ambigu.
+SNACK_CLARIFY_KEYWORDS = (
+    "jajan",
+    "jajanan",
+    "snack",
+    "cemilan",
+    "ngemil",
+    "dessert",
+    "brownies",
+    "boba",
+    "es krim",
+    "ice cream",
+    "gorengan",
+    "keripik",
+    "permen",
+    "coklat",
+    "chocolate",
+    "donat",
+    "donut",
+    "kue basah",
+    "kue kering",
+    "croissant",
+    "cookies",
+    "kue",
+    "pastry",
+)
+
 # Signal No taxonomy §3.5 — "terencana" menang atas heuristic hadiah=impulsif.
 _UNPLANNED_TERENCANA = (
     "tidak terencana",
@@ -215,6 +242,23 @@ PREMIUM_SPENDING_KEYWORDS = (
     "delivery",
 )
 
+# Item umum di struk F&B yang sering impulsif meski OCR tidak tulis "jajan".
+RECEIPT_DISCRETIONARY_KEYWORDS = SNACK_CLARIFY_KEYWORDS + PREMIUM_SPENDING_KEYWORDS + (
+    "kopi",
+    "coffee",
+    "latte",
+    "matcha",
+    "cappuccino",
+    "espresso",
+    "americano",
+    "teh",
+    "tea",
+    "smoothie",
+    "milkshake",
+    "bubble tea",
+    "minuman",
+)
+
 NEGATIVE_MOODS_FOR_IMPULSE = frozenset({"Sad", "Stressed", "Angry", "Tired"})
 
 # Belanja kecil (kopi/snack harian) jangan dilabel impulsif hanya karena mood negatif.
@@ -299,6 +343,72 @@ def is_emotional_comfort_spending(parsed: dict[str, Any], combined: str) -> bool
             "restoran",
         )
     )
+
+
+def is_discretionary_snack(parsed: dict[str, Any], combined: str) -> bool:
+    """Jajan/cemilan — kandidat tanya impulsif bila tanpa sinyal jelas."""
+    if any(keyword in combined for keyword in SNACK_CLARIFY_KEYWORDS):
+        return True
+    kategori = str(parsed.get("kategori") or "").strip().lower()
+    return kategori in {"jajan", "cemilan", "snack"}
+
+
+def is_receipt_discretionary_food(parsed: dict[str, Any], combined: str) -> bool:
+    """
+    Foto struk F&B jarang punya kata 'jajan'/'spontan'.
+    Tanya klarifikasi untuk makanan/minuman diskresioner dari OCR.
+    """
+    kategori = str(parsed.get("kategori") or "").strip()
+    sifat = str(parsed.get("sifat") or "").strip()
+    in_food = kategori in FOOD_CATEGORIES or any(
+        token in combined
+        for token in ("makan", "makanan", "minuman", "resto", "restoran", "cafe", "kafe")
+    )
+    if not in_food:
+        return False
+
+    if sifat == "Wants":
+        return True
+
+    # Need + item/merchant yang tipikal jajan/cafe/delivery → tetap tanya.
+    return any(keyword in combined for keyword in RECEIPT_DISCRETIONARY_KEYWORDS)
+
+
+def needs_impulse_clarification(
+    parsed: dict[str, Any],
+    source_text: str = "",
+    *,
+    from_receipt: bool = False,
+) -> bool:
+    """
+    True bila belanja jajan/snack (atau F&B dari foto struk) tanpa sinyal jelas.
+    Bot sebaiknya tanya user: terencana atau tidak.
+    """
+    if parsed.get("jenis") != "Pengeluaran":
+        return False
+
+    combined = _combined_text(parsed, source_text)
+
+    if has_planned_purchase_signal(combined):
+        return False
+    if has_explicit_impulse_signal(combined):
+        return False
+    if is_planned_social(combined):
+        return False
+    if is_functional_replacement(combined):
+        return False
+    if is_essential_obligation(parsed, combined):
+        return False
+    # Comfort emosional sudah cukup jelas → resolve_impulsif = Yes, jangan tanya lagi.
+    if is_emotional_comfort_spending(parsed, combined):
+        return False
+
+    if from_receipt:
+        return is_receipt_discretionary_food(parsed, combined) or is_discretionary_snack(
+            parsed, combined
+        )
+
+    return is_discretionary_snack(parsed, combined)
 
 
 def resolve_impulsif(

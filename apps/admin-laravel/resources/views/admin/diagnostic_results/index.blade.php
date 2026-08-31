@@ -1,9 +1,15 @@
 @extends('admin.layouts.page')
 
 @section('page_heading', 'Hasil Diagnostik')
-@section('page_subheading', 'Email responden, tahap keuangan, dan ringkasan jawaban check-up')
+@section('page_subheading', 'Email responden, tahap keuangan, dan ringkasan jawaban check-up. Export menyertakan isian tiap pertanyaan (bisa dibuka di Excel / Google Sheets).')
 
 @section('page_actions')
+<a href="{{ route('admin.diagnostic-results.export', request()->query() + ['format' => 'xlsx', 'layout' => 'wide']) }}" class="btn btn-success btn-sm mr-1">
+    <i class="fas fa-file-excel mr-1"></i> Export Excel (lengkap)
+</a>
+<a href="{{ route('admin.diagnostic-results.export', request()->query() + ['format' => 'csv', 'layout' => 'long']) }}" class="btn btn-outline-success btn-sm mr-1">
+    <i class="fas fa-file-csv mr-1"></i> Export CSV (per jawaban)
+</a>
 <a href="{{ route('admin.diagnostic-questions.index') }}" class="btn btn-outline-secondary btn-sm mr-1">
     <i class="fas fa-clipboard-list mr-1"></i> Soal Diagnostik
 </a>

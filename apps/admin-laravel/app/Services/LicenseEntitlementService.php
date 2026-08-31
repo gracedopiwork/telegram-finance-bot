@@ -22,7 +22,7 @@ class LicenseEntitlementService
             return $this->extendFrom($currentExpires, 1);
         }
 
-        if ($this->isBotAdminYearlyCode($code) || $this->isBotProductCode($code)) {
+        if ($this->isBotAdminYearlyCode($code) || $this->isBundleProductCode($code) || $this->isBotProductCode($code)) {
             return $this->extendFrom($currentExpires, $this->botAdminInclusionMonths());
         }
 
@@ -167,6 +167,22 @@ class LicenseEntitlementService
     /**
      * @return list<string>
      */
+    public function bundleProductCodes(): array
+    {
+        return array_values(array_filter(array_map(
+            fn (string $v) => trim($v),
+            (array) config('portal.bundle_product_codes', ['yfd-first-aid-ftsa'])
+        )));
+    }
+
+    public function isBundleProductCode(string $code): bool
+    {
+        return $code !== '' && in_array($code, $this->bundleProductCodes(), true);
+    }
+
+    /**
+     * @return list<string>
+     */
     public function botProductCodes(): array
     {
         $codes = array_values(array_filter(array_map(
@@ -190,6 +206,8 @@ class LicenseEntitlementService
 
         $merged = array_values(array_unique(array_merge($codes, $aliases, $featured)));
         $merged = array_values(array_diff($merged, $ftsaCodes, $this->botAdminRenewalCodes()));
+        // Bundle ada di daftar FTSA juga — tetap hitung sebagai bot entitlement.
+        $merged = array_values(array_unique(array_merge($merged, $this->bundleProductCodes())));
 
         return $merged;
     }
@@ -218,7 +236,10 @@ class LicenseEntitlementService
 
     public function hasPaidBotOrderOnLicense(License $license): bool
     {
-        $codes = array_values(array_diff($this->botProductCodes(), $this->ftsaProductCodes()));
+        $codes = array_values(array_unique(array_merge(
+            array_diff($this->botProductCodes(), $this->ftsaProductCodes()),
+            $this->bundleProductCodes()
+        )));
         if ($codes === []) {
             return false;
         }
@@ -240,7 +261,10 @@ class LicenseEntitlementService
             return false;
         }
 
-        $codes = array_values(array_diff($this->botProductCodes(), $this->ftsaProductCodes()));
+        $codes = array_values(array_unique(array_merge(
+            array_diff($this->botProductCodes(), $this->ftsaProductCodes()),
+            $this->bundleProductCodes()
+        )));
         if ($codes === []) {
             return false;
         }

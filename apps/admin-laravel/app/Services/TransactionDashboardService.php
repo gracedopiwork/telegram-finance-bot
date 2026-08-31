@@ -27,7 +27,7 @@ class TransactionDashboardService
             return $month;
         }
 
-        return Carbon::now()->format('Y-m');
+        return Carbon::now(PortalTimezone::defaultName())->format('Y-m');
     }
 
     public function periodMonths(?int $period = null): int
@@ -252,10 +252,15 @@ class TransactionDashboardService
      */
     private function periodRange(string $anchorMonth, int $periodMonths): array
     {
-        $end = Carbon::createFromFormat('Y-m', $anchorMonth)->endOfMonth();
+        $tz = PortalTimezone::defaultName();
+        $end = Carbon::createFromFormat('Y-m', $anchorMonth, $tz)->endOfMonth();
         $start = $end->copy()->subMonths($periodMonths - 1)->startOfMonth();
 
-        return ['start' => $start, 'end' => $end];
+        // Bandingkan ke kolom UTC di DB.
+        return [
+            'start' => $start->copy()->utc(),
+            'end' => $end->copy()->utc(),
+        ];
     }
 
     private function periodLabel(string $anchorMonth, int $periodMonths): string
@@ -435,7 +440,12 @@ class TransactionDashboardService
         for ($i = 0; $i < $months; $i++) {
             $m = $start->copy()->addMonths($i);
             $key = $m->format('Y-m');
-            $monthRows = $rows->filter(fn (BotTransaction $t) => $t->recorded_at->format('Y-m') === $key);
+            $monthRows = $rows->filter(
+                fn (BotTransaction $t) => $t->recorded_at
+                    ->copy()
+                    ->timezone(PortalTimezone::defaultName())
+                    ->format('Y-m') === $key
+            );
             $income = (int) $monthRows->where('type', TransactionTaxonomy::TYPE_INCOME)->sum('amount');
             $expense = (int) $monthRows->where('type', TransactionTaxonomy::TYPE_EXPENSE)->sum('amount');
             $saving = (int) $monthRows->where('type', TransactionTaxonomy::TYPE_SAVING)->sum('amount');
@@ -533,8 +543,11 @@ class TransactionDashboardService
      */
     private function dailyExpenseTrend(int $telegramUserId, string $month): array
     {
-        $start = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
-        $end = $start->copy()->endOfMonth();
+        $tz = PortalTimezone::defaultName();
+        $startLocal = Carbon::createFromFormat('Y-m', $month, $tz)->startOfMonth();
+        $endLocal = $startLocal->copy()->endOfMonth();
+        $start = $startLocal->copy()->utc();
+        $end = $endLocal->copy()->utc();
 
         $rows = BotTransaction::query()
             ->forUser($telegramUserId)
@@ -543,12 +556,15 @@ class TransactionDashboardService
             ->get();
 
         $points = [];
-        for ($day = 1; $day <= $end->day; $day++) {
+        for ($day = 1; $day <= $endLocal->day; $day++) {
             $points[] = ['label' => (string) $day, 'day' => $day, 'amount' => 0];
         }
 
         foreach ($rows as $row) {
-            $dayIndex = (int) $row->recorded_at->format('j') - 1;
+            $dayIndex = (int) $row->recorded_at
+                ->copy()
+                ->timezone($tz)
+                ->format('j') - 1;
             if (isset($points[$dayIndex])) {
                 $points[$dayIndex]['amount'] += (int) $row->amount;
             }

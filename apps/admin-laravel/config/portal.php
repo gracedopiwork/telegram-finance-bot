@@ -13,7 +13,10 @@ return [
         'evaluation_months' => (int) env('PORTAL_FTSA_EVALUATION_MONTHS', 12),
         'unlock_product_codes' => array_values(array_filter(array_map(
             fn (string $v) => trim($v),
-            explode(',', (string) env('PORTAL_FTSA_UNLOCK_PRODUCT_CODES', 'yfd-ftsa-premium'))
+            explode(',', (string) env(
+                'PORTAL_FTSA_UNLOCK_PRODUCT_CODES',
+                'yfd-ftsa-premium,yfd-ftsa-workshop,yfd-first-aid-ftsa'
+            ))
         ))),
     ],
 
@@ -24,7 +27,17 @@ return [
     */
     'bot_only_product_codes' => array_values(array_filter(array_map(
         fn (string $v) => trim($v),
-        explode(',', (string) (env('PORTAL_BOT_ONLY_PRODUCT_CODES') ?: 'yfd-bot-telegram'))
+        explode(',', (string) (env('PORTAL_BOT_ONLY_PRODUCT_CODES') ?: 'yfd-bot-telegram,yfd-first-aid-ftsa'))
+    ))),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bundle First Aid + FTSA (satu SKU → kedua entitlement)
+    |--------------------------------------------------------------------------
+    */
+    'bundle_product_codes' => array_values(array_filter(array_map(
+        fn (string $v) => trim($v),
+        explode(',', (string) env('PORTAL_BUNDLE_PRODUCT_CODES', 'yfd-first-aid-ftsa'))
     ))),
 
     /*

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from impulsive_rules import resolve_impulsif, stamp_planned_cue
+from impulsive_rules import needs_impulse_clarification, resolve_impulsif, stamp_planned_cue
 
 
 class ImpulsiveRulesTests(unittest.TestCase):
@@ -177,6 +177,106 @@ class ImpulsiveRulesTests(unittest.TestCase):
             "nominal": 80_000,
         }
         self.assertEqual(resolve_impulsif(parsed, "gofood 80rb tidak terencana"), "Yes")
+
+    def test_ambiguous_jajan_needs_clarification(self) -> None:
+        parsed = {
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Wants",
+            "nominal": 26_000,
+            "mood": "Happy",
+            "keterangan": "Jajan di kantin Grand Hyatt",
+        }
+        self.assertTrue(
+            needs_impulse_clarification(parsed, "Tgl 29/08/2026 jajan di kantin grand Hyatt 26k")
+        )
+
+    def test_receipt_cafe_wants_needs_clarification(self) -> None:
+        parsed = {
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Wants",
+            "nominal": 68_000,
+            "mood": "Happy",
+            "keterangan": "Belanja latte dan pastry di Starbucks",
+        }
+        self.assertTrue(
+            needs_impulse_clarification(
+                parsed,
+                "Belanja latte dan pastry di Starbucks 68000",
+                from_receipt=True,
+            )
+        )
+
+    def test_receipt_nasi_padang_need_skips_without_snack_signal(self) -> None:
+        parsed = {
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Need",
+            "nominal": 45_000,
+            "keterangan": "Makan siang nasi padang",
+        }
+        self.assertFalse(
+            needs_impulse_clarification(
+                parsed,
+                "Makan siang nasi padang 45000",
+                from_receipt=True,
+            )
+        )
+
+    def test_text_cafe_without_jajan_skips_clarification(self) -> None:
+        # Teks manual tanpa kata jajan: jangan over-ask; foto struk yang diperluas.
+        parsed = {
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Wants",
+            "nominal": 68_000,
+            "keterangan": "Latte di Starbucks",
+        }
+        self.assertFalse(
+            needs_impulse_clarification(parsed, "Latte di Starbucks 68000", from_receipt=False)
+        )
+
+    def test_jajan_spontan_skips_clarification(self) -> None:
+        parsed = {
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Wants",
+            "nominal": 26_000,
+            "keterangan": "Jajan spontan di kantin",
+        }
+        self.assertFalse(needs_impulse_clarification(parsed, "jajan spontan 26k"))
+
+    def test_jajan_terencana_skips_clarification(self) -> None:
+        parsed = {
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Wants",
+            "nominal": 26_000,
+            "keterangan": "Jajan terencana di kantin",
+        }
+        self.assertFalse(needs_impulse_clarification(parsed, "jajan terencana 26k"))
+
+    def test_jajan_karena_capek_skips_clarification(self) -> None:
+        parsed = {
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Need",
+            "nominal": 11_000,
+            "mood": "Tired",
+            "keterangan": "Jajan karena capek",
+        }
+        self.assertFalse(needs_impulse_clarification(parsed, "jajan karena capek 11000"))
+
+    def test_regular_makan_without_snack_keyword_skips_clarification(self) -> None:
+        parsed = {
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Need",
+            "nominal": 45_000,
+            "keterangan": "Makan siang nasi padang",
+        }
+        self.assertFalse(needs_impulse_clarification(parsed, "makan siang nasi padang 45k"))
 
 
 if __name__ == "__main__":

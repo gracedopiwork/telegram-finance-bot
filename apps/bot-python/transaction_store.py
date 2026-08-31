@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 
 import requests
 
@@ -42,13 +42,20 @@ def format_prescription_bucket(parsed: dict) -> str:
 
 
 def _format_recorded_at(recorded_at: datetime | None) -> str:
+    """Kirim ISO dengan offset WIB supaya Laravel tidak menganggap naive/UTC salah."""
+    from zoneinfo import ZoneInfo
+
+    wib = ZoneInfo("Asia/Jakarta")
     if recorded_at is None:
-        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        recorded_at = datetime.now(wib)
+    elif recorded_at.tzinfo is None:
+        recorded_at = recorded_at.replace(tzinfo=wib)
+    else:
+        recorded_at = recorded_at.astimezone(wib)
 
-    if recorded_at.tzinfo is None:
-        recorded_at = recorded_at.replace(tzinfo=timezone.utc)
-
-    return recorded_at.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    # +0700 → +07:00 (Carbon-friendly)
+    raw = recorded_at.strftime("%Y-%m-%dT%H:%M:%S%z")
+    return raw[:-2] + ":" + raw[-2:]
 
 
 def _classification_payload(parsed: dict) -> dict:

@@ -1,7 +1,7 @@
 @extends('admin.layouts.page')
 
 @section('page_heading', 'Tambah User (Gratis)')
-@section('page_subheading', 'Buat akses tanpa pembayaran — keterangan: dibuat admin.')
+@section('page_subheading', 'Buat akses tanpa pembayaran — termasuk workshop/korporat FTSA. Keterangan: dibuat admin.')
 
 @section('page_actions')
 <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary btn-sm">
@@ -10,6 +10,13 @@
 @endsection
 
 @section('main')
+
+<div class="alert alert-info">
+    <strong>Workshop / korporat FTSA:</strong> pilih produk
+    <code>FTSA Workshop / Korporat</code> (<code>yfd-ftsa-workshop</code>) —
+    peserta dapat akses FTSA tanpa checkout publik.
+    Untuk paket lengkap, pilih <code>First Aid + FTSA Bundle</code>.
+</div>
 
 <div class="row">
     <div class="col-lg-8">
@@ -66,7 +73,9 @@
                                 </option>
                             @endforeach
                         </select>
-                        <small class="text-muted">Pilih produk bot / FTSA sesuai akses yang ingin diberikan.</small>
+                        <small class="text-muted">
+                            Workshop: <code>yfd-ftsa-workshop</code> · Bundle: <code>yfd-first-aid-ftsa</code> · FTSA biasa: <code>yfd-ftsa-premium</code>.
+                        </small>
                     </div>
 
                     <div class="form-group">

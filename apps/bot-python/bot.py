@@ -79,6 +79,7 @@ from date_parser import apply_transaction_date, format_recorded_at_label
 from impulsive_rules import (
     PAYDAY_SPLURGE_KEYWORDS,
     REWARD_SPENDING_KEYWORDS,
+    needs_impulse_clarification,
     resolve_impulsif,
     stamp_planned_cue,
 )
@@ -127,6 +128,7 @@ PENDING_CONSENT: Dict[int, Dict[str, Any]] = {}
 CONSENT_OK_CACHE: set[int] = set()
 ACTIVATE_FAIL_COUNTS: Dict[int, int] = {}
 PENDING_MOOD_WAIT: Dict[int, Dict[str, Any]] = {}
+PENDING_IMPULSE_WAIT: Dict[int, Dict[str, Any]] = {}
 PENDING_CONFIRMATIONS: Dict[int, Dict[str, Any]] = {}
 PENDING_CLARIFICATIONS: Dict[int, Dict[str, Any]] = {}
 
@@ -147,12 +149,62 @@ MOOD_PROMPT_TEXT = (
     "😴 Tired — lelah, burnout"
 )
 
+IMPULSE_PROMPT_TEXT = (
+    "Untuk jajan/cemilan ini, apakah pembeliannya *terencana*?\n"
+    "(Banyak orang tidak menulis 'spontan' — kami tanya biar deteksi impulsif lebih akurat.)"
+)
+
+IMPULSE_PROMPT_RECEIPT_TEXT = (
+    "Struk biasanya tidak menjelaskan apakah belanjanya terencana.\n"
+    "Untuk transaksi dari foto ini, apakah pembeliannya *terencana*?"
+)
+
 LEGACY_MOOD_MAP = {
     "Sedih": "Sad",
     "Senang": "Happy",
     "Biasa Saja": "Neutral",
     "Sangat Senang": "Happy",
 }
+
+IMPULSE_REPLY_ALIASES = {
+    # Jawab pertanyaan "apakah terencana?" → impulsif = Yes
+    "tidak": "Yes",
+    "nggak": "Yes",
+    "ngga": "Yes",
+    "gak": "Yes",
+    "ga": "Yes",
+    "ya tidak": "Yes",
+    "tidak terencana": "Yes",
+    "nggak terencana": "Yes",
+    "ngga terencana": "Yes",
+    "gak terencana": "Yes",
+    "ga terencana": "Yes",
+    "spontan": "Yes",
+    "impulsif": "Yes",
+    "impulse": "Yes",
+    "impulsive": "Yes",
+    "yes": "Yes",
+    "y": "Yes",
+    # Jawab "terencana" → impulsif = No
+    "terencana": "No",
+    "sudah terencana": "No",
+    "udah terencana": "No",
+    "iya": "No",
+    "ya": "No",
+    "planned": "No",
+    "no": "No",
+}
+
+
+def normalize_impulse_reply(text: str) -> str | None:
+    if not text:
+        return None
+    cleaned = re.sub(r"\s+", " ", text.strip().lower())
+    # "yes"/"no" di sini = nilai impulsif (callback), bukan jawaban "terencana?"
+    if cleaned in {"yes", "no"}:
+        return cleaned.capitalize()
+    return IMPULSE_REPLY_ALIASES.get(cleaned)
+
 
 MOOD_ALIASES = {
     "happy": "Happy",
@@ -312,21 +364,120 @@ def finalize_parsed_transaction(
 
 
 def build_mood_keyboard() -> InlineKeyboardMarkup:
-    buttons = [
+    return InlineKeyboardMarkup(
         [
-            InlineKeyboardButton("😊 Happy", callback_data="mood:Happy"),
-            InlineKeyboardButton("😐 Neutral", callback_data="mood:Neutral"),
-        ],
+            [
+                InlineKeyboardButton("😊 Happy", callback_data="mood:Happy"),
+                InlineKeyboardButton("😐 Neutral", callback_data="mood:Neutral"),
+            ],
+            [
+                InlineKeyboardButton("😢 Sad", callback_data="mood:Sad"),
+                InlineKeyboardButton("😨 Stressed", callback_data="mood:Stressed"),
+            ],
+            [
+                InlineKeyboardButton("😡 Angry", callback_data="mood:Angry"),
+                InlineKeyboardButton("😴 Tired", callback_data="mood:Tired"),
+            ],
+        ]
+    )
+
+
+def build_impulse_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
         [
-            InlineKeyboardButton("😢 Sad", callback_data="mood:Sad"),
-            InlineKeyboardButton("😨 Stressed", callback_data="mood:Stressed"),
-        ],
-        [
-            InlineKeyboardButton("😡 Angry", callback_data="mood:Angry"),
-            InlineKeyboardButton("😴 Tired", callback_data="mood:Tired"),
-        ],
-    ]
-    return InlineKeyboardMarkup(buttons)
+            [
+                InlineKeyboardButton("✅ Terencana", callback_data="impulse:No"),
+                InlineKeyboardButton("⚡ Tidak terencana", callback_data="impulse:Yes"),
+            ],
+        ]
+    )
+
+
+async def prompt_impulse_clarification(
+    message,
+    user_id: int,
+    *,
+    intro: str,
+    from_receipt: bool = False,
+) -> None:
+    prompt = IMPULSE_PROMPT_RECEIPT_TEXT if from_receipt else IMPULSE_PROMPT_TEXT
+    await message.reply_text(
+        intro + "\n\n" + prompt,
+        reply_markup=build_impulse_keyboard(),
+        parse_mode="Markdown",
+    )
+
+
+async def queue_impulse_clarification(
+    message,
+    user_id: int,
+    parsed: Dict[str, Any],
+    greeting_name: str,
+    *,
+    source_text: str = "",
+    basic_mode: bool = False,
+    from_receipt: bool = False,
+) -> None:
+    PENDING_CONFIRMATIONS.pop(user_id, None)
+    PENDING_IMPULSE_WAIT[user_id] = {
+        "parsed": parsed,
+        "greeting_name": greeting_name,
+        "source_text": source_text.strip(),
+        "basic_mode": basic_mode,
+        "from_receipt": from_receipt,
+    }
+    intro = (
+        "Struk sudah kebaca. Karena foto biasanya tanpa keterangan impulsif, aku perlu memastikan dulu:"
+        if from_receipt
+        else "Transaksi sudah kebaca. Untuk jajan/cemilan, aku perlu memastikan dulu:"
+    )
+    await prompt_impulse_clarification(
+        message,
+        user_id,
+        intro=intro,
+        from_receipt=from_receipt,
+    )
+
+
+async def present_transaction_preview(
+    message,
+    user_id: int | None,
+    parsed: Dict[str, Any],
+    greeting_name: str,
+    *,
+    source_text: str = "",
+    basic_mode: bool = False,
+    from_receipt: bool = False,
+) -> None:
+    """Ask impulse clarification for ambiguous snacks/receipt F&B, else show confirmation preview."""
+    if user_id and needs_impulse_clarification(
+        parsed, source_text, from_receipt=from_receipt
+    ):
+        await queue_impulse_clarification(
+            message,
+            user_id,
+            parsed,
+            greeting_name,
+            source_text=source_text,
+            basic_mode=basic_mode,
+            from_receipt=from_receipt,
+        )
+        return
+
+    if not user_id:
+        await save_transaction(message, parsed, greeting_name, source_text=source_text)
+        return
+
+    PENDING_CONFIRMATIONS[user_id] = {
+        "parsed": parsed,
+        "greeting_name": greeting_name,
+        "basic_mode": basic_mode,
+        "source_text": source_text.strip(),
+    }
+    await message.reply_text(
+        format_preview_with_mode(parsed, greeting_name, basic_mode=basic_mode),
+        reply_markup=build_confirmation_keyboard(),
+    )
 
 
 def user_has_consent(user_id: int) -> bool:
@@ -455,11 +606,13 @@ async def queue_mood_from_source_text(
     *,
     intro: str,
     basic_mode: bool = False,
+    from_receipt: bool = False,
 ) -> None:
     PENDING_MOOD_WAIT[user_id] = {
         "mode": "source_text",
         "source_text": source_text.strip(),
         "basic_mode": basic_mode,
+        "from_receipt": from_receipt,
     }
     await prompt_mood_selection(message, user_id, intro=intro)
 
@@ -473,6 +626,7 @@ async def queue_mood_from_parsed(
     intro: str,
     source_text: str = "",
     basic_mode: bool = False,
+    from_receipt: bool = False,
 ) -> None:
     PENDING_MOOD_WAIT[user_id] = {
         "mode": "parsed",
@@ -480,6 +634,7 @@ async def queue_mood_from_parsed(
         "greeting_name": greeting_name,
         "source_text": source_text.strip(),
         "basic_mode": basic_mode,
+        "from_receipt": from_receipt,
     }
     await prompt_mood_selection(message, user_id, intro=intro)
 
@@ -771,10 +926,11 @@ def extract_transaction_text_from_image(image_path: str, mime_type: str = "image
     prompt = (
         "Ekstrak isi transaksi dari gambar struk/nota/foto belanja jadi satu kalimat bahasa Indonesia. "
         "Sebutkan SEMUA item utama yang terbaca (contoh: 'Belanja snack, kopi sachet, dan roti di Koperasi Grand Sari Nusa 56000'). "
+        "Jika item terlihat seperti jajan/cemilan/dessert/minuman cafe, sebutkan kata itu (jajan/snack/kopi/cafe) di kalimat. "
         "Gunakan TOTAL BAYAR / GRAND TOTAL yang tercetak di struk sebagai nominal. "
         "Jika ada baris 'Total', 'Grand Total', atau 'Jumlah' — pakai angka itu, BUKAN penjumlahan manual. "
         "Jika total tidak terbaca, jumlahkan item yang terbaca. "
-        "Jangan isi mood. "
+        "Jangan isi mood. Jangan tebak apakah belanja terencana atau impulsif. "
         "Hanya balas INVALID_IMAGE jika benar-benar tidak ada angka/teks transaksi yang terbaca."
     )
     with open(image_path, "rb") as image_file:
@@ -975,10 +1131,17 @@ async def save_transaction(
     *,
     telegram_user_id: int | None = None,
     source: str = "manual",
+    source_text: str = "",
 ) -> None:
     uid = telegram_user_id
     if uid is None and message.from_user:
         uid = message.from_user.id
+
+    # Pastikan backdate dari teks user tidak hilang sebelum POST ke Laravel.
+    apply_transaction_date(
+        parsed,
+        source_text or str(parsed.get("keterangan") or ""),
+    )
 
     saved_db = False
     if uid:
@@ -1054,6 +1217,7 @@ async def process_note_input(
     *,
     mood_resolved: bool = False,
     clarification_resolved: bool = False,
+    from_receipt: bool = False,
 ) -> None:
     text = text.strip()
     if user_id is None:
@@ -1108,10 +1272,12 @@ async def process_note_input(
         if should_ask:
             PENDING_CONFIRMATIONS.pop(user_id, None)
             PENDING_MOOD_WAIT.pop(user_id, None)
+            PENDING_IMPULSE_WAIT.pop(user_id, None)
             # Simpan input terbaru (termasuk klarifikasi sebelumnya) agar jawaban menumpuk.
             PENDING_CLARIFICATIONS[user_id] = {
                 "source_text": text,
                 "settle_choices": settle_rows if settle_q else [],
+                "from_receipt": from_receipt,
             }
             social_jenis = jenis_now in {
                 "Piutang Keluar",
@@ -1135,6 +1301,7 @@ async def process_note_input(
     elif not mood_resolved and user_id:
         preferred_name = get_user_display_name(user_id) or "Kamu"
         PENDING_CONFIRMATIONS.pop(user_id, None)
+        PENDING_IMPULSE_WAIT.pop(user_id, None)
         await queue_mood_from_parsed(
             message,
             user_id,
@@ -1143,6 +1310,7 @@ async def process_note_input(
             intro="Transaksi sudah kebaca. Mood belum terdeteksi dari struk/catatan ini.",
             source_text=text,
             basic_mode=basic_mode,
+            from_receipt=from_receipt,
         )
         return
 
@@ -1155,18 +1323,14 @@ async def process_note_input(
     preferred_name = get_user_display_name(user_id) if user_id else None
     greeting_name = preferred_name or "Kamu"
 
-    if not user_id:
-        await save_transaction(message, parsed, greeting_name)
-        return
-
-    PENDING_CONFIRMATIONS[user_id] = {
-        "parsed": parsed,
-        "greeting_name": greeting_name,
-        "basic_mode": basic_mode,
-    }
-    await message.reply_text(
-        format_preview_with_mode(parsed, greeting_name, basic_mode=basic_mode),
-        reply_markup=build_confirmation_keyboard(),
+    await present_transaction_preview(
+        message,
+        user_id,
+        parsed,
+        greeting_name,
+        source_text=text,
+        basic_mode=basic_mode,
+        from_receipt=from_receipt,
     )
 
 
@@ -1475,6 +1639,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             combined_input,
             user_id=user_id,
             clarification_resolved=True,
+            from_receipt=bool(pending.get("from_receipt")),
         )
         return
 
@@ -1489,9 +1654,15 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return
 
         pending = PENDING_MOOD_WAIT.pop(user_id)
+        from_receipt = bool(pending.get("from_receipt"))
         if pending["mode"] == "source_text":
             combined_input = f"{pending['source_text']}\nmood: {mood_text}"
-            await process_note_input(update.message, combined_input, mood_resolved=True)
+            await process_note_input(
+                update.message,
+                combined_input,
+                mood_resolved=True,
+                from_receipt=from_receipt,
+            )
             return
 
         parsed = pending["parsed"]
@@ -1504,10 +1675,45 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         attach_prescription_bucket(parsed)
         greeting_name = pending["greeting_name"]
         basic_mode = pending.get("basic_mode", False)
+        await present_transaction_preview(
+            update.message,
+            user_id,
+            parsed,
+            greeting_name,
+            source_text=pending.get("source_text", ""),
+            basic_mode=basic_mode,
+            from_receipt=from_receipt,
+        )
+        return
+
+    if user_id in PENDING_IMPULSE_WAIT:
+        if text.lower() in {"batal", "cancel", "batalkan"}:
+            PENDING_IMPULSE_WAIT.pop(user_id, None)
+            await update.message.reply_text("Klarifikasi impulsif dibatalkan. Transaksi tidak disimpan.")
+            return
+        impulse_value = normalize_impulse_reply(text)
+        if not impulse_value:
+            pending_impulse = PENDING_IMPULSE_WAIT[user_id]
+            await prompt_impulse_clarification(
+                update.message,
+                user_id,
+                intro="Pilih dengan menekan tombol di bawah, atau balas *terencana* / *tidak terencana*:",
+                from_receipt=bool(pending_impulse.get("from_receipt")),
+            )
+            return
+
+        pending = PENDING_IMPULSE_WAIT.pop(user_id)
+        parsed = pending["parsed"]
+        parsed["impulsif"] = impulse_value
+        if impulse_value == "No":
+            stamp_planned_cue(parsed, "terencana")
+        greeting_name = pending["greeting_name"]
+        basic_mode = pending.get("basic_mode", False)
         PENDING_CONFIRMATIONS[user_id] = {
             "parsed": parsed,
             "greeting_name": greeting_name,
             "basic_mode": basic_mode,
+            "source_text": str(pending.get("source_text") or ""),
         }
         await update.message.reply_text(
             format_preview_with_mode(parsed, greeting_name, basic_mode=basic_mode),
@@ -1544,6 +1750,7 @@ async def mood_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         return
 
     pending = PENDING_MOOD_WAIT.pop(user_id)
+    from_receipt = bool(pending.get("from_receipt"))
     try:
         await query.edit_message_text(f"Mood dipilih: {mood_value}. Memproses transaksi...")
     except Exception:
@@ -1551,7 +1758,13 @@ async def mood_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
     if pending["mode"] == "source_text":
         combined_input = f"{pending['source_text']}\nmood: {mood_value}"
-        await process_note_input(query.message, combined_input, user_id=user_id, mood_resolved=True)
+        await process_note_input(
+            query.message,
+            combined_input,
+            user_id=user_id,
+            mood_resolved=True,
+            from_receipt=from_receipt,
+        )
         return
 
     parsed = pending["parsed"]
@@ -1564,10 +1777,59 @@ async def mood_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     attach_prescription_bucket(parsed)
     greeting_name = pending["greeting_name"]
     basic_mode = pending.get("basic_mode", False)
+    await present_transaction_preview(
+        query.message,
+        user_id,
+        parsed,
+        greeting_name,
+        source_text=pending.get("source_text", ""),
+        basic_mode=basic_mode,
+        from_receipt=from_receipt,
+    )
+
+
+async def impulse_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    if not query or not query.data:
+        return
+    await query.answer()
+
+    user = query.from_user
+    user_id = user.id if user else 0
+    if not user_id:
+        return
+
+    if not query.data.startswith("impulse:"):
+        return
+    impulse_value = query.data.split(":", 1)[1].strip()
+    if impulse_value not in {"Yes", "No"}:
+        return
+
+    if user_id not in PENDING_IMPULSE_WAIT:
+        try:
+            await query.edit_message_text("Sudah tidak ada transaksi yang menunggu klarifikasi impulsif.")
+        except Exception:
+            pass
+        return
+
+    pending = PENDING_IMPULSE_WAIT.pop(user_id)
+    label = "Terencana" if impulse_value == "No" else "Tidak terencana"
+    try:
+        await query.edit_message_text(f"Pembelian: {label}. Menyiapkan konfirmasi...")
+    except Exception:
+        pass
+
+    parsed = pending["parsed"]
+    parsed["impulsif"] = impulse_value
+    if impulse_value == "No":
+        stamp_planned_cue(parsed, "terencana")
+    greeting_name = pending["greeting_name"]
+    basic_mode = pending.get("basic_mode", False)
     PENDING_CONFIRMATIONS[user_id] = {
         "parsed": parsed,
         "greeting_name": greeting_name,
         "basic_mode": basic_mode,
+        "source_text": str(pending.get("source_text") or ""),
     }
     await query.message.reply_text(
         format_preview_with_mode(parsed, greeting_name, basic_mode=basic_mode),
@@ -1601,13 +1863,18 @@ async def confirm_callback_handler(update: Update, context: ContextTypes.DEFAULT
     if action == "yes":
         parsed = pending["parsed"]
         greeting_name = pending["greeting_name"]
+        source_text = str(pending.get("source_text") or "")
         PENDING_CONFIRMATIONS.pop(user_id, None)
         try:
             await query.edit_message_text("Transaksi dikonfirmasi. Menyimpan...")
         except Exception:
             pass
         await save_transaction(
-            query.message, parsed, greeting_name, telegram_user_id=user_id
+            query.message,
+            parsed,
+            greeting_name,
+            telegram_user_id=user_id,
+            source_text=source_text,
         )
         return
 
@@ -1971,6 +2238,7 @@ async def process_struk_image_message(
     *,
     intro: str,
     mime_type: str = "image/jpeg",
+    caption: str = "",
 ) -> None:
     user = message.from_user
     user_id = user.id if user else 0
@@ -2013,7 +2281,19 @@ async def process_struk_image_message(
         except OSError:
             logger.warning("Gagal hapus file sementara gambar.")
 
-    await queue_mood_from_source_text(message, user_id, extracted_text, intro=intro)
+    caption_text = (caption or "").strip()
+    if caption_text:
+        source_text = f"{extracted_text}\nCatatan user: {caption_text}"
+    else:
+        source_text = extracted_text
+
+    await queue_mood_from_source_text(
+        message,
+        user_id,
+        source_text,
+        intro=intro,
+        from_receipt=True,
+    )
 
 
 async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -2036,6 +2316,7 @@ async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         context,
         largest_photo.file_id,
         intro="Struk sudah kebaca.",
+        caption=update.message.caption or "",
     )
 
 
@@ -2067,6 +2348,7 @@ async def document_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         document.file_id,
         intro="File struk sudah kebaca.",
         mime_type=mime_type or "image/jpeg",
+        caption=update.message.caption or "",
     )
 
 
@@ -2125,6 +2407,7 @@ def main() -> None:
     app.add_handler(CommandHandler("uji2", uji2_handler))
     app.add_handler(CommandHandler("uji3", uji3_handler))
     app.add_handler(CallbackQueryHandler(mood_callback_handler, pattern=r"^mood:"))
+    app.add_handler(CallbackQueryHandler(impulse_callback_handler, pattern=r"^impulse:"))
     app.add_handler(CallbackQueryHandler(confirm_callback_handler, pattern=r"^confirm:"))
     app.add_handler(CallbackQueryHandler(consent_callback_handler, pattern=r"^consent:"))
     app.add_handler(CallbackQueryHandler(why_bucket_callback_handler, pattern=r"^why:"))
