@@ -164,6 +164,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::resource('diagnostic-questions', DiagnosticQuestionsController::class)->except(['show']);
     Route::get('diagnostic-results', [DiagnosticResultsController::class, 'index'])->name('diagnostic-results.index');
     Route::get('diagnostic-results/export', [DiagnosticResultsController::class, 'export'])->name('diagnostic-results.export');
+    Route::get('diagnostic-results/{financial_baseline}/export', [DiagnosticResultsController::class, 'exportOne'])->name('diagnostic-results.export-one');
     Route::get('diagnostic-results/{financial_baseline}', [DiagnosticResultsController::class, 'show'])->name('diagnostic-results.show');
     Route::delete('diagnostic-results/{financial_baseline}', [DiagnosticResultsController::class, 'destroy'])->name('diagnostic-results.destroy');
     Route::get('ftsa-results', [FtsaResultsController::class, 'index'])->name('ftsa-results.index');

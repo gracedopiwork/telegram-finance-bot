@@ -98,6 +98,112 @@ class DiagnosticResultsExportService
     }
 
     /**
+     * Export satu responden (format wide: ringkasan + semua jawaban).
+     *
+     * @return array{headers: list<string>, rows: list<list<string|int>>}
+     */
+    public function buildWideTableForBaseline(FinancialBaseline $baseline): array
+    {
+        $fsKeys = $this->financialQuestionKeys();
+        $ftsaNums = range(1, 32);
+
+        $headers = [
+            'id',
+            'tanggal',
+            'email',
+            'telegram_user_id',
+            'sumber',
+            'tahap',
+            'tahap_label',
+            'skor',
+            'skor_maks',
+            'ftsa_archetype',
+            'ftsa_archetype_label',
+            'ftsa_chd',
+            'ftsa_rvd',
+            'ftsa_ssd',
+            'ftsa_esd',
+            'ftsa_terisi',
+        ];
+
+        foreach ($fsKeys as $key) {
+            $headers[] = "fs_{$key}_jawaban";
+            $headers[] = "fs_{$key}_skor";
+            $headers[] = "fs_{$key}_pertanyaan";
+        }
+
+        foreach ($ftsaNums as $num) {
+            $headers[] = "ftsa_q{$num}_skor";
+            $headers[] = "ftsa_q{$num}_label";
+            $headers[] = "ftsa_q{$num}_pertanyaan";
+        }
+
+        return [
+            'headers' => $headers,
+            'rows' => [$this->rowForBaseline($baseline, $fsKeys, $ftsaNums)],
+        ];
+    }
+
+    /**
+     * Export satu responden (format long: satu baris per jawaban).
+     *
+     * @return array{headers: list<string>, rows: list<list<string|int>>}
+     */
+    public function buildLongTableForBaseline(FinancialBaseline $baseline): array
+    {
+        $headers = [
+            'baseline_id',
+            'tanggal',
+            'email',
+            'sumber',
+            'tahap_label',
+            'skor_total',
+            'jenis',
+            'nomor_atau_key',
+            'pertanyaan',
+            'jawaban',
+            'skor',
+            'domain',
+        ];
+
+        $email = $this->diagnosticAnswers->resolvedEmail($baseline) ?? '';
+        $source = $baseline->telegram_user_id ? 'Portal' : 'Landing';
+        $meta = [
+            (int) $baseline->id,
+            $baseline->formatDate('Y-m-d H:i:s'),
+            $email,
+            $source,
+            (string) ($baseline->stage_label ?: $baseline->financial_stage),
+            (int) $baseline->financial_stage_score,
+        ];
+
+        $rows = [];
+        foreach ($this->diagnosticAnswers->summarize($baseline) as $answer) {
+            $rows[] = array_merge($meta, [
+                'diagnostik',
+                (string) $answer['question_key'],
+                (string) $answer['question'],
+                (string) $answer['answer_label'],
+                $answer['score'] ?? '',
+                '',
+            ]);
+        }
+
+        foreach ($this->ftsaAnswers->summarizeAnswers($baseline) as $answer) {
+            $rows[] = array_merge($meta, [
+                'ftsa',
+                (string) $answer['num'],
+                (string) $answer['question'],
+                (string) $answer['score_label'],
+                (int) $answer['score'],
+                (string) ($answer['domain_code'] ?? ''),
+            ]);
+        }
+
+        return ['headers' => $headers, 'rows' => $rows];
+    }
+
+    /**
      * Long format: satu baris per jawaban pertanyaan (lebih mudah pivot di Sheets).
      *
      * @return array{headers: list<string>, rows: list<list<string|int>>}

@@ -11,6 +11,7 @@ use App\Support\PortalSession;
 use App\Support\PrimaryCheckupUrl;
 use App\Support\TelegramBotUrl;
 use Carbon\Carbon;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -29,6 +30,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Carbon::setLocale('id');
+
+        // AdminLTE memakai Bootstrap 4 — pagination default Laravel (Tailwind)
+        // merender SVG tanpa class sizing dan menutupi halaman (mis. /admin/orders).
+        Paginator::useBootstrapFour();
 
         // Pastikan link email/WA/signed (/web) selalu https absolut — di HP sering gagal
         // kalau APP_URL http lalu Nginx redirect ke https (signature & deep link rusak).

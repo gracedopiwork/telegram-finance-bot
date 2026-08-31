@@ -105,8 +105,11 @@
                             @endif
                         </td>
                         <td class="text-right text-nowrap">
-                            <a href="{{ route('admin.diagnostic-results.show', $row) }}" class="btn btn-sm btn-outline-primary">
+                            <a href="{{ route('admin.diagnostic-results.show', $row) }}" class="btn btn-sm btn-outline-primary" title="Lihat">
                                 <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{{ route('admin.diagnostic-results.export-one', $row) }}" class="btn btn-sm btn-outline-success" title="Download Excel">
+                                <i class="fas fa-download"></i>
                             </a>
                             @include('admin.partials.delete-form', [
                                 'action' => route('admin.diagnostic-results.destroy', $row),

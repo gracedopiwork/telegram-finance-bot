@@ -74,6 +74,50 @@ class DiagnosticResultsController extends Controller
         ]);
     }
 
+    public function exportOne(Request $request, FinancialBaseline $financial_baseline): Response
+    {
+        $format = strtolower((string) $request->input('format', 'xlsx'));
+        $layout = strtolower((string) $request->input('layout', 'wide'));
+        if (! in_array($format, ['xlsx', 'csv'], true)) {
+            $format = 'xlsx';
+        }
+        if (! in_array($layout, ['wide', 'long'], true)) {
+            $layout = 'wide';
+        }
+
+        $exporter = app(DiagnosticResultsExportService::class);
+        $table = $layout === 'long'
+            ? $exporter->buildLongTableForBaseline($financial_baseline)
+            : $exporter->buildWideTableForBaseline($financial_baseline);
+
+        $email = app(DiagnosticAnswerSummaryService::class)->resolvedEmail($financial_baseline) ?? '';
+        $slug = $email !== ''
+            ? preg_replace('/[^a-zA-Z0-9._-]+/', '-', $email)
+            : 'id-'.$financial_baseline->id;
+        $stamp = $financial_baseline->formatDate('Ymd_His') ?: now()->format('Ymd_His');
+        $baseName = "diagnostik-{$slug}-{$stamp}";
+
+        if ($format === 'csv') {
+            $csv = $exporter->toCsv($table['headers'], $table['rows']);
+
+            return response($csv, 200, [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename=\"{$baseName}.csv\"",
+            ]);
+        }
+
+        $xlsx = $exporter->toXlsx(
+            $table['headers'],
+            $table['rows'],
+            $layout === 'long' ? 'Per Jawaban' : 'Diagnostik'
+        );
+
+        return response($xlsx, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename=\"{$baseName}.xlsx\"",
+        ]);
+    }
+
     public function show(FinancialBaseline $financial_baseline): View
     {
         $summaryService = app(DiagnosticAnswerSummaryService::class);

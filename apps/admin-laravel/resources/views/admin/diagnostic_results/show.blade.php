@@ -7,6 +7,9 @@
 <a href="{{ route('admin.diagnostic-results.index') }}" class="btn btn-outline-secondary btn-sm mr-1">
     <i class="fas fa-arrow-left mr-1"></i> Semua Hasil
 </a>
+<a href="{{ route('admin.diagnostic-results.export-one', $baseline) }}" class="btn btn-success btn-sm mr-1">
+    <i class="fas fa-download mr-1"></i> Download Excel
+</a>
 @if($hasFtsa ?? false)
 <a href="{{ route('admin.ftsa-results.show', $baseline) }}" class="btn btn-outline-primary btn-sm mr-1">
     <i class="fas fa-brain mr-1"></i> Lihat FTSA
