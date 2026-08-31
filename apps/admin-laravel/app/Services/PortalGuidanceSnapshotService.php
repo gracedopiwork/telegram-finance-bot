@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\PortalGuidanceSnapshot;
+use App\Support\PortalTimezone;
 use Carbon\Carbon;
 
 class PortalGuidanceSnapshotService
@@ -66,7 +67,8 @@ class PortalGuidanceSnapshotService
      */
     public function monthCumulativeWeekRange(?Carbon $anchor = null): array
     {
-        $anchor ??= now();
+        $tz = PortalTimezone::defaultName();
+        $anchor = ($anchor ?? now($tz))->copy()->timezone($tz);
         $monthStart = $anchor->copy()->startOfMonth()->startOfDay();
         $weekInMonth = PortalGuidanceSnapshot::monthCumulativeWeekNumber($anchor);
 
@@ -84,8 +86,8 @@ class PortalGuidanceSnapshotService
         );
 
         return [
-            'start' => $monthStart,
-            'end' => $end,
+            'start' => $monthStart->copy()->utc(),
+            'end' => $end->copy()->utc(),
             'key' => PortalGuidanceSnapshot::monthCumulativeWeekPeriodKey($anchor),
             'week_in_month' => $weekInMonth,
             'label' => $label,
@@ -94,11 +96,12 @@ class PortalGuidanceSnapshotService
 
     public function monthRange(?Carbon $anchor = null): array
     {
-        $anchor ??= now();
+        $tz = PortalTimezone::defaultName();
+        $anchor = ($anchor ?? now($tz))->copy()->timezone($tz);
 
         return [
-            'start' => $anchor->copy()->startOfMonth()->startOfDay(),
-            'end' => $anchor->copy()->endOfMonth()->endOfDay(),
+            'start' => $anchor->copy()->startOfMonth()->startOfDay()->utc(),
+            'end' => $anchor->copy()->endOfMonth()->endOfDay()->utc(),
             'key' => PortalGuidanceSnapshot::monthPeriodKey($anchor),
         ];
     }

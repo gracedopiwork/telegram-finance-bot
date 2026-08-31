@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\FinancialBaseline;
 use App\Models\PortalGuidanceSnapshot;
+use App\Support\PortalTimezone;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -277,20 +278,21 @@ class PortalAiGuidanceService
             ]);
         }
 
+        $fingerprint = $this->metricsFingerprint($metrics);
         $weekAnchor = $this->clinicalWeekAnchor($month);
         $weekKey = PortalGuidanceSnapshot::monthCumulativeWeekPeriodKey($weekAnchor);
         $monthKey = $month;
+        $isPastMonth = $this->isPastMonth($monthKey);
 
         $weeklyStored = $this->guidanceSnapshots->get(
             $telegramUserId,
             PortalGuidanceSnapshot::TYPE_CLINICAL_SUMMARY_WEEKLY,
             $weekKey,
         );
-        $monthlyStored = $this->guidanceSnapshots->get(
-            $telegramUserId,
-            PortalGuidanceSnapshot::TYPE_DOCTORS_NOTE_MONTHLY,
-            $monthKey,
-        );
+        if ($weeklyStored !== null && ! $this->snapshotMatchesMetrics($weeklyStored, $fingerprint)) {
+            // Snapshot lama/salah bulan — regenerasi dari metrik periode yang sedang dilihat.
+            $weeklyStored = null;
+        }
 
         if ($weeklyStored === null) {
             $weeklyStored = $this->ensureWeeklyClinicalSummary(
@@ -304,18 +306,53 @@ class PortalAiGuidanceService
             ? ($weeklyStored['payload']['clinical_summary'] ?? $fallback['clinical_summary'])
             : $fallback['clinical_summary'];
 
+        // Angka di clinical harus selaras dengan kartu KPI bulan yang dipilih.
+        if (! $this->snapshotMatchesMetrics($weeklyStored, $fingerprint)) {
+            $clinical = $fallback['clinical_summary'];
+        }
+
+        $monthlyStored = $this->guidanceSnapshots->get(
+            $telegramUserId,
+            PortalGuidanceSnapshot::TYPE_DOCTORS_NOTE_MONTHLY,
+            $monthKey,
+        );
+        if ($monthlyStored !== null && ! $this->snapshotMatchesMetrics($monthlyStored, $fingerprint)) {
+            $monthlyStored = null;
+        }
+
         $doctorsReleased = $this->monthlyDoctorsNoteReleased($month, $monthlyStored['generated_at'] ?? null);
 
-        $doctors = ($monthlyStored !== null && $doctorsReleased)
+        // Bulan lampau: jangan biarkan "pending akhir bulan" — buat/muat note dari data bulan itu.
+        if ($monthlyStored === null && ($isPastMonth || $doctorsReleased)) {
+            $this->generateAndStoreMonthlyDoctorsNote(
+                $telegramUserId,
+                $monthKey,
+                $metrics,
+                $baseline,
+                $fallback['doctors_note'],
+            );
+            $monthlyStored = $this->guidanceSnapshots->get(
+                $telegramUserId,
+                PortalGuidanceSnapshot::TYPE_DOCTORS_NOTE_MONTHLY,
+                $monthKey,
+            );
+            $doctorsReleased = $monthlyStored !== null;
+        }
+
+        $doctors = ($monthlyStored !== null && ($doctorsReleased || $isPastMonth))
             ? ($monthlyStored['payload']['doctors_note'] ?? $fallback['doctors_note'])
             : $this->pendingDoctorsNote($month, $fallback['doctors_note']);
 
+        if (($doctorsReleased || $isPastMonth) && ! $this->snapshotMatchesMetrics($monthlyStored, $fingerprint)) {
+            $doctors = $fallback['doctors_note'];
+        }
+
         $clinicalPending = $weeklyStored === null;
-        $doctorsPending = $monthlyStored === null || ! $doctorsReleased;
+        $doctorsPending = ! $isPastMonth && ($monthlyStored === null || ! $doctorsReleased);
 
         $aiSource = 'rules';
         $weeklyAi = $weeklyStored !== null && ($weeklyStored['ai_source'] ?? '') === 'ai';
-        $monthlyAi = $doctorsReleased && $monthlyStored !== null && ($monthlyStored['ai_source'] ?? '') === 'ai';
+        $monthlyAi = ($doctorsReleased || $isPastMonth) && $monthlyStored !== null && ($monthlyStored['ai_source'] ?? '') === 'ai';
         if ($weeklyAi && $monthlyAi) {
             $aiSource = 'ai';
         } elseif ($weeklyAi || $monthlyAi) {
@@ -330,7 +367,7 @@ class PortalAiGuidanceService
             'clinical_pending' => $clinicalPending,
             'doctors_pending' => $doctorsPending,
             'clinical_generated_at' => $weeklyStored['generated_at'] ?? null,
-            'doctors_generated_at' => ($monthlyStored !== null && $doctorsReleased)
+            'doctors_generated_at' => (($doctorsReleased || $isPastMonth) && $monthlyStored !== null)
                 ? ($monthlyStored['generated_at'] ?? null)
                 : null,
         ];
@@ -379,7 +416,10 @@ class PortalAiGuidanceService
             $telegramUserId,
             PortalGuidanceSnapshot::TYPE_CLINICAL_SUMMARY_WEEKLY,
             $weekKey,
-            ['clinical_summary' => $clinical],
+            [
+                'clinical_summary' => $clinical,
+                'metrics_fingerprint' => $this->metricsFingerprint($metrics),
+            ],
             $provider,
         );
 
@@ -429,7 +469,10 @@ class PortalAiGuidanceService
             $telegramUserId,
             PortalGuidanceSnapshot::TYPE_DOCTORS_NOTE_MONTHLY,
             $monthKey,
-            ['doctors_note' => $note],
+            [
+                'doctors_note' => $note,
+                'metrics_fingerprint' => $this->metricsFingerprint($metrics),
+            ],
             $provider,
         );
 
@@ -1096,13 +1139,14 @@ PROMPT;
 
   private function clinicalWeekAnchor(string $monthKey): \Carbon\Carbon
   {
+    $tz = (string) config('portal_ai.guidance_timezone', PortalTimezone::defaultName());
     try {
-      $month = \Carbon\Carbon::createFromFormat('Y-m', $monthKey)->startOfMonth();
+      $month = \Carbon\Carbon::createFromFormat('Y-m', $monthKey, $tz)->startOfMonth();
     } catch (\Throwable) {
-      return now();
+      return now($tz);
     }
 
-    return $month->isCurrentMonth() ? now() : $month->copy()->endOfMonth();
+    return $month->isCurrentMonth() ? now($tz) : $month->copy()->endOfMonth();
   }
 
   private function anchorFromWeekKey(string $weekKey): \Carbon\Carbon
@@ -1111,7 +1155,53 @@ PROMPT;
       return $this->clinicalWeekAnchor($matches[1]);
     }
 
-    return now();
+    return now((string) config('portal_ai.guidance_timezone', PortalTimezone::defaultName()));
+  }
+
+  /**
+   * @param  array<string, mixed>  $metrics
+   */
+  private function metricsFingerprint(array $metrics): string
+  {
+      return sha1(implode('|', [
+          (int) ($metrics['income'] ?? 0),
+          (int) ($metrics['expense'] ?? 0),
+          (int) ($metrics['saving_investment'] ?? 0),
+          (int) ($metrics['cashflow'] ?? 0),
+          (int) ($metrics['transaction_count'] ?? 0),
+          round((float) ($metrics['saving_rate'] ?? 0), 1),
+      ]));
+  }
+
+  /**
+   * @param  array{payload: array<string, mixed>, ai_source: string, generated_at: string}|null  $stored
+   */
+  private function snapshotMatchesMetrics(?array $stored, string $fingerprint): bool
+  {
+      if ($stored === null || $fingerprint === '') {
+          return false;
+      }
+
+      $storedFp = (string) ($stored['payload']['metrics_fingerprint'] ?? '');
+      if ($storedFp === '') {
+          // Snapshot lama tanpa fingerprint: anggap tidak match agar diregenerasi
+          // dari metrik bulan yang sedang dilihat.
+          return false;
+      }
+
+      return hash_equals($storedFp, $fingerprint);
+  }
+
+  private function isPastMonth(string $monthKey): bool
+  {
+      $tz = (string) config('portal_ai.guidance_timezone', PortalTimezone::defaultName());
+      try {
+          $month = \Carbon\Carbon::createFromFormat('Y-m', $monthKey, $tz)->startOfMonth();
+      } catch (\Throwable) {
+          return false;
+      }
+
+      return $month->lt(now($tz)->copy()->startOfMonth());
   }
 
   /**
