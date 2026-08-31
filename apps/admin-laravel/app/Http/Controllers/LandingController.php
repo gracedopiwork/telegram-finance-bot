@@ -252,6 +252,7 @@ class LandingController extends Controller
                         $slotsByAdvisorDate[$aid][$date][$time] = [
                             'id' => $slot->id,
                             'label' => $time,
+                            'starts_at' => $slot->starts_at->format('Y-m-d H:i:s'),
                         ];
                     }
                 }
@@ -275,6 +276,7 @@ class LandingController extends Controller
                         $slotsByDate[$date][$time] = [
                             'id' => $slot->id,
                             'label' => $time,
+                            'starts_at' => $slot->starts_at->format('Y-m-d H:i:s'),
                         ];
                     }
                 }
@@ -314,6 +316,8 @@ class LandingController extends Controller
             'slotsByDate' => $slotsByDate,
             'calendarMonth' => $calendarMonth->format('Y-m'),
             'holdMinutes' => ConsultationSlot::HOLD_MINUTES,
+            'minLeadHours' => ConsultationSlot::MIN_LEAD_HOURS,
+            'bookingNowWib' => \Carbon\Carbon::now(ConsultationSlot::BOOKING_TIMEZONE)->format('Y-m-d H:i:s'),
             'overtimeDisclosure' => ConsultationPricing::overtimeDisclosure(),
             'page' => $this->settingsByGroup('page_pertemuan'),
         ]);
@@ -354,7 +358,7 @@ class LandingController extends Controller
             $slots[] = [
                 'id' => $s->id,
                 'label' => $time,
-                'starts_at' => $s->starts_at->toIso8601String(),
+                'starts_at' => $s->starts_at->format('Y-m-d H:i:s'),
             ];
         }
 

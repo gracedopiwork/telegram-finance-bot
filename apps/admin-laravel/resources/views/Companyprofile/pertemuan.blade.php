@@ -428,6 +428,57 @@
     let slotsByDate = @json($slotsByDate ?? []);
     const slotsUrl = @json(route('company.pertemuan.slots'));
     const startMonthStr = @json($calendarMonth ?? now()->format('Y-m'));
+    const minLeadHours = @json($minLeadHours ?? 24);
+    // Cutoff awal dari server (WIB); JS juga hitung ulang dari jam perangkat.
+    let bookableCutoffMs = Date.parse(@json(($bookingNowWib ?? now('Asia/Jakarta')->format('Y-m-d H:i:s'))).replace(' ', 'T') + '+07:00')
+        + (minLeadHours * 3600 * 1000);
+
+    function refreshBookableCutoff() {
+        // Prefer perangkat user di zona WIB (+07) supaya jam lewat tidak tetap bisa dipilih.
+        const now = new Date();
+        const wibOffsetMs = 7 * 60 * 60 * 1000;
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const wibNow = utc + wibOffsetMs;
+        bookableCutoffMs = wibNow + (minLeadHours * 3600 * 1000);
+    }
+
+    function slotStartMs(slot, dateIso) {
+        if (slot && slot.starts_at) {
+            // starts_at disimpan sebagai wall-clock WIB
+            return Date.parse(String(slot.starts_at).replace(' ', 'T') + '+07:00');
+        }
+        if (slot && slot.label && dateIso) {
+            return Date.parse(dateIso + 'T' + slot.label + ':00+07:00');
+        }
+        return NaN;
+    }
+
+    function isSlotBookable(slot, dateIso) {
+        const start = slotStartMs(slot, dateIso);
+        if (Number.isNaN(start)) return true;
+        return start > bookableCutoffMs;
+    }
+
+    function filterBookableSlots(dateIso, slots) {
+        refreshBookableCutoff();
+        return (slots || []).filter(function (s) { return isSlotBookable(s, dateIso); });
+    }
+
+    function dateStillHasBookableSlots(dateIso) {
+        refreshBookableCutoff();
+        let cached = null;
+        if (isPremarital && selectedAdvisorId) {
+            cached = (slotsByAdvisorDate[selectedAdvisorId] || {})[dateIso] || null;
+        } else {
+            cached = slotsByDate[dateIso] || null;
+        }
+        if (cached && cached.length) {
+            return filterBookableSlots(dateIso, cached).length > 0;
+        }
+        // Belum ada cache jam: tanggal boleh tampil jika masih ada sisa hari setelah cutoff H-1.
+        const dayEnd = Date.parse(dateIso + 'T23:59:59+07:00');
+        return dayEnd > bookableCutoffMs;
+    }
 
     const calDays = document.getElementById('calDays');
     const calMonthLabel = document.getElementById('calMonthLabel');
@@ -492,12 +543,13 @@
 
     function renderSlots(date, slots) {
         if (selectedDateLabel) selectedDateLabel.textContent = formatIdDate(date);
-        if (!slots || !slots.length) {
-            clearSlots('Tidak ada jam available di tanggal ini.');
+        const bookable = filterBookableSlots(date, slots);
+        if (!bookable.length) {
+            clearSlots('Jam di tanggal ini sudah lewat atau kurang dari ' + minLeadHours + ' jam. Pilih tanggal berikutnya.');
             return;
         }
         slotGrid.innerHTML = '';
-        slots.forEach(function (s) {
+        bookable.forEach(function (s) {
             const label = document.createElement('label');
             label.className = 'slot-chip cursor-pointer';
             label.innerHTML =
@@ -581,7 +633,7 @@
             btn.className = 'cal-cell';
             btn.setAttribute('aria-label', formatIdDate(iso));
 
-            const available = availableSet.has(iso);
+            const available = availableSet.has(iso) && dateStillHasBookableSlots(iso);
             if (selectedDate === iso) {
                 btn.classList.add('is-selected');
             } else if (available) {

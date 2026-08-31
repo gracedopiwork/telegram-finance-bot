@@ -198,7 +198,16 @@ class ConsultationSlotService
             if ($time === '') {
                 continue;
             }
-            $starts = \Carbon\Carbon::parse($date.' '.$time);
+            $starts = \Carbon\Carbon::createFromFormat(
+                'Y-m-d H:i',
+                $date.' '.$time,
+                ConsultationSlot::BOOKING_TIMEZONE
+            );
+            if ($starts === false) {
+                continue;
+            }
+            // Simpan sebagai wall-clock WIB (kolom datetime tanpa shift TZ app).
+            $starts = \Carbon\Carbon::parse($starts->format('Y-m-d H:i:s'));
             $ends = $starts->copy()->addMinutes($durationMinutes);
 
             $overlap = ConsultationSlot::query()

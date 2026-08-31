@@ -22,6 +22,9 @@ class ConsultationSlot extends Model
     /** Booking paling lambat H-1 agar planner sempat siapkan materi. */
     public const MIN_LEAD_HOURS = 24;
 
+    /** Zona waktu operasional booking (WIB). */
+    public const BOOKING_TIMEZONE = 'Asia/Jakarta';
+
     /** Klien wajib isi form screening sebelum sesi. */
     public const INTAKE_FORM_HOURS = 8;
 
@@ -71,16 +74,35 @@ class ConsultationSlot extends Model
 
     public function scopeBookable(Builder $query): Builder
     {
+        // Bandingkan wall-clock WIB: slot yang sudah lewat / < H-1 tidak ditampilkan.
+        $cutoff = self::bookableCutoff()->format('Y-m-d H:i:s');
+
         return $query
             ->where('status', self::STATUS_OPEN)
-            ->where('starts_at', '>', now()->addHours(self::MIN_LEAD_HOURS));
+            ->where('starts_at', '>', $cutoff);
     }
 
     public function isBeyondMinLead(?\DateTimeInterface $at = null): bool
     {
-        $at = $at ? \Carbon\Carbon::parse($at) : now();
+        $at = $at
+            ? \Carbon\Carbon::parse($at, self::BOOKING_TIMEZONE)
+            : \Carbon\Carbon::now(self::BOOKING_TIMEZONE);
 
-        return $this->starts_at->greaterThan($at->copy()->addHours(self::MIN_LEAD_HOURS));
+        $starts = $this->starts_at->copy()->timezone(self::BOOKING_TIMEZONE);
+
+        return $starts->greaterThan($at->copy()->addHours(self::MIN_LEAD_HOURS));
+    }
+
+    /**
+     * Ambang waktu minimum untuk booking (sekarang WIB + MIN_LEAD_HOURS).
+     */
+    public static function bookableCutoff(?\DateTimeInterface $at = null): \Carbon\Carbon
+    {
+        $at = $at
+            ? \Carbon\Carbon::parse($at, self::BOOKING_TIMEZONE)
+            : \Carbon\Carbon::now(self::BOOKING_TIMEZONE);
+
+        return $at->copy()->addHours(self::MIN_LEAD_HOURS);
     }
 
     public function scopeUpcoming(Builder $query): Builder

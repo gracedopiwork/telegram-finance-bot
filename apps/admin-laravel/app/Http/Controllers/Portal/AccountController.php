@@ -22,6 +22,7 @@ class AccountController extends Controller
             'active' => 'account',
             'email' => $email,
             'hasPassword' => $passwords->hasPassword($email),
+            'mustSetPassword' => $passwords->isReady() && ! $passwords->hasPassword($email),
             'privacy' => config('portal_privacy'),
             'guide' => config('portal_guide'),
             'consentAccepted' => $telegramUserId > 0 && $consents->hasAcceptedCurrent($telegramUserId),
@@ -81,8 +82,13 @@ class AccountController extends Controller
 
         $passwords->setPassword($email, (string) $validated['password']);
 
-        return back()->with('success', $hasPassword
-            ? 'Password berhasil diganti. Login berikutnya bisa pakai email + password.'
-            : 'Password berhasil dibuat. Login berikutnya bisa pilih lisensi atau password.');
+        $onboarding = app(\App\Services\PortalOnboardingService::class);
+        $telegramUserId = (int) (PortalSession::telegramUserId($request) ?? 0);
+
+        return redirect()
+            ->route($onboarding->portalHomeRouteName($email, $telegramUserId))
+            ->with('success', $hasPassword
+                ? 'Password berhasil diganti. Login berikutnya pakai email + password.'
+                : 'Password berhasil dibuat. Login berikutnya cukup email + password (kode lisensi tidak perlu lagi di portal).');
     }
 }

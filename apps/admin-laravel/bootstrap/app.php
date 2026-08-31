@@ -64,6 +64,7 @@ return Application::configure(basePath: dirname(__DIR__))
             : route('company.home'));
         $middleware->alias([
             'portal.auth' => \App\Http\Middleware\EnsurePortalAuth::class,
+            'portal.password' => \App\Http\Middleware\EnsurePortalPasswordSet::class,
             'portal.bot' => \App\Http\Middleware\EnsureBotPortalAccess::class,
             'portal.baseline' => \App\Http\Middleware\EnsureBaselineExists::class,
         ]);

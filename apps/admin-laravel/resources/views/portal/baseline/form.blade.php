@@ -254,7 +254,7 @@
                 @if(\Illuminate\Support\Facades\Schema::hasColumn('financial_baselines', 'job_type'))
                 <fieldset>
                     <legend class="text-sm font-semibold text-navy-800 mb-1">Pekerjaan kamu saat ini seperti apa? <span class="text-red-500">*</span></legend>
-                    <p class="text-xs text-slate-500 mb-3">Wajib diisi — dasar logika perhitungan pajak di Dashboard (taxonomy 5B.7). Bisa diganti nanti.</p>
+                    <p class="text-xs text-slate-500 mb-3">Wajib diisi — dasar logika perhitungan pajak di Dashboard (taxonomy 5B.7). Dapat berubah mengikuti skema perhitungan perpajakan yang berlaku.</p>
                     <div class="space-y-2">
                         @foreach(\App\Models\FinancialBaseline::jobTypeOptions() as $value => $label)
                             <label class="flex items-start gap-2 text-sm rounded-xl border border-slate-200 px-3 py-2.5 cursor-pointer hover:bg-slate-50">

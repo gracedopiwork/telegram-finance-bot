@@ -29,11 +29,11 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        $method = (string) $request->input('login_method', 'license');
+        $method = (string) $request->input('login_method', 'password');
         if (! in_array($method, ['license', 'password'], true)) {
             $method = filled($request->input('password')) && ! filled($request->input('license_key'))
                 ? 'password'
-                : 'license';
+                : (filled($request->input('license_key')) ? 'license' : 'password');
         }
 
         if ($method === 'password') {
@@ -47,6 +47,13 @@ class AuthController extends Controller
 
         $licenseKey = strtoupper(trim($validated['license_key']));
         $email = strtolower(trim($validated['email']));
+
+        $passwords = app(PortalPasswordService::class);
+        if ($passwords->isReady() && $passwords->hasPassword($email)) {
+            return back()->withInput()->withErrors([
+                'license_key' => 'Akun ini sudah punya password. Masuk dengan email + password (bukan kode lisensi) agar lebih aman.',
+            ]);
+        }
 
         $license = License::query()
             ->where('license_key', $licenseKey)
@@ -94,7 +101,7 @@ class AuthController extends Controller
 
         if (! $passwords->hasPassword($email)) {
             return back()->withInput()->withErrors([
-                'password' => 'Akun ini belum punya password. Masuk dengan kode lisensi dulu, lalu buat password di menu Akun.',
+                'password' => 'Akun ini belum punya password. Pilih “Pertama kali” dan masuk dengan kode lisensi, lalu buat password.',
             ]);
         }
 
@@ -233,9 +240,15 @@ class AuthController extends Controller
         $telegramUserId = (int) PortalSession::telegramUserId($request);
         $email = (string) (PortalSession::email($request) ?? '');
         $onboarding = app(PortalOnboardingService::class);
+        $passwords = app(PortalPasswordService::class);
 
         if (FinancialBaselineSchema::isReady()) {
             app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
+        }
+
+        if ($passwords->isReady() && $email !== '' && ! $passwords->hasPassword($email)) {
+            return redirect()->route('portal.account')
+                ->with('warning', 'Login pertama berhasil. Buat password sekarang — login berikutnya cukup email + password (tanpa kode lisensi).');
         }
 
         return redirect()->route($onboarding->portalHomeRouteName($email, $telegramUserId))

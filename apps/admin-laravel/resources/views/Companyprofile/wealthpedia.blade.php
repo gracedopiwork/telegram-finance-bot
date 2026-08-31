@@ -53,8 +53,8 @@
                     <div class="flex items-center justify-between mb-4">
                         <div class="inline-flex items-center gap-2.5 rounded-full pl-2.5 pr-4 py-1.5"
                              style="background: {{ $accent }};">
-                            <span class="material-symbols-outlined text-black text-[22px]">{{ $cat['ic'] }}</span>
-                            <span class="font-label-md text-[12px] font-extrabold tracking-wide uppercase text-black">{{ $cat['title'] }}</span>
+                            <span class="material-symbols-outlined text-white text-[22px]">{{ $cat['ic'] }}</span>
+                            <span class="font-label-md text-[12px] font-extrabold tracking-wide uppercase text-white">{{ $cat['title'] }}</span>
                         </div>
                         <span class="font-caption text-caption text-on-surface-variant">{{ $cat['count'] }} artikel</span>
                     </div>

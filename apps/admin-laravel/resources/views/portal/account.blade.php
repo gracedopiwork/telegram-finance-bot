@@ -23,21 +23,35 @@
         <a href="#faq" class="rounded-full bg-slate-100 text-navy-800 px-3 py-1.5 hover:bg-slate-200">FAQ</a>
     </nav>
 
+    @if(!empty($mustSetPassword))
+        <div class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            <strong>Wajib buat password.</strong> Kode lisensi hanya untuk login pertama.
+            Setelah ini, masuk portal dengan email + password yang hanya kamu yang tahu.
+        </div>
+    @endif
+
     <div id="akun" class="rounded-2xl border bg-white p-6 space-y-2">
         <div class="text-xs uppercase tracking-wider text-slate-500 font-bold">Email login</div>
         <div class="text-lg font-extrabold text-navy-800">{{ $email }}</div>
         <p class="text-sm text-slate-600 leading-relaxed">
-            Setelah password dibuat, login portal bisa pilih <strong>kode lisensi</strong> atau <strong>password</strong>.
-            Kode lisensi tetap dipakai untuk aktivasi bot Telegram.
+            @if(!empty($mustSetPassword))
+                Anggap kode lisensi sebagai <strong>password awal</strong>. Ganti sekarang dengan password pribadi.
+                Kode lisensi tetap dipakai hanya untuk aktivasi bot Telegram (<code class="text-xs">/activate</code>).
+            @elseif(!empty($hasPassword))
+                Login portal memakai <strong>email + password</strong>. Kode lisensi tidak dipakai lagi di halaman login (kecuali reset oleh admin).
+                Kode lisensi tetap untuk aktivasi bot Telegram.
+            @else
+                Buat password agar login berikutnya lebih aman tanpa memasukkan kode lisensi lagi.
+            @endif
         </p>
     </div>
 
-    <div class="rounded-2xl border bg-white p-6">
+    <div class="rounded-2xl border {{ !empty($mustSetPassword) ? 'border-amber-300 ring-2 ring-amber-200' : '' }} bg-white p-6">
         <h2 class="text-base font-extrabold text-navy-800 mb-1">
             {{ $hasPassword ? 'Ganti password' : 'Buat password' }}
         </h2>
         <p class="text-sm text-slate-600 mb-5">
-            Minimal 8 karakter. Jangan bagikan password atau kode lisensi saat screenshare.
+            Minimal 8 karakter. Password ini tidak diketahui tim YFD — hanya hash yang tersimpan.
         </p>
 
         <form method="post" action="{{ route('portal.account.password') }}" class="space-y-4">

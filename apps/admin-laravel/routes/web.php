@@ -215,7 +215,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
         ->name('auto-login')
         ->middleware('signed');
 
-    Route::middleware('portal.auth')->group(function () {
+    Route::middleware(['portal.auth', 'portal.password'])->group(function () {
         Route::post('/logout', [PortalAuthController::class, 'logout'])->name('logout');
         Route::get('/akun', [PortalAccountController::class, 'show'])->name('account');
         Route::post('/akun/password', [PortalAccountController::class, 'updatePassword'])->name('account.password');
