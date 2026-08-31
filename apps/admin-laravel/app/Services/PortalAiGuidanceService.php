@@ -347,6 +347,10 @@ class PortalAiGuidanceService
             $doctors = $fallback['doctors_note'];
         }
 
+        $buckets = (array) ($metrics['buckets'] ?? []);
+        $clinical = $this->reconcileClinicalSummaryBucketPercents($clinical, $buckets);
+        $doctors = $this->reconcileDoctorsNoteBucketPercents($doctors, $buckets, $fallback['doctors_note']);
+
         $clinicalPending = $weeklyStored === null;
         $doctorsPending = ! $isPastMonth && ($monthlyStored === null || ! $doctorsReleased);
 
@@ -400,6 +404,7 @@ class PortalAiGuidanceService
                     $normalized = $this->normalizeFinancialResponse(
                         ['clinical_summary' => $parsed['clinical_summary'] ?? $parsed],
                         ['clinical_summary' => $fallbackClinical, 'doctors_note' => ['summary' => '', 'findings' => [], 'interpretation' => '', 'priority' => '', 'education' => '']],
+                        $metrics,
                     );
                     $clinical = $normalized['clinical_summary'];
                     $provider = 'claude';
@@ -453,6 +458,7 @@ class PortalAiGuidanceService
                     $normalized = $this->normalizeFinancialResponse(
                         ['doctors_note' => $parsed['doctors_note'] ?? $parsed],
                         ['clinical_summary' => ['headline' => '', 'findings' => [], 'status' => 'fair'], 'doctors_note' => $fallbackDoctorsNote],
+                        $metrics,
                     );
                     $note = $normalized['doctors_note'];
                     $provider = 'claude';
@@ -827,11 +833,12 @@ BUCKET PRESCRIPTION:
 
 ATURAN WAJIB:
 {$rules}
-Jangan menyebut archetype FTSA — itu ada di dashboard behavioral.
+JANGAN menyebut archetype FTSA — itu ada di dashboard behavioral.
 Doctor's note HANYA berisi rekomendasi tindakan — jangan ulang ringkasan deskriptif (itu ada di clinical summary).
 Tiap rekomendasi harus konkret, bisa dilakukan, dan spesifik (contoh: alokasikan cashflow positif ke Future Building, tingkatkan saving rate >30%, diversifikasi investasi, batasi Flexible+Social ≤10%, evaluasi proteksi keuangan).
 JANGAN sarankan menaikkan Essential Living jika aktual sudah di bawah 50% — itu justru sehat.
 Jika ada defisit yang dibiayai Utang Masuk, prioritaskan rekomendasi pelunasan utang sosial tanpa mengoreksi Income.
+KRITIS: Jangan menukar angka Protection dengan Flexible + Social. Salin persentase aktual PERSIS dari BUCKET PRESCRIPTION di atas.
 
 OUTPUT: JSON valid saja, tanpa markdown, format:
 {
@@ -889,21 +896,27 @@ PROMPT;
      *     doctors_note: array{summary: string, findings: list<string>, interpretation: string, priority: string, education: string}
      * }
      */
-    private function normalizeFinancialResponse(array $parsed, array $fallback): array
+    /**
+     * @param  array<string, mixed>  $metrics
+     */
+    private function normalizeFinancialResponse(array $parsed, array $fallback, array $metrics = []): array
     {
         $clinical = is_array($parsed['clinical_summary'] ?? null) ? $parsed['clinical_summary'] : [];
         $headline = trim((string) ($clinical['headline'] ?? ''));
         $findings = $this->claude->normalizeLines($clinical['findings'] ?? [], (int) config('portal_ai.max_findings', 5));
         $status = trim((string) ($clinical['status'] ?? ''));
         $allowedStatuses = ['healthy', 'fair', 'attention', 'critical', 'no_data'];
+        $buckets = (array) ($metrics['buckets'] ?? []);
 
         $clinicalSummary = [
             'headline' => $this->normalizeMoneyAbbrev($headline !== '' ? $headline : $fallback['clinical_summary']['headline']),
             'findings' => $this->normalizeMoneyAbbrevList($findings !== [] ? $findings : $fallback['clinical_summary']['findings']),
             'status' => in_array($status, $allowedStatuses, true) ? $status : $fallback['clinical_summary']['status'],
         ];
+        $clinicalSummary = $this->reconcileClinicalSummaryBucketPercents($clinicalSummary, $buckets);
 
         $note = $this->normalizeDoctorsNote($parsed['doctors_note'] ?? null, $fallback['doctors_note'], true);
+        $note = $this->reconcileDoctorsNoteBucketPercents($note, $buckets, $fallback['doctors_note']);
 
         return [
             'clinical_summary' => $clinicalSummary,
@@ -965,6 +978,237 @@ PROMPT;
             fn (string $line) => $this->normalizeMoneyAbbrev($line),
             $lines
         ));
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $buckets
+     * @return array<string, float>
+     */
+    private function bucketShareMap(array $buckets): array
+    {
+        $map = [];
+        foreach ($buckets as $bucket) {
+            if (! is_array($bucket)) {
+                continue;
+            }
+            $name = trim((string) ($bucket['bucket'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $map[$name] = (float) ($bucket['share'] ?? 0);
+        }
+
+        return $map;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function percentFormats(float $share): array
+    {
+        $variants = [];
+        foreach ([1, 0] as $decimals) {
+            $dot = number_format($share, $decimals, '.', '');
+            $comma = number_format($share, $decimals, ',', '');
+            $variants[] = $dot;
+            $variants[] = $comma;
+            if ($decimals === 1 && str_ends_with($dot, '.0')) {
+                $variants[] = number_format($share, 0, '.', '');
+                $variants[] = number_format($share, 0, ',', '');
+            }
+        }
+
+        return array_values(array_unique(array_filter($variants, static fn (string $v) => $v !== '')));
+    }
+
+    /**
+     * @param  list<string>  $formats
+     */
+    private function textHasAnyPercent(string $text, array $formats): bool
+    {
+        foreach ($formats as $format) {
+            if ($format === '') {
+                continue;
+            }
+            if (preg_match('/(?<!\d)'.preg_quote($format, '/').'\s*%/u', $text) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  list<string>  $fromFormats
+     */
+    private function replacePercentFormats(string $text, array $fromFormats, string $toFormat): string
+    {
+        $result = $text;
+        usort($fromFormats, static fn (string $a, string $b) => strlen($b) <=> strlen($a));
+        foreach ($fromFormats as $format) {
+            if ($format === '') {
+                continue;
+            }
+            $result = (string) preg_replace(
+                '/(?<!\d)'.preg_quote($format, '/').'(\s*%)/u',
+                $toFormat.'$1',
+                $result
+            );
+        }
+
+        return $result;
+    }
+
+    private function fixSwappedBucketPercentsInText(string $text, float $protectionShare, float $flexibleShare): string
+    {
+        $trimmed = trim($text);
+        if ($trimmed === '' || abs($protectionShare - $flexibleShare) < 0.5) {
+            return $text;
+        }
+
+        $protFmts = $this->percentFormats($protectionShare);
+        $flexFmts = $this->percentFormats($flexibleShare);
+        $hasProt = preg_match('/\bproteksi\b|\bprotection\b/iu', $text) === 1;
+        $hasFlex = preg_match('/flexible\s*\+\s*social|\bflexible\b|\bfleksibel\b/iu', $text) === 1;
+
+        if ($hasProt && ! $hasFlex
+            && $this->textHasAnyPercent($text, $flexFmts)
+            && ! $this->textHasAnyPercent($text, $protFmts)
+        ) {
+            return $this->replacePercentFormats($text, $flexFmts, $protFmts[0]);
+        }
+
+        if ($hasFlex && ! $hasProt
+            && $this->textHasAnyPercent($text, $protFmts)
+            && ! $this->textHasAnyPercent($text, $flexFmts)
+        ) {
+            return $this->replacePercentFormats($text, $protFmts, $flexFmts[0]);
+        }
+
+        return $text;
+    }
+
+    /**
+     * @param  array{headline?: string, findings?: list<string>, status?: string}  $clinical
+     * @param  list<array<string, mixed>>  $buckets
+     * @return array{headline?: string, findings?: list<string>, status?: string}
+     */
+    private function reconcileClinicalSummaryBucketPercents(array $clinical, array $buckets): array
+    {
+        $map = $this->bucketShareMap($buckets);
+        if (! isset($map['Protection'], $map['Flexible + Social'])) {
+            return $clinical;
+        }
+
+        $protection = $map['Protection'];
+        $flexible = $map['Flexible + Social'];
+
+        if (isset($clinical['headline']) && is_string($clinical['headline'])) {
+            $clinical['headline'] = $this->fixSwappedBucketPercentsInText($clinical['headline'], $protection, $flexible);
+        }
+
+        if (isset($clinical['findings']) && is_array($clinical['findings'])) {
+            $clinical['findings'] = array_values(array_map(
+                function ($line) use ($protection, $flexible) {
+                    return is_string($line)
+                        ? $this->fixSwappedBucketPercentsInText($line, $protection, $flexible)
+                        : $line;
+                },
+                $clinical['findings']
+            ));
+        }
+
+        return $clinical;
+    }
+
+    /**
+     * @param  array{summary?: string, findings?: list<string>, interpretation?: string, priority?: string, education?: string}  $note
+     * @param  list<array<string, mixed>>  $buckets
+     * @param  array{summary?: string, findings?: list<string>, interpretation?: string, priority?: string, education?: string}  $fallback
+     * @return array{summary?: string, findings?: list<string>, interpretation?: string, priority?: string, education?: string}
+     */
+    private function reconcileDoctorsNoteBucketPercents(array $note, array $buckets, array $fallback = []): array
+    {
+        $map = $this->bucketShareMap($buckets);
+        if (! isset($map['Protection'], $map['Flexible + Social'])) {
+            return $note;
+        }
+
+        $protection = $map['Protection'];
+        $flexible = $map['Flexible + Social'];
+
+        foreach (['summary', 'interpretation', 'priority', 'education'] as $key) {
+            if (isset($note[$key]) && is_string($note[$key])) {
+                $note[$key] = $this->fixSwappedBucketPercentsInText($note[$key], $protection, $flexible);
+            }
+        }
+
+        if (isset($note['findings']) && is_array($note['findings'])) {
+            $note['findings'] = array_values(array_map(
+                function ($line) use ($protection, $flexible) {
+                    return is_string($line)
+                        ? $this->fixSwappedBucketPercentsInText($line, $protection, $flexible)
+                        : $line;
+                },
+                $note['findings']
+            ));
+        }
+
+        // Jika AI masih menempelkan % Flexible ke Protection (atau sebaliknya), pakai rules-based findings.
+        if ($this->doctorsNoteStillHasBucketSwap($note, $protection, $flexible)
+            && isset($fallback['findings'])
+            && is_array($fallback['findings'])
+            && $fallback['findings'] !== []
+        ) {
+            $note['findings'] = $fallback['findings'];
+            if (! empty($fallback['priority'])) {
+                $note['priority'] = (string) $fallback['priority'];
+            }
+            if (! empty($fallback['summary'])) {
+                $note['summary'] = (string) $fallback['summary'];
+            }
+        }
+
+        return $note;
+    }
+
+    /**
+     * @param  array{summary?: string, findings?: list<string>, interpretation?: string, priority?: string, education?: string}  $note
+     */
+    private function doctorsNoteStillHasBucketSwap(array $note, float $protectionShare, float $flexibleShare): bool
+    {
+        if (abs($protectionShare - $flexibleShare) < 0.5) {
+            return false;
+        }
+
+        $protFmts = $this->percentFormats($protectionShare);
+        $flexFmts = $this->percentFormats($flexibleShare);
+        $chunks = [];
+        foreach (['summary', 'interpretation', 'priority', 'education'] as $key) {
+            if (isset($note[$key]) && is_string($note[$key]) && $note[$key] !== '') {
+                $chunks[] = $note[$key];
+            }
+        }
+        if (isset($note['findings']) && is_array($note['findings'])) {
+            foreach ($note['findings'] as $finding) {
+                if (is_string($finding) && $finding !== '') {
+                    $chunks[] = $finding;
+                }
+            }
+        }
+
+        foreach ($chunks as $text) {
+            $hasProt = preg_match('/\bproteksi\b|\bprotection\b/iu', $text) === 1;
+            $hasFlex = preg_match('/flexible\s*\+\s*social|\bflexible\b|\bfleksibel\b/iu', $text) === 1;
+            if ($hasProt && ! $hasFlex && $this->textHasAnyPercent($text, $flexFmts) && ! $this->textHasAnyPercent($text, $protFmts)) {
+                return true;
+            }
+            if ($hasFlex && ! $hasProt && $this->textHasAnyPercent($text, $protFmts) && ! $this->textHasAnyPercent($text, $flexFmts)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function ftsaBaselineContext(FinancialBaseline $baseline): string
@@ -1121,14 +1365,19 @@ PROMPT;
           return ['- (tidak ada data likuiditas sosial pada periode ini)'];
       }
 
+      $periodMonths = (int) ($metrics['period_months'] ?? 1);
+      $cashScope = $periodMonths === 1 ? 'bulan ini' : 'periode (akumulasi)';
       $lines = [
-          '- Defisit (expense>income): Rp '.$this->formatIdr((int) ($cash['deficit'] ?? 0)),
-          '- Utang Masuk (pinjaman sosial masuk): Rp '.$this->formatIdr((int) ($cash['social_borrow_inflow'] ?? 0)),
-          '- Utang Keluar (bayar balik): Rp '.$this->formatIdr((int) ($cash['social_repay_outflow'] ?? 0)),
-          '- Estimasi sisa kas: Rp '.$this->formatIdr((int) ($cash['estimated_cash'] ?? 0)),
-          '- Outstanding utang sosial: Rp '.$this->formatIdr((int) ($cash['outstanding_debt'] ?? 0)),
-          '- Outstanding piutang aktif: Rp '.$this->formatIdr((int) ($cash['outstanding_receivable'] ?? 0)),
+          '- Defisit (expense>income) '.$cashScope.': Rp '.$this->formatIdr((int) ($cash['deficit'] ?? 0)),
+          '- Utang Masuk (pinjaman sosial masuk) '.$cashScope.': Rp '.$this->formatIdr((int) ($cash['social_borrow_inflow'] ?? 0)),
+          '- Utang Keluar (bayar balik) '.$cashScope.': Rp '.$this->formatIdr((int) ($cash['social_repay_outflow'] ?? 0)),
+          '- Estimasi sisa kas '.$cashScope.' (cashflow ± likuiditas sosial periode): Rp '.$this->formatIdr((int) ($cash['estimated_cash'] ?? 0)),
+          '- Outstanding utang sosial (posisi aktif, semua periode): Rp '.$this->formatIdr((int) ($cash['outstanding_debt'] ?? 0)),
+          '- Outstanding piutang aktif (posisi aktif, semua periode): Rp '.$this->formatIdr((int) ($cash['outstanding_receivable'] ?? 0)),
       ];
+      if ($periodMonths === 1) {
+          $lines[] = '- Catatan: untuk filter 1 bulan, bahas surplus/defisit BULAN INI saja — jangan menyebut akumulasi lintas bulan.';
+      }
       $insight = trim((string) ($cash['insight_text'] ?? ''));
       if ($insight !== '') {
           $lines[] = '- Insight: '.$insight;
@@ -1163,6 +1412,19 @@ PROMPT;
    */
   private function metricsFingerprint(array $metrics): string
   {
+      $bucketParts = [];
+      foreach ((array) ($metrics['buckets'] ?? []) as $bucket) {
+          if (! is_array($bucket)) {
+              continue;
+          }
+          $bucketParts[] = sprintf(
+              '%s:%s',
+              (string) ($bucket['bucket'] ?? ''),
+              round((float) ($bucket['share'] ?? 0), 1),
+          );
+      }
+      sort($bucketParts);
+
       return sha1(implode('|', [
           (int) ($metrics['income'] ?? 0),
           (int) ($metrics['expense'] ?? 0),
@@ -1170,6 +1432,7 @@ PROMPT;
           (int) ($metrics['cashflow'] ?? 0),
           (int) ($metrics['transaction_count'] ?? 0),
           round((float) ($metrics['saving_rate'] ?? 0), 1),
+          implode(',', $bucketParts),
       ]));
   }
 

@@ -85,7 +85,7 @@ class TransactionDashboardService
             $range['start'],
             $range['end'],
         );
-        $cashLiquidity = $this->cashLiquidityInsight($rows, $income, $expense, $savingInvestment, $taxObligation, $cashflow, $socialLiquidity);
+        $cashLiquidity = $this->cashLiquidityInsight($rows, $income, $expense, $savingInvestment, $taxObligation, $cashflow, $socialLiquidity, $periodMonths);
         $dailyExpenses = $this->dailyExpenseTrend($telegramUserId, $month);
         $fallbackClinical = $this->clinicalSummary(
             $income,
@@ -105,6 +105,7 @@ class TransactionDashboardService
             $periodMonths,
             [
                 'period_label' => $this->periodLabel($month, $periodMonths),
+                'period_months' => $periodMonths,
                 'income' => $income,
                 'expense' => $expense,
                 'saving_investment' => $savingInvestment,
@@ -214,6 +215,7 @@ class TransactionDashboardService
             $taxObligation,
             $cashflow,
             $socialLiquidity,
+            $periodMonthsForClinical,
         );
 
         $fallbackClinical = $this->clinicalSummary(
@@ -231,6 +233,7 @@ class TransactionDashboardService
         return [
             'metrics' => [
                 'period_label' => $periodLabel,
+                'period_months' => $periodMonthsForClinical,
                 'income' => $income,
                 'expense' => $expense,
                 'saving_investment' => $savingInvestment,
@@ -799,6 +802,7 @@ class TransactionDashboardService
         int $taxObligation,
         int $cashflow,
         array $socialLiquidity,
+        int $periodMonths = 1,
     ): array {
         $borrowIn = (int) $rows->where('type', TransactionTaxonomy::TYPE_PAYABLE_IN)->sum('amount');
         $repayOut = (int) $rows->where('type', TransactionTaxonomy::TYPE_PAYABLE_OUT)->sum('amount');
@@ -806,6 +810,7 @@ class TransactionDashboardService
         $repaidIn = (int) $rows->where('type', TransactionTaxonomy::TYPE_RECEIVABLE_IN)->sum('amount');
 
         // Cashflow prescription (income − expense − saving − tax) ± arus likuiditas sosial
+        // Hanya dari transaksi dalam filter periode (bukan kumulatif lintas bulan).
         $estimatedCash = $cashflow + $borrowIn - $repayOut - $lendOut + $repaidIn;
         $deficit = max(0, -$cashflow);
         $deficitFundedBySocial = $deficit > 0 ? min($deficit, $borrowIn) : 0;
@@ -813,19 +818,24 @@ class TransactionDashboardService
         $outstandingDebt = (int) ($socialLiquidity['active_debt_total'] ?? 0);
         $outstandingReceivable = (int) ($socialLiquidity['active_total'] ?? 0);
 
+        $periodScope = $periodMonths === 1 ? 'bulan_ini' : 'periode';
+        $periodPhrase = $periodMonths === 1 ? 'bulan ini' : "{$periodMonths} bulan terakhir";
+
         $insightText = null;
         if ($deficit > 0 && $borrowIn > 0) {
             $fmt = static fn (int $n): string => 'Rp'.number_format($n, 0, ',', '.');
             $insightText = sprintf(
-                'Pengeluaran melebihi pemasukan sebesar %s. Selisih tersebut dibiayai oleh Likuiditas Sosial (pinjaman sosial %s). Essential Living tetap terjaga bukan karena pendapatan mencukupi, melainkan karena likuiditas sosial.',
+                'Pengeluaran melebihi pemasukan sebesar %s %s. Selisih tersebut dibiayai oleh Likuiditas Sosial (pinjaman sosial %s). Essential Living tetap terjaga bukan karena pendapatan mencukupi, melainkan karena likuiditas sosial.',
                 $fmt($deficit),
+                $periodPhrase,
                 $fmt($borrowIn),
             );
         } elseif ($borrowIn > 0 && $cashflow >= 0) {
             $fmt = static fn (int $n): string => 'Rp'.number_format($n, 0, ',', '.');
             $insightText = sprintf(
-                'Ada arus Utang Masuk %s pada periode ini. Ini menaikkan kas dan outstanding hutang — bukan pendapatan, dan tidak mengubah Income/Expense/bucket.',
+                'Ada arus Utang Masuk %s pada %s. Ini menaikkan kas dan outstanding utang — bukan pendapatan, dan tidak mengubah Income/Expense/bucket.',
                 $fmt($borrowIn),
+                $periodPhrase,
             );
         }
 
@@ -839,6 +849,8 @@ class TransactionDashboardService
             'outstanding_debt' => $outstandingDebt,
             'outstanding_receivable' => $outstandingReceivable,
             'deficit_funded_by_social' => $deficitFundedBySocial,
+            'period_months' => $periodMonths,
+            'period_scope' => $periodScope,
             'insight_text' => $insightText,
         ];
     }
@@ -965,18 +977,34 @@ class TransactionDashboardService
             }
 
             if ($name === 'Flexible + Social' && in_array($status, ['over_max', 'over'], true)) {
-                $recommendations[] = 'Kontrol pengeluaran Flexible + Social agar tidak melebihi 10% dari pendapatan.';
+                $recommendations[] = sprintf(
+                    'Kontrol pengeluaran Flexible + Social (aktual %s%%, batas maks %s%%) agar tidak menjadi financial leakage.',
+                    $this->formatShare($share),
+                    $this->formatShare($ideal),
+                );
                 $hasBucketIssue = true;
             }
 
             if ($name === 'Future Building' && in_array($status, ['under_min', 'under'], true)) {
-                $recommendations[] = 'Naikkan alokasi Future Building agar mendekati target minimal 30% dari pendapatan.';
+                $recommendations[] = sprintf(
+                    'Naikkan alokasi Future Building (aktual %s%%, target min %s%%).',
+                    $this->formatShare($share),
+                    $this->formatShare($ideal),
+                );
                 $hasBucketIssue = true;
             }
 
             if ($name === 'Protection' && in_array($status, ['over_max', 'over'], true)) {
-                $recommendations[] = 'Proteksi melebihi batas maksimal 10% — evaluasi apakah sudah over-insured dan alihkan surplus ke Future Building.';
+                $recommendations[] = sprintf(
+                    'Proteksi melebihi batas (aktual %s%%, maks %s%%) — evaluasi apakah sudah over-insured dan alihkan surplus ke Future Building.',
+                    $this->formatShare($share),
+                    $this->formatShare($ideal),
+                );
                 $hasBucketIssue = true;
+            }
+
+            if ($name === 'Protection' && $share > 0 && $share <= $ideal && in_array($status, ['met', 'near_max', 'on_target', 'within'], true) === false) {
+                // Keep quiet when under max — healthy; no uplift suggestion.
             }
 
             if ($name === 'Future Building' && $share > 0 && $savingRate >= 20) {
@@ -1005,6 +1033,13 @@ class TransactionDashboardService
             'priority' => $recommendations[0],
             'education' => '',
         ];
+    }
+
+    private function formatShare(float $share): string
+    {
+        $formatted = rtrim(rtrim(number_format($share, 1, ',', ''), '0'), ',');
+
+        return $formatted === '' ? '0' : $formatted;
     }
 
     /**

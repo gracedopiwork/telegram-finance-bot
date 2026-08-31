@@ -85,7 +85,8 @@
     {{-- KPI --}}
     @include('portal.partials.financial-dashboard-kpi', ['summary' => $summary, 'fmt' => $fmt])
 
-    {{-- Clinical Summary / Minggu --}}
+    {{-- Clinical Summary: disembunyikan saat Doctor's Note bulanan sudah dirilis (agar tidak dobel/membingungkan) --}}
+    @if(! $showDoctorsNote)
     <div class="bg-white rounded-xl border border-slate-200 p-5">
         <div class="text-sm font-semibold text-navy-800 mb-3">Clinical Summary / Akumulasi minggu ke-{{ $clinicalWeek }}</div>
         @if(!empty($summary['clinical_summary']['headline']))
@@ -104,6 +105,7 @@
             <p class="text-xs text-slate-500 mt-3">Terakhir dibuat: {{ $clinicalGeneratedAt->format('d/m/Y H:i') }}</p>
         @endif
     </div>
+    @endif
 
     {{-- Kesehatan Pajak — referral tax planner (taxonomy v1.3 §5B.5) --}}
     @include('portal.partials.tax-health-panel', ['summary' => $summary, 'fmt' => $fmt])

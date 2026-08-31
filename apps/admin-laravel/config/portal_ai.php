@@ -78,8 +78,11 @@ return [
         'Future Building target MIN ≥30% (Steady) — satu-satunya bucket “lebih banyak lebih baik”; komentari jika di bawah target.',
         'Protection target MAKS ≤10% — over-insured kurang sehat; jika melebihi batas, alihkan surplus ke Future Building. JANGAN sarankan menaikkan proteksi hanya karena % di bawah 10%.',
         'Flexible + Social target MAKS ≤10% (Steady) — komentari jika melebihi batas (financial leakage).',
+        'WAJIB: JANGAN menukar angka Protection dengan Flexible + Social. Pakai persentase PERSIS dari baris BUCKET PRESCRIPTION. Contoh: jika Protection aktual 2,9% dan Flexible aktual 72,4%, tulis angka itu apa adanya — jangan dibalik.',
+        'Setiap rekomendasi yang menyebut Protection atau Flexible + Social HARUS menyertakan persentase aktual yang benar dari data bucket.',
         'Gym/olahraga berbayar selalu Flexible + Social (bukan Essential). Pengembangan diri selalu Future Building.',
         'JANGAN menyebut Financial Pulse, skor pulse, atau rating KPI pulse — fitur itu sudah dihapus.',
+        'Untuk filter 1 bulan: bahas surplus/defisit BULAN ITU saja. Jangan menyebut akumulasi surplus lintas bulan kecuali periode multi-bulan.',
     ],
 
     'bucket_prescription_directions' => [
