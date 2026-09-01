@@ -68,3 +68,28 @@ def test_tgl_with_year_when_today_is_next_month():
     assert local.date().isoformat() == "2026-08-31"
     assert local.hour == 12
     assert format_recorded_at_label(dt) == "31/08/2026"
+
+
+def test_ignore_ai_tanggal_when_user_did_not_mention_date():
+    """Kasus Catherina: AI mengarang 2026-01-09 (MM/DD) untuk 'Terima gaji 5k'."""
+    now = datetime(2026, 9, 1, 18, 40, tzinfo=TZ)
+    parsed = {"tanggal": "2026-01-09", "keterangan": "Terima gaji"}
+    apply_transaction_date(parsed, "Terima gaji 5k", now=now)
+    assert "recorded_at" not in parsed
+    assert "tanggal" not in parsed
+
+
+def test_bare_indonesian_date_day_first():
+    """'1/9 terima gaji' = 1 September, bukan 9 Januari."""
+    now = datetime(2026, 9, 1, 18, 40, tzinfo=TZ)
+    parsed = {"tanggal": "2026-01-09", "keterangan": "Terima gaji"}
+    apply_transaction_date(parsed, "1/9 terima gaji 5k", now=now)
+    assert parsed["recorded_at"].astimezone(TZ).date().isoformat() == "2026-09-01"
+    assert format_recorded_at_label(parsed["recorded_at"]) == "01/09/2026"
+
+
+def test_ai_tanggal_with_iso_in_text():
+    now = datetime(2026, 9, 1, 18, 40, tzinfo=TZ)
+    parsed = {"tanggal": "2026-08-15", "keterangan": "gaji"}
+    apply_transaction_date(parsed, "gaji tanggal 2026-08-15 sebesar 5k", now=now)
+    assert parsed["recorded_at"].astimezone(TZ).date().isoformat() == "2026-08-15"

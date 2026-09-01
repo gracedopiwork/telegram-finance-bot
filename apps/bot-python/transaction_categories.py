@@ -359,7 +359,10 @@ Aturan:
    Signal No: "terencana", "sudah rencanain", "tabungan buat ini", "meeting klien", "langganan bulanan".
    Jika tidak ada signal → impulsif = "No". JANGAN tanya terencana vs spontan.
    Essential + Need + Impulsif Yes adalah VALID (§3.6) — bukan kontradiksi.
-8) tanggal: opsional. Isi YYYY-MM-DD HANYA jika user menyebut tanggal transaksi.
+8) tanggal: opsional. Isi YYYY-MM-DD HANYA jika user menyebut tanggal transaksi secara eksplisit
+   (kata tgl/tanggal/kemarin/hari lalu, atau pola DD/MM). Format Indonesia = hari dulu, bulan kedua
+   (contoh "1/9" = 1 September = 2026-09-01, BUKAN 9 Januari). Jika ragu atau tidak disebut → null.
+   JANGAN mengarang tanggal dari "hari ini" atau format Amerika MM/DD.
 9) Balas HANYA JSON murni, tanpa markdown.
 10) Jika input tidak mengandung nominal valid atau tidak bisa dipahami, balas:
    {{"error":"invalid_input"}}

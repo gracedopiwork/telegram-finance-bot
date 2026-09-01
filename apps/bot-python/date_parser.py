@@ -156,6 +156,59 @@ def parse_ai_tanggal(value: object, *, now: datetime | None = None, tz: ZoneInfo
     return _to_recorded_at(d, now=now, tz=tz)
 
 
+def text_has_explicit_date_cue(text: str) -> bool:
+    """True jika user menulis isyarat tanggal (bukan hanya AI yang mengarang)."""
+    if not text or not text.strip():
+        return False
+    lower = text.strip().lower()
+    if re.search(r"\b(?:tgl|tanggal|kemarin)\b", lower):
+        return True
+    if re.search(r"\b\d{1,2}\s*hari\s*lalu\b", lower):
+        return True
+    if re.search(rf"\b\d{{1,2}}\s+(?:{_MONTH_NAMES})\b", lower, flags=re.IGNORECASE):
+        return True
+    if re.search(r"\b\d{4}-\d{2}-\d{2}\b", lower):
+        return True
+    # Angka bertanggal: 1/9, 01-09-2026, 31.08.26
+    if re.search(r"\b\d{1,2}[/.\-]\d{1,2}(?:[/.\-]\d{2,4})?\b", lower):
+        return True
+    return False
+
+
+def extract_bare_indonesian_date(
+    text: str,
+    *,
+    now: datetime | None = None,
+    tz: ZoneInfo = DEFAULT_TZ,
+) -> datetime | None:
+    """
+    Tanggal di awal catatan tanpa kata 'tgl' — selalu DD/MM (konvensi ID).
+    Contoh: '1/9 terima gaji 5k' → 1 September (bukan 9 Januari).
+    """
+    if not text or not text.strip():
+        return None
+    local_now = (now or datetime.now(tz)).astimezone(tz)
+    today = local_now.date()
+    match = re.match(
+        r"^\s*(?:tgl|tanggal)?\s*[:.]?\s*(\d{1,2})[/.\-](\d{1,2})(?:[/.\-](\d{2,4}))?\b",
+        text.strip(),
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+    day = int(match.group(1))
+    month = int(match.group(2))
+    if match.group(3):
+        year_raw = int(match.group(3))
+        year = year_raw + 2000 if year_raw < 100 else year_raw
+    else:
+        year = _resolve_year(month, day, today=today)
+    d = _safe_date(year, month, day)
+    if d is None:
+        return None
+    return _to_recorded_at(d, now=local_now, tz=tz)
+
+
 def apply_transaction_date(
     parsed: dict,
     source_text: str = "",
@@ -164,12 +217,23 @@ def apply_transaction_date(
 ) -> dict:
     """Isi parsed['recorded_at'] jika user menyebut tanggal. Teks user menang atas field AI."""
     from_text = extract_transaction_date(source_text, now=now)
-    from_ai = parse_ai_tanggal(parsed.get("tanggal"), now=now)
+    if from_text is None:
+        from_text = extract_bare_indonesian_date(source_text, now=now)
+
+    # Jangan percaya field tanggal AI jika user tidak menulis isyarat tanggal.
+    # Model sering mengarang MM/DD Amerika → 1 Sep jadi 9 Jan (tampil 09/01).
+    from_ai = None
+    if text_has_explicit_date_cue(source_text):
+        from_ai = parse_ai_tanggal(parsed.get("tanggal"), now=now)
+
     recorded = from_text or from_ai
     if recorded is not None:
         parsed["recorded_at"] = recorded
-        # Jangan ikut ke field yang dikirim API selain via argumen recorded_at
-        parsed.pop("tanggal", None)
+    else:
+        parsed.pop("recorded_at", None)
+
+    # Jangan ikut ke field yang dikirim API selain via argumen recorded_at
+    parsed.pop("tanggal", None)
     return parsed
 
 

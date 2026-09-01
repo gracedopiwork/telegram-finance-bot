@@ -1148,6 +1148,9 @@ async def save_transaction(
         recorded_at = parsed.get("recorded_at")
         if recorded_at is None and message is not None:
             recorded_at = getattr(message, "date", None)
+        # Samakan label Tanggal di balasan dengan yang benar-benar disimpan.
+        if recorded_at is not None:
+            parsed["recorded_at"] = recorded_at
         ok, err, canonical = save_transaction_to_api(
             uid,
             parsed,
