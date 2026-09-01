@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\BotTransaction;
 use App\Models\FinancialBaseline;
 use App\Services\FtsaAiGuidanceService;
+use App\Support\PortalTimezone;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -27,7 +28,7 @@ class ImpulsivityAssessmentService
     $dashboard = app(TransactionDashboardService::class);
     $month = $dashboard->monthKey($month);
     $periodMonths = $dashboard->periodMonths($period);
-    $range = $this->periodRange($month, $periodMonths);
+    $range = $dashboard->periodRange($month, $periodMonths);
 
     $rows = BotTransaction::query()
       ->forUser($telegramUserId)
@@ -36,7 +37,7 @@ class ImpulsivityAssessmentService
 
     $expenses = $rows->where('type', 'Pengeluaran');
     $expenseCount = $expenses->count();
-    $impulsiveRows = $expenses->where('is_impulsive', true);
+    $impulsiveRows = $expenses->filter(fn (BotTransaction $t) => (bool) $t->is_impulsive);
     $impulsiveCount = $impulsiveRows->count();
     $totalExpense = (int) $expenses->sum('amount');
     $impulsiveAmount = (int) $impulsiveRows->sum('amount');
@@ -69,13 +70,14 @@ class ImpulsivityAssessmentService
     $ftsaProfile = $this->ftsaProfile($baseline);
     $emotionalBalance = $this->emotionalBalanceScore($expenses);
 
+    $monthLabel = $this->monthLabelWib($month);
     $core = [
       'month' => $month,
       'period_months' => $periodMonths,
       'period_label' => $periodMonths === 1
-        ? Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y')
-        : $range['start']->translatedFormat('M Y').' – '.$range['end']->translatedFormat('M Y'),
-      'month_label' => Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y'),
+        ? $monthLabel
+        : $this->rangeLabelWib($range['start'], $range['end']),
+      'month_label' => $monthLabel,
       'impulsive_rate' => $impulsiveRate,
       'impulsive_count' => $impulsiveCount,
       'expense_count' => $expenseCount,
@@ -155,7 +157,7 @@ class ImpulsivityAssessmentService
   {
     $dashboard = app(TransactionDashboardService::class);
     $month = $dashboard->monthKey($monthKey);
-    $range = $this->periodRange($month, 1);
+    $range = $dashboard->periodRange($month, 1);
 
     $rows = BotTransaction::query()
       ->forUser($telegramUserId)
@@ -164,7 +166,7 @@ class ImpulsivityAssessmentService
 
     $expenses = $rows->where('type', 'Pengeluaran');
     $expenseCount = $expenses->count();
-    $impulsiveRows = $expenses->where('is_impulsive', true);
+    $impulsiveRows = $expenses->filter(fn (BotTransaction $t) => (bool) $t->is_impulsive);
     $impulsiveCount = $impulsiveRows->count();
     $totalExpense = (int) $expenses->sum('amount');
     $impulsiveAmount = (int) $impulsiveRows->sum('amount');
@@ -192,7 +194,7 @@ class ImpulsivityAssessmentService
 
     $metrics = [
       'month' => $month,
-      'period_label' => Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y'),
+      'period_label' => $this->monthLabelWib($month),
       'expense_count' => $expenseCount,
       'impulsive_rate' => $impulsiveRate,
       'impulsive_amount_share' => $impulsiveAmountShare,
@@ -268,8 +270,11 @@ class ImpulsivityAssessmentService
   public function behavioralSummaryCumulative(int $telegramUserId, string $monthKey, ?string $email = null): array
   {
     $month = app(TransactionDashboardService::class)->monthKey($monthKey);
-    $monthCarbon = Carbon::createFromFormat('Y-m', $month);
-    $anchor = $monthCarbon->isCurrentMonth() ? now() : $monthCarbon->copy()->endOfMonth();
+    $tz = PortalTimezone::defaultName();
+    $monthCarbon = Carbon::createFromFormat('Y-m', $month, $tz)->startOfMonth();
+    $anchor = $monthCarbon->isSameMonth(now($tz))
+      ? now($tz)
+      : $monthCarbon->copy()->endOfMonth();
     $week = app(PortalGuidanceSnapshotService::class)->monthCumulativeWeekRange($anchor);
 
     $rows = BotTransaction::query()
@@ -287,7 +292,7 @@ class ImpulsivityAssessmentService
       ];
     }
 
-    $impulsiveRows = $expenses->where('is_impulsive', true);
+    $impulsiveRows = $expenses->filter(fn (BotTransaction $t) => (bool) $t->is_impulsive);
     $expenseCount = $expenses->count();
     $impulsiveCount = $impulsiveRows->count();
     $impulsiveRate = $expenseCount > 0
@@ -429,10 +434,38 @@ class ImpulsivityAssessmentService
    */
   private function periodRange(string $anchorMonth, int $periodMonths): array
   {
-    $end = Carbon::createFromFormat('Y-m', $anchorMonth)->endOfMonth();
-    $start = $end->copy()->subMonths($periodMonths - 1)->startOfMonth();
+    return app(TransactionDashboardService::class)->periodRange($anchorMonth, $periodMonths);
+  }
 
-    return ['start' => $start, 'end' => $end];
+  private function monthLabelWib(string $month): string
+  {
+    return Carbon::createFromFormat('Y-m', $month, PortalTimezone::defaultName())
+      ->translatedFormat('F Y');
+  }
+
+  private function rangeLabelWib(Carbon $startUtc, Carbon $endUtc): string
+  {
+    $tz = PortalTimezone::defaultName();
+
+    return $startUtc->copy()->timezone($tz)->translatedFormat('M Y')
+      .' – '
+      .$endUtc->copy()->timezone($tz)->translatedFormat('M Y');
+  }
+
+  private function localDateKey(BotTransaction $transaction): string
+  {
+    return $transaction->recorded_at
+      ->copy()
+      ->timezone(PortalTimezone::defaultName())
+      ->format('Y-m-d');
+  }
+
+  private function localMonthKey(BotTransaction $transaction): string
+  {
+    return $transaction->recorded_at
+      ->copy()
+      ->timezone(PortalTimezone::defaultName())
+      ->format('Y-m');
   }
 
   private function impulsivityScore(float $impulsiveRate, float $impulsiveAmountShare, Collection $impulsiveRows): int
@@ -564,7 +597,7 @@ class ImpulsivityAssessmentService
         if ($count === 0) {
           return null;
         }
-        $impulsive = $items->where('is_impulsive', true);
+        $impulsive = $items->filter(fn (BotTransaction $t) => (bool) $t->is_impulsive);
         $impulsiveCount = $impulsive->count();
 
         return [
@@ -597,7 +630,7 @@ class ImpulsivityAssessmentService
           'mood' => $mood,
           'amount' => $amount,
           'share' => round(($amount / $total) * 100, 1),
-          'impulsive_amount' => (int) $items->where('is_impulsive', true)->sum('amount'),
+          'impulsive_amount' => (int) $items->filter(fn (BotTransaction $t) => (bool) $t->is_impulsive)->sum('amount'),
         ];
       })
       ->filter()
@@ -610,7 +643,8 @@ class ImpulsivityAssessmentService
    */
   private function moodTimeline(Collection $rows, string $anchorMonth, int $periodMonths): array
   {
-    $end = Carbon::createFromFormat('Y-m', $anchorMonth)->endOfMonth();
+    $tz = PortalTimezone::defaultName();
+    $end = Carbon::createFromFormat('Y-m', $anchorMonth, $tz)->endOfMonth();
     $start = $end->copy()->subMonths($periodMonths - 1)->startOfDay();
     $moodScore = [
       'Happy' => 5, 'Neutral' => 3, 'Sad' => 2, 'Stressed' => 1, 'Angry' => 1, 'Tired' => 2,
@@ -620,7 +654,7 @@ class ImpulsivityAssessmentService
     $cursor = $start->copy();
     while ($cursor->lte($end)) {
       $dayKey = $cursor->format('Y-m-d');
-      $dayRows = $rows->filter(fn (BotTransaction $t) => $t->recorded_at->format('Y-m-d') === $dayKey);
+      $dayRows = $rows->filter(fn (BotTransaction $t) => $this->localDateKey($t) === $dayKey);
       $expense = (int) $dayRows->where('type', 'Pengeluaran')->sum('amount');
       $dominantMood = $dayRows->isNotEmpty()
         ? (string) $dayRows->groupBy('mood')->sortByDesc(fn (Collection $g) => $g->count())->keys()->first()
@@ -696,7 +730,7 @@ class ImpulsivityAssessmentService
           return null;
         }
         $amount = (int) $items->sum('amount');
-        $impulsiveCount = $items->where('is_impulsive', true)->count();
+        $impulsiveCount = $items->filter(fn (BotTransaction $t) => (bool) $t->is_impulsive)->count();
 
         return [
           'mood' => $mood,
@@ -735,7 +769,8 @@ class ImpulsivityAssessmentService
    */
   private function moodCalendar(Collection $rows, string $month): array
   {
-    $start = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+    $tz = PortalTimezone::defaultName();
+    $start = Carbon::createFromFormat('Y-m', $month, $tz)->startOfMonth();
     $daysInMonth = $start->daysInMonth;
     $calendar = [];
 
@@ -749,8 +784,12 @@ class ImpulsivityAssessmentService
     ];
 
     for ($day = 1; $day <= $daysInMonth; $day++) {
-      $dayRows = $rows->filter(fn (BotTransaction $t) => (int) $t->recorded_at->format('d') === $day
-        && $t->recorded_at->format('Y-m') === $month);
+      $dayRows = $rows->filter(function (BotTransaction $t) use ($month, $day, $tz) {
+        $local = $t->recorded_at->copy()->timezone($tz);
+
+        return (int) $local->format('j') === $day
+          && $local->format('Y-m') === $month;
+      });
       $mood = $dayRows->isNotEmpty()
         ? (string) $dayRows->groupBy('mood')->sortByDesc(fn (Collection $g) => $g->count())->keys()->first()
         : null;

@@ -251,15 +251,17 @@ class TransactionDashboardService
     }
 
     /**
+     * Rentang periode dalam UTC untuk query kolom recorded_at (disimpan UTC).
+     * Anchor bulan dihitung di Asia/Jakarta agar tidak geser (Agustus → September).
+     *
      * @return array{start: Carbon, end: Carbon}
      */
-    private function periodRange(string $anchorMonth, int $periodMonths): array
+    public function periodRange(string $anchorMonth, int $periodMonths): array
     {
         $tz = PortalTimezone::defaultName();
         $end = Carbon::createFromFormat('Y-m', $anchorMonth, $tz)->endOfMonth();
         $start = $end->copy()->subMonths($periodMonths - 1)->startOfMonth();
 
-        // Bandingkan ke kolom UTC di DB.
         return [
             'start' => $start->copy()->utc(),
             'end' => $end->copy()->utc(),
@@ -1104,7 +1106,8 @@ class TransactionDashboardService
 
     private function monthLabel(string $month): string
     {
-        return Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y');
+        return Carbon::createFromFormat('Y-m', $month, PortalTimezone::defaultName())
+            ->translatedFormat('F Y');
     }
 
     /**
