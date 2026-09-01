@@ -37,11 +37,20 @@ def test_days_ago():
     assert dt.astimezone(TZ).date().isoformat() == "2026-07-08"
 
 
-def test_future_month_uses_previous_year():
-    # Sekarang Juli; tgl 15/12 tanpa tahun → Des tahun lalu
+def test_without_year_uses_current_year():
+    """Tanpa tahun → tahun berjalan (meski tanggal di bulan yang belum lewat)."""
+    # Sekarang Juli; tgl 15/12 tanpa tahun → tetap Des tahun ini
     dt = extract_transaction_date("tgl 15/12 beli hadiah 100k", now=NOW)
     assert dt is not None
-    assert dt.astimezone(TZ).date().isoformat() == "2025-12-15"
+    assert dt.astimezone(TZ).date().isoformat() == "2026-12-15"
+
+
+def test_1_9_without_year_is_september_this_year():
+    now = datetime(2026, 9, 1, 18, 54, tzinfo=TZ)
+    parsed = {}
+    apply_transaction_date(parsed, "1/9 terima gaji 5 juta", now=now)
+    assert parsed["recorded_at"].astimezone(TZ).date().isoformat() == "2026-09-01"
+    assert format_recorded_at_label(parsed["recorded_at"]) == "01/09/2026"
 
 
 def test_apply_prefers_text_over_ai():

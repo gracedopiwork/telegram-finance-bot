@@ -48,15 +48,7 @@ def _safe_date(year: int, month: int, day: int) -> date | None:
 
 
 def _resolve_year(month: int, day: int, *, today: date) -> int:
-    """Tanpa tahun: pakai tahun berjalan; jika jauh di masa depan, geser ke tahun lalu."""
-    candidate = _safe_date(today.year, month, day)
-    if candidate is None:
-        return today.year
-    # Izinkan sampai 1 hari ke depan (timezone edge); selain itu anggap tahun lalu.
-    if candidate > today + timedelta(days=1):
-        prev = _safe_date(today.year - 1, month, day)
-        if prev is not None:
-            return today.year - 1
+    """Tanpa tahun eksplisit: selalu pakai tahun berjalan (Asia/Jakarta)."""
     return today.year
 
 
