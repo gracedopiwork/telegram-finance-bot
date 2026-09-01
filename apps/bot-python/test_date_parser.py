@@ -88,6 +88,22 @@ def test_bare_indonesian_date_day_first():
     assert format_recorded_at_label(parsed["recorded_at"]) == "01/09/2026"
 
 
+def test_slash_dates_mid_sentence_are_day_first_not_ai():
+    """Kasus Catherina: '9/1' dan '1/9' di tengah teks harus beda (bukan sama-sama 9 Jan)."""
+    now = datetime(2026, 9, 1, 18, 46, tzinfo=TZ)
+
+    parsed_a = {"tanggal": "2026-01-09"}
+    apply_transaction_date(parsed_a, "terima gaji 1/9 5k", now=now)
+    assert parsed_a["recorded_at"].astimezone(TZ).date().isoformat() == "2026-09-01"
+
+    parsed_b = {"tanggal": "2026-01-09"}
+    apply_transaction_date(parsed_b, "terima gaji 9/1 5k", now=now)
+    assert parsed_b["recorded_at"].astimezone(TZ).date().isoformat() == "2026-01-09"
+
+    assert format_recorded_at_label(parsed_a["recorded_at"]) == "01/09/2026"
+    assert format_recorded_at_label(parsed_b["recorded_at"]) == "09/01/2026"
+
+
 def test_ai_tanggal_with_iso_in_text():
     now = datetime(2026, 9, 1, 18, 40, tzinfo=TZ)
     parsed = {"tanggal": "2026-08-15", "keterangan": "gaji"}

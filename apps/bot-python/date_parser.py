@@ -182,31 +182,30 @@ def extract_bare_indonesian_date(
     tz: ZoneInfo = DEFAULT_TZ,
 ) -> datetime | None:
     """
-    Tanggal di awal catatan tanpa kata 'tgl' — selalu DD/MM (konvensi ID).
-    Contoh: '1/9 terima gaji 5k' → 1 September (bukan 9 Januari).
+    Tanggal numerik DD/MM di mana pun dalam catatan — selalu hari dulu (konvensi ID).
+    Contoh: '1/9 terima gaji 5k' dan 'terima gaji 1/9 5k' → 1 September.
+    '9/1 ...' → 9 Januari (bukan 1 September).
     """
     if not text or not text.strip():
         return None
     local_now = (now or datetime.now(tz)).astimezone(tz)
     today = local_now.date()
-    match = re.match(
-        r"^\s*(?:tgl|tanggal)?\s*[:.]?\s*(\d{1,2})[/.\-](\d{1,2})(?:[/.\-](\d{2,4}))?\b",
+    # Ambil pola tanggal pertama yang valid sebagai DD/MM[/YYYY].
+    for match in re.finditer(
+        r"(?<!\d)(\d{1,2})[/.\-](\d{1,2})(?:[/.\-](\d{2,4}))?(?!\d)",
         text.strip(),
-        flags=re.IGNORECASE,
-    )
-    if not match:
-        return None
-    day = int(match.group(1))
-    month = int(match.group(2))
-    if match.group(3):
-        year_raw = int(match.group(3))
-        year = year_raw + 2000 if year_raw < 100 else year_raw
-    else:
-        year = _resolve_year(month, day, today=today)
-    d = _safe_date(year, month, day)
-    if d is None:
-        return None
-    return _to_recorded_at(d, now=local_now, tz=tz)
+    ):
+        day = int(match.group(1))
+        month = int(match.group(2))
+        if match.group(3):
+            year_raw = int(match.group(3))
+            year = year_raw + 2000 if year_raw < 100 else year_raw
+        else:
+            year = _resolve_year(month, day, today=today)
+        d = _safe_date(year, month, day)
+        if d is not None:
+            return _to_recorded_at(d, now=local_now, tz=tz)
+    return None
 
 
 def apply_transaction_date(
@@ -220,11 +219,13 @@ def apply_transaction_date(
     if from_text is None:
         from_text = extract_bare_indonesian_date(source_text, now=now)
 
-    # Jangan percaya field tanggal AI jika user tidak menulis isyarat tanggal.
-    # Model sering mengarang MM/DD Amerika → 1 Sep jadi 9 Jan (tampil 09/01).
+    # Jangan percaya field tanggal AI untuk pola DD/MM — AI sering pakai MM/DD Amerika
+    # sehingga '1/9' dan '9/1' sama-sama jadi 9 Januari.
     from_ai = None
-    if text_has_explicit_date_cue(source_text):
-        from_ai = parse_ai_tanggal(parsed.get("tanggal"), now=now)
+    if from_text is None and text_has_explicit_date_cue(source_text):
+        # Hanya izinkan AI jika tidak ada slash-date (mis. 'kemarin', '2 juli', ISO).
+        if not re.search(r"(?<!\d)\d{1,2}[/.\-]\d{1,2}(?:[/.\-]\d{2,4})?(?!\d)", source_text):
+            from_ai = parse_ai_tanggal(parsed.get("tanggal"), now=now)
 
     recorded = from_text or from_ai
     if recorded is not None:
