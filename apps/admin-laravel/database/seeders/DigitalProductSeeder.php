@@ -127,7 +127,7 @@ class DigitalProductSeeder extends Seeder
                 'is_active'      => true,
                 'is_featured'    => true,
                 'sort'           => 4,
-                'price'          => 249000,
+                'price'          => 349000,
                 'discount_price' => 229000,
                 'currency'       => 'IDR',
                 'period'         => '1 tahun First Aid + 12 bulan evaluasi FTSA',

@@ -143,7 +143,29 @@ class PortalAiGuidanceService
             $month,
         );
 
-        if ($stored !== null) {
+        $isPastMonth = $this->isPastMonth($month);
+        // 'force' hanya untuk cek apakah jadwal rilis sudah lewat (tanpa butuh snapshot).
+        $schedulePassed = $this->monthlyDoctorsNoteReleased($month, 'force');
+
+        // Bulan lampau / sudah lewat jadwal rilis: jangan stuck di pesan "pending akhir bulan".
+        if ($stored === null && ($isPastMonth || $schedulePassed)) {
+            $this->generateAndStoreMonthlyBehavioralGuidance(
+                $telegramUserId,
+                $month,
+                $metrics,
+                $baseline,
+                $fallback,
+            );
+            $stored = $this->guidanceSnapshots->get(
+                $telegramUserId,
+                PortalGuidanceSnapshot::TYPE_BEHAVIORAL_MONTHLY,
+                $month,
+            );
+        }
+
+        $released = $this->monthlyDoctorsNoteReleased($month, $stored['generated_at'] ?? null);
+
+        if ($stored !== null && ($released || $isPastMonth)) {
             $payload = is_array($stored['payload']) ? $stored['payload'] : [];
 
             return [

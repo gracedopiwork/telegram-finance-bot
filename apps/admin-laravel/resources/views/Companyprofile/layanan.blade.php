@@ -6,16 +6,17 @@
 
 {{-- ============== Hero ============== --}}
 <section class="relative h-[480px] md:h-[560px] flex items-center overflow-hidden bg-primary-container">
-    <div class="absolute inset-0 opacity-40">
+    <div class="absolute inset-0">
         <img class="w-full h-full object-cover"
              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCZQUmdNi2jUcE-I8z3JqGj6GKFXsMWzWiO19LbPon1uTC5LJudSTC0kgkY1oPvj-2TUMBozSP1Kg-ROB1WZYNBMuSw1hDUAjzBBPjoOyN48tj_kMJPIe4g0a_TZLwUCML3MPwOSgMrl_-09fw_YB6n5VmyFBW9ZCOue3jJsdp0bQzmBLoSJEzYsbYywzzcIWH9NYKtXhumh_utvQyJ9jWCfGRgFIubNu3jaa5h-fNhiIGvZMkPQqpi6_TOOUuIaT2qJcdPj5Uxzc0"
              alt="Tranquil professional consultation room.">
+        <div class="absolute inset-0 bg-gradient-to-r from-primary-container/90 via-primary-container/75 to-primary-container/55"></div>
     </div>
     <div class="relative z-10 px-margin-desktop max-w-container-max mx-auto w-full text-white">
         <div class="max-w-2xl">
             <span class="inline-block px-3 py-1 bg-secondary-container text-on-secondary-container font-label-md text-label-md rounded-full mb-6">{{ ($page['page.layanan.hero_eyebrow'] ?? null) ?: 'EKOSISTEM LAYANAN YFD' }}</span>
-            <h1 class="font-display-lg text-display-lg mb-6 leading-tight">{{ ($page['page.layanan.hero_title'] ?? null) ?: 'Tujuh Pilar Layanan Kesehatan Finansial' }}</h1>
-            <p class="font-body-lg text-body-lg text-on-primary-container opacity-90 mb-8">
+            <h1 class="font-display-lg text-display-lg mb-6 leading-tight drop-shadow-sm">{{ ($page['page.layanan.hero_title'] ?? null) ?: 'Tujuh Pilar Layanan Kesehatan Finansial' }}</h1>
+            <p class="font-body-lg text-body-lg text-white/95 mb-8 drop-shadow-sm">
                 {{ ($page['page.layanan.hero_subtitle'] ?? null) ?: 'Mengintegrasikan edukasi, proteksi, pendampingan, dan solusi finansial dalam satu ekosistem untuk membangun Herd Financial Immunity.' }}
             </p>
             <div class="flex flex-wrap gap-4">

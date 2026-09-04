@@ -22,7 +22,7 @@ return [
             'Kolaborasi psikolog, psikiater, hipnoterapis & mitra profesional',
         ],
         'pricing' => [
-            ['label' => 'Konsultasi awal Recovery', 'amount' => 150_000, 'note' => '30 menit – 1 jam · dokter finansial YFD'],
+            ['label' => 'Konsultasi awal Recovery', 'amount' => 150_000, 'note' => 'minimal 60 menit · dokter finansial YFD'],
             ['label' => 'Sesi lanjutan / mitra profesional', 'amount' => null, 'note' => 'Tarif disesuaikan kebutuhan individu'],
         ],
         'footnote' => 'Satu kasus bisa membutuhkan lebih dari satu pertemuan. Tim YFD akan menjelaskan rencana pendampingan setelah konsultasi awal.',
