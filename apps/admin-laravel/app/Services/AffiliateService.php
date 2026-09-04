@@ -38,7 +38,10 @@ class AffiliateService
     /** @return list<string> */
     public function eligibleProductCodes(): array
     {
-        $raw = (string) Setting::val('affiliate.eligible_product_codes', 'yfd-bot-telegram');
+        $raw = (string) Setting::val(
+            'affiliate.eligible_product_codes',
+            'yfd-bot-telegram,yfd-first-aid-ftsa'
+        );
 
         return array_values(array_filter(array_map(
             static fn (string $c) => strtolower(trim($c)),

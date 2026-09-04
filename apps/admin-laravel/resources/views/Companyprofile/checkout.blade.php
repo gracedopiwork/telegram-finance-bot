@@ -177,7 +177,7 @@
                         <p class="text-[11.5px] text-on-surface-variant leading-relaxed bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                             Bundle First Aid + FTSA: pakai kode referral valid dapat potongan tambahan
                             <strong>Rp {{ number_format($refDisc, 0, ',', '.') }}</strong>
-                            (contoh total jadi <strong>{{ $product->priceLabel($totalWithReferral) }}</strong>).
+                            (total jadi <strong>{{ $product->priceLabel($totalWithReferral) }}</strong>).
                         </p>
                     @endif
                 </div>
