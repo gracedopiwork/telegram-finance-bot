@@ -54,7 +54,7 @@
                 <button type="button"
                         id="tx-delete-month-btn"
                         data-month="{{ request('month', $summary['month'] ?? now()->format('Y-m')) }}"
-                        data-month-label="{{ \Carbon\Carbon::createFromFormat('Y-m', request('month', $summary['month'] ?? now()->format('Y-m')))->translatedFormat('F Y') }}"
+                        data-month-label="{{ \Carbon\Carbon::createFromFormat('Y-m', request('month', $summary['month'] ?? now()->format('Y-m')))->startOfMonth()->translatedFormat('F Y') }}"
                         data-url="{{ route('portal.transactions.destroy-month', ['month' => request('month', $summary['month'] ?? null), 'period' => request('period', $summary['period_months'] ?? 1)]) }}"
                         class="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 text-xs font-semibold">
                     <span class="material-symbols-outlined text-sm">warning</span>

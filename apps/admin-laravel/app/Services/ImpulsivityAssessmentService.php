@@ -239,6 +239,11 @@ class ImpulsivityAssessmentService
   }
 
   /**
+   * Rekomendasi behavioral bulanan.
+   * - Belum FTSA: dari pola transaksi (personalized + general).
+   * - Sudah FTSA: gabungan rekomendasi FTSA + pola transaksi.
+   * - Sebelum rilis akhir bulan: interim general saja (bukan kosong).
+   *
    * @param  array<string, mixed>  $aiGuidance
    * @param  array<string, mixed>|null  $ftsaProfile
    * @param  array{recommendations?: list<string>}  $ftsaGuidance
@@ -246,20 +251,26 @@ class ImpulsivityAssessmentService
    */
   private function behavioralRecommendationItems(array $aiGuidance, ?array $ftsaProfile, array $ftsaGuidance): array
   {
-    if (! ($aiGuidance['monthly_stored'] ?? false)) {
-      return [];
-    }
+    $personal = array_values(array_filter($aiGuidance['recommendations']['personalized'] ?? []));
+    $general = array_values(array_filter($aiGuidance['recommendations']['general'] ?? []));
+    $ftsaRecs = array_values(array_filter($ftsaGuidance['recommendations'] ?? []));
 
-    $personal = $aiGuidance['recommendations']['personalized'] ?? [];
+    if (! ($aiGuidance['monthly_stored'] ?? false)) {
+      return array_values(array_unique(array_slice($general, 0, 3)));
+    }
 
     if ($ftsaProfile !== null) {
       return array_values(array_unique(array_merge(
-        $ftsaGuidance['recommendations'] ?? [],
+        $ftsaRecs,
         $personal,
+        array_slice($general, 0, 1),
       )));
     }
 
-    return array_values(array_unique($personal));
+    return array_values(array_unique(array_merge(
+      $personal,
+      array_slice($general, 0, 2),
+    )));
   }
 
   /**
@@ -439,7 +450,10 @@ class ImpulsivityAssessmentService
 
   private function monthLabelWib(string $month): string
   {
+    // Wajib startOfMonth: createFromFormat('Y-m') memakai hari "hari ini",
+    // jadi tgl 31 bisa overflow Juni→Juli / Mei→Juni.
     return Carbon::createFromFormat('Y-m', $month, PortalTimezone::defaultName())
+      ->startOfMonth()
       ->translatedFormat('F Y');
   }
 
@@ -644,7 +658,7 @@ class ImpulsivityAssessmentService
   private function moodTimeline(Collection $rows, string $anchorMonth, int $periodMonths): array
   {
     $tz = PortalTimezone::defaultName();
-    $end = Carbon::createFromFormat('Y-m', $anchorMonth, $tz)->endOfMonth();
+    $end = Carbon::createFromFormat('Y-m', $anchorMonth, $tz)->startOfMonth()->endOfMonth();
     $start = $end->copy()->subMonths($periodMonths - 1)->startOfDay();
     $moodScore = [
       'Happy' => 5, 'Neutral' => 3, 'Sad' => 2, 'Stressed' => 1, 'Angry' => 1, 'Tired' => 2,

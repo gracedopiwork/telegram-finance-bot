@@ -166,7 +166,7 @@ class DashboardController extends Controller
     return [
       'month' => $month,
       'period_months' => $period,
-      'period_label' => Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y'),
+      'period_label' => Carbon::createFromFormat('Y-m', $month)->startOfMonth()->translatedFormat('F Y'),
       'expense_count' => 0,
       'ftsa_profile' => $ftsaProfile,
       'doctors_note' => '',

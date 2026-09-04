@@ -234,7 +234,7 @@ class PortalAiGuidanceService
     private function genericBehavioralGuidance(string $monthKey, array $fallback): array
     {
         try {
-            $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $monthKey)->endOfMonth();
+            $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $monthKey)->startOfMonth()->endOfMonth();
             $release = $monthEnd->format('d/m/Y');
         } catch (\Throwable) {
             $release = 'akhir bulan';
@@ -533,7 +533,7 @@ class PortalAiGuidanceService
     private function pendingDoctorsNote(string $monthKey, array $fallback): array
     {
         try {
-            $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $monthKey)->endOfMonth();
+            $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $monthKey)->startOfMonth()->endOfMonth();
             $release = $monthEnd->translatedFormat('d F Y');
         } catch (\Throwable) {
             $release = 'akhir bulan';
@@ -720,6 +720,7 @@ METRIK:
 - Pendapatan: Rp {$this->formatIdr((int) $metrics['income'])}
 - Pengeluaran: Rp {$this->formatIdr((int) $metrics['expense'])}
 - Cashflow (prescription, tanpa likuiditas sosial): Rp {$this->formatIdr((int) $metrics['cashflow'])}
+- Saving / Future Building tercatat: Rp {$this->formatIdr((int) ($metrics['saving_investment'] ?? 0))}
 - Saving rate: {$metrics['saving_rate']}%
 - Jumlah transaksi: {$metrics['transaction_count']}
 
@@ -775,6 +776,7 @@ METRIK:
 - Pendapatan: Rp {$this->formatIdr((int) $metrics['income'])}
 - Pengeluaran: Rp {$this->formatIdr((int) $metrics['expense'])}
 - Cashflow (prescription): Rp {$this->formatIdr((int) $metrics['cashflow'])}
+- Saving / Future Building tercatat: Rp {$this->formatIdr((int) ($metrics['saving_investment'] ?? 0))}
 - Saving rate: {$metrics['saving_rate']}%
 - Jumlah transaksi: {$metrics['transaction_count']}
 
@@ -822,6 +824,7 @@ METRIK:
 - Pendapatan: Rp {$this->formatIdr((int) $metrics['income'])}
 - Pengeluaran: Rp {$this->formatIdr((int) $metrics['expense'])}
 - Cashflow (prescription): Rp {$this->formatIdr((int) $metrics['cashflow'])}
+- Saving / Future Building tercatat: Rp {$this->formatIdr((int) ($metrics['saving_investment'] ?? 0))}
 - Saving rate: {$metrics['saving_rate']}%
 - Jumlah transaksi: {$metrics['transaction_count']}
 
@@ -834,8 +837,8 @@ BUCKET PRESCRIPTION:
 ATURAN WAJIB:
 {$rules}
 JANGAN menyebut archetype FTSA — itu ada di dashboard behavioral.
-Doctor's note HANYA berisi rekomendasi tindakan — jangan ulang ringkasan deskriptif (itu ada di clinical summary).
-Tiap rekomendasi harus konkret, bisa dilakukan, dan spesifik (contoh: alokasikan cashflow positif ke Future Building, tingkatkan saving rate >30%, diversifikasi investasi, batasi Flexible+Social ≤10%, evaluasi proteksi keuangan).
+Setiap findings WAJIB menyentuh fakta kritis bila ada: (1) saving Rp0 / rate 0%, (2) nominal+persen Flexible + Social vs batas, (3) verdict sehat/tidak sehat, (4) Essential Living over-max yang menyebabkan cashflow minus.
+Tiap rekomendasi harus konkret, bisa dilakukan, dan spesifik (contoh: alokasikan cashflow positif ke Future Building, mulai saving otomatis 10%, batasi Flexible+Social ≤10%).
 JANGAN sarankan menaikkan Essential Living jika aktual sudah di bawah 50% — itu justru sehat.
 Jika ada defisit yang dibiayai Utang Masuk, prioritaskan rekomendasi pelunasan utang sosial tanpa mengoreksi Income.
 KRITIS: Jangan menukar angka Protection dengan Flexible + Social. Salin persentase aktual PERSIS dari BUCKET PRESCRIPTION di atas.

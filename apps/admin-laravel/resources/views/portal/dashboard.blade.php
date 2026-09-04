@@ -34,12 +34,15 @@
     $noteRecommendations = is_array($note) ? ($note['findings'] ?? []) : [];
     $notePriority = is_array($note) ? trim((string) ($note['priority'] ?? '')) : '';
     $noteSummary = is_array($note) ? ($note['summary'] ?? '') : (string) $note;
-    $showDoctorsNote = ($noteRecommendations !== [] || $notePriority !== '')
-        && ! str_contains($noteSummary, 'akan dirilis')
-        && ! str_contains($noteSummary, 'akan dibuat');
+    $doctorsPending = (bool) ($summary['doctors_pending'] ?? false)
+        || str_contains((string) $noteSummary, 'akan dirilis')
+        || str_contains((string) $noteSummary, 'akan dibuat');
+    // Clinical summary mingguan tetap tampil selama Doctor's Note bulanan belum rilis.
+    $showDoctorsNote = ! $doctorsPending
+        && ($noteRecommendations !== [] || $notePriority !== '');
     $doctorsGeneratedAt = !empty($summary['doctors_generated_at']) ? \Carbon\Carbon::parse($summary['doctors_generated_at']) : null;
     $clinicalGeneratedAt = !empty($summary['clinical_generated_at']) ? \Carbon\Carbon::parse($summary['clinical_generated_at']) : null;
-    $monthCarbon = \Carbon\Carbon::createFromFormat('Y-m', $summary['month'] ?? now()->format('Y-m'));
+    $monthCarbon = \Carbon\Carbon::createFromFormat('Y-m', $summary['month'] ?? now()->format('Y-m'))->startOfMonth();
     $clinicalAnchor = $monthCarbon->isCurrentMonth() ? now() : $monthCarbon->copy()->endOfMonth();
     $clinicalWeek = \App\Models\PortalGuidanceSnapshot::monthCumulativeWeekNumber($clinicalAnchor);
 @endphp
@@ -89,6 +92,7 @@
     @if(! $showDoctorsNote)
     <div class="bg-white rounded-xl border border-slate-200 p-5">
         <div class="text-sm font-semibold text-navy-800 mb-3">Clinical Summary / Akumulasi minggu ke-{{ $clinicalWeek }}</div>
+        <p class="text-xs text-slate-500 mb-3">Evaluasi mingguan tetap tampil sampai Doctor's Note bulanan dirilis akhir bulan.</p>
         @if(!empty($summary['clinical_summary']['headline']))
             <p class="text-base font-semibold text-navy-800 mb-2">{{ $cleanText((string) $summary['clinical_summary']['headline']) }}</p>
         @endif

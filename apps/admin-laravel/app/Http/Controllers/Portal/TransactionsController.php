@@ -85,7 +85,7 @@ class TransactionsController extends Controller
             $message .= " {$result['failed']} baris gagal.";
         }
         if (! empty($result['focus_month'])) {
-            $monthLabel = \Carbon\Carbon::createFromFormat('Y-m', $result['focus_month'])->translatedFormat('F Y');
+            $monthLabel = \Carbon\Carbon::createFromFormat('Y-m', $result['focus_month'])->startOfMonth()->translatedFormat('F Y');
             $message .= " Buka periode {$monthLabel} di filter bulan untuk melihat semua data.";
         }
 

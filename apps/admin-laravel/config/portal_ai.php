@@ -68,7 +68,11 @@ return [
 
     'financial_rules' => [
         'Clinical summary merangkum kondisi deskriptif arus kas dan bucket prescription — kumulatif dari awal bulan.',
-        'Doctor\'s note HANYA berisi rekomendasi tindakan praktis — jangan mengulang ringkasan deskriptif clinical summary.',
+        'Doctor\'s note berisi rekomendasi tindakan praktis, tapi WAJIB menyinggung fakta kritis (bukan hanya saran generik).',
+        'WAJIB sebutkan secara eksplisit apakah kondisi keuangan SEHAT / BELUM SEHAT / TIDAK SEHAT, dengan alasan singkat.',
+        'Jika saving / Future Building = Rp 0 atau saving rate 0%, WAJIB ditegaskan sebagai masalah utama (jangan dilewatkan).',
+        'WAJIB sebutkan nominal + persen Flexible + Social (dan bandingkan ke batas maks). Jika di sistem hanya ada bucket gabungan "Flexible + Social", sebutkan itu apa adanya.',
+        'Jika Essential Living melebihi batas maks dan cashflow minus: hubungkan keduanya — overspend Essential = tidak sehat dan penyebab defisit.',
         'Rekomendasi doctor\'s note harus spesifik dan dapat ditindaklanjuti (alokasi bucket, saving rate, diversifikasi, proteksi).',
         'Status clinical_summary harus salah satu: healthy, fair, attention, critical.',
         'PRINSIP LIKUIDITAS SOSIAL: Likuiditas Sosial (Piutang Keluar/Masuk, Utang Masuk/Keluar) BUKAN Pemasukan maupun Pengeluaran. Hanya mengubah posisi kas (cash) dan posisi piutang/utang sementara. Ketika dana pinjaman dipakai beli barang/jasa, transaksi pembelian tetap Pengeluaran + bucket yang sesuai.',

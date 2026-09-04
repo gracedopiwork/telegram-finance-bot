@@ -18,6 +18,18 @@
     $matrixOrder = ['need_impulsive', 'want_impulsive', 'need_planned', 'want_planned'];
     $matrixByKey = collect($assessment['matrix'] ?? [])->keyBy('key');
     $ftsaDoctorsNote = collect($ftsaAiGuidance['insights'] ?? [])->filter()->implode(' ');
+    $txnNote = $assessment['doctors_note'] ?? [];
+    $txnNoteFindings = is_array($txnNote) ? array_values(array_filter($txnNote['findings'] ?? [])) : [];
+    $txnNotePriority = is_array($txnNote) ? trim((string) ($txnNote['priority'] ?? '')) : '';
+    $txnNoteSummary = is_array($txnNote) ? trim((string) ($txnNote['summary'] ?? '')) : '';
+    $txnNoteInterpretation = is_array($txnNote) ? trim((string) ($txnNote['interpretation'] ?? '')) : '';
+    $txnNotePending = ($assessment['behavioral_recommendations_pending'] ?? false)
+        || str_contains($txnNoteSummary, 'akan dirilis')
+        || str_contains($txnNoteSummary, 'akan dibuat');
+    $showTxnDoctorsNote = ! $txnNotePending
+        && ($txnNoteFindings !== [] || $txnNotePriority !== '' || ($txnNoteSummary !== '' && ! str_contains($txnNoteSummary, 'akan dirilis')));
+    $behavioralRecsPending = (bool) ($assessment['behavioral_recommendations_pending'] ?? false);
+    $behavioralRecs = array_values(array_filter($assessment['behavioral_recommendations'] ?? []));
 @endphp
 
 @if($isFtsaOnly)
@@ -88,22 +100,59 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div class="bg-white rounded-xl border border-slate-200 p-5">
             @include('portal.partials.doctors-note-brand', ['extraClass' => 'mb-3'])
-            @if($ftsaProfile)
-                @if($ftsaDoctorsNote !== '')
-                    <p class="text-sm text-slate-700 leading-relaxed">{{ $ftsaDoctorsNote }}</p>
-                @else
-                    <p class="text-sm text-slate-700 leading-relaxed">
-                        Archetype dominan: <strong>{{ $ftsaProfile['archetype'] ?? '—' }}</strong>.
+            @if(! $hasData)
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    Belum ada data transaksi di periode ini. Catat pengeluaran via bot agar Doctor's Note behavioral bisa disusun.
+                </p>
+            @elseif($showTxnDoctorsNote)
+                @if($txnNoteFindings !== [])
+                    <ul class="space-y-2 text-sm text-slate-700 leading-relaxed mb-3">
+                        @foreach($txnNoteFindings as $finding)
+                            <li class="flex gap-2"><span class="text-gold-500 font-bold">•</span><span>{{ $finding }}</span></li>
+                        @endforeach
+                    </ul>
+                @elseif($txnNoteSummary !== '')
+                    <p class="text-sm text-slate-700 leading-relaxed mb-3">{{ $txnNoteSummary }}</p>
+                @endif
+                @if($txnNoteInterpretation !== '')
+                    <p class="text-sm text-slate-600 leading-relaxed mb-2">{{ $txnNoteInterpretation }}</p>
+                @endif
+                @if($txnNotePriority !== '')
+                    <p class="text-sm text-navy-800 font-semibold leading-relaxed mb-2">Prioritas: {{ $txnNotePriority }}</p>
+                @endif
+                @if($ftsaProfile)
+                    <p class="text-xs text-slate-500 mt-2">
+                        Diperkaya profil FTSA:
+                        <strong>{{ $ftsaProfile['archetype'] ?? '—' }}</strong>
+                        @if($ftsaDoctorsNote !== '')
+                            — {{ \Illuminate\Support\Str::limit($ftsaDoctorsNote, 160) }}
+                        @endif
                     </p>
                 @endif
-            @elseif($ftsaUnlocked ?? false)
-                <p class="text-sm text-slate-700 leading-relaxed">
-                    Isi kuesioner FTSA 1–32 terlebih dahulu agar Doctor's Note behavioral bisa disusun dari profil Anda.
-                </p>
             @else
-                <p class="text-sm text-slate-700 leading-relaxed">
-                    Unlock FTSA Premium untuk mendapatkan Doctor's Note behavioral yang dipersonalisasi dari profil FTSA Anda.
+                @php
+                    $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $assessment['month'])->startOfMonth()->endOfMonth();
+                @endphp
+                <p class="text-sm text-slate-600 leading-relaxed mb-2">
+                    Belum ada Doctor's Note bulanan untuk periode ini.
+                    Catatan dari pola transaksi dirilis otomatis
+                    <strong>{{ $monthEnd->format('d/m/Y') }} pukul 22.00 WIB</strong>.
+                    Behavioral summary mingguan di bawah sudah memakai data aktual.
                 </p>
+                @if($ftsaProfile)
+                    <p class="text-sm text-slate-700 leading-relaxed mt-3 pt-3 border-t border-slate-100">
+                        @if($ftsaDoctorsNote !== '')
+                            {{ $ftsaDoctorsNote }}
+                        @else
+                            Archetype FTSA saat ini: <strong>{{ $ftsaProfile['archetype'] ?? '—' }}</strong>.
+                            Rekomendasi bulanan nanti akan menghubungkan profil ini dengan pola belanja Anda.
+                        @endif
+                    </p>
+                @elseif($ftsaUnlocked ?? false)
+                    <p class="text-xs text-slate-500 mt-3">
+                        Tip: lengkapi FTSA 1–32 agar catatan bulanan lebih personal.
+                    </p>
+                @endif
             @endif
             @include('portal.partials.ai-guidance-disclaimer')
         </div>
@@ -127,13 +176,13 @@
                     </a>
                 @endif
             @elseif($ftsaUnlocked ?? false)
-                <p class="text-sm text-slate-600 mb-4">FTSA Premium aktif. Lengkapi kuesioner 1–32 untuk melihat archetype dan skor domain.</p>
+                <p class="text-sm text-slate-600 mb-4">FTSA Premium aktif. Lengkapi kuesioner 1–32 untuk memperkaya Doctor's Note & rekomendasi behavioral.</p>
                 <a href="{{ $portalFtsaUrl ?? route('portal.ftsa.create') }}"
                    class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2.5 rounded-xl text-sm">
                     Isi FTSA Sekarang
                 </a>
             @else
-                <p class="text-sm text-slate-600 mb-4">Beli FTSA Premium untuk membuka kuesioner 1–32 dan insight behavioral personal selama 12 bulan evaluasi.</p>
+                <p class="text-sm text-slate-600 mb-4">Belum FTSA: dashboard tetap membaca pola transaksi. Beli FTSA Premium untuk archetype & rekomendasi yang lebih personal (12 bulan evaluasi).</p>
                 @include('portal.partials.ftsa-unlock-panel', ['variant' => 'embedded'])
             @endif
         </div>
@@ -143,23 +192,48 @@
     <div class="bg-white rounded-xl border border-slate-200 p-5">
         <div class="mb-3">
             <div class="text-sm font-semibold text-navy-800">Behavioral Recommendation</div>
+            @if($behavioralRecsPending)
+                <p class="text-xs text-slate-500 mt-1">
+                    @if($ftsaProfile)
+                        Interim — rekomendasi final (FTSA + pola transaksi) rilis akhir bulan.
+                    @else
+                        Interim — rekomendasi final dari pola transaksi rilis akhir bulan. (Tanpa FTSA)
+                    @endif
+                </p>
+            @elseif($ftsaProfile)
+                <p class="text-xs text-slate-500 mt-1">Menghubungkan hasil FTSA dengan pola behavioral transaksi.</p>
+            @else
+                <p class="text-xs text-slate-500 mt-1">Berdasarkan pola transaksi (belum FTSA).</p>
+            @endif
         </div>
-        @if(!empty($assessment['behavioral_recommendations']))
+        @if($behavioralRecs !== [])
             <ul class="space-y-1 text-sm text-slate-700">
-                @foreach($assessment['behavioral_recommendations'] as $rec)
+                @foreach($behavioralRecs as $rec)
                     <li class="flex gap-2"><span>–</span><span>{{ $rec }}</span></li>
                 @endforeach
             </ul>
-        @elseif($assessment['behavioral_recommendations_pending'] ?? false)
+            @if($behavioralRecsPending)
+                @php
+                    $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $assessment['month'])->startOfMonth()->endOfMonth();
+                @endphp
+                <p class="text-xs text-slate-500 mt-3">
+                    Versi lengkap dirilis otomatis <strong>{{ $monthEnd->format('d/m/Y') }} pukul 22.00 WIB</strong>.
+                </p>
+            @endif
+        @elseif($behavioralRecsPending)
             @php
-                $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $assessment['month'])->endOfMonth();
+                $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $assessment['month'])->startOfMonth()->endOfMonth();
             @endphp
             <p class="text-sm text-slate-600">
-                Rekomendasi bulanan (menghubungkan hasil FTSA dengan behavioral summary) dirilis otomatis
+                @if($ftsaProfile)
+                    Rekomendasi bulanan (FTSA + behavioral summary) dirilis otomatis
+                @else
+                    Rekomendasi bulanan dari pola transaksi dirilis otomatis
+                @endif
                 <strong>{{ $monthEnd->format('d/m/Y') }} pukul 22.00 WIB</strong>.
             </p>
         @else
-            <p class="text-sm text-slate-500">–</p>
+            <p class="text-sm text-slate-500">Belum ada rekomendasi untuk periode ini.</p>
         @endif
         @include('portal.partials.ai-guidance-disclaimer')
     </div>
@@ -221,7 +295,7 @@
 
     {{-- 5. Mood distribusi --}}
     <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <div class="text-sm font-semibold text-navy-800 mb-3">Mood distribusi</div>
+        <div class="text-sm font-semibold text-navy-800 mb-3">Status aktivitas behavioral</div>
         <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,220px)_1fr] gap-4 sm:gap-6 items-start">
             <div class="w-full max-w-[220px] mx-auto sm:mx-0">
                 @if($hasData)

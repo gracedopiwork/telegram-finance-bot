@@ -96,8 +96,18 @@ class TransactionDashboardService
             $baseline,
             $periodMonths,
             $cashLiquidity,
+            $savingInvestment,
         );
-        $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $buckets, $baseline, $cashLiquidity);
+        $fallbackDoctorsNote = $this->doctorsNoteFinancial(
+            $income,
+            $expense,
+            $savingInvestment,
+            $cashflow,
+            $savingRate,
+            $buckets,
+            $baseline,
+            $cashLiquidity,
+        );
 
         $aiGuidance = app(PortalAiGuidanceService::class)->financial(
             $telegramUserId,
@@ -227,8 +237,18 @@ class TransactionDashboardService
             $baseline,
             $periodMonthsForClinical,
             $cashLiquidity,
+            $savingInvestment,
         );
-        $fallbackDoctorsNote = $this->doctorsNoteFinancial($cashflow, $savingRate, $buckets, $baseline, $cashLiquidity);
+        $fallbackDoctorsNote = $this->doctorsNoteFinancial(
+            $income,
+            $expense,
+            $savingInvestment,
+            $cashflow,
+            $savingRate,
+            $buckets,
+            $baseline,
+            $cashLiquidity,
+        );
 
         return [
             'metrics' => [
@@ -259,7 +279,7 @@ class TransactionDashboardService
     public function periodRange(string $anchorMonth, int $periodMonths): array
     {
         $tz = PortalTimezone::defaultName();
-        $end = Carbon::createFromFormat('Y-m', $anchorMonth, $tz)->endOfMonth();
+        $end = Carbon::createFromFormat('Y-m', $anchorMonth, $tz)->startOfMonth()->endOfMonth();
         $start = $end->copy()->subMonths($periodMonths - 1)->startOfMonth();
 
         return [
@@ -433,7 +453,7 @@ class TransactionDashboardService
      */
     private function cashflowTrend(int $telegramUserId, string $currentMonth, int $months): array
     {
-        $end = Carbon::createFromFormat('Y-m', $currentMonth)->endOfMonth();
+        $end = Carbon::createFromFormat('Y-m', $currentMonth)->startOfMonth()->endOfMonth();
         $start = $end->copy()->subMonths($months - 1)->startOfMonth();
 
         $rows = BotTransaction::query()
@@ -871,6 +891,7 @@ class TransactionDashboardService
         ?FinancialBaseline $baseline,
         int $periodMonths,
         ?array $cashLiquidity = null,
+        int $savingInvestment = 0,
     ): array {
         $findings = [];
         $periodText = $periodMonths === 1 ? 'bulan ini' : "{$periodMonths} bulan terakhir";
@@ -887,17 +908,59 @@ class TransactionDashboardService
         $deficit = (int) ($cashLiquidity['deficit'] ?? max(0, -$cashflow));
         $borrowIn = (int) ($cashLiquidity['social_borrow_inflow'] ?? 0);
 
+        $essential = collect($buckets)->firstWhere('bucket', 'Essential Living');
+        $flexible = collect($buckets)->firstWhere('bucket', 'Flexible + Social');
+        $essentialOver = is_array($essential) && in_array((string) ($essential['status'] ?? ''), ['over_max', 'over'], true);
+        $flexibleOver = is_array($flexible) && in_array((string) ($flexible['status'] ?? ''), ['over_max', 'over'], true);
+
+        $healthVerdict = match (true) {
+            $cashflow < 0 && $essentialOver => 'tidak sehat',
+            $cashflow < 0 => 'tidak sehat',
+            $savingInvestment <= 0 && $savingRate <= 0 => 'belum sehat',
+            $essentialOver || $flexibleOver => 'perlu perhatian',
+            $savingRate >= 20 && $cashflow >= 0 => 'sehat',
+            default => 'cukup, masih bisa lebih sehat',
+        };
+
+        $findings[] = "Verdict kesehatan keuangan {$periodText}: {$healthVerdict}.";
+
         if ($cashflow < 0 && $borrowIn > 0 && is_string($socialInsight) && $socialInsight !== '') {
             $findings[] = $socialInsight;
         } elseif ($cashflow < 0) {
-            $findings[] = "Cashflow negatif {$periodText} — pengeluaran melebihi pendapatan.";
-        } elseif ($savingRate >= 20) {
-            $findings[] = "Saving rate {$savingRate}% — di atas ambang sehat (≥20%).";
+            $findings[] = "Cashflow minus Rp ".$this->formatIdr(abs($cashflow))." {$periodText} — pengeluaran melebihi pendapatan.";
+        }
+
+        if ($savingInvestment <= 0 || $savingRate <= 0) {
+            $findings[] = 'Saving Rp 0 (0%) — belum ada alokasi tabungan/investasi di periode ini. Ini sinyal kritis.';
+        } elseif ($savingRate < 20) {
+            $findings[] = "Saving Rp ".$this->formatIdr($savingInvestment)." ({$savingRate}%) — masih di bawah ideal ≥20%.";
         } else {
-            $findings[] = "Saving rate {$savingRate}% — masih di bawah ideal 20%.";
+            $findings[] = "Saving Rp ".$this->formatIdr($savingInvestment)." ({$savingRate}%) — di atas ambang sehat (≥20%).";
+        }
+
+        if (is_array($flexible)) {
+            $findings[] = sprintf(
+                'Flexible + Social: Rp %s (%s%% vs batas maks %s%%)%s.',
+                $this->formatIdr((int) ($flexible['amount'] ?? 0)),
+                $this->formatShare((float) ($flexible['share'] ?? 0)),
+                $this->formatShare((float) ($flexible['ideal'] ?? 0)),
+                $flexibleOver ? ' — melebihi batas (financial leakage)' : '',
+            );
+        }
+
+        if (is_array($essential) && $essentialOver) {
+            $findings[] = sprintf(
+                'Essential Living melebihi batas maks: %s%% vs ideal %s%% — pola ini tidak sehat dan mendorong cashflow minus.',
+                $this->formatShare((float) ($essential['share'] ?? 0)),
+                $this->formatShare((float) ($essential['ideal'] ?? 0)),
+            );
         }
 
         foreach ($buckets as $bucket) {
+            $name = (string) ($bucket['bucket'] ?? '');
+            if (in_array($name, ['Essential Living', 'Flexible + Social'], true)) {
+                continue;
+            }
             if (in_array($bucket['status'], ['under_min', 'over_max', 'over'], true)) {
                 $findings[] = "{$bucket['bucket']}: {$bucket['status_label']} ({$bucket['share']}% vs ideal {$bucket['ideal']}%).";
             }
@@ -909,16 +972,18 @@ class TransactionDashboardService
         }
 
         $headline = match (true) {
-            $cashflow < 0 && $borrowIn > 0 => 'Defisit dibiayai Likuiditas Sosial',
-            $cashflow < 0 => 'Defisit — perlu restrukturisasi pengeluaran',
-            $savingRate >= 20 => 'Kesehatan arus kas baik',
-            $savingRate >= 10 => 'Stabil — masih ada ruang optimasi',
+            $cashflow < 0 && $essentialOver => 'Tidak sehat — Essential Living overspend + cashflow minus',
+            $cashflow < 0 && $borrowIn > 0 => 'Tidak sehat — defisit dibiayai Likuiditas Sosial',
+            $cashflow < 0 => 'Tidak sehat — cashflow minus',
+            $savingInvestment <= 0 => 'Belum sehat — saving masih nol',
+            $savingRate >= 20 => 'Sehat — arus kas terkendali',
+            $savingRate >= 10 => 'Cukup — masih ada ruang optimasi',
             default => 'Perlu perhatian — saving rate rendah',
         };
 
         $status = match (true) {
-            $cashflow < 0 && $borrowIn > 0 => 'attention',
             $cashflow < 0 => 'critical',
+            $savingInvestment <= 0 || $essentialOver => 'attention',
             $savingRate >= 20 => 'healthy',
             $savingRate >= 10 => 'fair',
             default => 'attention',
@@ -926,7 +991,7 @@ class TransactionDashboardService
 
         return [
             'headline' => $headline,
-            'findings' => array_slice($findings, 0, 5),
+            'findings' => array_slice($findings, 0, 6),
             'status' => $status,
         ];
     }
@@ -937,6 +1002,9 @@ class TransactionDashboardService
      * @return array{summary: string, findings: list<string>, interpretation: string, priority: string, education: string}
      */
     private function doctorsNoteFinancial(
+        int $income,
+        int $expense,
+        int $savingInvestment,
         int $cashflow,
         float $savingRate,
         array $buckets,
@@ -945,10 +1013,38 @@ class TransactionDashboardService
     ): array {
         $recommendations = [];
 
-        if ($cashflow > 0 && $savingRate < 30) {
+        $essential = collect($buckets)->firstWhere('bucket', 'Essential Living');
+        $flexible = collect($buckets)->firstWhere('bucket', 'Flexible + Social');
+        $essentialOver = is_array($essential) && in_array((string) ($essential['status'] ?? ''), ['over_max', 'over'], true);
+        $flexibleOver = is_array($flexible) && in_array((string) ($flexible['status'] ?? ''), ['over_max', 'over'], true);
+
+        if ($cashflow < 0 && $essentialOver) {
+            $recommendations[] = sprintf(
+                'Kondisi tidak sehat: Essential Living %s%% (batas maks %s%%) mendorong cashflow minus Rp %s — potong pengeluaran Essential non-krusial minggu ini.',
+                $this->formatShare((float) ($essential['share'] ?? 0)),
+                $this->formatShare((float) ($essential['ideal'] ?? 0)),
+                $this->formatIdr(abs($cashflow)),
+            );
+        } elseif ($cashflow < 0) {
+            $recommendations[] = 'Kondisi tidak sehat: cashflow minus — kurangi Flexible + Social hingga arus kas kembali positif sebelum menambah komitmen baru.';
+        }
+
+        if ($savingInvestment <= 0 || $savingRate <= 0) {
+            $recommendations[] = 'Saving masih Rp 0 — wajib mulai alokasi tabungan otomatis minimal 10% pendapatan bulan depan.';
+        } elseif ($cashflow > 0 && $savingRate < 30) {
             $recommendations[] = 'Alokasikan cashflow positif ke Future Building dengan menaikkan saving rate minimal >30%.';
         } elseif ($cashflow > 0) {
             $recommendations[] = 'Pertahankan saving rate di atas 30% dan arahkan surplus ke instrumen jangka panjang.';
+        }
+
+        if (is_array($flexible)) {
+            $recommendations[] = sprintf(
+                'Pantau Flexible + Social: Rp %s (%s%%, batas maks %s%%)%s.',
+                $this->formatIdr((int) ($flexible['amount'] ?? 0)),
+                $this->formatShare((float) ($flexible['share'] ?? 0)),
+                $this->formatShare((float) ($flexible['ideal'] ?? 0)),
+                $flexibleOver ? ' — segera turunkan karena sudah bocor' : '',
+            );
         }
 
         $borrowIn = (int) ($cashLiquidity['social_borrow_inflow'] ?? 0);
@@ -958,33 +1054,17 @@ class TransactionDashboardService
             if ($outstandingDebt > 0) {
                 $recommendations[] = 'Pantau outstanding utang sosial di panel Likuiditas Sosial — ini kewajiban, bukan pendapatan.';
             }
-        } elseif ($cashflow < 0) {
-            $recommendations[] = 'Kurangi pengeluaran Flexible + Social hingga cashflow kembali positif sebelum menambah investasi.';
         }
 
-        $hasBucketIssue = false;
+        $hasBucketIssue = $essentialOver || $flexibleOver;
         foreach ($buckets as $bucket) {
             $name = (string) ($bucket['bucket'] ?? '');
             $share = (float) ($bucket['share'] ?? 0);
             $ideal = (float) ($bucket['ideal'] ?? 0);
             $status = (string) ($bucket['status'] ?? '');
 
-            if ($name === 'Essential Living') {
-                if (in_array($status, ['over_max', 'over'], true)) {
-                    $recommendations[] = 'Kurangi pengeluaran Essential Living agar tidak melebihi batas prescription tahap finansial Anda.';
-                    $hasBucketIssue = true;
-                }
-
+            if ($name === 'Essential Living' || $name === 'Flexible + Social') {
                 continue;
-            }
-
-            if ($name === 'Flexible + Social' && in_array($status, ['over_max', 'over'], true)) {
-                $recommendations[] = sprintf(
-                    'Kontrol pengeluaran Flexible + Social (aktual %s%%, batas maks %s%%) agar tidak menjadi financial leakage.',
-                    $this->formatShare($share),
-                    $this->formatShare($ideal),
-                );
-                $hasBucketIssue = true;
             }
 
             if ($name === 'Future Building' && in_array($status, ['under_min', 'under'], true)) {
@@ -1005,17 +1085,13 @@ class TransactionDashboardService
                 $hasBucketIssue = true;
             }
 
-            if ($name === 'Protection' && $share > 0 && $share <= $ideal && in_array($status, ['met', 'near_max', 'on_target', 'within'], true) === false) {
-                // Keep quiet when under max — healthy; no uplift suggestion.
-            }
-
             if ($name === 'Future Building' && $share > 0 && $savingRate >= 20) {
                 $recommendations[] = 'Lakukan diversifikasi ke instrumen investasi selain saham untuk menyeimbangkan risiko.';
             }
         }
 
-        if ($hasBucketIssue) {
-            $recommendations[] = 'Prioritaskan penyesuaian bucket yang menyimpang (Flexible + Social, Future Building, Protection) — Essential Living yang rendah justru sehat.';
+        if ($hasBucketIssue && $cashflow >= 0) {
+            $recommendations[] = 'Prioritaskan penyesuaian bucket yang menyimpang — Essential Living yang rendah justru sehat.';
         }
 
         if ($baseline !== null && ! $baseline->has_health_insurance && ! $baseline->has_life_insurance) {
@@ -1028,13 +1104,26 @@ class TransactionDashboardService
             $recommendations[] = 'Pertahankan konsistensi pencatatan transaksi dan tinjau bucket prescription setiap minggu.';
         }
 
+        $verdict = match (true) {
+            $cashflow < 0 || $essentialOver => 'Tidak sehat',
+            $savingInvestment <= 0 => 'Belum sehat',
+            $flexibleOver => 'Perlu perhatian',
+            $savingRate >= 20 => 'Sehat',
+            default => 'Cukup',
+        };
+
         return [
-            'summary' => 'Rekomendasi untuk periode ini',
+            'summary' => "Rekomendasi untuk periode ini — verdict: {$verdict}",
             'findings' => $recommendations,
             'interpretation' => '',
             'priority' => $recommendations[0],
             'education' => '',
         ];
+    }
+
+    private function formatIdr(int $amount): string
+    {
+        return number_format($amount, 0, ',', '.');
     }
 
     private function formatShare(float $share): string
@@ -1106,7 +1195,9 @@ class TransactionDashboardService
 
     private function monthLabel(string $month): string
     {
+        // Wajib startOfMonth: tanpa itu hari "hari ini" bisa overflow bulan (31 Mei → Juni).
         return Carbon::createFromFormat('Y-m', $month, PortalTimezone::defaultName())
+            ->startOfMonth()
             ->translatedFormat('F Y');
     }
 
