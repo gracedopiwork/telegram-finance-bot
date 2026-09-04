@@ -1,7 +1,7 @@
 @extends('portal.layouts.app')
 
 @section('title', 'Referral & Komisi')
-@section('heading', 'Referral YFD First Aid')
+@section('heading', 'Referral Bundle First Aid + FTSA')
 
 @section('content')
 <div class="max-w-4xl mx-auto space-y-6">
@@ -18,7 +18,7 @@
         <div class="rounded-2xl border bg-white p-5">
             <div class="text-xs uppercase tracking-wider text-slate-500 font-bold">Kode referral Anda</div>
             <div class="mt-2 text-2xl font-extrabold text-navy-800 tracking-wide">{{ $affiliate->referral_code }}</div>
-            <p class="text-xs text-slate-500 mt-2">Bagikan ke teman yang beli YFD First Aid.</p>
+            <p class="text-xs text-slate-500 mt-2">Bagikan ke teman yang beli bundle First Aid + FTSA.</p>
         </div>
         <div class="rounded-2xl border bg-white p-5">
             <div class="text-xs uppercase tracking-wider text-slate-500 font-bold">Saldo tersedia</div>
@@ -45,7 +45,9 @@
             </button>
         </div>
         <p class="text-xs text-slate-500 mt-2">
-            Diskon teman: Rp {{ number_format($discountAmount, 0, ',', '.') }} di checkout bila kode dipakai.
+            Link mengarah ke checkout <strong>First Aid + FTSA Bundle</strong>.
+            Diskon teman: Rp {{ number_format($discountAmount, 0, ',', '.') }} di checkout bila kode dipakai
+            (contoh total 229k → 204k).
         </p>
     </div>
 

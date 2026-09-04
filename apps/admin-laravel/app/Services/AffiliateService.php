@@ -40,7 +40,7 @@ class AffiliateService
     {
         $raw = (string) Setting::val(
             'affiliate.eligible_product_codes',
-            'yfd-bot-telegram,yfd-first-aid-ftsa'
+            'yfd-first-aid-ftsa,yfd-bot-telegram'
         );
 
         return array_values(array_filter(array_map(
@@ -422,10 +422,25 @@ class AffiliateService
         });
     }
 
+    public function shareProductCode(): string
+    {
+        $configured = strtolower(trim((string) Setting::val('affiliate.share_product_code', 'yfd-first-aid-ftsa')));
+        if ($configured !== '' && in_array($configured, $this->eligibleProductCodes(), true)) {
+            return $configured;
+        }
+
+        $eligible = $this->eligibleProductCodes();
+        if (in_array('yfd-first-aid-ftsa', $eligible, true)) {
+            return 'yfd-first-aid-ftsa';
+        }
+
+        return $eligible[0] ?? 'yfd-first-aid-ftsa';
+    }
+
     public function shareUrl(Affiliate $affiliate): string
     {
         return route('checkout.show', [
-            'code' => $this->eligibleProductCodes()[0] ?? 'yfd-bot-telegram',
+            'code' => $this->shareProductCode(),
             'ref' => $affiliate->referral_code,
         ]);
     }
