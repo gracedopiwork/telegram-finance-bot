@@ -32,6 +32,11 @@ PACKS: dict[str, dict[str, str]] = {
         "file": "gray_debt_transactions.json",
         "ok_msg": "Semua kasus grey area / perhutangan / flag klinis sesuai taksonomi v1.8.",
     },
+    "mega": {
+        "title": "Uji 500 kasus (mega)",
+        "file": "mega_transactions.json",
+        "ok_msg": "500 kasus mega sesuai snapshot classify_offline.",
+    },
 }
 
 FIXTURE = _FIXTURES / PACKS["ambigu"]["file"]
@@ -131,7 +136,7 @@ def _fmt_want(row: dict[str, Any]) -> str:
     return ", ".join(parts)
 
 
-def format_report(result: dict[str, Any] | None = None, pack: str = "ambigu") -> str:
+def format_report(result: dict[str, Any] | None = None, pack: str = "ambigu", *, max_fail_lines: int = 40) -> str:
     result = result or evaluate_cases(pack=pack)
     title = PACKS.get(pack, PACKS["ambigu"])["title"]
     ok_msg = PACKS.get(pack, PACKS["ambigu"])["ok_msg"]
@@ -143,16 +148,34 @@ def format_report(result: dict[str, Any] | None = None, pack: str = "ambigu") ->
     ]
     if result["must_fail"]:
         lines.append("GAGAL WAJIB:")
+        shown = 0
         for row in result["must_fail"]:
-            lines.append(f"- {row['id']} \"{row['text']}\"")
+            if shown >= max_fail_lines:
+                remain = len(result["must_fail"]) - shown
+                lines.append(f"- ... dan {remain} gagal lagi")
+                break
+            text = str(row["text"]).replace("\n", " / ")
+            if len(text) > 90:
+                text = text[:87] + "..."
+            lines.append(f"- {row['id']} \"{text}\"")
             lines.append(f"  {_fmt_want(row)}")
+            shown += 1
         lines.append("")
     if result["watch_fail"]:
         lines.append("MASIH LUBANG (boleh gagal dulu):")
+        shown = 0
         for row in result["watch_fail"]:
-            lines.append(f"- {row['id']} \"{row['text']}\"")
+            if shown >= max_fail_lines:
+                remain = len(result["watch_fail"]) - shown
+                lines.append(f"- ... dan {remain} lubang lagi")
+                break
+            text = str(row["text"]).replace("\n", " / ")
+            if len(text) > 90:
+                text = text[:87] + "..."
+            lines.append(f"- {row['id']} \"{text}\"")
             lines.append(f"  dapat: {_fmt_got(row)}")
             lines.append(f"  {_fmt_want(row)}")
+            shown += 1
         lines.append("")
     if not result["must_fail"] and not result["watch_fail"]:
         lines.append(ok_msg)

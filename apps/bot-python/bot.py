@@ -1404,6 +1404,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "/uji2 - tes cakupan data baru (semua jenis/kategori)\n"
         "/uji3 - tes piutang & utang (4 arah likuiditas sosial)\n"
         "/uji4 - tes grey area, perhutangan & flag klinis (v1.8)\n"
+        "/uji5 - tes 500 kasus mega (grey/utang/flags/harian)\n"
         "/cobain <teks> - simulasi klasifikasi offline (tidak disimpan)\n\n"
         "Login dashboard:\n"
         "• **/web** di bot → klik link (tanpa isi form)\n"
@@ -2233,6 +2234,26 @@ async def uji4_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     )
 
 
+async def uji5_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
+    user = update.effective_user
+    user_id = user.id if user else 0
+    if not user_id or not is_license_active_for_user(user_id):
+        await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    await update.message.reply_text(
+        "Paket uji 500 kasus (mega) — offline, tidak menyimpan transaksi.\n"
+        "Bisa 10–30 detik. Untuk coba 1 teks: /cobain <teks>"
+    )
+    await _run_uji_pack(
+        update,
+        pack="mega",
+        intro="Menjalankan 500 kasus...",
+    )
+
+
 def format_cobain_result(text: str, parsed: Dict[str, Any]) -> str:
     """Ringkasan klasifikasi offline untuk /cobain — tanpa simpan transaksi."""
     jenis = str(parsed.get("jenis") or "—")
@@ -2514,6 +2535,7 @@ async def post_init(application) -> None:
             BotCommand("activate", "Aktivasi lisensi"),
             BotCommand("cobain", "Simulasi klasifikasi (tidak disimpan)"),
             BotCommand("uji4", "Uji grey area & perhutangan"),
+            BotCommand("uji5", "Uji 500 kasus mega"),
         ]
     )
 
@@ -2537,6 +2559,7 @@ def main() -> None:
     app.add_handler(CommandHandler("uji2", uji2_handler))
     app.add_handler(CommandHandler("uji3", uji3_handler))
     app.add_handler(CommandHandler("uji4", uji4_handler))
+    app.add_handler(CommandHandler("uji5", uji5_handler))
     app.add_handler(CommandHandler("cobain", cobain_handler))
     app.add_handler(CallbackQueryHandler(mood_callback_handler, pattern=r"^mood:"))
     app.add_handler(CallbackQueryHandler(impulse_callback_handler, pattern=r"^impulse:"))
