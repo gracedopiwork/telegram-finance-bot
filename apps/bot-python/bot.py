@@ -19,6 +19,7 @@ from telegram.ext import (
 )
 
 from ambiguous_suite import format_telegram_chunks
+from offline_classify import classify_offline
 from ai_health import log_ai_health_config, report_ai_event, report_ai_failure
 from claude_ai import analyze_with_claude as claude_parse_json
 from claude_ai import extract_transaction_text_from_image as claude_extract_image_text
@@ -1401,7 +1402,9 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "/panduan - panduan First Aid (ringkas + link web)\n"
         "/uji - tes kasus ambigu taksonomi (sekali jalan)\n"
         "/uji2 - tes cakupan data baru (semua jenis/kategori)\n"
-        "/uji3 - tes piutang & utang (4 arah likuiditas sosial)\n\n"
+        "/uji3 - tes piutang & utang (4 arah likuiditas sosial)\n"
+        "/uji4 - tes grey area, perhutangan & flag klinis (v1.8)\n"
+        "/cobain <teks> - simulasi klasifikasi offline (tidak disimpan)\n\n"
         "Login dashboard:\n"
         "• **/web** di bot → klik link (tanpa isi form)\n"
         "• Atau buka halaman portal + email & kode lisensi\n\n"
@@ -2204,6 +2207,103 @@ async def uji3_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await _run_uji_pack(update, pack="sosial", intro="Menjalankan paket uji piutang & utang...")
 
 
+async def uji4_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
+    user = update.effective_user
+    user_id = user.id if user else 0
+    if not user_id or not is_license_active_for_user(user_id):
+        await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    await update.message.reply_text(
+        "Paket uji grey area & perhutangan (offline).\n\n"
+        "Coba manual (tidak disimpan):\n"
+        "/cobain beli tumbler 150rb\n"
+        "/cobain utang ke ayuti 1jt\n"
+        "/cobain pinjamin ayuti 500k dadakan buat kerja, minggu depan\n"
+        "/cobain bayar cicilan pinjol 500rb\n"
+        "/cobain dibalikin ayuti 500k\n"
+        "/cobain ganti HP utama rusak 4jt"
+    )
+    await _run_uji_pack(
+        update,
+        pack="grey",
+        intro="Menjalankan skor paket uji...",
+    )
+
+
+def format_cobain_result(text: str, parsed: Dict[str, Any]) -> str:
+    """Ringkasan klasifikasi offline untuk /cobain — tanpa simpan transaksi."""
+    jenis = str(parsed.get("jenis") or "—")
+    sifat = parsed.get("sifat")
+    impulsif = parsed.get("impulsif")
+    flags = parsed.get("taxonomy_flags") or []
+    flag_labels = {
+        "risk_alert": "Risk Alert (Pinjol)",
+        "late_pattern": "Pola Keterlambatan",
+        "life_event": "Peristiwa Besar",
+    }
+    flag_txt = ", ".join(flag_labels.get(str(f), str(f)) for f in flags) if flags else "(tidak ada)"
+    sifat_txt = str(sifat) if applies_need_want(jenis) and sifat else "(tidak dievaluasi / di luar scope)"
+    impulsif_txt = (
+        str(impulsif)
+        if applies_impulsif(jenis) and impulsif in {"Yes", "No"}
+        else "(tidak dievaluasi / di luar scope)"
+    )
+    ask = str(parsed.get("clarification_question") or "").strip()
+    ask_line = f"\nKlarifikasi bot:\n{ask}" if ask else "\nKlarifikasi bot: (tidak perlu)"
+    bucket = parsed.get("bucket")
+    bucket_txt = str(bucket) if bucket is not None else "—"
+    return (
+        "🧪 Simulasi offline (TIDAK disimpan)\n"
+        f"Input: {text}\n\n"
+        f"Jenis: {jenis}\n"
+        f"Kategori: {parsed.get('kategori') or '—'}\n"
+        f"Bucket: {bucket_txt}\n"
+        f"Sifat (Need/Want): {sifat_txt}\n"
+        f"Impulsif: {impulsif_txt}\n"
+        f"Flag taxonomy: {flag_txt}\n"
+        f"Nominal: Rp{int(parsed.get('nominal') or 0):,}"
+        f"{ask_line}\n\n"
+        "Tips: /uji4 untuk skor paket, atau /catat untuk simpan beneran."
+    )
+
+
+async def cobain_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
+    user = update.effective_user
+    user_id = user.id if user else 0
+    if not user_id or not is_license_active_for_user(user_id):
+        await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    raw = " ".join(context.args).strip() if context.args else ""
+    if not raw and update.message.text:
+        # Support "/cobain teks..." when args parsing fails on some clients.
+        parts = update.message.text.split(maxsplit=1)
+        raw = parts[1].strip() if len(parts) > 1 else ""
+    if not raw:
+        await update.message.reply_text(
+            "Pakai: /cobain <teks transaksi>\n\n"
+            "Contoh:\n"
+            "/cobain utang ke ayuti 1jt\n"
+            "/cobain pinjamin ayuti 500k dadakan buat kerja, minggu depan\n"
+            "/cobain beli iphone 15jt"
+        )
+        return
+
+    try:
+        parsed = classify_offline(raw)
+    except Exception as exc:
+        logger.exception("Gagal /cobain: %s", exc)
+        await update.message.reply_text("Gagal menjalankan simulasi. Coba lagi sebentar.")
+        return
+
+    await update.message.reply_text(format_cobain_result(raw, parsed))
+
+
 async def _run_uji_pack(update: Update, *, pack: str, intro: str) -> None:
     await update.message.reply_text(intro)
     try:
@@ -2412,6 +2512,8 @@ async def post_init(application) -> None:
             BotCommand("kuota", "Sisa kuota AI"),
             BotCommand("hapuskilat", "Hapus transaksi terakhir"),
             BotCommand("activate", "Aktivasi lisensi"),
+            BotCommand("cobain", "Simulasi klasifikasi (tidak disimpan)"),
+            BotCommand("uji4", "Uji grey area & perhutangan"),
         ]
     )
 
@@ -2434,6 +2536,8 @@ def main() -> None:
     app.add_handler(CommandHandler("uji", uji_handler))
     app.add_handler(CommandHandler("uji2", uji2_handler))
     app.add_handler(CommandHandler("uji3", uji3_handler))
+    app.add_handler(CommandHandler("uji4", uji4_handler))
+    app.add_handler(CommandHandler("cobain", cobain_handler))
     app.add_handler(CallbackQueryHandler(mood_callback_handler, pattern=r"^mood:"))
     app.add_handler(CallbackQueryHandler(impulse_callback_handler, pattern=r"^impulse:"))
     app.add_handler(CallbackQueryHandler(confirm_callback_handler, pattern=r"^confirm:"))

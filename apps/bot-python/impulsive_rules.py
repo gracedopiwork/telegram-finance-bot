@@ -24,6 +24,8 @@ EXPLICIT_IMPULSIVE_KEYWORDS = (
     "kepengen",
     "fomo",
     "spontan",
+    "dadakan",
+    "mendadak",
     "impulsif",
     "impulsive",
     "impulse",

@@ -9,7 +9,7 @@ from typing import Any
 from offline_classify import classify_offline
 
 _FIXTURES = Path(__file__).resolve().parent / "fixtures"
-COMPARE_KEYS = ("jenis", "kategori", "sifat", "bucket", "nominal", "needs_clarification")
+COMPARE_KEYS = ("jenis", "kategori", "sifat", "bucket", "nominal", "needs_clarification", "impulsif", "taxonomy_flags")
 
 PACKS: dict[str, dict[str, str]] = {
     "ambigu": {
@@ -26,6 +26,11 @@ PACKS: dict[str, dict[str, str]] = {
         "title": "Uji piutang & utang",
         "file": "social_liquidity_transactions.json",
         "ok_msg": "Semua kasus piutang/utang sesuai 4 arah likuiditas sosial.",
+    },
+    "grey": {
+        "title": "Uji grey area & perhutangan",
+        "file": "gray_debt_transactions.json",
+        "ok_msg": "Semua kasus grey area / perhutangan / flag klinis sesuai taksonomi v1.8.",
     },
 }
 
@@ -54,6 +59,12 @@ def case_diffs(case: dict[str, Any]) -> dict[str, tuple[Any, Any]]:
         if key == "needs_clarification":
             got = bool(actual.get("needs_clarification"))
             want = bool(want)
+        elif key == "taxonomy_flags":
+            got_set = set(got or [])
+            want_set = set(want or [])
+            if got_set != want_set:
+                diffs[key] = (sorted(want_set), sorted(got_set))
+            continue
         if got != want:
             diffs[key] = (want, got)
     return diffs
@@ -82,6 +93,8 @@ def evaluate_cases(
                     "sifat": actual.get("sifat"),
                     "bucket": actual.get("bucket"),
                     "nominal": actual.get("nominal"),
+                    "impulsif": actual.get("impulsif"),
+                    "taxonomy_flags": actual.get("taxonomy_flags"),
                     "ask": actual.get("clarification_question") or "",
                 },
             }
@@ -104,7 +117,10 @@ def evaluate_cases(
 def _fmt_got(row: dict[str, Any]) -> str:
     a = row["actual"]
     bucket = a["bucket"] if a["bucket"] is not None else "-"
-    line = f"{a['jenis']} / {a['kategori']} / {a['sifat']} / {bucket}"
+    sifat = a["sifat"] if a.get("sifat") is not None else "-"
+    impulsif = a["impulsif"] if a.get("impulsif") is not None else "-"
+    flags = ",".join(a.get("taxonomy_flags") or []) or "-"
+    line = f"{a['jenis']} / {a['kategori']} / {sifat} / {bucket} / impulsif={impulsif} / flags={flags}"
     if a.get("ask"):
         line += f" | tanya: {a['ask']}"
     return line

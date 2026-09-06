@@ -311,6 +311,17 @@ class ImpulsiveRulesTests(unittest.TestCase):
         self.assertEqual(resolve_impulsif(parsed, "pinjam ke mama 500rb spontan"), "Yes")
         self.assertFalse(needs_impulse_clarification(parsed, "pinjam ke mama 500rb spontan"))
 
+    def test_v18_piutang_keluar_dadakan_is_impulsive(self) -> None:
+        parsed = {
+            "jenis": "Piutang Keluar",
+            "kategori": "Lain-lain",
+            "sifat": None,
+            "nominal": 500_000,
+            "keterangan": "Pinjamin Ayuti 500rb dadakan",
+        }
+        self.assertEqual(resolve_impulsif(parsed, "pinjamin ayuti 500rb dadakan"), "Yes")
+        self.assertFalse(needs_impulse_clarification(parsed, "pinjamin ayuti 500rb dadakan"))
+
     def test_v18_piutang_masuk_not_evaluated(self) -> None:
         parsed = {
             "jenis": "Piutang Masuk",
