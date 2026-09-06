@@ -54,14 +54,24 @@ class BotTransactionController extends Controller
             'social_expected_back_at' => ['nullable', 'date'],
         ]));
 
+        $type = (string) $validated['type'];
+        $nature = TransactionTaxonomy::normalizeNatureForType(
+            $type,
+            isset($validated['nature']) ? (string) $validated['nature'] : null,
+        );
+        // Out-of-scope impulsive types: force false (field not evaluated).
+        $isImpulsive = TransactionTaxonomy::appliesImpulsive($type)
+            ? (bool) $validated['is_impulsive']
+            : false;
+
         $category = app(CategoryAutoRegisterService::class)->resolveOrRegister(
             app(CategoryAutoRegisterService::class)->resolveFromNotes(
                 (string) $validated['category'],
-                (string) $validated['type'],
+                $type,
                 (string) $validated['notes'],
             ),
-            (string) $validated['type'],
-            (string) $validated['nature'],
+            $type,
+            $nature,
             (string) $validated['notes'],
         );
 
@@ -75,13 +85,13 @@ class BotTransactionController extends Controller
             'recorded_at' => isset($validated['recorded_at'])
                 ? PortalTimezone::parseRecordedAt((string) $validated['recorded_at'], (int) $validated['telegram_user_id'])
                 : PortalTimezone::nowUtc(),
-            'type' => $validated['type'],
+            'type' => $type,
             'category' => $category,
             'sub_category' => trim((string) ($validated['sub_category'] ?? '')) ?: '-',
             'amount' => (int) $validated['amount'],
-            'nature' => $validated['nature'],
+            'nature' => $nature,
             'mood' => $validated['mood'],
-            'is_impulsive' => (bool) $validated['is_impulsive'],
+            'is_impulsive' => $isImpulsive,
             'notes' => $notes,
             'source' => $validated['source'] ?? 'manual',
             'taxonomy_flags' => $validated['taxonomy_flags'] ?? null,
@@ -116,7 +126,8 @@ class BotTransactionController extends Controller
             'type' => ['required', 'in:'.implode(',', TransactionTaxonomy::TYPES)],
             'category' => ['required', 'string', 'max:64'],
             'sub_category' => ['nullable', 'string', 'max:128'],
-            'nature' => ['required', 'in:'.implode(',', TransactionTaxonomy::NATURES)],
+            // v1.8: nullable — hanya wajib bermakna untuk Pengeluaran.
+            'nature' => ['nullable', 'in:'.implode(',', TransactionTaxonomy::NATURES)],
             'notes' => ['required', 'string', 'max:2000'],
         ];
     }
@@ -126,11 +137,16 @@ class BotTransactionController extends Controller
      */
     private function previewTransaction(array $validated, string $category): BotTransaction
     {
+        $type = (string) $validated['type'];
+
         return new BotTransaction([
-            'type' => $validated['type'],
+            'type' => $type,
             'category' => $category,
             'sub_category' => trim((string) ($validated['sub_category'] ?? '')) ?: '-',
-            'nature' => $validated['nature'],
+            'nature' => TransactionTaxonomy::normalizeNatureForType(
+                $type,
+                isset($validated['nature']) ? (string) $validated['nature'] : null,
+            ),
             'notes' => $validated['notes'],
         ]);
     }

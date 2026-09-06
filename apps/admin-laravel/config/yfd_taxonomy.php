@@ -1,10 +1,11 @@
 <?php
 
 /**
- * YFD AI Taxonomy v1.3 (Agustus 2026) — closed list.
+ * YFD AI Taxonomy v1.8 (September 2026) — closed list.
+ * Category lists remain compatible with v1.3–v1.7; v1.8 clarifies field scope per jenis.
  * AI hanya boleh memilih dari daftar ini; bucket ditentukan sistem.
  *
- * @see docs/YFD_AI_Taxonomy_REVISI UPDATED TANGGAL 2 AGUSTUS 2026.pdf
+ * @see YFD_AI_Taxonomy_v1.8.pdf
  */
 return [
     'expense_categories' => [
@@ -200,7 +201,7 @@ return [
     ],
 
     'source_of_truth_note' => [
-        'Taxonomy tertutup (YFD AI Taxonomy v1.3): AI HANYA memilih dari 17 kategori resmi (+ kategori pemasukan).',
+        'Taxonomy tertutup (YFD AI Taxonomy v1.8): AI HANYA memilih dari 17 kategori resmi (+ kategori pemasukan).',
         'AI tidak boleh membuat kategori baru. Jika ragu → Lain-lain (< 2% target).',
         'Layer 1 = Kategori (closed list). Layer 2 = Bucket (otomatis dari mapping sistem).',
         'Jenis transaksi: Pemasukan | Pengeluaran | Saving/Investment | Kewajiban Pajak | Piutang Keluar | Piutang Masuk | Utang Masuk | Utang Keluar.',

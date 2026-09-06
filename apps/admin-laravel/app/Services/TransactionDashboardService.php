@@ -86,6 +86,7 @@ class TransactionDashboardService
             $range['end'],
         );
         $cashLiquidity = $this->cashLiquidityInsight($rows, $income, $expense, $savingInvestment, $taxObligation, $cashflow, $socialLiquidity, $periodMonths);
+        $taxonomySignals = $this->taxonomySignals($rows, $cashLiquidity, $income);
         $dailyExpenses = $this->dailyExpenseTrend($telegramUserId, $month);
         $fallbackClinical = $this->clinicalSummary(
             $income,
@@ -97,6 +98,7 @@ class TransactionDashboardService
             $periodMonths,
             $cashLiquidity,
             $savingInvestment,
+            $taxonomySignals,
         );
         $fallbackDoctorsNote = $this->doctorsNoteFinancial(
             $income,
@@ -107,6 +109,7 @@ class TransactionDashboardService
             $buckets,
             $baseline,
             $cashLiquidity,
+            $taxonomySignals,
         );
 
         $aiGuidance = app(PortalAiGuidanceService::class)->financial(
@@ -125,6 +128,7 @@ class TransactionDashboardService
                 'buckets' => $buckets,
                 'cash_liquidity' => $cashLiquidity,
                 'social_liquidity' => $socialLiquidity,
+                'taxonomy_signals' => $taxonomySignals,
             ],
             $baseline,
             [
@@ -161,6 +165,7 @@ class TransactionDashboardService
             'tax_health' => $taxHealth,
             'social_liquidity' => $socialLiquidity,
             'cash_liquidity' => $cashLiquidity,
+            'taxonomy_signals' => $taxonomySignals,
             'daily_expenses' => $dailyExpenses,
             'clinical_summary' => $aiGuidance['clinical_summary'],
             'doctors_note' => $aiGuidance['doctors_note'],
@@ -227,6 +232,7 @@ class TransactionDashboardService
             $socialLiquidity,
             $periodMonthsForClinical,
         );
+        $taxonomySignals = $this->taxonomySignals($rows, $cashLiquidity, $income);
 
         $fallbackClinical = $this->clinicalSummary(
             $income,
@@ -238,6 +244,7 @@ class TransactionDashboardService
             $periodMonthsForClinical,
             $cashLiquidity,
             $savingInvestment,
+            $taxonomySignals,
         );
         $fallbackDoctorsNote = $this->doctorsNoteFinancial(
             $income,
@@ -248,6 +255,7 @@ class TransactionDashboardService
             $buckets,
             $baseline,
             $cashLiquidity,
+            $taxonomySignals,
         );
 
         return [
@@ -263,6 +271,7 @@ class TransactionDashboardService
                 'buckets' => $buckets,
                 'cash_liquidity' => $cashLiquidity,
                 'social_liquidity' => $socialLiquidity,
+                'taxonomy_signals' => $taxonomySignals,
             ],
             'fallback_clinical' => $fallbackClinical,
             'fallback_doctors_note' => $fallbackDoctorsNote,
@@ -861,6 +870,19 @@ class TransactionDashboardService
             );
         }
 
+        // Taxonomy v1.6 — Cashflow Gap funding (yang terukur di First Aid = Social Liquidity).
+        $gapFunding = [];
+        if ($deficit > 0) {
+            if ($deficitFundedBySocial > 0) {
+                $gapFunding[] = 'Social Liquidity';
+            }
+            if ($deficitFundedBySocial < $deficit) {
+                $gapFunding[] = 'Untracked / other (kas internal atau utang berbunga di luar tracker sosial)';
+            }
+        }
+        $materialReceivableOut = $lendOut > 0 && $income > 0 && ($lendOut / $income) >= 0.10;
+        $highPriorityLiquidity = $deficit > 0 && $materialReceivableOut && $deficitFundedBySocial > 0;
+
         return [
             'deficit' => $deficit,
             'social_borrow_inflow' => $borrowIn,
@@ -871,9 +893,119 @@ class TransactionDashboardService
             'outstanding_debt' => $outstandingDebt,
             'outstanding_receivable' => $outstandingReceivable,
             'deficit_funded_by_social' => $deficitFundedBySocial,
+            'cashflow_gap' => $deficit,
+            'gap_funding_sources' => $gapFunding,
+            'high_priority_liquidity_finding' => $highPriorityLiquidity,
             'period_months' => $periodMonths,
             'period_scope' => $periodScope,
             'insight_text' => $insightText,
+        ];
+    }
+
+    /**
+     * Sinyal klinis taxonomy v1.8 untuk Doctor's Note (Risk Alert, Pola Keterlambatan, impulsif sosial).
+     *
+     * @param  Collection<int, BotTransaction>  $rows
+     * @param  array<string, mixed>  $cashLiquidity
+     * @return array<string, mixed>
+     */
+    private function taxonomySignals(Collection $rows, array $cashLiquidity, int $income): array
+    {
+        $riskMonths = [];
+        $lateMonths = [];
+        $lifeEventCount = 0;
+        $riskCount = 0;
+        $lateCount = 0;
+
+        foreach ($rows as $row) {
+            $flags = $row->taxonomy_flags;
+            if (! is_array($flags) || $flags === []) {
+                continue;
+            }
+            $monthKey = $row->recorded_at?->timezone(PortalTimezone::defaultName())->format('Y-m') ?? '';
+            foreach ($flags as $flag) {
+                $key = strtolower(trim((string) $flag));
+                if ($key === 'risk_alert') {
+                    $riskCount++;
+                    if ($monthKey !== '') {
+                        $riskMonths[$monthKey] = true;
+                    }
+                } elseif ($key === 'late_pattern') {
+                    $lateCount++;
+                    if ($monthKey !== '') {
+                        $lateMonths[$monthKey] = true;
+                    }
+                } elseif ($key === 'life_event') {
+                    $lifeEventCount++;
+                }
+            }
+        }
+
+        $receivableOut = $rows->where('type', TransactionTaxonomy::TYPE_RECEIVABLE_OUT);
+        $payableIn = $rows->where('type', TransactionTaxonomy::TYPE_PAYABLE_IN);
+        $recvCount = $receivableOut->count();
+        $payInCount = $payableIn->count();
+        $recvImpulsive = $receivableOut->filter(fn (BotTransaction $t) => (bool) $t->is_impulsive)->count();
+        $payInImpulsive = $payableIn->filter(fn (BotTransaction $t) => (bool) $t->is_impulsive)->count();
+
+        $lines = [];
+        $riskMonthCount = count($riskMonths);
+        if ($riskCount > 0) {
+            $lines[] = sprintf(
+                'Risk Alert (pinjol/pinjaman tunai): %d transaksi di %d bulan berbeda%s.',
+                $riskCount,
+                $riskMonthCount,
+                $riskMonthCount >= 2 ? ' — pola berulang (≥2 bulan), wajib disorot faktual di Doctor\'s Note' : '',
+            );
+        }
+        $lateMonthCount = count($lateMonths);
+        if ($lateCount > 0) {
+            $lines[] = sprintf(
+                'Pola Keterlambatan (denda/sanksi non-pajak): %d transaksi di %d bulan berbeda%s.',
+                $lateCount,
+                $lateMonthCount,
+                $lateMonthCount >= 2 ? ' — flag berulang, laporkan faktual tanpa menghakimi' : '',
+            );
+        }
+        if ($lifeEventCount > 0) {
+            $lines[] = "Peristiwa Besar: {$lifeEventCount} transaksi (pisahkan dari tren bucket bulanan biasa).";
+        }
+        if ($recvCount > 0) {
+            $lines[] = sprintf(
+                'Piutang Keluar: %d transaksi, %d impulsif/dadakan (Need/Want tidak berlaku — taxonomy v1.8).',
+                $recvCount,
+                $recvImpulsive,
+            );
+        }
+        if ($payInCount > 0) {
+            $lines[] = sprintf(
+                'Utang Masuk: %d transaksi, %d impulsif/dadakan (Need/Want tidak berlaku — taxonomy v1.8).',
+                $payInCount,
+                $payInImpulsive,
+            );
+        }
+        if (! empty($cashLiquidity['high_priority_liquidity_finding'])) {
+            $lines[] = 'High-priority liquidity: Cashflow Deficit + Piutang Keluar material + funding Social Liquidity.';
+        }
+        $gapSources = (array) ($cashLiquidity['gap_funding_sources'] ?? []);
+        if ($gapSources !== []) {
+            $lines[] = 'Cashflow Gap funding: '.implode(', ', $gapSources).'.';
+        }
+
+        return [
+            'risk_alert_count' => $riskCount,
+            'risk_alert_months' => $riskMonthCount,
+            'risk_alert_recurring' => $riskMonthCount >= 2,
+            'late_pattern_count' => $lateCount,
+            'late_pattern_months' => $lateMonthCount,
+            'late_pattern_recurring' => $lateMonthCount >= 2,
+            'life_event_count' => $lifeEventCount,
+            'receivable_out_count' => $recvCount,
+            'receivable_out_impulsive' => $recvImpulsive,
+            'payable_in_count' => $payInCount,
+            'payable_in_impulsive' => $payInImpulsive,
+            'high_priority_liquidity' => (bool) ($cashLiquidity['high_priority_liquidity_finding'] ?? false),
+            'lines' => $lines,
         ];
     }
 
@@ -892,6 +1024,7 @@ class TransactionDashboardService
         int $periodMonths,
         ?array $cashLiquidity = null,
         int $savingInvestment = 0,
+        array $taxonomySignals = [],
     ): array {
         $findings = [];
         $periodText = $periodMonths === 1 ? 'bulan ini' : "{$periodMonths} bulan terakhir";
@@ -928,6 +1061,10 @@ class TransactionDashboardService
             $findings[] = $socialInsight;
         } elseif ($cashflow < 0) {
             $findings[] = "Cashflow minus Rp ".$this->formatIdr(abs($cashflow))." {$periodText} — pengeluaran melebihi pendapatan.";
+        }
+
+        if (! empty($cashLiquidity['high_priority_liquidity_finding'])) {
+            $findings[] = 'Temuan likuiditas prioritas tinggi: defisit cashflow + Piutang Keluar material + funding Social Liquidity (faktual, tanpa menghakimi keputusan meminjamkan).';
         }
 
         if ($savingInvestment <= 0 || $savingRate <= 0) {
@@ -971,8 +1108,15 @@ class TransactionDashboardService
             $findings[] = "Dana darurat baseline ≈ {$monthsCovered} bulan pengeluaran (dari snapshot).";
         }
 
+        foreach ((array) ($taxonomySignals['lines'] ?? []) as $signalLine) {
+            if (is_string($signalLine) && trim($signalLine) !== '') {
+                $findings[] = $signalLine;
+            }
+        }
+
         $headline = match (true) {
             $cashflow < 0 && $essentialOver => 'Tidak sehat — Essential Living overspend + cashflow minus',
+            ! empty($cashLiquidity['high_priority_liquidity_finding']) => 'Perhatian likuiditas — defisit + piutang sosial material',
             $cashflow < 0 && $borrowIn > 0 => 'Tidak sehat — defisit dibiayai Likuiditas Sosial',
             $cashflow < 0 => 'Tidak sehat — cashflow minus',
             $savingInvestment <= 0 => 'Belum sehat — saving masih nol',
@@ -991,7 +1135,7 @@ class TransactionDashboardService
 
         return [
             'headline' => $headline,
-            'findings' => array_slice($findings, 0, 6),
+            'findings' => array_slice($findings, 0, 8),
             'status' => $status,
         ];
     }
@@ -1010,6 +1154,7 @@ class TransactionDashboardService
         array $buckets,
         ?FinancialBaseline $baseline,
         ?array $cashLiquidity = null,
+        array $taxonomySignals = [],
     ): array {
         $recommendations = [];
 
@@ -1054,6 +1199,30 @@ class TransactionDashboardService
             if ($outstandingDebt > 0) {
                 $recommendations[] = 'Pantau outstanding utang sosial di panel Likuiditas Sosial — ini kewajiban, bukan pendapatan.';
             }
+        }
+
+        if (! empty($cashLiquidity['high_priority_liquidity_finding'])) {
+            $recommendations[] = 'Prioritas likuiditas: defisit + Piutang Keluar material + funding sosial — laporkan fakta & dampak kas, tanpa menilai keputusan meminjamkan.';
+        }
+
+        if (! empty($taxonomySignals['risk_alert_recurring'])) {
+            $recommendations[] = 'Risk Alert berulang (≥2 bulan): pola pinjol/pinjaman tunai muncul lintas bulan — sorot faktual sebagai sinyal clinical, tanpa menghakimi.';
+        } elseif ((int) ($taxonomySignals['risk_alert_count'] ?? 0) > 0) {
+            $recommendations[] = 'Ada transaksi ber-flag Risk Alert (pinjol/pinjaman tunai) — pantau agar tidak menjadi pola berulang.';
+        }
+
+        if (! empty($taxonomySignals['late_pattern_recurring'])) {
+            $recommendations[] = 'Pola Keterlambatan berulang (≥2 bulan, denda/sanksi non-pajak) — catat sebagai sinyal behavioral faktual.';
+        }
+
+        $recvImp = (int) ($taxonomySignals['receivable_out_impulsive'] ?? 0);
+        $payImp = (int) ($taxonomySignals['payable_in_impulsive'] ?? 0);
+        if ($recvImp > 0 || $payImp > 0) {
+            $recommendations[] = sprintf(
+                'Keputusan sosial dadakan: %d Piutang Keluar impulsif, %d Utang Masuk impulsif — pantau %% dadakan vs terencana (bukan Need/Want matrix).',
+                $recvImp,
+                $payImp,
+            );
         }
 
         $hasBucketIssue = $essentialOver || $flexibleOver;

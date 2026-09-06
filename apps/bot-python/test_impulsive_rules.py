@@ -278,6 +278,58 @@ class ImpulsiveRulesTests(unittest.TestCase):
         }
         self.assertFalse(needs_impulse_clarification(parsed, "makan siang nasi padang 45k"))
 
+    def test_v18_piutang_keluar_asks_impulse_without_signal(self) -> None:
+        parsed = {
+            "jenis": "Piutang Keluar",
+            "kategori": "Lain-lain",
+            "sifat": None,
+            "nominal": 200_000,
+            "keterangan": "Pinjamin Ayuti 200rb",
+        }
+        self.assertTrue(needs_impulse_clarification(parsed, "pinjamin ayuti 200rb"))
+        self.assertEqual(resolve_impulsif(parsed, "pinjamin ayuti 200rb"), "No")
+
+    def test_v18_piutang_keluar_planned_skips_clarification(self) -> None:
+        parsed = {
+            "jenis": "Piutang Keluar",
+            "kategori": "Lain-lain",
+            "sifat": None,
+            "nominal": 200_000,
+            "keterangan": "Pinjamin Ayuti terencana 200rb",
+        }
+        self.assertFalse(needs_impulse_clarification(parsed, "pinjamin ayuti terencana 200rb"))
+        self.assertEqual(resolve_impulsif(parsed, "pinjamin ayuti terencana 200rb"), "No")
+
+    def test_v18_utang_masuk_spontan_is_impulsive(self) -> None:
+        parsed = {
+            "jenis": "Utang Masuk",
+            "kategori": "Lain-lain",
+            "sifat": None,
+            "nominal": 500_000,
+            "keterangan": "Pinjam ke mama 500rb spontan",
+        }
+        self.assertEqual(resolve_impulsif(parsed, "pinjam ke mama 500rb spontan"), "Yes")
+        self.assertFalse(needs_impulse_clarification(parsed, "pinjam ke mama 500rb spontan"))
+
+    def test_v18_piutang_masuk_not_evaluated(self) -> None:
+        parsed = {
+            "jenis": "Piutang Masuk",
+            "kategori": "Lain-lain",
+            "sifat": None,
+            "nominal": 200_000,
+            "keterangan": "Ayuti balikin 200rb",
+        }
+        self.assertIsNone(resolve_impulsif(parsed, "ayuti balikin 200rb"))
+        self.assertFalse(needs_impulse_clarification(parsed, "ayuti balikin 200rb"))
+
+    def test_v18_pemasukan_and_saving_not_evaluated(self) -> None:
+        income = {"jenis": "Pemasukan", "kategori": "Gaji", "sifat": None, "nominal": 5_000_000}
+        saving = {"jenis": "Saving/Investment", "kategori": "Investasi & Tabungan", "sifat": None, "nominal": 100_000}
+        self.assertIsNone(resolve_impulsif(income, "gaji 5jt"))
+        self.assertIsNone(resolve_impulsif(saving, "nabung emas 100rb"))
+        self.assertFalse(needs_impulse_clarification(income, "gaji 5jt"))
+        self.assertFalse(needs_impulse_clarification(saving, "nabung emas 100rb"))
+
 
 if __name__ == "__main__":
     unittest.main()

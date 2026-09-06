@@ -79,12 +79,13 @@ from date_parser import apply_transaction_date, format_recorded_at_label
 from impulsive_rules import (
     PAYDAY_SPLURGE_KEYWORDS,
     REWARD_SPENDING_KEYWORDS,
+    impulse_clarification_copy,
     needs_impulse_clarification,
     resolve_impulsif,
     stamp_planned_cue,
 )
 from nature_rules import refine_sifat_from_context
-from yfd_taxonomy import attach_taxonomy_flags
+from yfd_taxonomy import applies_impulsif, applies_need_want, attach_taxonomy_flags
 
 load_dotenv()
 
@@ -293,19 +294,20 @@ def detect_mood_in_text(text: str) -> str | None:
 
 
 def normalize_taxonomy(parsed: Dict[str, Any]) -> Dict[str, Any]:
-    """Selaraskan jenis & sifat dengan taxonomy YFD (Need/Wants + jenis v1.3)."""
+    """Selaraskan jenis & sifat dengan taxonomy YFD v1.8 (Need/Wants hanya Pengeluaran)."""
     jenis = str(parsed.get("jenis", "Pengeluaran")).strip()
-    sifat = str(parsed.get("sifat", "Need")).strip()
+    sifat_raw = parsed.get("sifat")
+    sifat = str(sifat_raw).strip() if sifat_raw is not None else ""
     sifat_lower = sifat.lower()
 
     if sifat_lower in {"saving/investement", "saving/investment", "saving", "investasi", "investment"}:
         parsed["jenis"] = "Saving/Investment"
-        parsed["sifat"] = "Need"
+        parsed["sifat"] = None
     elif sifat_lower in {"donation", "donasi", "sedekah", "persembahan"}:
         parsed["jenis"] = "Pengeluaran"
         parsed["kategori"] = "Sosial & Keluarga"
         parsed["sifat"] = "Need"
-    elif sifat not in VALID_SIFAT:
+    elif sifat and sifat not in VALID_SIFAT:
         parsed["sifat"] = "Wants" if sifat_lower in {"want", "wants"} else "Need"
 
     if jenis not in VALID_JENIS:
@@ -325,7 +327,9 @@ def normalize_taxonomy(parsed: Dict[str, Any]) -> Dict[str, Any]:
         else:
             parsed["jenis"] = "Pengeluaran"
 
-    if parsed["sifat"] not in VALID_SIFAT:
+    if not applies_need_want(str(parsed.get("jenis") or "")):
+        parsed["sifat"] = None
+    elif parsed.get("sifat") not in VALID_SIFAT:
         parsed["sifat"] = "Need"
 
     return parsed
@@ -398,9 +402,8 @@ async def prompt_impulse_clarification(
     user_id: int,
     *,
     intro: str,
-    from_receipt: bool = False,
+    prompt: str,
 ) -> None:
-    prompt = IMPULSE_PROMPT_RECEIPT_TEXT if from_receipt else IMPULSE_PROMPT_TEXT
     await message.reply_text(
         intro + "\n\n" + prompt,
         reply_markup=build_impulse_keyboard(),
@@ -426,16 +429,15 @@ async def queue_impulse_clarification(
         "basic_mode": basic_mode,
         "from_receipt": from_receipt,
     }
-    intro = (
-        "Struk sudah kebaca. Karena foto biasanya tanpa keterangan impulsif, aku perlu memastikan dulu:"
-        if from_receipt
-        else "Transaksi sudah kebaca. Untuk jajan/cemilan, aku perlu memastikan dulu:"
+    intro, prompt = impulse_clarification_copy(
+        str(parsed.get("jenis") or ""),
+        from_receipt=from_receipt,
     )
     await prompt_impulse_clarification(
         message,
         user_id,
         intro=intro,
-        from_receipt=from_receipt,
+        prompt=prompt,
     )
 
 
@@ -881,14 +883,21 @@ def normalize_ai_result(data: Dict[str, Any], source_text: str = "") -> Dict[str
         raise ValueError("invalid_jenis")
     if not str(data.get("kategori", "")).strip():
         raise ValueError("invalid_kategori")
-    if data["sifat"] not in VALID_SIFAT:
-        raise ValueError("invalid_sifat")
+    if applies_need_want(str(data.get("jenis") or "")):
+        if data.get("sifat") not in VALID_SIFAT:
+            raise ValueError("invalid_sifat")
+    else:
+        data["sifat"] = None
     mood = normalize_mood(str(data["mood"]))
     if not mood:
         raise ValueError("invalid_mood")
     data["mood"] = mood
-    if data["impulsif"] not in VALID_IMPULSIF:
-        raise ValueError("invalid_impulsif")
+    if applies_impulsif(str(data.get("jenis") or "")):
+        if data.get("impulsif") not in VALID_IMPULSIF:
+            # AI boleh kosong; finalize_parsed_transaction yang resolve.
+            data["impulsif"] = "No"
+    else:
+        data["impulsif"] = None
 
     raw_clarification = data.get("needs_clarification", False)
     data["needs_clarification"] = (
@@ -1049,6 +1058,14 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
     if isinstance(flags, list) and flags:
         pretty = ", ".join(flag_labels.get(str(f), str(f)) for f in flags)
         flag_line = f"Flag taxonomy: {pretty}\n"
+    sifat = parsed.get("sifat")
+    sifat_line = f"Sifat: {sifat}\n" if applies_need_want(str(parsed.get("jenis") or "")) and sifat else ""
+    impulsif = parsed.get("impulsif")
+    impulsif_line = (
+        f"Impulsif: {impulsif}\n"
+        if applies_impulsif(str(parsed.get("jenis") or "")) and impulsif in {"Yes", "No"}
+        else ""
+    )
     return (
         f"Aku baca transaksi untuk {greeting_name} seperti ini:\n"
         f"{date_line}"
@@ -1057,9 +1074,9 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
         f"Jenis: {parsed['jenis']}\n"
         f"Kategori: {parsed['kategori']}\n"
         f"Prescription Bucket: {format_prescription_bucket(parsed)}\n"
-        f"Sifat: {parsed['sifat']}\n"
+        f"{sifat_line}"
         f"Mood: {parsed['mood']}\n"
-        f"Impulsif: {parsed['impulsif']}\n"
+        f"{impulsif_line}"
         f"{flag_line}"
         f"{warn_block}\n"
         "Sudah benar?"
@@ -1199,10 +1216,18 @@ async def save_transaction(
         f"Jenis: {parsed['jenis']}\n"
         f"Kategori: {parsed['kategori']}\n"
         f"Prescription Bucket: {format_prescription_bucket(parsed)}\n"
-        f"Sifat: {parsed['sifat']}\n"
-        f"Mood: {parsed['mood']}\n"
-        f"Impulsif: {parsed['impulsif']}"
-        f"{portal_hint}"
+        + (
+            f"Sifat: {parsed['sifat']}\n"
+            if applies_need_want(str(parsed.get("jenis") or "")) and parsed.get("sifat")
+            else ""
+        )
+        + f"Mood: {parsed['mood']}\n"
+        + (
+            f"Impulsif: {parsed['impulsif']}"
+            if applies_impulsif(str(parsed.get("jenis") or "")) and parsed.get("impulsif") in {"Yes", "No"}
+            else ""
+        )
+        + f"{portal_hint}"
     )
 
 

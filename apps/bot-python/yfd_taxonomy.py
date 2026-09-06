@@ -1,12 +1,17 @@
-﻿"""YFD AI Taxonomy v1.3 (2 Agustus 2026) — closed vocabulary & grey-area helpers.
+﻿"""YFD AI Taxonomy v1.8 (September 2026) — closed vocabulary & grey-area helpers.
 
-Source: docs/YFD_AI_Taxonomy_REVISI UPDATED TANGGAL 2 AGUSTUS 2026.pdf
-AI picks kategori/jenis/sifat only. Bucket is system-determined (not AI).
+Source of truth: YFD_AI_Taxonomy_v1.8.pdf
+Category/bucket closed lists remain compatible with v1.3–v1.7.
+v1.8 adds explicit Mood / Impulsive / Need-Want field scope per jenis (Section 5.4).
+
+AI picks kategori/jenis (and sifat/impulsif only when in scope). Bucket is system-determined.
 """
 
 from __future__ import annotations
 
 from typing import Any
+
+TAXONOMY_VERSION = "1.8"
 
 # ---------------------------------------------------------------------------
 # Closed lists (Layer 1)
@@ -61,6 +66,21 @@ VALID_JENIS = (
 VALID_SIFAT = ("Need", "Wants")
 
 VALID_MOOD = ("Happy", "Neutral", "Sad", "Stressed", "Angry", "Tired")
+
+# Section 5.4 — Need/Want HANYA untuk Pengeluaran.
+NATURE_SCOPED_JENIS = frozenset({"Pengeluaran"})
+
+# Section 5.4 / 3.5 — Impulsive untuk Pengeluaran + keputusan sosial baru.
+# Saving/Investment sengaja belum (catatan terbuka v1.8).
+IMPULSIVE_SCOPED_JENIS = frozenset({"Pengeluaran", "Piutang Keluar", "Utang Masuk"})
+
+
+def applies_need_want(jenis: str | None) -> bool:
+    return str(jenis or "").strip() in NATURE_SCOPED_JENIS
+
+
+def applies_impulsif(jenis: str | None) -> bool:
+    return str(jenis or "").strip() in IMPULSIVE_SCOPED_JENIS
 
 # ---------------------------------------------------------------------------
 # Grey area (§2.18 / §3.3) — item key → clarification template

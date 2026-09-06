@@ -84,7 +84,7 @@
     @else
         @include('portal.partials.empty-state', [
             'title' => 'FTSA belum diisi',
-            'message' => 'Lengkapi kuesioner FTSA 1–32 untuk melihat archetype behavioral finansial.',
+            'message' => 'Lengkapi kuesioner FTSA 1–32 untuk melihat konteks archetype behavioral (pilot, observasional).',
         ])
         <div class="mt-4">
             <a href="{{ $portalFtsaUrl ?? route('portal.ftsa.create') }}"
@@ -122,7 +122,7 @@
                 @endif
                 @if($ftsaProfile)
                     <p class="text-xs text-slate-500 mt-2">
-                        Diperkaya profil FTSA:
+                        Konteks FTSA (pilot, observasional):
                         <strong>{{ $ftsaProfile['archetype'] ?? '—' }}</strong>
                         @if($ftsaDoctorsNote !== '')
                             — {{ \Illuminate\Support\Str::limit($ftsaDoctorsNote, 160) }}
@@ -144,13 +144,13 @@
                         @if($ftsaDoctorsNote !== '')
                             {{ $ftsaDoctorsNote }}
                         @else
-                            Archetype FTSA saat ini: <strong>{{ $ftsaProfile['archetype'] ?? '—' }}</strong>.
-                            Rekomendasi bulanan nanti akan menghubungkan profil ini dengan pola belanja Anda.
+                            Konteks FTSA (pilot): <strong>{{ $ftsaProfile['archetype'] ?? '—' }}</strong>.
+                            Rekomendasi bulanan akan menghubungkan observasi data transaksi dengan konteks ini — tanpa klaim diagnosis personal.
                         @endif
                     </p>
                 @elseif($ftsaUnlocked ?? false)
                     <p class="text-xs text-slate-500 mt-3">
-                        Tip: lengkapi FTSA 1–32 agar catatan bulanan lebih personal.
+                        Tip: lengkapi FTSA 1–32 agar catatan bulanan lebih kaya konteks (tetap observasional).
                     </p>
                 @endif
             @endif
@@ -176,13 +176,13 @@
                     </a>
                 @endif
             @elseif($ftsaUnlocked ?? false)
-                <p class="text-sm text-slate-600 mb-4">FTSA Premium aktif. Lengkapi kuesioner 1–32 untuk memperkaya Doctor's Note & rekomendasi behavioral.</p>
+                <p class="text-sm text-slate-600 mb-4">FTSA Premium aktif. Lengkapi kuesioner 1–32 untuk memperkaya konteks observasional Doctor's Note & rekomendasi behavioral.</p>
                 <a href="{{ $portalFtsaUrl ?? route('portal.ftsa.create') }}"
                    class="inline-flex items-center gap-2 bg-gold-400 hover:bg-gold-500 text-navy-900 font-bold px-4 py-2.5 rounded-xl text-sm">
                     Isi FTSA Sekarang
                 </a>
             @else
-                <p class="text-sm text-slate-600 mb-4">Belum FTSA: dashboard tetap membaca pola transaksi. Beli FTSA Premium untuk archetype & rekomendasi yang lebih personal (12 bulan evaluasi).</p>
+                <p class="text-sm text-slate-600 mb-4">Belum FTSA: dashboard tetap membaca pola transaksi. Beli FTSA Premium untuk konteks archetype (pilot, observasional) & rekomendasi yang lebih kaya (12 bulan evaluasi).</p>
                 @include('portal.partials.ftsa-unlock-panel', ['variant' => 'embedded'])
             @endif
         </div>
@@ -195,13 +195,13 @@
             @if($behavioralRecsPending)
                 <p class="text-xs text-slate-500 mt-1">
                     @if($ftsaProfile)
-                        Interim — rekomendasi final (FTSA + pola transaksi) rilis akhir bulan.
+                        Interim — rekomendasi final (pola transaksi + konteks FTSA observasional) rilis akhir bulan.
                     @else
                         Interim — rekomendasi final dari pola transaksi rilis akhir bulan. (Tanpa FTSA)
                     @endif
                 </p>
             @elseif($ftsaProfile)
-                <p class="text-xs text-slate-500 mt-1">Menghubungkan hasil FTSA dengan pola behavioral transaksi.</p>
+                <p class="text-xs text-slate-500 mt-1">Berdasarkan pola transaksi; FTSA dipakai sebagai konteks observasional (pilot).</p>
             @else
                 <p class="text-xs text-slate-500 mt-1">Berdasarkan pola transaksi (belum FTSA).</p>
             @endif
@@ -226,7 +226,7 @@
             @endphp
             <p class="text-sm text-slate-600">
                 @if($ftsaProfile)
-                    Rekomendasi bulanan (FTSA + behavioral summary) dirilis otomatis
+                    Rekomendasi bulanan (pola transaksi + konteks FTSA observasional) dirilis otomatis
                 @else
                     Rekomendasi bulanan dari pola transaksi dirilis otomatis
                 @endif
@@ -349,9 +349,10 @@
         </div>
     </div>
 
-    {{-- 8. Need vs Want impulsivitas --}}
+    {{-- 8. Need vs Want impulsivitas (Pengeluaran saja) --}}
     <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <div class="text-sm font-semibold text-navy-800 mb-4">Need vs Want impulsivitas</div>
+        <div class="text-sm font-semibold text-navy-800">Need vs Want impulsivitas</div>
+        <p class="text-xs text-slate-500 mt-1 mb-4">Hanya transaksi <strong>Pengeluaran</strong> (taxonomy v1.8 — Need/Want tidak berlaku untuk jenis lain).</p>
         <div class="grid grid-cols-2 gap-3 mb-4">
             @foreach($matrixOrder as $key)
                 @php $cell = $matrixByKey->get($key); @endphp
@@ -369,6 +370,62 @@
                 <canvas id="needWantChart"></canvas>
             @endif
         </div>
+    </div>
+
+    {{-- 8b. Keputusan sosial dadakan vs terencana (v1.8 panel terpisah) --}}
+    @php $socialImpulse = $assessment['social_impulse'] ?? ['has_data' => false, 'items' => []]; @endphp
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm font-semibold text-navy-800">Keputusan sosial — dadakan vs terencana</div>
+        <p class="text-xs text-slate-500 mt-1 mb-4">
+            Piutang Keluar &amp; Utang Masuk punya impulsif, tetapi <strong>tanpa Need/Want</strong> — panel terpisah dari matrix di atas (taxonomy v1.8 §5.4).
+        </p>
+        @if(!empty($socialImpulse['has_data']))
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @foreach(($socialImpulse['items'] ?? []) as $item)
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <div class="text-sm font-bold text-navy-800">{{ $item['label'] }}</div>
+                        <div class="text-xs text-slate-500 mt-1">{{ (int) $item['count'] }} transaksi · {{ $fmt((int) $item['amount']) }}</div>
+                        @if((int) $item['count'] > 0)
+                            <div class="mt-3 grid grid-cols-2 gap-2 text-center">
+                                <div class="rounded-lg bg-rose-50 px-2 py-2">
+                                    <div class="text-lg font-extrabold text-rose-700">{{ $item['impulsive_share'] }}%</div>
+                                    <div class="text-[11px] text-rose-800/80">Dadakan ({{ (int) $item['impulsive_count'] }})</div>
+                                </div>
+                                <div class="rounded-lg bg-emerald-50 px-2 py-2">
+                                    <div class="text-lg font-extrabold text-emerald-700">{{ $item['planned_share'] }}%</div>
+                                    <div class="text-[11px] text-emerald-800/80">Terencana ({{ (int) $item['planned_count'] }})</div>
+                                </div>
+                            </div>
+                        @else
+                            <p class="text-sm text-slate-500 mt-3">Belum ada transaksi jenis ini di periode ini.</p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <p class="text-sm text-slate-500">Belum ada Piutang Keluar / Utang Masuk di periode ini.</p>
+        @endif
+    </div>
+
+    {{-- 8c. Flag klinis taxonomy --}}
+    @php $taxFlags = $assessment['taxonomy_flags'] ?? ['has_data' => false, 'lines' => []]; @endphp
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm font-semibold text-navy-800">Flag klinis taxonomy</div>
+        <p class="text-xs text-slate-500 mt-1 mb-4">Risk Alert (pinjol), Pola Keterlambatan (denda), Peristiwa Besar — faktual, tidak menghakimi.</p>
+        @if(!empty($taxFlags['has_data']))
+            <ul class="space-y-2 text-sm text-slate-700">
+                @foreach(($taxFlags['lines'] ?? []) as $line)
+                    <li class="flex gap-2"><span class="text-gold-500 font-bold">•</span><span>{{ $line }}</span></li>
+                @endforeach
+            </ul>
+            @if(!empty($taxFlags['risk_alert_recurring']) || !empty($taxFlags['late_pattern_recurring']))
+                <p class="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mt-3">
+                    Ada pola berulang (≥2 bulan). Doctor's Note keuangan akan menyorot ini secara faktual.
+                </p>
+            @endif
+        @else
+            <p class="text-sm text-slate-500">Tidak ada flag klinis pada periode ini.</p>
+        @endif
     </div>
 
     {{-- 9. Impulsive spending --}}

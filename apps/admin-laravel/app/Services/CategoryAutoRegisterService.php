@@ -22,11 +22,11 @@ class CategoryAutoRegisterService
     public function resolveOrRegister(
         string $categoryInput,
         string $type,
-        string $nature,
+        ?string $nature,
         string $notes = '',
     ): string {
         $resolved = $this->resolveWithoutRegister($categoryInput, $type);
-        $this->ensureMappingExists($resolved, $type, $nature, $notes);
+        $this->ensureMappingExists($resolved, $type, $nature ?? '', $notes);
 
         return $resolved;
     }

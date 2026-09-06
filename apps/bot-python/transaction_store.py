@@ -60,11 +60,15 @@ def _format_recorded_at(recorded_at: datetime | None) -> str:
 
 def _classification_payload(parsed: dict) -> dict:
     sub = str(parsed.get("sub_kategori") or parsed.get("sub_category") or "").strip()
+    sifat = parsed.get("sifat")
+    # Taxonomy v1.8: Need/Want hanya Pengeluaran — selain itu kirim null.
+    if sifat not in {"Need", "Wants"}:
+        sifat = None
     payload = {
         "type": parsed["jenis"],
         "category": parsed["kategori"],
         "sub_category": sub if sub and sub != "-" else "-",
-        "nature": parsed["sifat"],
+        "nature": sifat,
         "notes": str(parsed.get("keterangan", "")).strip(),
     }
     flags = parsed.get("taxonomy_flags")
@@ -146,7 +150,7 @@ def save_transaction_to_api(
         "telegram_user_id": telegram_user_id,
         "amount": int(parsed["nominal"]),
         "mood": parsed["mood"],
-        "is_impulsive": str(parsed.get("impulsif", "No")).strip().lower() == "yes",
+        "is_impulsive": str(parsed.get("impulsif") or "").strip().lower() == "yes",
         "source": source,
         "recorded_at": _format_recorded_at(recorded_at),
     }

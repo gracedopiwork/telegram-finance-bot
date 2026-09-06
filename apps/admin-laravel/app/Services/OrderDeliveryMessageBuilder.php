@@ -12,7 +12,12 @@ class OrderDeliveryMessageBuilder
         $order->loadMissing(['license', 'digitalProduct']);
         $onboarding = app(PortalOnboardingService::class);
 
-        if ($onboarding->isFtsaUnlockOrder($order)) {
+        // Bundle First Aid + FTSA: pesan bot penuh (link Telegram + /activate), bukan teks FTSA-only.
+        if ($onboarding->isBundleOrder($order)) {
+            return $this->whatsAppFullLicenseText($order, ftsaUnlocked: true);
+        }
+
+        if ($onboarding->isPureFtsaProductOrder($order)) {
             if ($onboarding->isFtsaUpgradeOrder($order)) {
                 return $this->whatsAppFtsaUpgradeText($order);
             }

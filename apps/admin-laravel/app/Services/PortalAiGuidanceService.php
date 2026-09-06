@@ -620,7 +620,7 @@ class PortalAiGuidanceService
 Anda adalah dr. Financial dari Your Financial Doctor (YFD). Berikan insight dan rekomendasi behavioral finansial berdasarkan hasil FTSA-32 dan baseline keuangan berikut.
 
 DATA HASIL:
-- Dominant archetype: {$summary['archetype_label']}
+- Dominant archetype (konteks pilot, observasional — jangan diagnosis): {$summary['archetype_label']}
 - Domain scores:
 {$this->linesBlock($domainLines)}
 {$baselineContext}
@@ -649,8 +649,8 @@ PROMPT;
         $moodGroups = $metrics['mood_groups'] ?? [];
 
         $ftsaLine = is_array($ftsa)
-            ? 'Archetype FTSA: '.($ftsa['archetype'] ?? '—')
-            : 'Archetype FTSA: belum tersedia';
+            ? 'Konteks FTSA (pilot, observasional saja — jangan diagnosis): '.($ftsa['archetype'] ?? '—')
+            : 'Konteks FTSA: belum tersedia';
 
         $leakageLine = is_array($leakage)
             ? 'Kebocoran impulsif terbesar: '.($leakage['category'] ?? '—').' (Rp '.number_format((int) ($leakage['amount'] ?? 0), 0, ',', '.').')'
@@ -678,6 +678,30 @@ PROMPT;
             ? "TABEL MOOD:\n".implode("\n", $moodTableLines)
             : 'TABEL MOOD: belum tersedia';
 
+        $social = is_array($metrics['social_impulse'] ?? null) ? $metrics['social_impulse'] : [];
+        $socialLines = [];
+        foreach ((array) ($social['items'] ?? []) as $item) {
+            if (! is_array($item) || (int) ($item['count'] ?? 0) <= 0) {
+                continue;
+            }
+            $socialLines[] = sprintf(
+                '- %s: %d transaksi · dadakan %s%% · terencana %s%%',
+                $item['label'] ?? '—',
+                (int) ($item['count'] ?? 0),
+                $item['impulsive_share'] ?? '0',
+                $item['planned_share'] ?? '0',
+            );
+        }
+        $socialBlock = $socialLines !== []
+            ? "KEPUTUSAN SOSIAL (dadakan vs terencana — tanpa Need/Want):\n".implode("\n", $socialLines)
+            : 'KEPUTUSAN SOSIAL: belum ada Piutang Keluar / Utang Masuk.';
+
+        $flags = is_array($metrics['taxonomy_flags'] ?? null) ? $metrics['taxonomy_flags'] : [];
+        $flagLines = array_values(array_filter((array) ($flags['lines'] ?? [])));
+        $flagBlock = $flagLines !== []
+            ? "FLAG TAXONOMY:\n- ".implode("\n- ", $flagLines)
+            : 'FLAG TAXONOMY: tidak ada.';
+
         return <<<PROMPT
 Anda adalah dr. Financial dari Your Financial Doctor (YFD). Analisis behavioral finansial user dari data transaksi bot Telegram berikut.
 
@@ -697,12 +721,16 @@ METRIK:
 
 {$moodTableBlock}
 
+{$socialBlock}
+
+{$flagBlock}
+
 ATURAN WAJIB:
 {$rules}
 
 OUTPUT: JSON valid saja, tanpa markdown, format:
 {
-  "insights": ["ringkasan deskriptif + insight korelasi FTSA"],
+  "insights": ["ringkasan deskriptif + insight observasional (boleh menyinggung FTSA tanpa diagnosis)"],
   "recommendations_personalized": ["rekomendasi tindakan bulanan"],
   "recommendations_general": ["..."],
   "doctors_note": {
@@ -727,8 +755,6 @@ PROMPT;
         $socialLines = $this->formatCashLiquidityLines($metrics);
 
         $stage = $baseline?->stage_label ? "Tahap finansial: {$baseline->stage_label}" : 'Tahap finansial: belum diisi';
-        $archetype = $baseline?->dominant_archetype_label ? "Archetype: {$baseline->dominant_archetype_label}" : '';
-
         $maxFindings = (int) config('portal_ai.max_findings', 5);
 
         return <<<PROMPT
@@ -736,7 +762,6 @@ Anda adalah dr. Financial dari Your Financial Doctor (YFD). Berikan ringkasan kl
 
 PERIODE: {$metrics['period_label']}
 {$stage}
-{$archetype}
 
 METRIK:
 - Pendapatan: Rp {$this->formatIdr((int) $metrics['income'])}
@@ -746,8 +771,11 @@ METRIK:
 - Saving rate: {$metrics['saving_rate']}%
 - Jumlah transaksi: {$metrics['transaction_count']}
 
-LIKUIDITAS SOSIAL / KAS:
+LIKUIDITAS SOSIAL / CASHFLOW GAP:
 {$this->linesBlock($socialLines)}
+
+FLAG TAXONOMY (klinis):
+{$this->linesBlock($this->formatTaxonomySignalLines($metrics))}
 
 BUCKET PRESCRIPTION:
 {$this->linesBlock($bucketLines)}
@@ -802,8 +830,11 @@ METRIK:
 - Saving rate: {$metrics['saving_rate']}%
 - Jumlah transaksi: {$metrics['transaction_count']}
 
-LIKUIDITAS SOSIAL / KAS:
+LIKUIDITAS SOSIAL / CASHFLOW GAP:
 {$this->linesBlock($socialLines)}
+
+FLAG TAXONOMY (klinis):
+{$this->linesBlock($this->formatTaxonomySignalLines($metrics))}
 
 BUCKET PRESCRIPTION:
 {$this->linesBlock($bucketLines)}
@@ -820,7 +851,7 @@ OUTPUT: JSON valid saja, tanpa markdown, format:
   }
 }
 
-Maksimal {$maxFindings} findings. Fokus kondisi kumulatif bulan ini (deskriptif), bukan archetype FTSA.
+Maksimal {$maxFindings} findings. Fokus kondisi kumulatif bulan ini (deskriptif). Bahasa observasional — jangan klaim diagnosis FTSA.
 PROMPT;
     }
 
@@ -850,19 +881,22 @@ METRIK:
 - Saving rate: {$metrics['saving_rate']}%
 - Jumlah transaksi: {$metrics['transaction_count']}
 
-LIKUIDITAS SOSIAL / KAS:
+LIKUIDITAS SOSIAL / CASHFLOW GAP:
 {$this->linesBlock($socialLines)}
+
+FLAG TAXONOMY (klinis):
+{$this->linesBlock($this->formatTaxonomySignalLines($metrics))}
 
 BUCKET PRESCRIPTION:
 {$this->linesBlock($bucketLines)}
 
 ATURAN WAJIB:
 {$rules}
-JANGAN menyebut archetype FTSA — itu ada di dashboard behavioral.
-Setiap findings WAJIB menyentuh fakta kritis bila ada: (1) saving Rp0 / rate 0%, (2) nominal+persen Flexible + Social vs batas, (3) verdict sehat/tidak sehat, (4) Essential Living over-max yang menyebabkan cashflow minus.
+JANGAN menyebut archetype FTSA — itu ada di dashboard behavioral (dan FTSA-32 masih pilot: bahasa observasional saja).
+Setiap findings WAJIB menyentuh fakta kritis bila ada: (1) saving Rp0 / rate 0%, (2) nominal+persen Flexible + Social vs batas, (3) verdict sehat/tidak sehat, (4) Essential Living over-max yang menyebabkan cashflow minus, (5) Risk Alert / Pola Keterlambatan berulang bila ada di FLAG TAXONOMY, (6) Cashflow Gap funding bila defisit.
 Tiap rekomendasi harus konkret, bisa dilakukan, dan spesifik (contoh: alokasikan cashflow positif ke Future Building, mulai saving otomatis 10%, batasi Flexible+Social ≤10%).
 JANGAN sarankan menaikkan Essential Living jika aktual sudah di bawah 50% — itu justru sehat.
-Jika ada defisit yang dibiayai Utang Masuk, prioritaskan rekomendasi pelunasan utang sosial tanpa mengoreksi Income.
+Jika ada defisit yang dibiayai Utang Masuk, prioritaskan rekomendasi pelunasan utang sosial tanpa mengoreksi Income — laporkan fakta, jangan menghakimi keputusan meminjam/meminjamkan.
 KRITIS: Jangan menukar angka Protection dengan Flexible + Social. Salin persentase aktual PERSIS dari BUCKET PRESCRIPTION di atas.
 
 OUTPUT: JSON valid saja, tanpa markdown, format:
@@ -1393,13 +1427,22 @@ PROMPT;
       $periodMonths = (int) ($metrics['period_months'] ?? 1);
       $cashScope = $periodMonths === 1 ? 'bulan ini' : 'periode (akumulasi)';
       $lines = [
-          '- Defisit (expense>income) '.$cashScope.': Rp '.$this->formatIdr((int) ($cash['deficit'] ?? 0)),
+          '- Core cashflow (Income − Expenses − Saving − Pajak) '.$cashScope.': lihat METRIK di atas',
+          '- Cashflow Gap / defisit (expense>income) '.$cashScope.': Rp '.$this->formatIdr((int) ($cash['deficit'] ?? 0)),
           '- Utang Masuk (pinjaman sosial masuk) '.$cashScope.': Rp '.$this->formatIdr((int) ($cash['social_borrow_inflow'] ?? 0)),
           '- Utang Keluar (bayar balik) '.$cashScope.': Rp '.$this->formatIdr((int) ($cash['social_repay_outflow'] ?? 0)),
+          '- Piutang Keluar (dipinjamkan) '.$cashScope.': Rp '.$this->formatIdr((int) ($cash['social_lend_outflow'] ?? 0)),
           '- Estimasi sisa kas '.$cashScope.' (cashflow ± likuiditas sosial periode): Rp '.$this->formatIdr((int) ($cash['estimated_cash'] ?? 0)),
           '- Outstanding utang sosial (posisi aktif, semua periode): Rp '.$this->formatIdr((int) ($cash['outstanding_debt'] ?? 0)),
           '- Outstanding piutang aktif (posisi aktif, semua periode): Rp '.$this->formatIdr((int) ($cash['outstanding_receivable'] ?? 0)),
       ];
+      $gapSources = (array) ($cash['gap_funding_sources'] ?? []);
+      if ($gapSources !== []) {
+          $lines[] = '- Gap funding sources: '.implode(', ', $gapSources);
+      }
+      if (! empty($cash['high_priority_liquidity_finding'])) {
+          $lines[] = '- HIGH-PRIORITY: Deficit + Piutang Keluar material + Social Liquidity funding — laporkan fakta & dampak, jangan menghakimi.';
+      }
       if ($periodMonths === 1) {
           $lines[] = '- Catatan: untuk filter 1 bulan, bahas surplus/defisit BULAN INI saja — jangan menyebut akumulasi lintas bulan.';
       }
@@ -1409,6 +1452,23 @@ PROMPT;
       }
 
       return $lines;
+  }
+
+  /**
+   * @param  array<string, mixed>  $metrics
+   * @return list<string>
+   */
+  private function formatTaxonomySignalLines(array $metrics): array
+  {
+      $signals = is_array($metrics['taxonomy_signals'] ?? null) ? $metrics['taxonomy_signals'] : [];
+      $lines = [];
+      foreach ((array) ($signals['lines'] ?? []) as $line) {
+          if (is_string($line) && trim($line) !== '') {
+              $lines[] = '- '.$line;
+          }
+      }
+
+      return $lines !== [] ? $lines : ['- (tidak ada flag taxonomy klinis pada periode ini)'];
   }
 
   private function clinicalWeekAnchor(string $monthKey): \Carbon\Carbon

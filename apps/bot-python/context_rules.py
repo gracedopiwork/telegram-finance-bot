@@ -1,6 +1,6 @@
 ﻿"""Rule konteks transaksi YFD — deterministik sebelum/sesudah AI.
 
-Prioritas eksklusif (YFD AI Taxonomy v1.3) — yang di atas menang, tidak ditabrak yang bawah:
+Prioritas eksklusif (YFD AI Taxonomy v1.8) — yang di atas menang, tidak ditabrak yang bawah:
 0) Jenis eksplisit user di awal teks — menang mutlak
 1) Likuiditas sosial (4 arah pinjam-meminjam) mengalahkan Pemasukan DAN
    kategori tujuan (kuliah/obat/RS/kerja). Jatuh tempo bukan jenis transaksi.

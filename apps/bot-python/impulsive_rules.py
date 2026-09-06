@@ -1,10 +1,15 @@
-"""Aturan impulsif YFD — AI utama, guardrail untuk kasus jelas."""
+"""Aturan impulsif YFD — AI utama, guardrail untuk kasus jelas.
+
+Taxonomy v1.8 §3.5 / §5.4: Impulsive dievaluasi untuk Pengeluaran, Piutang Keluar,
+dan Utang Masuk. Jenis lain tidak dievaluasi (bukan 'No' sebagai keputusan).
+"""
 
 from __future__ import annotations
 
 from typing import Any
 
 from context_rules import is_discretionary_social_giving
+from yfd_taxonomy import applies_impulsif
 
 VALID_IMPULSIF = frozenset({"Yes", "No"})
 
@@ -381,10 +386,12 @@ def needs_impulse_clarification(
     from_receipt: bool = False,
 ) -> bool:
     """
-    True bila belanja jajan/snack (atau F&B dari foto struk) tanpa sinyal jelas.
-    Bot sebaiknya tanya user: terencana atau tidak.
+    True bila impulsif in-scope tapi tanpa sinyal jelas.
+    - Pengeluaran: jajan/snack (atau F&B dari foto struk) — perilaku lama dipertahankan.
+    - Piutang Keluar / Utang Masuk (v1.8): wajib tanya jika tidak ada signal §3.5.
     """
-    if parsed.get("jenis") != "Pengeluaran":
+    jenis = str(parsed.get("jenis") or "").strip()
+    if not applies_impulsif(jenis):
         return False
 
     combined = _combined_text(parsed, source_text)
@@ -393,6 +400,10 @@ def needs_impulse_clarification(
         return False
     if has_explicit_impulse_signal(combined):
         return False
+
+    if jenis in {"Piutang Keluar", "Utang Masuk"}:
+        return True
+
     if is_planned_social(combined):
         return False
     if is_functional_replacement(combined):
@@ -411,27 +422,74 @@ def needs_impulse_clarification(
     return is_discretionary_snack(parsed, combined)
 
 
+def impulse_clarification_copy(jenis: str, *, from_receipt: bool = False) -> tuple[str, str]:
+    """(intro, prompt) untuk klarifikasi impulsif — wording §5.1 / §5A.1 / jajan."""
+    jenis = str(jenis or "").strip()
+    if jenis == "Piutang Keluar":
+        return (
+            "Piutang sudah kebaca. Untuk keputusan meminjamkan, aku perlu memastikan dulu:",
+            (
+                "Ini *permintaan mendadak*, atau sudah kamu tahu/rencanakan sebelumnya?\n"
+                "(Tombol: Terencana = sudah tahu/rencana · Tidak terencana = mendadak.)"
+            ),
+        )
+    if jenis == "Utang Masuk":
+        return (
+            "Utang sosial sudah kebaca. Untuk keputusan meminjam, aku perlu memastikan dulu:",
+            (
+                "Ini kebutuhan pinjam yang *mendadak*, atau sudah kamu rencanakan/tahu sebelumnya?\n"
+                "(Tombol: Terencana = sudah tahu/rencana · Tidak terencana = mendadak.)"
+            ),
+        )
+    if from_receipt:
+        return (
+            "Struk sudah kebaca. Karena foto biasanya tanpa keterangan impulsif, aku perlu memastikan dulu:",
+            (
+                "Struk biasanya tidak menjelaskan apakah belanjanya terencana.\n"
+                "Untuk transaksi dari foto ini, apakah pembeliannya *terencana*?"
+            ),
+        )
+    return (
+        "Transaksi sudah kebaca. Untuk jajan/cemilan, aku perlu memastikan dulu:",
+        (
+            "Untuk jajan/cemilan ini, apakah pembeliannya *terencana*?\n"
+            "(Banyak orang tidak menulis 'spontan' — kami tanya biar deteksi impulsif lebih akurat.)"
+        ),
+    )
+
+
 def resolve_impulsif(
     parsed: dict[str, Any],
     source_text: str = "",
     *,
     ai_suggested: str | None = None,
     trust_ai: bool = False,
-) -> str:
+) -> str | None:
     """
-    Urutan keputusan:
+    Urutan keputusan (hanya jika jenis in-scope Impulsive):
     1) Guardrail wajib (acara sosial / tagihan / penggantian rusak) — override AI
     2) Sinyal impulsif kuat (spontan / pasca-gajian / comfort spending emosional)
     3) Keputusan AI — nominal kecil tetap No kecuali sinyal eksplisit
     4) Heuristik fallback sempit
+
+    Jenis di luar scope → None (field tidak dievaluasi, taxonomy v1.8 §5.4).
     """
-    if parsed.get("jenis") != "Pengeluaran":
-        return "No"
+    jenis = str(parsed.get("jenis") or "").strip()
+    if not applies_impulsif(jenis):
+        return None
 
     combined = _combined_text(parsed, source_text)
     nominal = int(parsed.get("nominal", 0) or 0)
 
     if has_planned_purchase_signal(combined):
+        return "No"
+
+    if jenis in {"Piutang Keluar", "Utang Masuk"}:
+        if has_explicit_impulse_signal(combined):
+            return "Yes"
+        if trust_ai and ai_suggested in VALID_IMPULSIF:
+            return ai_suggested
+        # Tanpa sinyal: biarkan clarification; default sementara No sampai user jawab.
         return "No"
 
     if is_planned_social(combined):

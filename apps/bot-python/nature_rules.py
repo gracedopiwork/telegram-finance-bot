@@ -117,8 +117,11 @@ def refine_sifat_from_context(parsed: dict[str, Any], source_text: str = "") -> 
     """
     Selaraskan Need/Wants dari niat user — hindari Wants otomatis untuk jajan premium
     bila user menyatakan fungsi kerja/produktivitas.
+
+    Taxonomy v1.8 §5.4: Need/Want hanya untuk Pengeluaran; jenis lain → field tidak ada.
     """
     if parsed.get("jenis") != "Pengeluaran":
+        parsed["sifat"] = None
         return parsed
 
     combined = _combined_text(parsed, source_text)
