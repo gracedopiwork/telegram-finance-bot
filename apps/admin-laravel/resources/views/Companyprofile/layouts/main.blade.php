@@ -230,6 +230,7 @@
         }
     </style>
     @stack('head')
+    @include('partials.google-analytics')
     @include('partials.meta-pixel')
 </head>
 <body class="bg-background text-on-surface antialiased">
