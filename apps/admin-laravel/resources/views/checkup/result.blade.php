@@ -87,29 +87,34 @@
                 @endif
             </div>
 
+            @php
+                $firstAidCheckoutCode = \App\Services\PortalCheckoutService::BOT_PRODUCT_CODE;
+                $firstAidCheckoutUrl = route('checkout.show', $firstAidCheckoutCode);
+            @endphp
+
             @if($consultationTier ?? null)
                 <div class="mt-6 rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 md:p-8">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>
-                            <h2 class="font-headline-md text-headline-md text-primary mb-2">Estimasi Tarif Konsultasi</h2>
+                            <h2 class="font-headline-md text-headline-md text-primary mb-2">Lanjut ke YFD First Aid</h2>
                             <p class="text-sm text-on-surface-variant mb-3">
-                                Berdasarkan tahap finansial Anda (<strong>{{ $consultationTier['label'] }}</strong>),
-                                tarif konsultasi 1-on-1 dengan tim dokter YFD:
+                                Hasil check-up Anda: tahap <strong>{{ $consultationTier['label'] }}</strong>.
+                                Mulai catat keuangan via bot Telegram + dashboard web dengan YFD First Aid.
                             </p>
                             <div class="font-display text-3xl font-extrabold text-primary-container">
                                 {{ ConsultationPricing::formatRange($consultationTier) }}
                                 <span class="text-base font-medium text-on-surface-variant">{{ $consultationMeta['period'] ?? '/sesi' }}</span>
                             </div>
                             <p class="text-xs text-on-surface-variant mt-3 max-w-lg">
-                                {{ $consultationMeta['multi_session_note'] ?? '' }}
-                                Screening ini <strong>gratis</strong> — biaya hanya untuk sesi konsultasi berikutnya.
+                                Estimasi tarif konsultasi 1-on-1 (opsional) di atas.
+                                Screening ini <strong>gratis</strong> — langkah berikutnya: checkout YFD First Aid.
                             </p>
                         </div>
                         <div class="flex flex-col gap-2 shrink-0">
-                            <a href="{{ ConsultationPricing::bookingUrl($baseline->financial_stage) }}"
+                            <a href="{{ $firstAidCheckoutUrl }}"
                                class="btn btn-gold btn-lg text-center">
-                                <span class="material-symbols-outlined text-[20px]">event_available</span>
-                                Booking Konsultasi
+                                <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
+                                Checkout YFD First Aid
                             </a>
                         </div>
                     </div>
@@ -139,10 +144,12 @@
                         Buka Dashboard
                     </a>
                 @else
-                    <a href="{{ route('company.produk') }}" class="btn btn-gold btn-lg">
-                        <span class="material-symbols-outlined text-[20px]">send</span>
-                        Lihat YFD First Aid
-                    </a>
+                    @if(!($consultationTier ?? null))
+                        <a href="{{ $firstAidCheckoutUrl }}" class="btn btn-gold btn-lg">
+                            <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
+                            Checkout YFD First Aid
+                        </a>
+                    @endif
                     <a href="{{ route('company.paket') }}" class="btn btn-ghost btn-lg">
                         Lihat Tarif Konsultasi
                     </a>
