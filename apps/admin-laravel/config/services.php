@@ -84,7 +84,7 @@ return [
 
     'meta_pixel_id' => env('META_PIXEL_ID', '1865053708238512'),
 
-    'google_analytics_id' => env('GOOGLE_ANALYTICS_ID', 'G-PH9Q4R2NEL'),
+    'google_analytics_id' => env('GOOGLE_ANALYTICS_ID', 'G-PZ86ECXKSD'),
 
     /*
     | Google Business Profile (owner OAuth) — sync semua ulasan ke homepage carousel.
