@@ -82,6 +82,8 @@ return [
 
     'google_site_verification' => env('GOOGLE_SITE_VERIFICATION'),
 
+    'meta_pixel_id' => env('META_PIXEL_ID', '1865053708238512'),
+
     /*
     | Google Business Profile (owner OAuth) — sync semua ulasan ke homepage carousel.
     | Prasyarat: project disetujui akses GBP API + enable Account Management,
