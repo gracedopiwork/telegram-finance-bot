@@ -34,8 +34,7 @@
                     'cash_savings' => 'Cash / tabungan (Rp)',
                     'total_investment' => 'Total investasi (Rp)',
                     'total_asset' => 'Total aset (Rp)',
-                    'total_debt' => 'Total utang (Rp)',
-                ] as $field => $label)
+                        ] as $field => $label)
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">{{ $label }}</label>
                         <input type="number" name="snapshot[{{ $field }}]" min="0" step="1000"
@@ -62,6 +61,8 @@
                     @endforeach
                 </div>
             </fieldset>
+            @include('portal.partials.baseline-debt-register-fields', ['existingBaseline' => $existingBaseline ?? null])
+
             @include('portal.partials.baseline-asset-protection-fields', ['existingBaseline' => $existingBaseline ?? null])
             <button type="submit"
                     class="inline-flex items-center gap-2 bg-navy-800 hover:bg-navy-700 text-white font-semibold px-6 py-3 rounded-xl shadow-sm">

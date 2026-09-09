@@ -4,10 +4,13 @@ namespace App\Models;
 
 use App\Support\FinancialBaselineSchema;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class FinancialBaseline extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'telegram_user_id',
         'email',
@@ -26,6 +29,7 @@ class FinancialBaseline extends Model
         'total_asset',
         'asset_details',
         'total_debt',
+        'debt_register',
         'has_bpjs',
         'has_health_insurance',
         'has_income_protection',
@@ -52,6 +56,7 @@ class FinancialBaseline extends Model
             'answers_json' => 'array',
             'asset_details' => 'array',
             'protection_policies' => 'array',
+            'debt_register' => 'array',
             'has_bpjs' => 'boolean',
             'has_health_insurance' => 'boolean',
             'has_income_protection' => 'boolean',

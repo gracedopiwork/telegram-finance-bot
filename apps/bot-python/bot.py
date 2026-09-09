@@ -44,6 +44,8 @@ from onboarding_flow import (
     user_onboarding_done,
 )
 from nominal_parser import parse_nominal_from_text, reconcile_nominal, nominal_sanity_warning
+from debt_match import match_debt
+from debt_register_cache import fetch_debts
 from ai_quota import (
     format_quota_exhausted_notice,
     format_quota_status,
@@ -336,6 +338,7 @@ def finalize_parsed_transaction(
     source_text: str = "",
     *,
     trust_ai_impulsif: bool = False,
+    telegram_user_id: int | None = None,
 ) -> Dict[str, Any]:
     if source_text.strip():
         try:
@@ -360,6 +363,47 @@ def finalize_parsed_transaction(
     )
     apply_transaction_date(parsed, source_text)
     enrich_social_liquidity_fields(parsed, source_text)
+    attach_debt_link(parsed, source_text, telegram_user_id)
+    return parsed
+
+
+def attach_debt_link(
+    parsed: Dict[str, Any],
+    source_text: str = "",
+    telegram_user_id: int | None = None,
+) -> Dict[str, Any]:
+    """Tempelkan debt_id kalau transaksi jelas merujuk satu utang terdaftar.
+
+    Hanya untuk Kategori 14 — transaksi lain tidak perlu membayar ongkos lookup.
+    Gagal cocok TIDAK pernah menahan transaksi (Section 4), dan debt_id dipakai
+    murni untuk narasi konsistensi pembayaran, tidak pernah untuk mengurangi
+    sisa pokok (Section 3.3).
+    """
+    parsed.setdefault("debt_id", None)
+
+    if not telegram_user_id:
+        return parsed
+
+    # Sengaja TIDAK menyaring berdasarkan kategori. Classifier offline sering
+    # menaruh frasa santai seperti "byr kk mandiri" atau "bayar motor" di
+    # Lain-lain, justru pola penamaan yang disebut Section 8 harus tetap cocok.
+    # Yang menyaring adalah ambang keyakinan match_debt itu sendiri: tanpa utang
+    # bernama mirip, hasilnya None. Pemasukan & likuiditas sosial tetap dilewati.
+    if str(parsed.get("jenis") or "").strip() != "Pengeluaran":
+        return parsed
+
+    try:
+        debts = fetch_debts(int(telegram_user_id))
+        if not debts:
+            return parsed
+        text = " ".join(
+            part for part in [str(parsed.get("keterangan") or ""), source_text] if part
+        )
+        parsed["debt_id"] = match_debt(text, debts)
+    except Exception as exc:  # noqa: BLE001 - pencocokan opsional, transaksi harus tetap jalan
+        logger.warning("debt_match: dilewati — %s", exc)
+        parsed["debt_id"] = None
+
     return parsed
 
 
@@ -1317,7 +1361,9 @@ async def process_note_input(
         )
         return
 
-    finalize_parsed_transaction(parsed, text, trust_ai_impulsif=not basic_mode)
+    finalize_parsed_transaction(
+        parsed, text, trust_ai_impulsif=not basic_mode, telegram_user_id=user_id
+    )
     attach_prescription_bucket(parsed)
 
     if user_id:
@@ -1674,6 +1720,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             parsed,
             pending.get("source_text", ""),
             trust_ai_impulsif=not pending.get("basic_mode", True),
+            telegram_user_id=user_id,
         )
         attach_prescription_bucket(parsed)
         greeting_name = pending["greeting_name"]
@@ -1776,6 +1823,7 @@ async def mood_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         parsed,
         pending.get("source_text", ""),
         trust_ai_impulsif=not pending.get("basic_mode", True),
+        telegram_user_id=user_id,
     )
     attach_prescription_bucket(parsed)
     greeting_name = pending["greeting_name"]

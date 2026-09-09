@@ -227,8 +227,7 @@
                 'cash_savings' => 'Cash / tabungan (Rp)',
                 'total_investment' => 'Total investasi (Rp)',
                 'total_asset' => 'Total aset (Rp)',
-                'total_debt' => 'Total utang (Rp)',
-            ];
+                ];
         @endphp
         {{-- Snapshot keuangan --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -302,6 +301,8 @@
                         @endforeach
                     </div>
                 </fieldset>
+                @include('portal.partials.baseline-debt-register-fields', ['existingBaseline' => $existingBaseline ?? null])
+
                 @include('portal.partials.baseline-asset-protection-fields', ['existingBaseline' => $existingBaseline ?? null])
             </div>
         </div>

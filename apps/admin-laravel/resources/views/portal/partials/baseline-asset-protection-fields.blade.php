@@ -122,7 +122,10 @@
     function reindexRows() {
         Array.from(body.querySelectorAll('[data-protection-row]')).forEach((row, i) => {
             row.querySelectorAll('input[name]').forEach((input) => {
-                input.name = input.name.replace(/protection_policies\[\d+]/, 'protection_policies[' + i + ']');
+                // Nama input berbentuk snapshot[protection_policies][N][field] — pola yang
+                // dicari harus menyertakan "]" sebelum indeks, kalau tidak regex tidak pernah
+                // cocok dan baris gagal dinomori ulang (indeks bentrok → satu baris hilang saat simpan).
+                input.name = input.name.replace(/protection_policies]\[\d+]/, 'protection_policies][' + i + ']');
             });
         });
         const count = body.querySelectorAll('[data-protection-row]').length;

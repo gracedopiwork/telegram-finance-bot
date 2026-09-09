@@ -1,11 +1,11 @@
-"""Tests for canonical Laravel bucket preview used by Telegram."""
+﻿"""Tests for canonical Laravel bucket preview used by Telegram."""
 
 from __future__ import annotations
 
 import unittest
 import sys
 import types
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 # Test environment ringan tidak selalu memasang dependency runtime requests.
 try:
@@ -91,6 +91,39 @@ class TransactionStoreTests(unittest.TestCase):
             format_prescription_bucket(parsed),
             "Tidak masuk prescription (Pemasukan)",
         )
+
+class DebtIdPayloadTests(unittest.TestCase):
+    @patch("transaction_store.resolve_laravel_target", return_value=("https://example.test", ""))
+    @patch("transaction_store.auth_headers", return_value={"Authorization": "Bearer token"})
+    @patch("transaction_store.requests.post")
+    def test_debt_id_is_sent_when_matched(self, post, _headers, _target):
+        post.return_value = MagicMock(status_code=200, content=b"{}", json=lambda: {"ok": True})
+        parsed = _parsed(debt_id="DEBT-KPR-1")
+        save_transaction_to_api(555001, parsed, source="manual")
+        self.assertEqual(post.call_args.kwargs["json"]["debt_id"], "DEBT-KPR-1")
+
+    @patch("transaction_store.resolve_laravel_target", return_value=("https://example.test", ""))
+    @patch("transaction_store.auth_headers", return_value={"Authorization": "Bearer token"})
+    @patch("transaction_store.requests.post")
+    def test_key_is_omitted_when_there_is_no_match(self, post, _headers, _target):
+        post.return_value = MagicMock(status_code=200, content=b"{}", json=lambda: {"ok": True})
+        save_transaction_to_api(555001, _parsed(debt_id=None), source="manual")
+        self.assertNotIn("debt_id", post.call_args.kwargs["json"])
+
+
+def _parsed(**overrides):
+    base = {
+        "keterangan": "byr kk mandiri",
+        "nominal": 1500000,
+        "jenis": "Pengeluaran",
+        "kategori": "Cicilan & Hutang",
+        "sub_kategori": "-",
+        "sifat": "Need",
+        "mood": "Neutral",
+        "impulsif": "No",
+    }
+    base.update(overrides)
+    return base
 
 
 if __name__ == "__main__":

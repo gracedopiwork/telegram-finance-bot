@@ -1153,6 +1153,10 @@ class TransactionDashboardService
             'total_asset' => $baseline->total_asset,
             'asset_details' => is_array($baseline->asset_details) ? $baseline->asset_details : [],
             'total_debt' => $baseline->total_debt,
+            // Stock (saldo utang, input manual) — beda dari social liquidity
+            // active_debt_total yang merupakan flow pinjaman sosial berjalan.
+            'debt_register' => \App\Support\DebtRegister::rows($baseline->debt_register),
+            'debt_register_stale' => \App\Support\DebtRegister::hasStaleRow($baseline->debt_register),
             'protection' => [
                 'bpjs' => $baseline->has_bpjs,
                 'health' => $baseline->has_health_insurance,

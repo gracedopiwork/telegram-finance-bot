@@ -12,11 +12,13 @@ use App\Services\FtsaEvaluationService;
 use App\Services\PortalAccessService;
 use App\Services\PortalFeatureService;
 use App\Services\PortalOnboardingService;
+use App\Support\DebtRegister;
 use App\Support\FinancialBaselineSchema;
 use App\Support\PortalSession;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class BaselineController extends Controller
@@ -284,11 +286,21 @@ class BaselineController extends Controller
             $result = $service->assess($validated, $includeFtsa);
             $snapshot = $validated['snapshot'] ?? [];
 
-            $payload = $this->buildBaselinePayload($request, $telegramUserId, $result, $snapshot, $ftsaUnlocked);
-
             $recordToUpdate = $existing ?? $baseline;
+
+            $payload = $this->buildBaselinePayload($request, $telegramUserId, $result, $snapshot, $ftsaUnlocked, $recordToUpdate);
+
+            // User melunasi semua utang: tabel dikirim tapi kosong. Tanpa ini
+            // merge mengembalikan baris lama dan utang "hidup lagi".
+            $debtCleared = (bool) ($snapshot['debt_register_submitted'] ?? false)
+                && ($payload['debt_register'] ?? null) === null;
+
             if ($recordToUpdate !== null) {
-                $payload = $this->mergeExistingSnapshotFields($recordToUpdate, $payload);
+                $payload = $this->mergeExistingSnapshotFields(
+                    $recordToUpdate,
+                    $payload,
+                    $debtCleared ? ['debt_register', 'total_debt'] : [],
+                );
                 $recordToUpdate->update($payload);
                 $savedBaseline = $recordToUpdate->fresh();
             } else {
@@ -375,7 +387,7 @@ class BaselineController extends Controller
                 ? $existing->answers_json['fs']
                 : [];
             $result = $service->assess($validated, true);
-            $payload = $this->buildBaselinePayload($request, $telegramUserId, $result, [], true);
+            $payload = $this->buildBaselinePayload($request, $telegramUserId, $result, [], true, $existing);
 
             if ($existing !== null) {
                 $payload = $this->mergeExistingSnapshotFields($existing, $payload);
@@ -403,7 +415,7 @@ class BaselineController extends Controller
      * @param  array<string, mixed>  $snapshot
      * @return array<string, mixed>
      */
-    private function buildBaselinePayload(Request $request, int $telegramUserId, array $result, array $snapshot, bool $ftsaUnlocked): array
+    private function buildBaselinePayload(Request $request, int $telegramUserId, array $result, array $snapshot, bool $ftsaUnlocked, ?FinancialBaseline $existing = null): array
     {
         $payload = [
             'telegram_user_id' => $telegramUserId,
@@ -445,6 +457,29 @@ class BaselineController extends Controller
             $payload['tax_scheme'] = $this->taxSchemeForJobType($jobType);
         }
 
+        if (\Illuminate\Support\Facades\Schema::hasColumn('financial_baselines', 'debt_register')) {
+            $register = $this->normalizeDebtRegister(
+                $snapshot['debt_register'] ?? null,
+                is_array($existing?->debt_register) ? $existing->debt_register : null,
+            );
+
+            // Kosong hanya boleh menimpa kalau form memang mengirim tabelnya.
+            // Tanpa penanda ini, mergeExistingSnapshotFields() mengembalikan baris
+            // lama dan user yang sudah melunasi semua utang tidak bisa mengosongkannya.
+            $submitted = (bool) ($snapshot['debt_register_submitted'] ?? false);
+            if ($register !== null || $submitted) {
+                $payload['debt_register'] = $register;
+            }
+
+            // total_debt jadi turunan: semua konsumen lama (gate onboarding,
+            // dashboard, prompt FTSA) tetap membaca satu angka seperti biasa.
+            if ($register !== null) {
+                $payload['total_debt'] = DebtRegister::totalPrincipal($register);
+            } elseif ($submitted) {
+                $payload['total_debt'] = null;
+            }
+        }
+
         $flags = $this->protectionFlagsFromPolicies($payload['protection_policies'] ?? null);
         $payload['has_bpjs'] = $payload['has_bpjs'] || $flags['has_bpjs'];
         $payload['has_health_insurance'] = $payload['has_health_insurance'] || $flags['has_health_insurance'];
@@ -471,7 +506,7 @@ class BaselineController extends Controller
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
-    private function mergeExistingSnapshotFields(FinancialBaseline $existing, array $payload): array
+    private function mergeExistingSnapshotFields(FinancialBaseline $existing, array $payload, array $forceOverwrite = []): array
     {
         foreach ([
             'current_goal',
@@ -489,8 +524,13 @@ class BaselineController extends Controller
             'has_income_protection',
             'has_life_insurance',
             'protection_policies',
+            'debt_register',
         ] as $field) {
             if (! array_key_exists($field, $payload)) {
+                continue;
+            }
+            // Nilai kosong yang memang disengaja user tidak boleh dikembalikan.
+            if (in_array($field, $forceOverwrite, true)) {
                 continue;
             }
             if (($payload[$field] === null || $payload[$field] === false || $payload[$field] === []) && $existing->{$field} !== null) {
@@ -536,6 +576,19 @@ class BaselineController extends Controller
                 }
                 if (($row['annual_premium'] ?? '') === '') {
                     $snapshot['protection_policies'][$idx]['annual_premium'] = null;
+                }
+            }
+        }
+
+        if (isset($snapshot['debt_register']) && is_array($snapshot['debt_register'])) {
+            foreach ($snapshot['debt_register'] as $idx => $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+                foreach (['principal_outstanding', 'monthly_installment_reference', 'remaining_tenor_months'] as $field) {
+                    if (($row[$field] ?? '') === '') {
+                        $snapshot['debt_register'][$idx][$field] = null;
+                    }
                 }
             }
         }
@@ -593,6 +646,85 @@ class BaselineController extends Controller
                 'coverage' => $coverage !== '' ? $coverage : null,
                 'active_year' => $activeYear !== '' ? $activeYear : null,
                 'payment_duration' => $duration !== '' ? $duration : null,
+            ];
+        }
+
+        return $out === [] ? null : $out;
+    }
+
+    /**
+     * Debt Register (Section 3).
+     *
+     * Tiga hal yang tidak dipunyai tabel proteksi:
+     * 1. debt_id immutable — dipakai bot untuk melabeli transaksi cicilan, jadi
+     *    id yang sudah ada tidak pernah dibuat ulang.
+     * 2. last_updated hanya bergerak kalau sisa pokok / cicilan benar-benar berubah.
+     *    Kalau ikut ter-refresh tiap submit, deteksi stale (Section 3.4) jadi tidak ada artinya.
+     * 3. linked_expense_category selalu Kategori 14; granularitas dibawa debt_type.
+     *
+     * @param  list<array<string, mixed>>|null  $existing
+     * @return list<array<string, mixed>>|null
+     */
+    private function normalizeDebtRegister(mixed $value, ?array $existing): ?array
+    {
+        if (! is_array($value)) {
+            return null;
+        }
+
+        $previous = [];
+        foreach ($existing ?? [] as $row) {
+            if (is_array($row) && ! empty($row['debt_id'])) {
+                $previous[(string) $row['debt_id']] = $row;
+            }
+        }
+
+        $today = now()->toDateString();
+        $validTypes = array_keys(DebtRegister::types());
+        $out = [];
+
+        foreach ($value as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $name = trim((string) ($row['debt_name'] ?? ''));
+            $principal = $this->nullableInt($row['principal_outstanding'] ?? null);
+            $installment = $this->nullableInt($row['monthly_installment_reference'] ?? null);
+            $tenor = $this->nullableInt($row['remaining_tenor_months'] ?? null);
+
+            if ($name === '' && $principal === null && $installment === null && $tenor === null) {
+                continue;
+            }
+
+            $type = (string) ($row['debt_type'] ?? 'lainnya');
+            if (! in_array($type, $validTypes, true)) {
+                $type = 'lainnya';
+            }
+
+            $debtId = trim((string) ($row['debt_id'] ?? ''));
+            $prior = $debtId !== '' ? ($previous[$debtId] ?? null) : null;
+            if ($debtId === '' || $prior === null) {
+                $debtId = (string) Str::ulid();
+                $prior = null;
+            }
+
+            $changed = $prior === null
+                || $this->nullableInt($prior['principal_outstanding'] ?? null) !== $principal
+                || $this->nullableInt($prior['monthly_installment_reference'] ?? null) !== $installment;
+
+            $lastUpdated = $changed
+                ? $today
+                : (string) ($prior['last_updated'] ?? $today);
+
+            $out[] = [
+                'debt_id' => $debtId,
+                'debt_name' => $name !== '' ? $name : 'Utang',
+                'debt_type' => $type,
+                'principal_outstanding' => $principal,
+                'monthly_installment_reference' => $installment,
+                'remaining_tenor_months' => $tenor,
+                'linked_expense_category' => DebtRegister::LINKED_EXPENSE_CATEGORY,
+                'last_updated' => $lastUpdated,
             ];
         }
 

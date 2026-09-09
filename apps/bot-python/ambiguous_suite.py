@@ -1,4 +1,4 @@
-"""Paket uji kasus ambigu — dipakai unittest dan perintah /uji di Telegram."""
+﻿"""Paket uji kasus ambigu — dipakai unittest dan perintah /uji di Telegram."""
 
 from __future__ import annotations
 
@@ -26,6 +26,11 @@ PACKS: dict[str, dict[str, str]] = {
         "title": "Uji piutang & utang",
         "file": "social_liquidity_transactions.json",
         "ok_msg": "Semua kasus piutang/utang sesuai 4 arah likuiditas sosial.",
+    },
+    "utang": {
+        "title": "Uji cicilan & Debt Register",
+        "file": "debt_transactions.json",
+        "ok_msg": "Semua kasus cicilan tetap sesuai Kategori 14.",
     },
 }
 

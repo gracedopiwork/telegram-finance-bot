@@ -35,6 +35,7 @@ class BotTransaction extends Model
         'is_impulsive',
         'notes',
         'taxonomy_flags',
+        'debt_id',
         'source',
     ];
 
