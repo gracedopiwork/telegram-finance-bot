@@ -381,6 +381,11 @@ return [
             'icon' => 'fas fa-fw fa-brain',
         ],
         [
+            'text' => 'Course FTSA',
+            'route' => 'admin.ftsa-courses.index',
+            'icon' => 'fas fa-fw fa-chalkboard-teacher',
+        ],
+        [
             'text' => 'Produk Digital',
             'route' => 'admin.digital-products.index',
             'icon' => 'fas fa-fw fa-cube',

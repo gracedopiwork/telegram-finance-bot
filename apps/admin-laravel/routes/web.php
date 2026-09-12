@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\DiagnosticResultsController;
 use App\Http\Controllers\Admin\DiagnosticStagesController;
 use App\Http\Controllers\Admin\FtsaQuestionsController;
 use App\Http\Controllers\Admin\FtsaResultsController;
+use App\Http\Controllers\Admin\FtsaCoursesController;
 use App\Http\Controllers\Admin\ConsultationSlotsController;
 use App\Http\Controllers\Admin\DigitalProductsController;
 use App\Http\Controllers\Admin\FaqsController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PublicCheckupController;
+use App\Http\Controllers\FtsaCourseRegisterController;
 use App\Http\Controllers\Portal\AccountController as PortalAccountController;
 use App\Http\Controllers\Portal\AffiliateController as PortalAffiliateController;
 use App\Http\Controllers\Portal\AuthController as PortalAuthController;
@@ -72,6 +74,9 @@ Route::get('/landing',       [LandingController::class, 'home'])->name('landing'
 Route::get('/check-up', [PublicCheckupController::class, 'show'])->name('checkup.show');
 Route::post('/check-up', [PublicCheckupController::class, 'store'])->name('checkup.store');
 Route::get('/check-up/hasil', [PublicCheckupController::class, 'result'])->name('checkup.result');
+
+Route::get('/course/ftsa/daftar/{code?}', [FtsaCourseRegisterController::class, 'show'])->name('ftsa-course.register');
+Route::post('/course/ftsa/daftar', [FtsaCourseRegisterController::class, 'store'])->name('ftsa-course.register.store');
 
 /*
 |--------------------------------------------------------------------------
@@ -172,6 +177,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('ftsa-results/{financial_baseline}/export', [FtsaResultsController::class, 'exportOne'])->name('ftsa-results.export-one');
     Route::get('ftsa-results/{financial_baseline}', [FtsaResultsController::class, 'show'])->name('ftsa-results.show');
     Route::delete('ftsa-results/{financial_baseline}', [FtsaResultsController::class, 'destroy'])->name('ftsa-results.destroy');
+    Route::resource('ftsa-courses', FtsaCoursesController::class);
     Route::get('ftsa-questions', [FtsaQuestionsController::class, 'index'])->name('ftsa-questions.index');
     Route::post('ftsa-questions/sync', [FtsaQuestionsController::class, 'sync'])->name('ftsa-questions.sync');
     Route::get('ftsa-questions/{ftsa_question}/edit', [FtsaQuestionsController::class, 'edit'])->name('ftsa-questions.edit');

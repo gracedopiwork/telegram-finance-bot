@@ -8,6 +8,7 @@ use App\Services\BaselineAssessmentService;
 use App\Services\BaselineClaimService;
 use App\Services\BucketPrescriptionService;
 use App\Services\CheckupResultMailer;
+use App\Services\FtsaCourseService;
 use App\Services\FtsaEvaluationService;
 use App\Services\PortalAccessService;
 use App\Services\PortalFeatureService;
@@ -179,8 +180,12 @@ class BaselineController extends Controller
 
         $ftsaUnlocked = app(PortalFeatureService::class)->canAccessFtsa($telegramUserId, $email);
         if (! $ftsaUnlocked) {
-            return redirect()->route('portal.emotional')
-                ->with('info', 'Unlock FTSA Premium untuk mengisi kuesioner behavioral 1–32.');
+            $courseLocked = $email !== '' && app(FtsaCourseService::class)->hasRegistrationByEmail($email);
+            $msg = $courseLocked
+                ? 'Akses FTSA course sudah berakhir. Data kamu tetap tersimpan — beli & aktivasi YFD First Aid untuk membuka lagi.'
+                : 'Unlock FTSA Premium untuk mengisi kuesioner behavioral 1–32.';
+
+            return redirect()->route('portal.emotional')->with('info', $msg);
         }
 
         $ftsaEval = app(FtsaEvaluationService::class);
