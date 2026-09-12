@@ -220,6 +220,13 @@
                             </tr>
                         @endforeach
                         </tbody>
+                        <tfoot>
+                            <tr class="border-t-2 border-slate-300 text-navy-800">
+                                <td class="pt-1.5 pr-3 font-semibold" colspan="2">Total sisa pokok</td>
+                                <td class="pt-1.5 pr-3 font-bold">{{ $fmt((int) (\App\Support\DebtRegister::totalPrincipal($baseline->debt_register) ?? 0)) }}</td>
+                                <td colspan="3"></td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
                 <p class="text-[11px] text-slate-400 mt-2">

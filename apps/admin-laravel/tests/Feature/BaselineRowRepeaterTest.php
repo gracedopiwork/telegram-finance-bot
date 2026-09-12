@@ -35,6 +35,22 @@ class BaselineRowRepeaterTest extends TestCase
         );
     }
 
+    public function test_debt_total_row_is_not_an_input(): void
+    {
+        $this->portalLogin();
+
+        $html = $this->get('/portal/baseline/baru')->assertStatus(200)->getContent();
+
+        $this->assertStringContainsString('data-debt-total', $html);
+
+        // Baris total harus tetap <td> polos. Begitu jadi input dengan name=,
+        // user bisa mengirim total yang tidak cocok dengan jumlah barisnya.
+        preg_match('/<td[^>]*data-debt-total[^>]*>/', $html, $cell);
+        $this->assertNotEmpty($cell, 'Sel total tidak ditemukan.');
+        $this->assertStringNotContainsString('name=', $cell[0]);
+        $this->assertStringNotContainsString('<input', $cell[0]);
+    }
+
     public function test_protection_rows_render_with_sequential_indices(): void
     {
         $this->portalLogin();

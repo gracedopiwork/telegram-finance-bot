@@ -111,7 +111,7 @@ class BaselineDebtRegisterTest extends TestCase
         ]);
 
         $after = FinancialBaseline::latestForUser(self::TG)->debt_register[0];
-        $this->assertSame($first, $after['debt_id'], 'debt_id harus immutable — transaksi bot menunjuk ke sini.');
+        $this->assertSame($first, $after['debt_id'], 'debt_id harus immutable — ini identitas baris yang menjaga last_updated.');
         $this->assertSame('KPR BCA (renamed)', $after['debt_name']);
     }
 
@@ -165,6 +165,33 @@ class BaselineDebtRegisterTest extends TestCase
         $baseline = FinancialBaseline::latestForUser(self::TG);
         $this->assertNull($baseline->debt_register, 'Utang lunas harus bisa dikosongkan, bukan dikembalikan oleh merge.');
         $this->assertNull($baseline->total_debt);
+    }
+
+    public function test_result_page_shows_the_summed_principal(): void
+    {
+        $this->seedBaseline();
+        $this->postSnapshot([
+            'debt_register_submitted' => 1,
+            'debt_register' => [
+                $this->row(),
+                $this->row([
+                    'debt_name' => 'Kartu Kredit Mandiri',
+                    'debt_type' => 'kartu_kredit',
+                    'principal_outstanding' => 8_000_000,
+                    'monthly_installment_reference' => 1_500_000,
+                    'remaining_tenor_months' => null,
+                ]),
+            ],
+        ]);
+
+        $html = $this->get('/portal/baseline')->assertStatus(200)->getContent();
+
+        $this->assertStringContainsString('Total sisa pokok', $html);
+        $this->assertStringContainsString('458.000.000', $html);
+
+        // Yang dilihat user dan yang tersimpan harus satu angka, bukan dua
+        // perhitungan terpisah yang kebetulan sama.
+        $this->assertSame(458_000_000, FinancialBaseline::latestForUser(self::TG)->total_debt);
     }
 
     public function test_a_submit_without_the_table_keeps_existing_rows(): void

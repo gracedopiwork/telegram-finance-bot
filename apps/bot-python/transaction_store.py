@@ -76,10 +76,6 @@ def _classification_payload(parsed: dict) -> dict:
     due = str(parsed.get("social_expected_back_at") or "").strip()
     if due:
         payload["social_expected_back_at"] = due
-    # Hanya dikirim kalau pencocokan berhasil; tidak match = kunci tidak ada.
-    debt_id = str(parsed.get("debt_id") or "").strip()
-    if debt_id:
-        payload["debt_id"] = debt_id
     return payload
 
 

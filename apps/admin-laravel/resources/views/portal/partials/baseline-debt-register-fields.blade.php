@@ -16,6 +16,11 @@
     }
     $maxDebts = DebtRegister::MAX_ROWS;
     $debtTypes = DebtRegister::types();
+    // Dihitung server-side dulu supaya angkanya sudah benar sebelum JS jalan.
+    $debtTotal = array_sum(array_map(
+        fn ($row) => (int) ($row['principal_outstanding'] ?? 0),
+        array_filter($debts, 'is_array'),
+    ));
 @endphp
 
 <div>
@@ -91,6 +96,16 @@
                 </tr>
             @endforeach
             </tbody>
+            <tfoot class="bg-slate-50 border-t-2 border-slate-300">
+                <tr>
+                    {{-- Sengaja <td>, bukan input: tanpa name= baris ini tidak ikut
+                         terkirim dan tidak bisa diisi user. --}}
+                    <td class="px-2 py-2 font-semibold text-navy-800" colspan="2">Total sisa pokok</td>
+                    <td class="px-2 py-2 font-bold text-navy-800" id="debt-total-principal"
+                        data-debt-total>{{ number_format($debtTotal, 0, ',', '.') }}</td>
+                    <td colspan="4"></td>
+                </tr>
+            </tfoot>
         </table>
     </div>
     <p class="text-[11px] text-slate-400 mt-2">
@@ -110,6 +125,24 @@
     const maxRows = {{ $maxDebts }};
     const typeOptions = @json($debtTypes);
 
+    const totalCell = document.getElementById('debt-total-principal');
+    const rupiah = new Intl.NumberFormat('id-ID');
+
+    function recalcTotal() {
+        if (!totalCell) return;
+        let total = 0;
+        body.querySelectorAll('input[name*="[principal_outstanding]"]').forEach((input) => {
+            const value = parseInt(input.value, 10);
+            if (!Number.isNaN(value)) total += value;
+        });
+        totalCell.textContent = rupiah.format(total);
+    }
+
+    // Delegated: baris baru ikut terpantau tanpa perlu bind ulang per input.
+    body.addEventListener('input', (event) => {
+        if (event.target.matches('input[name*="[principal_outstanding]"]')) recalcTotal();
+    });
+
     function reindexRows() {
         Array.from(body.querySelectorAll('[data-debt-row]')).forEach((row, i) => {
             row.querySelectorAll('input[name], select[name]').forEach((input) => {
@@ -122,6 +155,7 @@
         const count = body.querySelectorAll('[data-debt-row]').length;
         addBtn.disabled = count >= maxRows;
         addBtn.classList.toggle('opacity-50', count >= maxRows);
+        recalcTotal();
     }
 
     function bindRemove(btn) {

@@ -656,8 +656,9 @@ class BaselineController extends Controller
      * Debt Register (Section 3).
      *
      * Tiga hal yang tidak dipunyai tabel proteksi:
-     * 1. debt_id immutable — dipakai bot untuk melabeli transaksi cicilan, jadi
-     *    id yang sudah ada tidak pernah dibuat ulang.
+     * 1. debt_id immutable — identitas baris. Ini yang membuat last_updated bisa
+     *    diikat ke baris yang sama walau namanya diubah, jadi id yang sudah ada
+     *    tidak pernah dibuat ulang.
      * 2. last_updated hanya bergerak kalau sisa pokok / cicilan benar-benar berubah.
      *    Kalau ikut ter-refresh tiap submit, deteksi stale (Section 3.4) jadi tidak ada artinya.
      * 3. linked_expense_category selalu Kategori 14; granularitas dibawa debt_type.

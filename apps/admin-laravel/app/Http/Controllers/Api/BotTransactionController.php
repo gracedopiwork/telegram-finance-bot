@@ -4,11 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\BotTransaction;
-use App\Models\FinancialBaseline;
 use App\Services\CategoryAutoRegisterService;
 use App\Services\CategoryBucketService;
 use App\Services\SocialLiquidityService;
-use App\Support\DebtRegister;
 use App\Support\PortalTimezone;
 use App\Support\TransactionTaxonomy;
 use Illuminate\Http\JsonResponse;
@@ -54,7 +52,6 @@ class BotTransactionController extends Controller
             'taxonomy_flags.*' => ['string', 'max:64'],
             'social_purpose' => ['nullable', 'string', 'max:180'],
             'social_expected_back_at' => ['nullable', 'date'],
-            'debt_id' => ['nullable', 'string', 'max:32'],
         ]));
 
         $category = app(CategoryAutoRegisterService::class)->resolveOrRegister(
@@ -88,10 +85,6 @@ class BotTransactionController extends Controller
             'notes' => $notes,
             'source' => $validated['source'] ?? 'manual',
             'taxonomy_flags' => $validated['taxonomy_flags'] ?? null,
-            'debt_id' => $this->resolveDebtId(
-                (int) $validated['telegram_user_id'],
-                $validated['debt_id'] ?? null,
-            ),
         ]);
 
         if (TransactionTaxonomy::isSocialLiquidity((string) $transaction->type)) {
@@ -140,29 +133,6 @@ class BotTransactionController extends Controller
             'nature' => $validated['nature'],
             'notes' => $validated['notes'],
         ]);
-    }
-
-    /**
-     * Tidak ada foreign key di tabel ini, jadi kepemilikan dicek di sini:
-     * debt_id hanya diterima kalau benar-benar ada di Debt Register user tsb.
-     * Id asing diabaikan (jadi null) — transaksinya tetap tersimpan, sesuai
-     * prinsip Section 4 bahwa pencocokan tidak boleh menahan pencatatan.
-     */
-    private function resolveDebtId(int $telegramUserId, ?string $debtId): ?string
-    {
-        $debtId = trim((string) $debtId);
-        if ($debtId === '') {
-            return null;
-        }
-
-        $baseline = FinancialBaseline::latestForUser($telegramUserId);
-        foreach (DebtRegister::rows($baseline?->debt_register) as $row) {
-            if ($row['debt_id'] === $debtId) {
-                return $debtId;
-            }
-        }
-
-        return null;
     }
 
     private function authorizationError(Request $request): ?JsonResponse
