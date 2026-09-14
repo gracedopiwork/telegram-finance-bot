@@ -397,6 +397,28 @@ def normalize_bucket(bucket: str | None) -> str | None:
     return bucket
 
 
+def resolve_transport_purpose(*, jenis: str, notes: str, kategori: str) -> str | None:
+    """Tujuan ride (bisnis/lifestyle) mengalahkan mapping Transportasi → Essential."""
+    if jenis != "Pengeluaran":
+        return None
+    category = kategori.strip().lower()
+    if category not in {"transport", "transportasi"}:
+        return None
+    combined = f"{notes} {kategori}".strip().lower()
+    if not any_keyword(combined, _RIDE_MARKERS):
+        # Tiket pesawat/dll bisa bisnis tanpa marker ojek
+        cfg = load_legacy_keywords()
+        if _contains_any(combined, cfg.get("future_building_context_keywords", [])):
+            return "Future Building"
+        return None
+    cfg = load_legacy_keywords()
+    if _contains_any(combined, cfg.get("future_building_context_keywords", [])):
+        return "Future Building"
+    if _contains_any(combined, cfg.get("transport_flexible_keywords", [])):
+        return "Flexible + Social"
+    return None
+
+
 def resolve_bucket(parsed: dict[str, Any]) -> str | None:
     """Return one of the 4 prescription buckets, or None if excluded."""
     jenis = str(parsed.get("jenis") or "").strip()
@@ -427,6 +449,9 @@ def resolve_bucket(parsed: dict[str, Any]) -> str | None:
     self_dev = resolve_self_development(jenis=jenis, notes=notes, kategori=kategori)
     if self_dev is not None:
         return self_dev
+    transport_purpose = resolve_transport_purpose(jenis=jenis, notes=notes, kategori=kategori)
+    if transport_purpose is not None:
+        return transport_purpose
     from_map = resolve_from_mappings(
         jenis=jenis,
         kategori=kategori,

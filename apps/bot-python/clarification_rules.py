@@ -1,5 +1,10 @@
 """Deteksi transaksi yang perlu ditanya balik sebelum diklasifikasikan.
 
+PRINSIP YFD (wajib):
+  Jika tujuan/konteks masih ambigu sehingga bucket prescription belum bisa
+  ditentukan dengan yakin — JANGAN menebak. Tanya klarifikasi dulu.
+  Baru setelah jawaban punya marker tujuan yang jelas, lanjut preview/simpan.
+
 Grey area §2.18 / §3.3 — AI WAJIB konfirmasi konteks sebelum bucket final.
 """
 
@@ -200,7 +205,20 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
 
 
 def _has_purpose(text: str, markers: tuple[str, ...]) -> bool:
-    return any(marker in text for marker in markers) or "klarifikasi user:" in text
+    """True hanya jika marker tujuan muncul di teks / jawaban klarifikasi.
+
+    Jangan anggap cukup karena ada baris 'Klarifikasi user:' — jawaban kosong
+    atau tidak relevan tetap harus ditanya lagi.
+    """
+    lower = (text or "").lower()
+    if any(marker in lower for marker in markers):
+        return True
+    # Cek khusus blok klarifikasi (jawaban user) agar marker di situ menang.
+    idx = lower.find("klarifikasi user:")
+    if idx >= 0:
+        clar = lower[idx + len("klarifikasi user:") :]
+        return any(marker in clar for marker in markers)
+    return False
 
 
 def _is_ambiguous_utang_arah(text: str, category: str) -> str | None:

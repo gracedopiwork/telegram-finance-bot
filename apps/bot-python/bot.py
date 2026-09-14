@@ -1247,6 +1247,7 @@ async def process_note_input(
     mood_resolved: bool = False,
     clarification_resolved: bool = False,
     from_receipt: bool = False,
+    clarify_rounds: int = 0,
 ) -> None:
     text = text.strip()
     if user_id is None:
@@ -1292,12 +1293,15 @@ async def process_note_input(
             settle_q = social_settle_target_question(parsed, text, settle_rows)
             if settle_q:
                 question = settle_q
-        should_ask = question and (
-            not clarification_resolved
-            or parsed.get("needs_clarification") is True
-            or (social_q is not None and question == social_q)
-            or settle_q is not None
-        )
+        # Ambigu → wajib tanya sebelum preview/bucket final. Jangan tebak.
+        should_ask = bool(question)
+        pending_rounds = int((PENDING_CLARIFICATIONS.get(user_id) or {}).get("rounds") or 0)
+        rounds = max(int(clarify_rounds or 0), pending_rounds)
+        if clarification_resolved:
+            rounds = max(rounds, 1)
+        if should_ask and clarification_resolved and rounds >= 2:
+            # Jawaban masih ambigu setelah 2x — jangan jebak user; lanjut preview.
+            should_ask = False
         if should_ask:
             PENDING_CONFIRMATIONS.pop(user_id, None)
             PENDING_MOOD_WAIT.pop(user_id, None)
@@ -1307,6 +1311,7 @@ async def process_note_input(
                 "source_text": text,
                 "settle_choices": settle_rows if settle_q else [],
                 "from_receipt": from_receipt,
+                "rounds": rounds + 1,
             }
             social_jenis = jenis_now in {
                 "Piutang Keluar",
@@ -1672,6 +1677,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             user_id=user_id,
             clarification_resolved=True,
             from_receipt=bool(pending.get("from_receipt")),
+            clarify_rounds=int(pending.get("rounds") or 1),
         )
         return
 

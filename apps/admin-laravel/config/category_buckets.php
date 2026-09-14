@@ -49,6 +49,10 @@ return [
         'ke klien', 'ke client', 'ke meeting', 'ke rapat', 'rapat klien', 'rapat client',
         'ketemu calon klien', 'pitch client', 'pitch klien', 'investor meeting',
         'perjalanan dinas', 'dinas luar', 'acara bisnis', 'event bisnis',
+        // Jawaban singkat klarifikasi ride/bisnis (tanpa frasa panjang)
+        'klarifikasi user: bisnis', 'klarifikasi user: kerja', 'klarifikasi user: networking',
+        'klarifikasi user: klien', 'klarifikasi user: client', 'klarifikasi user: meeting',
+        'klarifikasi user: rapat', 'klarifikasi user: dinas',
         'saya personal trainer', 'aku personal trainer', 'saya atlet', 'atlet profesional',
         'instruktur kebugaran', 'alat kerja langsung',
     ],

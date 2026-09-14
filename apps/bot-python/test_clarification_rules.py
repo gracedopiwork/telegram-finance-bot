@@ -29,6 +29,30 @@ class ClarificationRulesTests(unittest.TestCase):
         )
         self.assertIn("meeting kerja", question or "")
 
+    def test_coffee_with_empty_klarifikasi_still_asks(self) -> None:
+        """Baris 'Klarifikasi user:' saja BUKAN bukti tujuan — wajib tanya lagi."""
+        question = clarification_question(
+            {"kategori": "Makanan & Minuman", "keterangan": "Beli Kopi"},
+            "beli kopi 50rb\nKlarifikasi user: ok",
+        )
+        self.assertIsNotNone(question)
+        self.assertIn("meeting", (question or "").lower())
+
+    def test_coffee_with_kerja_klarifikasi_skips_ask(self) -> None:
+        question = clarification_question(
+            {"kategori": "Bisnis & Karir", "keterangan": "Beli Kopi"},
+            "beli kopi 50rb\nKlarifikasi user: Kerja",
+        )
+        self.assertIsNone(question)
+
+    def test_transport_with_useless_klarifikasi_still_asks(self) -> None:
+        question = clarification_question(
+            {"kategori": "Transport", "keterangan": "Grab"},
+            "grab 28rb\nKlarifikasi user: ya",
+        )
+        self.assertIsNotNone(question)
+        self.assertIn("wajib", (question or "").lower())
+
     def test_generic_cafe_coffeshop_requires_clarification(self) -> None:
         for text in (
             "ke coffeshop 68 rb",

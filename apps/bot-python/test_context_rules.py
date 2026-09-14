@@ -631,6 +631,19 @@ class ContextRulesTests(unittest.TestCase):
         self.assertEqual(parsed["sifat"], "Need")
         self.assertEqual(parsed["bucket"], "Future Building")
 
+    def test_grab_klarifikasi_bisnis_future_building(self) -> None:
+        """Jawaban singkat 'Bisnis' pada grab → Future Building (bukan Essential Living)."""
+        from clarification_rules import clarification_question
+        from offline_classify import classify_offline
+
+        parsed = classify_offline("grab 45rb\nKlarifikasi user: Bisnis")
+        self.assertEqual(parsed["kategori"], "Transportasi")
+        self.assertEqual(parsed["sifat"], "Need")
+        self.assertEqual(parsed["bucket"], "Future Building")
+        self.assertIsNone(
+            clarification_question(parsed, "grab 45rb\nKlarifikasi user: Bisnis")
+        )
+
     def test_coffeshop_untuk_meeting_future_building(self) -> None:
         """Typo coffeshop + untuk meeting → Bisnis & Karir (bukan Lain-lain/Flexible)."""
         from offline_classify import classify_offline
