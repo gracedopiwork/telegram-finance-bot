@@ -29,6 +29,27 @@ class ClarificationRulesTests(unittest.TestCase):
         )
         self.assertIn("meeting kerja", question or "")
 
+    def test_generic_cafe_coffeshop_requires_clarification(self) -> None:
+        for text in (
+            "ke coffeshop 68 rb",
+            "ke cafe 68rb",
+            "ke kafe 45rb",
+            "coffeeshop 50k",
+        ):
+            question = clarification_question(
+                {"kategori": "Makanan & Minuman", "keterangan": text},
+                text,
+            )
+            self.assertIsNotNone(question, text)
+            self.assertIn("meeting", (question or "").lower(), text)
+
+    def test_cafe_with_meeting_skips_coffee_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Bisnis & Karir", "keterangan": "ke coffeshop untuk meeting"},
+            "ke coffeshop 68 rb untuk meeting",
+        )
+        self.assertIsNone(question)
+
     def test_generic_piano_purchase_requires_clarification(self) -> None:
         question = clarification_question(
             {"kategori": "Alat Musik", "keterangan": "Beli Piano"},

@@ -264,13 +264,28 @@ def _is_generic_instrument(text: str, category: str) -> str | None:
     return None if _has_purpose(text, purpose) else "alat_musik"
 
 
+_COFFEE_VENUE_MARKERS = (
+    "kopi",
+    "coffee",
+    "ngopi",
+    "starbucks",
+    "coffeeshop",
+    "coffeshop",
+    "coffee shop",
+    "coffeehouse",
+    "cafe",
+    "kafe",
+    "espresso",
+    "americano",
+)
+
+
 def _is_generic_coffee(text: str, category: str) -> str | None:
-    coffee_cats = {"jajan", "makanan & minuman", "makanan dan minuman", "makan", "bisnis & karir"}
-    if category not in coffee_cats and not any(
-        w in text for w in ("kopi", "coffee", "ngopi", "starbucks")
-    ):
+    coffee_cats = {"jajan", "makanan & minuman", "makanan dan minuman", "makan", "bisnis & karir", "lain-lain", "lain lain", "lainnya"}
+    has_coffee = any(w in text for w in _COFFEE_VENUE_MARKERS)
+    if category not in coffee_cats and not has_coffee:
         return None
-    if not any(w in text for w in ("kopi", "coffee", "ngopi", "starbucks")):
+    if not has_coffee:
         return None
     purpose = (
         "kerja",
@@ -284,6 +299,8 @@ def _is_generic_coffee(text: str, category: str) -> str | None:
         "hiburan",
         "produktif",
         "produktivitas",
+        "bisnis",
+        "kantor",
     )
     return None if _has_purpose(text, purpose) else "kopi"
 

@@ -101,8 +101,11 @@ GREY_AREA_ITEMS: dict[str, dict[str, str]] = {
         ),
     },
     "kopi": {
-        "label": "Starbucks/kopi",
-        "question": "Kopi/ngopi ini untuk meeting kerja/klien, atau untuk healing/santai?",
+        "label": "cafe/kopi",
+        "question": (
+            "Kunjungan cafe/kopi ini untuk meeting kerja/klien/bisnis, "
+            "atau untuk healing/santai/nongkrong?"
+        ),
     },
     "laptop": {
         "label": "laptop/komputer",
