@@ -28,6 +28,11 @@
             <strong>Wajib buat password.</strong> Kode lisensi hanya untuk login pertama.
             Setelah ini, masuk portal dengan email + password yang hanya kamu yang tahu.
         </div>
+    @elseif(!empty($passwordOptional))
+        <div class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
+            <strong>Password tidak wajib.</strong> Untuk FTSA / course, cukup email + kode lisensi.
+            Password baru relevan jika nanti lanjut beli YFD First Aid.
+        </div>
     @endif
 
     <div id="akun" class="rounded-2xl border bg-white p-6 space-y-2">
@@ -40,6 +45,8 @@
             @elseif(!empty($hasPassword))
                 Login portal memakai <strong>email + password</strong>. Kode lisensi tidak dipakai lagi di halaman login (kecuali reset oleh admin).
                 Kode lisensi tetap untuk aktivasi bot Telegram.
+            @elseif(!empty($passwordOptional))
+                Login FTSA memakai <strong>email + kode lisensi</strong>. Password opsional — bisa dibuat nanti jika lanjut First Aid.
             @else
                 Buat password agar login berikutnya lebih aman tanpa memasukkan kode lisensi lagi.
             @endif
@@ -48,10 +55,14 @@
 
     <div class="rounded-2xl border {{ !empty($mustSetPassword) ? 'border-amber-300 ring-2 ring-amber-200' : '' }} bg-white p-6">
         <h2 class="text-base font-extrabold text-navy-800 mb-1">
-            {{ $hasPassword ? 'Ganti password' : 'Buat password' }}
+            {{ $hasPassword ? 'Ganti password' : (!empty($passwordOptional) ? 'Password (opsional)' : 'Buat password') }}
         </h2>
         <p class="text-sm text-slate-600 mb-5">
-            Minimal 8 karakter. Password ini tidak diketahui tim YFD — hanya hash yang tersimpan.
+            @if(!empty($passwordOptional))
+                Boleh dilewati. Minimal 8 karakter jika ingin membuat sekarang.
+            @else
+                Minimal 8 karakter. Password ini tidak diketahui tim YFD — hanya hash yang tersimpan.
+            @endif
         </p>
 
         <form method="post" action="{{ route('portal.account.password') }}" class="space-y-4">

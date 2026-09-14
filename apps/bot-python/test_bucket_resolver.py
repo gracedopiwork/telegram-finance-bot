@@ -83,6 +83,40 @@ class BucketResolverTests(unittest.TestCase):
         self.assertEqual(parsed["sifat"], "Wants")
         self.assertEqual(parsed["bucket"], "Flexible + Social")
 
+    def test_grab_klarifikasi_sosial_flexible(self) -> None:
+        parsed = classify_offline(
+            "Tgl 13/09/2026 grab dari kos ke rumah cia PP 30.1k\nKlarifikasi user: Sosial"
+        )
+        self.assertEqual(parsed["kategori"], "Transportasi")
+        self.assertEqual(parsed["sifat"], "Wants")
+        self.assertEqual(parsed["bucket"], "Flexible + Social")
+
+    def test_grab_klarifikasi_lifestyle_flexible(self) -> None:
+        parsed = classify_offline(
+            "Tgl 13/09/2026 grab dari kos ke rumah cia PP 30.1k\nKlarifikasi user: Lifestyle"
+        )
+        self.assertEqual(parsed["sifat"], "Wants")
+        self.assertEqual(parsed["bucket"], "Flexible + Social")
+
+    def test_grab_silahturahmi_flexible(self) -> None:
+        parsed = classify_offline(
+            "grab dari kos ke rumah cia acara kekeluargaan/silahturahmi PP 30.1k\n"
+            "Klarifikasi user: Silahturahmi"
+        )
+        self.assertEqual(parsed["sifat"], "Wants")
+        self.assertEqual(parsed["bucket"], "Flexible + Social")
+
+    def test_grab_rumah_orang_flexible_tanpa_klarifikasi(self) -> None:
+        parsed = classify_offline("grab dari kos ke rumah budi 30100")
+        self.assertEqual(parsed["kategori"], "Transportasi")
+        self.assertEqual(parsed["sifat"], "Wants")
+        self.assertEqual(parsed["bucket"], "Flexible + Social")
+
+    def test_grab_wajib_tetap_essential(self) -> None:
+        parsed = classify_offline("grab ke kantor 30k\nKlarifikasi user: wajib")
+        self.assertEqual(parsed["sifat"], "Need")
+        self.assertEqual(parsed["bucket"], "Essential Living")
+
 
 if __name__ == "__main__":
     unittest.main()

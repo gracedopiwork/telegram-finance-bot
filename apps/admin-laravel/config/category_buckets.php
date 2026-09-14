@@ -54,6 +54,11 @@ return [
     'transport_flexible_keywords' => [
         'gym', 'nongkrong', 'hangout', 'hang out', 'healing', 'cafe', 'kafe', 'mall',
         'bioskop', 'konser', 'liburan', 'staycation', 'wisata', 'tour', 'fitness',
+        // Klarifikasi / silaturahmi / lifestyle (transport bukan wajib)
+        'lifestyle', 'sosial', 'social', 'silahturahmi', 'silaturahmi', 'silaturrahmi',
+        'kekeluargaan', 'bertamu', 'kunjungan', 'gaya hidup', 'kualitas hidup', 'hiburan',
+        'rumah teman', 'rumah sodara', 'rumah saudara', 'rumah keluarga', 'acara keluarga',
+        'acara kekeluargaan',
     ],
     // Catatan: jangan map makan+meeting → Essential; gunakan future_building_context_keywords.
     'essential_categories' => [

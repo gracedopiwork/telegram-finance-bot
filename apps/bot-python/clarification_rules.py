@@ -330,6 +330,19 @@ def _is_generic_transport(text: str, category: str) -> str | None:
         "dinas",
         "pitch",
         "investor",
+        # Jawaban klarifikasi tujuan (wajib / lifestyle / sosial)
+        "wajib",
+        "lifestyle",
+        "sosial",
+        "social",
+        "silahturahmi",
+        "silaturahmi",
+        "silaturrahmi",
+        "kekeluargaan",
+        "hiburan",
+        "gaya hidup",
+        "bertamu",
+        "kunjungan",
     )
     return None if _has_purpose(text, purpose) else "transport"
 

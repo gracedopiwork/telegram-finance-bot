@@ -217,7 +217,7 @@
                     $monthEnd = \Carbon\Carbon::createFromFormat('Y-m', $assessment['month'])->startOfMonth()->endOfMonth();
                 @endphp
                 <p class="text-xs text-slate-500 mt-3">
-                    Versi lengkap dirilis otomatis <strong>{{ $monthEnd->format('d/m/Y') }} pukul 22.00 WIB</strong>.
+                    Rekomendasi bulanan akan dirilis otomatis <strong>{{ $monthEnd->format('d/m/Y') }} pukul 22.00 WIB</strong>.
                 </p>
             @endif
         @elseif($behavioralRecsPending)

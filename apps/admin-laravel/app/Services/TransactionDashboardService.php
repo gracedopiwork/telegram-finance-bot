@@ -1077,7 +1077,7 @@ class TransactionDashboardService
 
         if (is_array($flexible)) {
             $findings[] = sprintf(
-                'Flexible + Social: Rp %s (%s%% vs batas maks %s%%)%s.',
+                'Flexible + Social: Rp %s (%s%% dari total pengeluaran vs batas maks %s%%)%s.',
                 $this->formatIdr((int) ($flexible['amount'] ?? 0)),
                 $this->formatShare((float) ($flexible['share'] ?? 0)),
                 $this->formatShare((float) ($flexible['ideal'] ?? 0)),
@@ -1087,7 +1087,7 @@ class TransactionDashboardService
 
         if (is_array($essential) && $essentialOver) {
             $findings[] = sprintf(
-                'Essential Living melebihi batas maks: %s%% vs ideal %s%% — pola ini tidak sehat dan mendorong cashflow minus.',
+                'Essential Living melebihi batas maks: %s%% dari total pengeluaran vs ideal %s%% — pola ini tidak sehat dan mendorong cashflow minus.',
                 $this->formatShare((float) ($essential['share'] ?? 0)),
                 $this->formatShare((float) ($essential['ideal'] ?? 0)),
             );
@@ -1099,7 +1099,7 @@ class TransactionDashboardService
                 continue;
             }
             if (in_array($bucket['status'], ['under_min', 'over_max', 'over'], true)) {
-                $findings[] = "{$bucket['bucket']}: {$bucket['status_label']} ({$bucket['share']}% vs ideal {$bucket['ideal']}%).";
+                $findings[] = "{$bucket['bucket']}: {$bucket['status_label']} ({$bucket['share']}% dari total pengeluaran vs ideal {$bucket['ideal']}%).";
             }
         }
 
@@ -1165,7 +1165,7 @@ class TransactionDashboardService
 
         if ($cashflow < 0 && $essentialOver) {
             $recommendations[] = sprintf(
-                'Kondisi tidak sehat: Essential Living %s%% (batas maks %s%%) mendorong cashflow minus Rp %s — potong pengeluaran Essential non-krusial minggu ini.',
+                'Kondisi tidak sehat: Essential Living %s%% dari total pengeluaran (batas maks %s%%) mendorong cashflow minus Rp %s — potong pengeluaran Essential non-krusial minggu ini.',
                 $this->formatShare((float) ($essential['share'] ?? 0)),
                 $this->formatShare((float) ($essential['ideal'] ?? 0)),
                 $this->formatIdr(abs($cashflow)),
@@ -1184,7 +1184,7 @@ class TransactionDashboardService
 
         if (is_array($flexible)) {
             $recommendations[] = sprintf(
-                'Pantau Flexible + Social: Rp %s (%s%%, batas maks %s%%)%s.',
+                'Pantau Flexible + Social: Rp %s (%s%% dari total pengeluaran, batas maks %s%%)%s.',
                 $this->formatIdr((int) ($flexible['amount'] ?? 0)),
                 $this->formatShare((float) ($flexible['share'] ?? 0)),
                 $this->formatShare((float) ($flexible['ideal'] ?? 0)),

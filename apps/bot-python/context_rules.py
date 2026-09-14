@@ -2007,6 +2007,7 @@ _LEISURE_TRANSPORT_DEST = (
     "ke gym",
     "ke fitness",
     "ke cafe",
+    "ke kafe",
     "ke mall",
     "ke bioskop",
     "ke konser",
@@ -2020,6 +2021,83 @@ _LEISURE_TRANSPORT_DEST = (
     "ke will fitness",
     "dari kos ke gym",
     "dari cafe",
+    # Sosial / silaturahmi / lifestyle (bukan transport wajib)
+    "lifestyle",
+    "sosial",
+    "social",
+    "silahturahmi",
+    "silaturahmi",
+    "silaturrahmi",
+    "kekeluargaan",
+    "bertamu",
+    "kunjungan",
+    "hangout",
+    "hang out",
+    "gaya hidup",
+    "kualitas hidup",
+    "hiburan",
+    "ke rumah teman",
+    "ke rumah sodara",
+    "ke rumah saudara",
+    "ke rumah keluarga",
+    "ke rumah cia",
+    "rumah teman",
+    "rumah sodara",
+    "rumah saudara",
+    "rumah keluarga",
+    "acara keluarga",
+    "acara kekeluargaan",
+)
+
+# Jawaban klarifikasi tujuan ride → Flexible + Social / Wants
+_TRANSPORT_PURPOSE_FLEXIBLE = (
+    "lifestyle",
+    "sosial",
+    "social",
+    "silahturahmi",
+    "silaturahmi",
+    "silaturrahmi",
+    "kekeluargaan",
+    "nongkrong",
+    "healing",
+    "hangout",
+    "hang out",
+    "cafe",
+    "kafe",
+    "mall",
+    "bioskop",
+    "konser",
+    "liburan",
+    "wisata",
+    "tour",
+    "staycation",
+    "bertamu",
+    "kunjungan",
+    "gaya hidup",
+    "kualitas hidup",
+    "hiburan",
+    "gym",
+    "fitness",
+    "pilates",
+    "yoga",
+)
+
+# Jawaban klarifikasi → Essential Living / Need
+_TRANSPORT_PURPOSE_ESSENTIAL = (
+    "wajib",
+    "kantor",
+    "office",
+    "sekolah",
+    "kampus",
+    "klinik",
+    "apotek",
+    "rumah sakit",
+    "ke rs",
+    "pulang kerja",
+    "kerja rutin",
+    "ke kantor",
+    "ke sekolah",
+    "ke klinik",
 )
 
 _BUSINESS_TRANSPORT_DEST = (
@@ -2063,11 +2141,46 @@ _BUSINESS_TRANSPORT_DEST = (
 )
 
 
+def _klarifikasi_section(text: str) -> str:
+    lower = (text or "").lower()
+    idx = lower.find("klarifikasi user:")
+    return lower[idx:] if idx >= 0 else ""
+
+
+def _has_transport_flexible_purpose(text: str) -> bool:
+    """Lifestyle/sosial/silahturahmi — dari teks atau jawaban klarifikasi user."""
+    lower = (text or "").lower()
+    clar = _klarifikasi_section(lower)
+    blob = clar if clar else lower
+    if any(k in blob for k in _TRANSPORT_PURPOSE_ESSENTIAL):
+        # Klarifikasi "wajib/kantor" mengalahkan kata lifestyle di teks lama
+        if clar and any(k in clar for k in _TRANSPORT_PURPOSE_ESSENTIAL):
+            return False
+    return any(k in blob for k in _TRANSPORT_PURPOSE_FLEXIBLE) or any(
+        k in lower for k in _LEISURE_TRANSPORT_DEST
+    )
+
+
 def is_business_transport_destination(text: str) -> bool:
     """Tujuan ride bisnis/kerja → Future Building / Need."""
     lower = text.lower()
     if not is_transport_ride(lower):
         return False
+    clar = _klarifikasi_section(lower)
+    if clar and any(
+        k in clar
+        for k in (
+            "bisnis",
+            "kerja",
+            "networking",
+            "klien",
+            "client",
+            "meeting",
+            "rapat",
+            "dinas",
+        )
+    ) and not any(k in clar for k in _TRANSPORT_PURPOSE_FLEXIBLE):
+        return True
     return _contains(lower, _BUSINESS_TRANSPORT_DEST)
 
 
@@ -2078,18 +2191,40 @@ def is_leisure_transport_destination(text: str) -> bool:
         return False
     if is_business_transport_destination(lower):
         return False
+    clar = _klarifikasi_section(lower)
+    if clar and any(k in clar for k in _TRANSPORT_PURPOSE_ESSENTIAL):
+        return False
+    if clar and any(k in clar for k in _TRANSPORT_PURPOSE_FLEXIBLE):
+        return True
+    if _has_transport_flexible_purpose(lower):
+        return True
     if _contains(lower, _LEISURE_TRANSPORT_DEST):
         return True
     # "grab … gym/fitness" tanpa kata "ke" eksplisit
     if _contains(lower, ("gym", "fitness", "pilates", "yoga", "crossfit")):
         return True
+    # Kunjung rumah orang (bukan pulang ke rumah sendiri)
+    if re.search(r"\b(?:ke\s+)?rumah\s+[a-zA-Z]{2,}\b", lower) and not re.search(
+        r"\bpulang\s+ke\s+rumah\b|\brumah\s+sendiri\b|\bke\s+kos\b|\bke\s+kontrakan\b",
+        lower,
+    ):
+        # Hindari "rumah sakit"
+        if "rumah sakit" not in lower and "rumahsakit" not in lower:
+            return True
     return False
 
 
 def transport_ride_sifat(text: str) -> str:
     if is_business_transport_destination(text):
         return "Need"
-    return "Wants" if is_leisure_transport_destination(text) else "Need"
+    if is_leisure_transport_destination(text):
+        return "Wants"
+    clar = _klarifikasi_section(text)
+    if clar and any(k in clar for k in _TRANSPORT_PURPOSE_FLEXIBLE):
+        return "Wants"
+    if clar and any(k in clar for k in _TRANSPORT_PURPOSE_ESSENTIAL):
+        return "Need"
+    return "Need"
 
 
 def is_electronics_expense(text: str) -> bool:

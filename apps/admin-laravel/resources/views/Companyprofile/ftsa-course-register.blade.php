@@ -25,7 +25,7 @@
                         Akses sampai: <strong>{{ $result['access_ends_at'] }} WIB</strong>
                     </p>
                     <div class="rounded-xl bg-white border border-emerald-100 p-4 mb-4">
-                        <div class="text-xs text-slate-500 mb-1">Login portal FTSA (email + kode lisensi)</div>
+                        <div class="text-xs text-slate-500 mb-1">Login portal FTSA (email + kode lisensi — tanpa password)</div>
                         <div class="text-sm"><span class="text-slate-500">Email:</span> <strong>{{ $result['registrant']->email }}</strong></div>
                         <div class="text-sm mt-1"><span class="text-slate-500">Lisensi:</span> <code class="font-bold text-base">{{ $result['license_key'] ?: '—' }}</code></div>
                     </div>
@@ -33,7 +33,7 @@
                         Masuk Portal &amp; Isi FTSA
                     </a>
                     <p class="text-xs text-emerald-900/70 mt-3">
-                        Simpan kode lisensi ini. Setelah 1 bulan akses course terkunci, tapi hasil FTSA tidak hilang.
+                        Simpan kode lisensi. Password tidak wajib untuk course FTSA — baru relevan jika nanti lanjut beli YFD First Aid.
                     </p>
                 </div>
             @endif

@@ -777,11 +777,12 @@ LIKUIDITAS SOSIAL / CASHFLOW GAP:
 FLAG TAXONOMY (klinis):
 {$this->linesBlock($this->formatTaxonomySignalLines($metrics))}
 
-BUCKET PRESCRIPTION:
+BUCKET PRESCRIPTION (persentase = share dari total pengeluaran/alokasi bucket, BUKAN dari pendapatan):
 {$this->linesBlock($bucketLines)}
 
 ATURAN WAJIB:
 {$rules}
+KRITIS: Saat menyebut % Essential Living / Future Building / Protection / Flexible + Social, tulis "dari total pengeluaran" — JANGAN "dari pendapatan".
 
 OUTPUT: JSON valid saja, tanpa markdown, format:
 {
@@ -836,11 +837,12 @@ LIKUIDITAS SOSIAL / CASHFLOW GAP:
 FLAG TAXONOMY (klinis):
 {$this->linesBlock($this->formatTaxonomySignalLines($metrics))}
 
-BUCKET PRESCRIPTION:
+BUCKET PRESCRIPTION (persentase = share dari total pengeluaran/alokasi bucket, BUKAN dari pendapatan):
 {$this->linesBlock($bucketLines)}
 
 ATURAN WAJIB:
 {$rules}
+KRITIS: Saat menyebut % Essential Living / Future Building / Protection / Flexible + Social, tulis "dari total pengeluaran" — JANGAN "dari pendapatan".
 
 OUTPUT: JSON valid saja, tanpa markdown, format:
 {
@@ -887,11 +889,12 @@ LIKUIDITAS SOSIAL / CASHFLOW GAP:
 FLAG TAXONOMY (klinis):
 {$this->linesBlock($this->formatTaxonomySignalLines($metrics))}
 
-BUCKET PRESCRIPTION:
+BUCKET PRESCRIPTION (persentase = share dari total pengeluaran/alokasi bucket, BUKAN dari pendapatan):
 {$this->linesBlock($bucketLines)}
 
 ATURAN WAJIB:
 {$rules}
+KRITIS: Saat menyebut % Essential Living / Future Building / Protection / Flexible + Social, tulis "dari total pengeluaran" — JANGAN "dari pendapatan".
 JANGAN menyebut archetype FTSA — itu ada di dashboard behavioral (dan FTSA-32 masih pilot: bahasa observasional saja).
 Setiap findings WAJIB menyentuh fakta kritis bila ada: (1) saving Rp0 / rate 0%, (2) nominal+persen Flexible + Social vs batas, (3) verdict sehat/tidak sehat, (4) Essential Living over-max yang menyebabkan cashflow minus, (5) Risk Alert / Pola Keterlambatan berulang bila ada di FLAG TAXONOMY, (6) Cashflow Gap funding bila defisit.
 Tiap rekomendasi harus konkret, bisa dilakukan, dan spesifik (contoh: alokasikan cashflow positif ke Future Building, mulai saving otomatis 10%, batasi Flexible+Social ≤10%).
@@ -1122,7 +1125,7 @@ PROMPT;
     {
         $trimmed = trim($text);
         if ($trimmed === '' || abs($protectionShare - $flexibleShare) < 0.5) {
-            return $text;
+            return $this->rewriteBucketPercentDenominationInText($text);
         }
 
         $protFmts = $this->percentFormats($protectionShare);
@@ -1134,17 +1137,45 @@ PROMPT;
             && $this->textHasAnyPercent($text, $flexFmts)
             && ! $this->textHasAnyPercent($text, $protFmts)
         ) {
-            return $this->replacePercentFormats($text, $flexFmts, $protFmts[0]);
-        }
-
-        if ($hasFlex && ! $hasProt
+            $text = $this->replacePercentFormats($text, $flexFmts, $protFmts[0]);
+        } elseif ($hasFlex && ! $hasProt
             && $this->textHasAnyPercent($text, $protFmts)
             && ! $this->textHasAnyPercent($text, $flexFmts)
         ) {
-            return $this->replacePercentFormats($text, $protFmts, $flexFmts[0]);
+            $text = $this->replacePercentFormats($text, $protFmts, $flexFmts[0]);
         }
 
-        return $text;
+        return $this->rewriteBucketPercentDenominationInText($text);
+    }
+
+    /**
+     * AI sering salah tulis % bucket sebagai "% dari pendapatan".
+     * Share bucket = bagian dari total pengeluaran/alokasi, bukan pendapatan.
+     */
+    private function rewriteBucketPercentDenominationInText(string $text): string
+    {
+        $trimmed = trim($text);
+        if ($trimmed === '') {
+            return $text;
+        }
+
+        $mentionsBucket = preg_match(
+            '/essential\s*living|future\s*building|\bproteksi\b|\bprotection\b|flexible\s*\+\s*social|\bfleksibel\b|bucket\s*prescription|alokasi\s*bucket/iu',
+            $text
+        ) === 1;
+
+        if (! $mentionsBucket) {
+            return $text;
+        }
+
+        // "80.7% dari pendapatan" / "80,7 persen dari pendapatan bulanan" → total pengeluaran
+        $rewritten = preg_replace(
+            '/(\d+(?:[.,]\d+)?)\s*(%|persen)\s+dari\s+pendapatan(?:\s+bulanan)?/iu',
+            '$1$2 dari total pengeluaran (alokasi bucket)',
+            $text
+        );
+
+        return is_string($rewritten) ? $rewritten : $text;
     }
 
     /**
@@ -1154,6 +1185,16 @@ PROMPT;
      */
     private function reconcileClinicalSummaryBucketPercents(array $clinical, array $buckets): array
     {
+        if (isset($clinical['headline']) && is_string($clinical['headline'])) {
+            $clinical['headline'] = $this->rewriteBucketPercentDenominationInText($clinical['headline']);
+        }
+        if (isset($clinical['findings']) && is_array($clinical['findings'])) {
+            $clinical['findings'] = array_values(array_map(
+                fn ($line) => is_string($line) ? $this->rewriteBucketPercentDenominationInText($line) : $line,
+                $clinical['findings']
+            ));
+        }
+
         $map = $this->bucketShareMap($buckets);
         if (! isset($map['Protection'], $map['Flexible + Social'])) {
             return $clinical;
@@ -1188,6 +1229,18 @@ PROMPT;
      */
     private function reconcileDoctorsNoteBucketPercents(array $note, array $buckets, array $fallback = []): array
     {
+        foreach (['summary', 'interpretation', 'priority', 'education'] as $key) {
+            if (isset($note[$key]) && is_string($note[$key])) {
+                $note[$key] = $this->rewriteBucketPercentDenominationInText($note[$key]);
+            }
+        }
+        if (isset($note['findings']) && is_array($note['findings'])) {
+            $note['findings'] = array_values(array_map(
+                fn ($line) => is_string($line) ? $this->rewriteBucketPercentDenominationInText($line) : $line,
+                $note['findings']
+            ));
+        }
+
         $map = $this->bucketShareMap($buckets);
         if (! isset($map['Protection'], $map['Flexible + Social'])) {
             return $note;
@@ -1401,7 +1454,7 @@ PROMPT;
       $directionSuffix = $direction !== '' ? " [{$direction}]" : '';
 
       $lines[] = sprintf(
-        '- %s: aktual %s%% (prescription %s%%)%s — %s',
+        '- %s: aktual %s%% dari total pengeluaran/alokasi bucket (prescription %s%%)%s — %s',
         $name,
         $bucket['share'] ?? '0',
         $bucket['ideal'] ?? '0',

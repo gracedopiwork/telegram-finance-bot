@@ -90,6 +90,7 @@ return [
         'Protection target MAKS ≤10% — over-insured kurang sehat; jika melebihi batas, alihkan surplus ke Future Building. JANGAN sarankan menaikkan proteksi hanya karena % di bawah 10%.',
         'Flexible + Social target MAKS ≤10% (Steady) — komentari jika melebihi batas (financial leakage). Perpuluhan/zakat/dana sosial tetap Flexible + Social — jangan menghakimi nilai spiritual user.',
         'WAJIB: JANGAN menukar angka Protection dengan Flexible + Social. Pakai persentase PERSIS dari baris BUCKET PRESCRIPTION. Contoh: jika Protection aktual 2,9% dan Flexible aktual 72,4%, tulis angka itu apa adanya — jangan dibalik.',
+        'KRITIS DENOMINATOR BUCKET: Persentase di BUCKET PRESCRIPTION adalah share dari total alokasi pengeluaran (+ saving yang masuk bucket), BUKAN dari pendapatan. Contoh benar: "Essential Living 80,7% dari total pengeluaran". SALAH: "80,7% dari pendapatan". Saving rate boleh dibanding pendapatan; cashflow surplus/defisit boleh dibanding pendapatan — tapi % Essential/Future/Protection/Flexible WAJIB dibanding total pengeluaran/alokasi bucket.',
         'Setiap rekomendasi yang menyebut Protection atau Flexible + Social HARUS menyertakan persentase aktual yang benar dari data bucket.',
         'Gym/olahraga berbayar selalu Flexible + Social (bukan Essential), kecuali alat kerja fisik (PT/atlet) → Future Building. Pengembangan diri selalu Future Building.',
         'JANGAN menyebut Financial Pulse, skor pulse, atau rating KPI pulse — fitur itu sudah dihapus.',
