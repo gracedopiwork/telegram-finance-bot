@@ -58,27 +58,18 @@
             </div>
         </div>
         @php
-            $assetDetails = $baseline['asset_details'] ?? [];
-            $assetLabels = [
-                'rumah' => 'Rumah',
-                'tanah' => 'Tanah',
-                'apartemen' => 'Apartemen',
-                'mobil' => 'Mobil',
-                'lainnya' => 'Aset lain',
-            ];
+            $assetRows = \App\Support\AssetDetails::rows($baseline['asset_details'] ?? []);
             $policies = $baseline['protection_policies'] ?? [];
         @endphp
-        @if(is_array($assetDetails) && collect($assetDetails)->filter(fn ($v) => (int) $v > 0)->isNotEmpty())
+        @if(count($assetRows) > 0)
             <div class="sm:col-span-2 lg:col-span-4 rounded-xl bg-slate-50 p-3">
                 <div class="text-xs font-bold text-slate-500 uppercase mb-2">Rincian aset</div>
                 <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-2">
-                    @foreach($assetLabels as $key => $label)
-                        @if(!empty($assetDetails[$key]))
-                            <div>
-                                <div class="text-[11px] text-slate-500">{{ $label }}</div>
-                                <div class="font-semibold text-navy-800">{{ $fmt((int) $assetDetails[$key]) }}</div>
-                            </div>
-                        @endif
+                    @foreach($assetRows as $row)
+                        <div>
+                            <div class="text-[11px] text-slate-500">{{ $row['asset_name'] }} · {{ $row['asset_type_label'] }}</div>
+                            <div class="font-semibold text-navy-800">{{ $fmt((int) ($row['asset_value'] ?? 0)) }}</div>
+                        </div>
                     @endforeach
                 </div>
             </div>

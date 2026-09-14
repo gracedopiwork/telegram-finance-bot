@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\AssetDetails;
 use App\Support\DebtRegister;
 use App\Support\InvestmentRegister;
 use Carbon\Carbon;
@@ -225,11 +226,13 @@ class BaselineAssessmentService
             'snapshot.has_health_insurance' => 'sometimes|boolean',
             'snapshot.has_income_protection' => 'sometimes|boolean',
             'snapshot.has_life_insurance' => 'sometimes|boolean',
-            'snapshot.asset_details.rumah' => 'nullable|integer|min:0',
-            'snapshot.asset_details.tanah' => 'nullable|integer|min:0',
-            'snapshot.asset_details.apartemen' => 'nullable|integer|min:0',
-            'snapshot.asset_details.mobil' => 'nullable|integer|min:0',
-            'snapshot.asset_details.lainnya' => 'nullable|integer|min:0',
+            // Rincian aset per item. Mengikuti pola Debt Register / Daftar Investasi:
+            // total_asset tidak pernah diterima dari input, selalu dihitung dari baris.
+            'snapshot.asset_details' => 'nullable|array|max:'.AssetDetails::MAX_ROWS,
+            'snapshot.asset_details.*.asset_name' => 'nullable|string|max:120',
+            'snapshot.asset_details.*.asset_type' => 'nullable|string|in:'.implode(',', array_keys(AssetDetails::types())),
+            'snapshot.asset_details.*.asset_value' => 'nullable|integer|min:0',
+            'snapshot.asset_details_submitted' => 'sometimes|boolean',
             'snapshot.protection_policies' => 'nullable|array|max:12',
             'snapshot.protection_policies.*.type' => 'nullable|string|max:120',
             'snapshot.protection_policies.*.annual_premium' => 'nullable|integer|min:0',
