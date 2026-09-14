@@ -99,15 +99,13 @@
                             <h2 class="font-headline-md text-headline-md text-primary mb-2">Lanjut ke YFD First Aid</h2>
                             <p class="text-sm text-on-surface-variant mb-3">
                                 Hasil check-up Anda: tahap <strong>{{ $consultationTier['label'] }}</strong>.
-                                Mulai catat keuangan via bot Telegram + dashboard web dengan YFD First Aid.
+                                Langkah berikutnya: checkout YFD First Aid untuk catat keuangan via bot Telegram + dashboard web.
                             </p>
-                            <div class="font-display text-3xl font-extrabold text-primary-container">
-                                {{ ConsultationPricing::formatRange($consultationTier) }}
-                                <span class="text-base font-medium text-on-surface-variant">{{ $consultationMeta['period'] ?? '/sesi' }}</span>
-                            </div>
-                            <p class="text-xs text-on-surface-variant mt-3 max-w-lg">
-                                Estimasi tarif konsultasi 1-on-1 (opsional) di atas.
-                                Screening ini <strong>gratis</strong> — langkah berikutnya: checkout YFD First Aid.
+                            <p class="text-xs text-on-surface-variant max-w-lg">
+                                Screening ini <strong>gratis</strong>.
+                                Estimasi tarif konsultasi 1-on-1 (opsional):
+                                <strong>{{ ConsultationPricing::formatRange($consultationTier) }}</strong>
+                                {{ $consultationMeta['period'] ?? '/sesi' }}.
                             </p>
                         </div>
                         <div class="flex flex-col gap-2 shrink-0">
