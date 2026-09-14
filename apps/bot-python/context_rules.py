@@ -1614,11 +1614,96 @@ def is_discretionary_social_giving(text: str) -> bool:
 
 
 def is_business_building_expense(text: str) -> bool:
-    """Biaya bisnis/konten ATAU konsumsi meeting kerja → Future Building."""
+    """Biaya bisnis/konten ATAU konsumsi meeting/kerja → Future Building."""
     lower = text.lower()
     if _contains(lower, _BUSINESS_BUILDING):
         return True
-    return _match_any(lower, _WORK_MEETING_RE)
+    if _match_any(lower, _WORK_MEETING_RE):
+        return True
+    return is_work_purpose_food_or_drink(lower)
+
+
+def is_work_purpose_food_or_drink(text: str) -> bool:
+    """
+    Kopi/makan + tujuan kerja (teks atau klarifikasi) → Bisnis & Karir / Future Building.
+
+    Contoh: 'beli kopi 38k' + Klarifikasi user: Kerja
+    Bukan: klarifikasi nongkrong/healing (itu Flexible / Wants).
+    """
+    lower = text.lower()
+    foodish = (
+        _contains(lower, _KOPI_JAJAN)
+        or _contains(lower, _MAKAN)
+        or is_food_delivery(lower)
+        or "cookies" in lower
+        or "cookie" in lower
+    )
+    if not foodish:
+        return False
+
+    clar = _klarifikasi_section(lower)
+    work_tokens = (
+        "kerja",
+        "bisnis",
+        "meeting",
+        "rapat",
+        "klien",
+        "client",
+        "kantor",
+        "produktif",
+        "networking",
+        "urusan kerja",
+        "keperluan kerja",
+    )
+    leisure_tokens = (
+        "nongkrong",
+        "healing",
+        "hiburan",
+        "santai",
+        "lifestyle",
+        "pribadi",
+        "sendiri",
+    )
+    if clar:
+        if any(t in clar for t in leisure_tokens) and not any(
+            t in clar for t in ("kerja", "bisnis", "meeting", "rapat", "klien", "client", "kantor")
+        ):
+            return False
+        return any(t in clar for t in work_tokens)
+
+    return _contains(
+        lower,
+        (
+            "untuk kerja",
+            "buat kerja",
+            "keperluan kerja",
+            "urusan kerja",
+            "saat kerja",
+            "lagi kerja",
+        ),
+    )
+
+
+def is_leisure_purpose_food_or_drink(text: str) -> bool:
+    """Kopi/makan + klarifikasi nongkrong/healing → Wants / Flexible + Social."""
+    lower = text.lower()
+    foodish = (
+        _contains(lower, _KOPI_JAJAN)
+        or _contains(lower, _MAKAN)
+        or is_food_delivery(lower)
+        or "cookies" in lower
+        or "cookie" in lower
+    )
+    if not foodish:
+        return False
+    clar = _klarifikasi_section(lower)
+    if not clar:
+        return False
+    leisure = ("nongkrong", "healing", "hiburan", "santai", "lifestyle", "pribadi", "sendiri")
+    work = ("kerja", "bisnis", "meeting", "rapat", "klien", "client", "kantor")
+    if any(t in clar for t in work):
+        return False
+    return any(t in clar for t in leisure)
 
 
 def is_ride_subscription(text: str) -> bool:
@@ -2570,12 +2655,18 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     if _contains(lower, _SOCIAL):
         return {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "sifat": "Wants"}
     if has_essential_living_intent(lower):
+        if is_leisure_purpose_food_or_drink(lower):
+            return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Wants"}
         if _contains(lower, _KOPI_JAJAN) and not is_drinking_water_expense(lower):
             return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
         return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
     # Jajan dulu (kata "jajan"/kue), baru makan/delivery — hindari GrabFood → Transport.
-    if _contains(lower, _KOPI_JAJAN):
-        return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Wants"}
+    if is_leisure_purpose_food_or_drink(lower) or _contains(lower, _KOPI_JAJAN):
+        return {
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Wants" if (is_leisure_purpose_food_or_drink(lower) or _contains(lower, _KOPI_JAJAN)) else "Need",
+        }
     if is_food_delivery(lower) or _contains(lower, _MAKAN):
         return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
     if is_electronics_expense(lower):

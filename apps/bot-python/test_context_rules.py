@@ -622,6 +622,15 @@ class ContextRulesTests(unittest.TestCase):
             "Bisnis & Karir",
         )
 
+    def test_kopi_klarifikasi_kerja_future_building(self) -> None:
+        """Klarifikasi 'Kerja' pada kopi → Bisnis & Karir / Future Building (bukan Essential)."""
+        from offline_classify import classify_offline
+
+        parsed = classify_offline("Beli kopi + cookies 38k\nKlarifikasi user: Kerja")
+        self.assertEqual(parsed["kategori"], "Bisnis & Karir")
+        self.assertEqual(parsed["sifat"], "Need")
+        self.assertEqual(parsed["bucket"], "Future Building")
+
     def test_makan_meeting_kerjaan_future_building(self) -> None:
         """Ekspektasi klien: makan + meeting kerja → Bisnis & Karir."""
         self.assertClass(
