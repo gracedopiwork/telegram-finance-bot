@@ -1794,34 +1794,16 @@ async def mood_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     except Exception:
         pass
 
-    if pending["mode"] == "source_text":
-        combined_input = f"{pending['source_text']}\nmood: {mood_value}"
-        await process_note_input(
-            query.message,
-            combined_input,
-            user_id=user_id,
-            mood_resolved=True,
-            from_receipt=from_receipt,
-        )
-        return
-
-    parsed = pending["parsed"]
-    parsed["mood"] = mood_value
-    finalize_parsed_transaction(
-        parsed,
-        pending.get("source_text", ""),
-        trust_ai_impulsif=not pending.get("basic_mode", True),
-    )
-    attach_prescription_bucket(parsed)
-    greeting_name = pending["greeting_name"]
-    basic_mode = pending.get("basic_mode", False)
-    await present_transaction_preview(
+    # Selalu parse ulang dari teks sumber + mood — jangan pakai hasil AI lama yang salah.
+    source = str(pending.get("source_text") or "").strip()
+    if not source and pending.get("mode") == "parsed":
+        source = str((pending.get("parsed") or {}).get("keterangan") or "").strip()
+    combined_input = f"{source}\nmood: {mood_value}".strip()
+    await process_note_input(
         query.message,
-        user_id,
-        parsed,
-        greeting_name,
-        source_text=pending.get("source_text", ""),
-        basic_mode=basic_mode,
+        combined_input,
+        user_id=user_id,
+        mood_resolved=True,
         from_receipt=from_receipt,
     )
 

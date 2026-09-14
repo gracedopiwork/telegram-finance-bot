@@ -2113,6 +2113,36 @@ def is_beauty_care_expense(text: str) -> bool:
     return True
 
 
+def is_clear_meal_expense(text: str) -> bool:
+    """Makanan jelas (makan siang/spaghetti/dll) — bukan spa/kecantikan."""
+    lower = _normalize_typos(text)
+    meal_phrases = (
+        "makan siang",
+        "makan malam",
+        "makan pagi",
+        "makan sore",
+        "sarapan",
+        "brunch",
+        "lunch",
+        "dinner",
+        "spaghetti",
+        "spageti",
+        "spagethi",
+        "pasta",
+        "pizza",
+        "burger",
+        "bakso",
+        "soto",
+        "nasi padang",
+        "nasi goreng",
+    )
+    if any(p in lower for p in meal_phrases):
+        return True
+    if is_food_delivery(lower) or _contains(lower, _MAKAN):
+        return not is_beauty_care_expense(lower)
+    return False
+
+
 def is_denda_sanksi(text: str) -> bool:
     lower = text.lower()
     if _contains(lower, ("denda pajak", "sanksi pajak")):
@@ -2762,7 +2792,37 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         parsed["kategori"] = "Hadiah"
         parsed["sifat"] = "Wants"
         parsed.pop("sub_kategori", None)
-    elif is_beauty_care_expense(combined):
+        return parsed
+
+    # Makan siang/spaghetti/dll — paksa Makanan SEBELUM AI/beauty (spagethi≠spa).
+    # Kecuali konsumsi meeting kerja → Bisnis & Karir.
+    if (
+        is_clear_meal_expense(combined)
+        and explicit != "Pemasukan"
+        and not is_business_building_expense(combined)
+    ):
+        parsed["jenis"] = "Pengeluaran"
+        parsed["kategori"] = "Makanan & Minuman"
+        if is_leisure_purpose_food_or_drink(combined) or _contains(
+            lower_combined, _KOPI_JAJAN
+        ):
+            parsed["sifat"] = "Wants"
+        else:
+            parsed["sifat"] = "Need"
+        parsed.pop("sub_kategori", None)
+        parsed["needs_clarification"] = False
+        parsed["clarification_question"] = None
+        return parsed
+
+    if is_business_building_expense(combined) and explicit != "Pemasukan":
+        if is_clear_meal_expense(combined) or _contains(lower_combined, _KOPI_JAJAN):
+            parsed["jenis"] = "Pengeluaran"
+            parsed["kategori"] = "Bisnis & Karir"
+            parsed["sifat"] = "Need"
+            parsed.pop("sub_kategori", None)
+            return parsed
+
+    if is_beauty_care_expense(combined):
         parsed["jenis"] = "Pengeluaran"
         parsed["kategori"] = "Kesehatan & Kebersihan Diri"
         parsed["sifat"] = "Wants"
