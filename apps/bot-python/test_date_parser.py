@@ -139,3 +139,28 @@ def test_ai_tanggal_with_iso_in_text():
     parsed = {"tanggal": "2026-08-15", "keterangan": "gaji"}
     apply_transaction_date(parsed, "gaji tanggal 2026-08-15 sebesar 5k", now=now)
     assert parsed["recorded_at"].astimezone(TZ).date().isoformat() == "2026-08-15"
+
+
+def test_decimal_k_not_parsed_as_date_before_slash_date():
+    """Kasus Catherina: '14.5k 09/09' jangan jadi 14 Mei — titik di nominal, tanggal = 09/09."""
+    now = datetime(2026, 9, 14, 21, 0, tzinfo=TZ)
+    for text in (
+        "bayar laundry 14.5k 09/09",
+        "bayar laundry 14.5k 9/9",
+        "bayar laundry 14,5k 9/9",
+        "makeup 26.4k 31/08",
+    ):
+        parsed: dict = {}
+        apply_transaction_date(parsed, text, now=now)
+        label = format_recorded_at_label(parsed.get("recorded_at"))
+        if "31/08" in text:
+            assert label == "31/08/2026", text
+        else:
+            assert label == "09/09/2026", f"{text} -> {label}"
+
+
+def test_decimal_k_alone_does_not_invent_date():
+    now = datetime(2026, 9, 14, 21, 0, tzinfo=TZ)
+    parsed: dict = {}
+    apply_transaction_date(parsed, "bayar laundry 14.5k", now=now)
+    assert "recorded_at" not in parsed

@@ -39,6 +39,12 @@ _MONTHS: dict[str, int] = {
 _DATE_PREFIX = r"(?:tgl|tanggal|tgl\.|tgl:)"
 _MONTH_NAMES = "|".join(sorted(_MONTHS.keys(), key=len, reverse=True))
 
+# Setelah kandidat tanggal bertitik/slash: suffix uang → bukan tanggal (14.5k, 26.4 rb).
+_MONEY_SUFFIX_AFTER_DATE = re.compile(
+    r"^\s*(?:rb|br|ribu|k|jt|ht|jta|juta|milyun|miliar)\b",
+    re.IGNORECASE,
+)
+
 
 def _safe_date(year: int, month: int, day: int) -> date | None:
     try:
@@ -208,25 +214,43 @@ def extract_bare_indonesian_date(
     Default DD/MM (konvensi ID): '1/9' → 1 Sep, '9/1' → 9 Jan.
     Jika salah satu bagian >12 → otomatis MM/DD atau DD/MM yang valid:
       '8/19/26' → 19 Agu 2026 (bukan gagal lalu jadi hari ini).
+
+    Jangan salah baca desimal uang sebagai tanggal:
+      'bayar laundry 14.5k 09/09' → 9 Sep (bukan 14 Mei dari 14.5).
     """
     if not text or not text.strip():
         return None
     local_now = (now or datetime.now(tz)).astimezone(tz)
     today = local_now.date()
+    raw = text.strip()
+
+    slash_hit: datetime | None = None
     for match in re.finditer(
-        r"(?<!\d)(\d{1,2})[/.\-](\d{1,2})(?:[/.\-](\d{2,4}))?(?!\d)",
-        text.strip(),
+        r"(?<!\d)(\d{1,2})([/.\-])(\d{1,2})(?:[/.\-](\d{2,4}))?(?!\d)",
+        raw,
     ):
+        # 14.5k / 26.4rb = nominal, bukan tanggal
+        if _MONEY_SUFFIX_AFTER_DATE.match(raw[match.end() :]):
+            continue
+
         first = int(match.group(1))
-        second = int(match.group(2))
-        if match.group(3):
-            year = _normalize_year(int(match.group(3)))
+        second = int(match.group(3))
+        sep = match.group(2)
+        if match.group(4):
+            year = _normalize_year(int(match.group(4)))
         else:
             year = today.year
         d = _interpret_slash_parts(first, second, year)
-        if d is not None:
-            return _to_recorded_at(d, now=local_now, tz=tz)
-    return None
+        if d is None:
+            continue
+        recorded = _to_recorded_at(d, now=local_now, tz=tz)
+        # Utamakan slash-date (09/09) atas titik yang ambigu; tetap izinkan 31.08.26
+        if sep == "/":
+            return recorded
+        if slash_hit is None:
+            slash_hit = recorded
+
+    return slash_hit
 
 
 def apply_transaction_date(
