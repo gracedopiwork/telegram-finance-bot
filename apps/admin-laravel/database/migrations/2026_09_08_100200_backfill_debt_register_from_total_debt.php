@@ -15,6 +15,9 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Tidak dibalik: total_debt lama tetap utuh di kolomnya sendiri.
+        // Hanya menghapus baris placeholder yang dibuat up(); total_debt lama
+        // tetap utuh di kolomnya sendiri, dan register yang sudah dirinci user
+        // tidak tersentuh.
+        (new DebtRegisterBackfill)->rollback();
     }
 };

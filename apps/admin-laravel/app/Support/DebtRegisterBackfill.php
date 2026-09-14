@@ -18,13 +18,57 @@ class DebtRegisterBackfill
     public const PLACEHOLDER_NAME = 'Utang (belum dirinci)';
 
     /**
+     * Membatalkan apa yang ditulis up(): HANYA baris yang isinya persis satu
+     * placeholder "Utang (belum dirinci)". Register yang sudah dirinci user
+     * tidak boleh ikut terhapus — itu data asli, bukan hasil migrasi.
+     *
+     * @return int jumlah baris baseline yang dikosongkan
+     */
+    public function rollback(): int
+    {
+        if (! $this->schemaReady()) {
+            return 0;
+        }
+
+        $cleared = 0;
+
+        DB::table('financial_baselines')
+            ->select('id', 'debt_register')
+            ->whereNotNull('debt_register')
+            ->orderBy('id')
+            ->chunkById(200, function ($rows) use (&$cleared) {
+                foreach ($rows as $row) {
+                    $register = json_decode((string) $row->debt_register, true);
+                    if (! is_array($register) || count($register) !== 1) {
+                        continue;
+                    }
+                    if (($register[0]['debt_name'] ?? null) !== self::PLACEHOLDER_NAME) {
+                        continue;
+                    }
+
+                    DB::table('financial_baselines')
+                        ->where('id', $row->id)
+                        ->update(['debt_register' => null]);
+                    $cleared++;
+                }
+            });
+
+        return $cleared;
+    }
+
+    private function schemaReady(): bool
+    {
+        return Schema::hasTable('financial_baselines')
+            && Schema::hasColumn('financial_baselines', 'debt_register')
+            && Schema::hasColumn('financial_baselines', 'total_debt');
+    }
+
+    /**
      * @return int jumlah baris baseline yang diisi
      */
     public function __invoke(): int
     {
-        if (! Schema::hasTable('financial_baselines')
-            || ! Schema::hasColumn('financial_baselines', 'debt_register')
-            || ! Schema::hasColumn('financial_baselines', 'total_debt')) {
+        if (! $this->schemaReady()) {
             return 0;
         }
 
