@@ -113,6 +113,27 @@ def test_slash_dates_mid_sentence_are_day_first_not_ai():
     assert format_recorded_at_label(parsed_b["recorded_at"]) == "09/01/2026"
 
 
+def test_us_style_month_day_when_day_gt_12():
+    """'8/19/26' dari HP Amerika = 19 Agustus, jangan gagal jadi hari ini."""
+    now = datetime(2026, 9, 14, 17, 43, tzinfo=TZ)
+    for text in (
+        "8/19/26\n800k gaji minosep",
+        "8/19/26 800k gaji minosep",
+        "tgl 8/19/26 gaji",
+    ):
+        parsed: dict = {}
+        apply_transaction_date(parsed, text, now=now)
+        assert parsed["recorded_at"].astimezone(TZ).date().isoformat() == "2026-08-19", text
+        assert format_recorded_at_label(parsed["recorded_at"]) == "19/08/2026", text
+
+
+def test_id_style_day_month_still_works():
+    now = datetime(2026, 9, 14, 17, 43, tzinfo=TZ)
+    parsed = {}
+    apply_transaction_date(parsed, "19/8/26 800k gaji", now=now)
+    assert parsed["recorded_at"].astimezone(TZ).date().isoformat() == "2026-08-19"
+
+
 def test_ai_tanggal_with_iso_in_text():
     now = datetime(2026, 9, 1, 18, 40, tzinfo=TZ)
     parsed = {"tanggal": "2026-08-15", "keterangan": "gaji"}
