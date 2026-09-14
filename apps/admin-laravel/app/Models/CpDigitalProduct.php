@@ -48,9 +48,27 @@ class CpDigitalProduct extends Model
 
     protected $appends = ['effective_price', 'on_sale', 'discount_percent'];
 
+    /**
+     * Produk internal (course korporat, dll.) — jangan tampil di /produk & mega-menu.
+     * Tetap ada di DB untuk lisensi / daftar via kode.
+     *
+     * @var list<string>
+     */
+    public const HIDDEN_FROM_PUBLIC_CATALOG = [
+        'yfd-ftsa-course',
+    ];
+
     public function scopeActive(Builder $q): Builder
     {
         return $q->where('is_active', true);
+    }
+
+    /**
+     * Katalog publik: aktif + bukan produk internal tersembunyi.
+     */
+    public function scopePublicCatalog(Builder $q): Builder
+    {
+        return $q->active()->whereNotIn('code', self::HIDDEN_FROM_PUBLIC_CATALOG);
     }
 
     public function scopeFeatured(Builder $q): Builder

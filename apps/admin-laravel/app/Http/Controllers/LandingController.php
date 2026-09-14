@@ -103,7 +103,7 @@ class LandingController extends Controller
 
     public function produk()
     {
-        $products = CpDigitalProduct::active()->orderBy('sort')->orderBy('id')->get();
+        $products = CpDigitalProduct::publicCatalog()->orderBy('sort')->orderBy('id')->get();
         $featured = $products->firstWhere('is_featured', true) ?? $products->first();
         $others   = $products->reject(fn ($p) => $featured && $p->id === $featured->id)->values();
 
