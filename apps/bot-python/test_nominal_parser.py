@@ -82,6 +82,27 @@ class NominalParserTests(unittest.TestCase):
         amount = parse_nominal_from_text("bayar tagihan listrik 90 br")
         self.assertIsNone(nominal_sanity_warning(amount, "bayar tagihan listrik", "Listrik"))
 
+    def test_multi_line_shopping_list_sums_all_items(self) -> None:
+        """Kasus Catherina: rincian belanja — jumlah semua baris, bukan item pertama saja."""
+        text = (
+            "Shampo Pantene anti ketombe 27.9k\n"
+            "Pepsoden pasta gigi 25.9k\n"
+            "Alfa tissue 41.5k\n"
+            "Nice soft tissue 21.9k\n"
+            "Air 23.4k\n"
+            "Tas belanja 6.5k"
+        )
+        expected = 27_900 + 25_900 + 41_500 + 21_900 + 23_400 + 6_500
+        self.assertEqual(parse_nominal_from_text(text), expected)
+        self.assertEqual(reconcile_nominal(27_900, text), expected)
+
+    def test_explicit_total_wins_over_line_items(self) -> None:
+        text = "item a 10k\nitem b 20k\ntotal 25k"
+        self.assertEqual(parse_nominal_from_text(text), 25_000)
+
+    def test_inline_two_amounts_sum(self) -> None:
+        self.assertEqual(parse_nominal_from_text("kopi 25k parkir 10k"), 35_000)
+
 
 if __name__ == "__main__":
     unittest.main()

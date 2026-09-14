@@ -164,3 +164,16 @@ def test_decimal_k_alone_does_not_invent_date():
     parsed: dict = {}
     apply_transaction_date(parsed, "bayar laundry 14.5k", now=now)
     assert "recorded_at" not in parsed
+
+
+def test_shopping_list_first_amount_not_used_as_date():
+    """Kasus Catherina: 27.9k di baris pertama jangan jadi tanggal 27/09."""
+    now = datetime(2026, 9, 14, 21, 0, tzinfo=TZ)
+    text = (
+        "Shampo Pantene anti ketombe 27.9k\n"
+        "Pepsoden pasta gigi 25.9k\n"
+        "Alfa tissue 41.5k"
+    )
+    parsed = {"tanggal": "2026-09-27"}
+    apply_transaction_date(parsed, text, now=now)
+    assert "recorded_at" not in parsed
