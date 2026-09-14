@@ -322,13 +322,13 @@
     </div>
 </section>
 
-{{-- ============== Produk Lain (Other digital products) ============== --}}
+{{-- ============== Daftar produk (semua yang Aktif di katalog publik) ============== --}}
 @if($others->count())
 <section class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-20">
     <div class="text-center mb-12 max-w-2xl mx-auto">
-        <span class="text-label-md text-secondary block mb-3">PRODUK LAIN</span>
-        <h2 class="font-heading text-headline-lg text-primary mb-3">Roadmap & produk pendukung</h2>
-        <p class="text-body-md text-on-surface-variant">Sedang dalam pengembangan atau sudah siap dipakai.</p>
+        <span class="text-label-md text-secondary block mb-3">DAFTAR PRODUK</span>
+        <h2 class="font-heading text-headline-lg text-primary mb-3">Semua produk digital YFD</h2>
+        <p class="text-body-md text-on-surface-variant">Pilih paket yang sesuai — bot First Aid, FTSA, atau bundle lengkap.</p>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         @foreach($others as $p)

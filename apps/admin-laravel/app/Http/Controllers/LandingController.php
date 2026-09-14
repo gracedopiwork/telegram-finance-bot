@@ -104,8 +104,15 @@ class LandingController extends Controller
     public function produk()
     {
         $products = CpDigitalProduct::publicCatalog()->orderBy('sort')->orderBy('id')->get();
-        $featured = $products->firstWhere('is_featured', true) ?? $products->first();
-        $others   = $products->reject(fn ($p) => $featured && $p->id === $featured->id)->values();
+
+        // Flagship: utamakan YFD First Aid, lalu produk Featured lain.
+        $featured = $products->firstWhere('code', 'yfd-bot-telegram')
+            ?? $products->firstWhere('is_featured', true)
+            ?? $products->first();
+
+        // Grid kartu = SEMUA produk publik (termasuk flagship).
+        // Dulu flagship di-exclude dari $others → First Aid "hilang" dari daftar kartu.
+        $others = $products->values();
 
         return view('Companyprofile.produk', [
             'active'   => 'produk',
