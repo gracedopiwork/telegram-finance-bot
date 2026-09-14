@@ -394,7 +394,7 @@ class CompanyProfileSeeder extends Seeder
                         'Community Learning',
                     ],
                 ],
-                'cta_label' => 'Tanya Paket Edukasi',
+                'cta_label' => 'Daftar Workshop',
                 'cta_route' => 'company.bundle.education',
                 'sort' => 5,
             ],

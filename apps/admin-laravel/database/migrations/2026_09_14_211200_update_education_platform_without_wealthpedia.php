@@ -28,8 +28,8 @@ return new class extends Migration
                 'bundle.education.description' => $description,
                 'bundle.education.features' => $features,
                 'bundle.education.footnote' => 'Untuk info jadwal webinar, workshop, kelas, dan harga terbaru, hubungi tim YFD.',
-                'bundle.education.cta_primary_label' => 'Tanya Paket Edukasi',
-                'bundle.education.cta_secondary_label' => '',
+                'bundle.education.cta_primary_label' => 'Daftar Workshop',
+                'bundle.education.cta_secondary_label' => 'Kerjasama dengan YFD',
             ];
             foreach ($updates as $key => $value) {
                 DB::table('site_settings')->updateOrInsert(
@@ -63,7 +63,7 @@ return new class extends Migration
                             'Community Learning',
                         ],
                     ],
-                    'cta_label' => 'Tanya Paket Edukasi',
+                    'cta_label' => 'Daftar Workshop',
                     'cta_route' => 'company.bundle.education',
                     'updated_at' => now(),
                 ]);
