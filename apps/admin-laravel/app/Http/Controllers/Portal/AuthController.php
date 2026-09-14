@@ -269,7 +269,7 @@ class AuthController extends Controller
         $access = app(PortalAccessService::class);
 
         if ($access->isFtsaOnlyPortalUser($email, $telegramUserId)) {
-            return 'Selamat datang di portal FTSA. Masuk cukup dengan email + kode lisensi (password tidak wajib). Lanjutkan isi FTSA 1–32.';
+            return 'Selamat datang di portal FTSA. Lanjutkan isi FTSA 1–32.';
         }
 
         if ($access->hasBotPortalAccess($email, $telegramUserId) && $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {
