@@ -194,7 +194,7 @@ _BEAUTY_MARKERS = (
     "serum",
     "moisturizer",
     "pelembab",
-    "spa",
+    "spa",  # word-boundary — tidak kena spaghetti/spagethi
     "potong rambut",
     "salon rambut",
 )

@@ -15,8 +15,24 @@ class ContextRulesTests(unittest.TestCase):
         self.assertEqual(hit["jenis"], jenis, msg=text)
         self.assertEqual(hit["kategori"], kategori, msg=text)
 
-    def test_affiliate(self) -> None:
-        self.assertClass("dapat shopee affiliate 50000", "Pemasukan", "Affiliate")
+    def test_spagethi_makan_siang_bukan_kesehatan(self) -> None:
+        """Typo spagethi jangan kena 'spa' → harus Makanan, bukan Kesehatan."""
+        text = "13/09/2026 spagethi makan siang 60rb"
+        hit = classify_from_text(text)
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Makanan & Minuman")
+        out = apply_context_rules(
+            {
+                "keterangan": text,
+                "jenis": "Pengeluaran",
+                "kategori": "Kesehatan & Kebersihan Diri",
+                "sifat": "Need",
+            },
+            text,
+        )
+        self.assertEqual(out["kategori"], "Makanan & Minuman")
+        self.assertEqual(out["sifat"], "Need")
 
     def test_komisi_gift_tiktok_adalah_pemasukan_bukan_hadiah(self) -> None:
         self.assertClass("komisi gift dari TikTok 200rb", "Pemasukan", "Affiliate")

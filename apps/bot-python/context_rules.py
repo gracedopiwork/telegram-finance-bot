@@ -362,7 +362,7 @@ _SKINCARE = (
     "facial",
     "pelembab",
     "lotion wajah",
-    "spa",
+    "spa",  # word-boundary via keyword_in — tidak kena "spagethi"
     "potong rambut",
     "cukur rambut",
     "cukur",
@@ -573,6 +573,15 @@ _MAKAN = (
     "gojek food",
     "gofood",
     "grabfood",
+    "spaghetti",
+    "spageti",
+    "spagethi",  # typo umum
+    "pasta",
+    "pizza",
+    "burger",
+    "mie",
+    "bakso",
+    "soto",
 )
 
 _KOPI_JAJAN = (
@@ -2884,12 +2893,29 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
                 parsed["jenis"] = "Pengeluaran"
                 ai_jenis = "Pengeluaran"
 
-        # Layer 1 keyword > AI dump. "Lain-lain" berarti model tidak tahu,
-        # bukan izin menimpa taksonomi yang sudah ada di classify_from_text.
-        if _is_dump_category(ai_kat_l):
-            rule_hit = classify_from_text(combined)
-            rule_kat = str((rule_hit or {}).get("kategori") or "").strip()
-            if rule_hit and rule_kat and not _is_dump_category(rule_kat):
+        # Layer 1 keyword > AI dump / AI salah baca (spagethi→spa→Kesehatan).
+        rule_hit = classify_from_text(combined)
+        rule_kat = str((rule_hit or {}).get("kategori") or "").strip()
+        rule_kat_l = rule_kat.lower()
+        if rule_hit and rule_kat and not _is_dump_category(rule_kat_l):
+            prefer_rule = _is_dump_category(ai_kat_l)
+            # Makanan jelas mengalahkan AI yang salah bilang Kesehatan/Lifestyle.
+            if rule_kat_l in {"makanan & minuman", "makanan dan minuman"} and ai_kat_l in {
+                "kesehatan & kebersihan diri",
+                "lifestyle & hiburan",
+                "proteksi",
+                "pakaian & aksesoris",
+                "tempat tinggal",
+                "transport",
+                "transportasi",
+                "bisnis & karir",
+                "pendidikan",
+            }:
+                if not is_beauty_care_expense(combined) and not _contains(
+                    combined.lower(), _LAUNDRY
+                ):
+                    prefer_rule = True
+            if prefer_rule:
                 parsed["jenis"] = rule_hit["jenis"]
                 parsed["kategori"] = rule_kat
                 parsed["sifat"] = rule_hit["sifat"]
