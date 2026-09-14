@@ -15,7 +15,8 @@ return new class extends Migration
                 'description' => "Akses FTSA khusus peserta course korporat.\n\nTidak dijual di checkout publik — dibuka lewat kode daftar course. Akses 1 bulan dari tanggal workshop; data tetap tersimpan dan bisa dibuka lagi setelah beli YFD First Aid.",
                 'icon' => 'school',
                 'badge' => 'Course',
-                'is_active' => true,
+                // Tidak ditampilkan di katalog publik; akses lewat /course/ftsa/daftar.
+                'is_active' => false,
                 'is_featured' => false,
                 'sort' => 7,
                 'price' => 0,
