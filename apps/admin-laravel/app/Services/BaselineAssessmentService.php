@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Support\DebtRegister;
+use App\Support\InvestmentRegister;
 use Carbon\Carbon;
 
 class BaselineAssessmentService
@@ -246,6 +247,20 @@ class BaselineAssessmentService
             'snapshot.debt_register.*.monthly_installment_reference' => 'nullable|integer|min:0',
             'snapshot.debt_register.*.remaining_tenor_months' => 'nullable|integer|min:0|max:600',
             'snapshot.debt_register_submitted' => 'sometimes|boolean',
+
+            // Daftar Investasi. last_updated di-set server, sengaja tidak diterima
+            // dari input; yield tidak pernah disimpan, selalu dihitung ulang dari
+            // realisasi pokok & aktual.
+            'snapshot.investment_register' => 'nullable|array|max:'.InvestmentRegister::MAX_ROWS,
+            'snapshot.investment_register.*.investment_id' => 'nullable|string|max:32',
+            'snapshot.investment_register.*.investment_type' => 'nullable|string|in:'.implode(',', array_keys(InvestmentRegister::types())),
+            'snapshot.investment_register.*.purpose' => 'nullable|string|max:120',
+            'snapshot.investment_register.*.start_year' => 'nullable|integer|min:1980|max:'.(now()->year + 1),
+            'snapshot.investment_register.*.target_years' => 'nullable|integer|min:1|max:80',
+            'snapshot.investment_register.*.target_amount' => 'nullable|integer|min:0',
+            'snapshot.investment_register.*.realized_principal' => 'nullable|integer|min:0',
+            'snapshot.investment_register.*.realized_actual' => 'nullable|integer|min:0',
+            'snapshot.investment_register_submitted' => 'sometimes|boolean',
         ];
     }
 

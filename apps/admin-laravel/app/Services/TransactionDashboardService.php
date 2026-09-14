@@ -1157,6 +1157,10 @@ class TransactionDashboardService
             // active_debt_total yang merupakan flow pinjaman sosial berjalan.
             'debt_register' => \App\Support\DebtRegister::rows($baseline->debt_register),
             'debt_register_stale' => \App\Support\DebtRegister::hasStaleRow($baseline->debt_register),
+            // Stock juga (nilai portofolio, input manual) — yield diturunkan di
+            // InvestmentRegister, tidak pernah disimpan.
+            'investment_register' => \App\Support\InvestmentRegister::rows($baseline->investment_register),
+            'investment_register_stale' => \App\Support\InvestmentRegister::hasStaleRow($baseline->investment_register),
             'protection' => [
                 'bpjs' => $baseline->has_bpjs,
                 'health' => $baseline->has_health_insurance,

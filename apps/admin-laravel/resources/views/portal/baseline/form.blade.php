@@ -225,7 +225,6 @@
                 'avg_monthly_income' => 'Rata-rata pendapatan bulanan (Rp)',
                 'emergency_fund' => 'Dana darurat (Rp)',
                 'cash_savings' => 'Cash / tabungan (Rp)',
-                'total_investment' => 'Total investasi (Rp)',
                 'total_asset' => 'Total aset (Rp)',
                 ];
         @endphp
@@ -301,6 +300,8 @@
                         @endforeach
                     </div>
                 </fieldset>
+                @include('portal.partials.baseline-investment-register-fields', ['existingBaseline' => $existingBaseline ?? null])
+
                 @include('portal.partials.baseline-debt-register-fields', ['existingBaseline' => $existingBaseline ?? null])
 
                 @include('portal.partials.baseline-asset-protection-fields', ['existingBaseline' => $existingBaseline ?? null])

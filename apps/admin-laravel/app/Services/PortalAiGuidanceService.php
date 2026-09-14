@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\FinancialBaseline;
 use App\Support\DebtRegister;
+use App\Support\InvestmentRegister;
 use App\Models\PortalGuidanceSnapshot;
 use App\Support\PortalTimezone;
 use Illuminate\Support\Facades\Cache;
@@ -1260,12 +1261,69 @@ PROMPT;
         }
 
         $lines = array_merge($lines, $this->debtRegisterLines($baseline));
+        $lines = array_merge($lines, $this->investmentRegisterLines($baseline));
 
         if ($lines === []) {
             return '';
         }
 
         return "- Baseline keuangan:\n".$this->linesBlock($lines);
+    }
+
+    /**
+     * Daftar Investasi untuk prompt. Sama seperti Debt Register, angkanya input
+     * manual per siklus 3 bulan, jadi selalu dibawa bersama tanggal update-nya.
+     *
+     * @return list<string>
+     */
+    private function investmentRegisterLines(FinancialBaseline $baseline): array
+    {
+        $rows = InvestmentRegister::rows($baseline->investment_register ?? null);
+        if ($rows === []) {
+            return [];
+        }
+
+        $lines = ['- Daftar Investasi (realisasi aktual = input manual user, TIDAK dihitung dari transaksi harian):'];
+        foreach ($rows as $row) {
+            $parts = sprintf(
+                '  - %s%s: realisasi pokok Rp %s, realisasi aktual Rp %s, yield %s per update terakhir %s',
+                $row['investment_type_label'],
+                $row['purpose'] !== '' ? ' untuk '.$row['purpose'] : '',
+                number_format((int) ($row['realized_principal'] ?? 0), 0, ',', '.'),
+                number_format((int) ($row['realized_actual'] ?? 0), 0, ',', '.'),
+                $row['yield_label'],
+                $row['last_updated_label'],
+            );
+            if ($row['start_year'] !== null) {
+                $parts .= sprintf(', mulai %d', (int) $row['start_year']);
+            }
+            if ($row['target_years'] !== null) {
+                $parts .= sprintf(', target %d tahun', (int) $row['target_years']);
+            }
+            if ($row['target_amount'] !== null) {
+                $parts .= sprintf(', target nominal Rp %s', number_format((int) $row['target_amount'], 0, ',', '.'));
+            }
+            if ($row['is_stale']) {
+                $parts .= ' [STALE]';
+            }
+            $lines[] = $parts;
+        }
+
+        $totalYield = InvestmentRegister::totalYieldPercent($baseline->investment_register ?? null);
+        $lines[] = sprintf(
+            '  - Total portofolio: pokok Rp %s, aktual Rp %s, yield %s (ditimbang nilai, bukan rata-rata persen antar baris).',
+            number_format((int) (InvestmentRegister::totalPrincipal($baseline->investment_register ?? null) ?? 0), 0, ',', '.'),
+            number_format((int) (InvestmentRegister::totalActual($baseline->investment_register ?? null) ?? 0), 0, ',', '.'),
+            InvestmentRegister::formatYield($totalYield),
+        );
+
+        if (InvestmentRegister::hasStaleRow($baseline->investment_register ?? null)) {
+            $lines[] = '  - Baris bertanda [STALE] belum diperbarui lebih dari '
+                .InvestmentRegister::staleAfterMonths()
+                .' bulan. Sebut nilai dan yield-nya dengan kualifikasi waktu ("berdasarkan data terakhir kamu update [tanggal], ..."), bukan sebagai angka pasti.';
+        }
+
+        return $lines;
     }
 
     /**
