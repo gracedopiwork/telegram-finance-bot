@@ -456,6 +456,40 @@ class ClarificationRulesTests(unittest.TestCase):
         )
         self.assertIsNone(question)
 
+    def test_ai_majority_category_question_suppressed(self) -> None:
+        """Struk multi-item: AI jangan tanya mayoritas / pecah kategori."""
+        question = clarification_question(
+            {
+                "kategori": "Makanan & Minuman",
+                "jenis": "Pengeluaran",
+                "needs_clarification": True,
+                "clarification_question": (
+                    "Transaksi ini mencakup air minum (Makanan & Minuman) dan "
+                    "perlengkapan rumah tangga (Tempat Tinggal). "
+                    "Apakah mayoritas nominal untuk perlengkapan rumah tangga? "
+                    "Jika ya, kategori utama = Tempat Tinggal."
+                ),
+            },
+            "Shampo 27.9k\nAir 23.4k\nTas belanja 6.5k",
+        )
+        self.assertIsNone(question)
+
+    def test_after_user_klarifikasi_ai_cannot_ask_second_round(self) -> None:
+        """Kasus Catherina: jawab 'perlengkapan rumah tangga' → jangan nanya lagi."""
+        question = clarification_question(
+            {
+                "kategori": "Tempat Tinggal",
+                "jenis": "Pengeluaran",
+                "needs_clarification": True,
+                "clarification_question": (
+                    "Apakah 'perlengkapan' yang dimaksud adalah perlengkapan "
+                    "rumah tangga atau item lainnya?"
+                ),
+            },
+            "struk Alfamart\nKlarifikasi user: perlengkapan rumah tangga",
+        )
+        self.assertIsNone(question)
+
 
 if __name__ == "__main__":
     unittest.main()

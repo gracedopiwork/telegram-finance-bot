@@ -1323,8 +1323,10 @@ async def process_note_input(
         rounds = max(int(clarify_rounds or 0), pending_rounds)
         if clarification_resolved:
             rounds = max(rounds, 1)
-        if should_ask and clarification_resolved and rounds >= 2:
-            # Jawaban masih ambigu setelah 2x — jangan jebak user; lanjut preview.
+        # Struk foto: maksimal 1 putaran (hindari tanya 'perlengkapan' lalu 'mayoritas').
+        max_clarify_rounds = 1 if from_receipt else 2
+        if should_ask and clarification_resolved and rounds >= max_clarify_rounds:
+            # Jawaban masih ambigu setelah batas putaran — jangan jebak user; lanjut preview.
             should_ask = False
         if should_ask:
             PENDING_CONFIRMATIONS.pop(user_id, None)
