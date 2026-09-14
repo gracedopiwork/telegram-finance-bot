@@ -1086,6 +1086,7 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
 
 def attach_prescription_bucket(parsed: Dict[str, Any]) -> bool:
     """Attach canonical Laravel category/bucket before Telegram confirmation."""
+    bot_category = str(parsed.get("kategori") or "").strip()
     ok, result, error = resolve_transaction_bucket(parsed)
     if not ok:
         logger.warning("Bucket preview belum tersedia: %s", error)
@@ -1099,7 +1100,15 @@ def attach_prescription_bucket(parsed: Dict[str, Any]) -> bool:
         } else "Belum dapat dicek"
         return False
 
-    parsed["kategori"] = result.get("category") or parsed["kategori"]
+    laravel_category = str(result.get("category") or "").strip()
+    # Jangan biarkan false-positive Laravel (spa⊂spagethi) menimpa makanan jelas.
+    if (
+        bot_category == "Makanan & Minuman"
+        and laravel_category == "Kesehatan & Kebersihan Diri"
+    ):
+        parsed["kategori"] = bot_category
+    else:
+        parsed["kategori"] = laravel_category or bot_category
     parsed["bucket"] = result.get("bucket")
     return True
 

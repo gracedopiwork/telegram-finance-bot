@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BotTransaction;
 use App\Models\CategoryBucketMapping;
+use App\Support\KeywordMatch;
 use App\Support\TransactionTaxonomy;
 use Illuminate\Support\Facades\Schema;
 
@@ -60,6 +61,11 @@ class CategoryAutoRegisterService
         $resolved = $this->resolveWithoutRegister($categoryInput, $type);
         $notesLower = mb_strtolower(trim($notes));
 
+        // Makan siang/spaghetti — SEBELUM beauty (jangan biarkan "spa" di dalam "spagethi").
+        if ($type === 'Pengeluaran' && $this->notesLookLikeClearMeal($notesLower)) {
+            return 'Makanan & Minuman';
+        }
+
         if ($type === 'Pengeluaran' && $this->notesLookLikeBeautyCare($notesLower)) {
             return 'Kesehatan & Kebersihan Diri';
         }
@@ -79,29 +85,48 @@ class CategoryAutoRegisterService
         return $resolved;
     }
 
+    private function notesLookLikeClearMeal(string $notesLower): bool
+    {
+        return KeywordMatch::containsAny($notesLower, [
+            'makan siang',
+            'makan malam',
+            'makan pagi',
+            'makan sore',
+            'sarapan',
+            'brunch',
+            'lunch',
+            'dinner',
+            'spaghetti',
+            'spageti',
+            'spagethi',
+            'nasi padang',
+            'nasi goreng',
+            'grabfood',
+            'gofood',
+        ]);
+    }
+
     private function notesLookLikeBasicHygiene(string $notesLower): bool
     {
-        foreach (['handbody', 'hand body', 'hand & body', 'body lotion', 'lotion tubuh', 'lotion', 'deodoran', 'deodorant', 'sabun', 'shampo', 'pasta gigi', 'odol', 'softex', 'pembalut', 'sikat gigi', 'cotton bud', 'hand sanitizer', 'nivea', 'vaseline'] as $item) {
-            if (str_contains($notesLower, $item)) {
-                return true;
-            }
-        }
-
-        return false;
+        return KeywordMatch::containsAny($notesLower, [
+            'handbody', 'hand body', 'hand & body', 'body lotion', 'lotion tubuh', 'lotion',
+            'deodoran', 'deodorant', 'sabun', 'shampo', 'pasta gigi', 'odol', 'softex',
+            'pembalut', 'sikat gigi', 'cotton bud', 'hand sanitizer', 'nivea', 'vaseline',
+        ]);
     }
 
     private function notesLookLikeBeautyCare(string $notesLower): bool
     {
-        if (str_contains($notesLower, 'printer') || str_contains($notesLower, 'fotocopy') || str_contains($notesLower, 'fotokopi')) {
+        if (KeywordMatch::containsAny($notesLower, ['printer', 'fotocopy', 'fotokopi'])) {
             return false;
         }
-        foreach (['makeup', 'make up', 'skincare', 'skin care', 'dandan', 'lipstik', 'cushion', 'maybelline', 'maybeline', 'parfum', 'facial', 'toner', 'pelembab', 'spa', 'potong rambut'] as $item) {
-            if (str_contains($notesLower, $item)) {
-                return true;
-            }
-        }
 
-        return false;
+        // "spa" pendek → KeywordMatch pakai word-boundary (spagethi ≠ spa).
+        return KeywordMatch::containsAny($notesLower, [
+            'makeup', 'make up', 'skincare', 'skin care', 'dandan', 'lipstik', 'cushion',
+            'maybelline', 'maybeline', 'parfum', 'facial', 'toner', 'pelembab', 'spa',
+            'potong rambut',
+        ]);
     }
 
     private function notesLookLikeHouseholdDurable(string $notesLower): bool
