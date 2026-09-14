@@ -49,13 +49,14 @@ class CpDigitalProduct extends Model
     protected $appends = ['effective_price', 'on_sale', 'discount_percent'];
 
     /**
-     * Produk internal (course korporat, dll.) — jangan tampil di /produk & mega-menu.
+     * Produk internal (course/workshop korporat) — jangan tampil di /produk & mega-menu.
      * Tetap ada di DB untuk lisensi / daftar via kode.
      *
      * @var list<string>
      */
     public const HIDDEN_FROM_PUBLIC_CATALOG = [
         'yfd-ftsa-course',
+        'yfd-ftsa-workshop',
     ];
 
     public function scopeActive(Builder $q): Builder
@@ -64,11 +65,16 @@ class CpDigitalProduct extends Model
     }
 
     /**
-     * Katalog publik: aktif + bukan produk internal tersembunyi.
+     * Katalog publik: aktif + bukan produk internal course/workshop.
+     * Filter by code AND name, supaya kartu "FTSA Course / Perusahaan" hilang
+     * meski code di DB beda / sempat diedit di admin.
      */
     public function scopePublicCatalog(Builder $q): Builder
     {
-        return $q->active()->whereNotIn('code', self::HIDDEN_FROM_PUBLIC_CATALOG);
+        return $q->active()
+            ->whereNotIn('code', self::HIDDEN_FROM_PUBLIC_CATALOG)
+            ->where('name', 'not like', 'FTSA Course%')
+            ->where('name', 'not like', 'FTSA Workshop%');
     }
 
     public function scopeFeatured(Builder $q): Builder
