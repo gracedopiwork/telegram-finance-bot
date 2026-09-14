@@ -54,16 +54,25 @@ class CategoryAutoRegisterService
     }
 
     /**
-     * Canonicalize + koreksi dari notes (mis. Grab ke gym → Transportasi, bukan Lifestyle).
+     * Canonicalize + koreksi dari notes.
+     *
+     * RULES LOCK: jika bot sudah kirim kategori closed-list yang valid (bukan dump),
+     * JANGAN klasifikasi ulang dari notes — itu sumber regresi (spa⊂spagethi).
+     * Koreksi notes hanya untuk dump/kosong, plus meal jelas (safety net).
      */
     public function resolveFromNotes(string $categoryInput, string $type, string $notes = ''): string
     {
         $resolved = $this->resolveWithoutRegister($categoryInput, $type);
         $notesLower = mb_strtolower(trim($notes));
 
-        // Makan siang/spaghetti — SEBELUM beauty (jangan biarkan "spa" di dalam "spagethi").
+        // Safety net: makan siang/spaghetti selalu makanan (bahkan jika AI/bot salah).
         if ($type === 'Pengeluaran' && $this->notesLookLikeClearMeal($notesLower)) {
             return 'Makanan & Minuman';
+        }
+
+        // Trust kategori bot yang sudah valid — jangan tebak ulang dari substring notes.
+        if (! $this->isDumpCategory($resolved)) {
+            return $resolved;
         }
 
         if ($type === 'Pengeluaran' && $this->notesLookLikeBeautyCare($notesLower)) {
@@ -85,6 +94,13 @@ class CategoryAutoRegisterService
         return $resolved;
     }
 
+    private function isDumpCategory(string $category): bool
+    {
+        $key = mb_strtolower(trim($category));
+
+        return in_array($key, ['', 'lain-lain', 'lain lain', 'lainnya', 'other', 'misc', 'umum'], true);
+    }
+
     private function notesLookLikeClearMeal(string $notesLower): bool
     {
         return KeywordMatch::containsAny($notesLower, [
@@ -103,7 +119,7 @@ class CategoryAutoRegisterService
             'nasi goreng',
             'grabfood',
             'gofood',
-        ]);
+        ]) && ! KeywordMatch::containsAny($notesLower, ['pasta gigi', 'odol', 'sikat gigi']);
     }
 
     private function notesLookLikeBasicHygiene(string $notesLower): bool

@@ -576,7 +576,6 @@ _MAKAN = (
     "spaghetti",
     "spageti",
     "spagethi",  # typo umum
-    "pasta",
     "pizza",
     "burger",
     "mie",
@@ -2114,8 +2113,11 @@ def is_beauty_care_expense(text: str) -> bool:
 
 
 def is_clear_meal_expense(text: str) -> bool:
-    """Makanan jelas (makan siang/spaghetti/dll) — bukan spa/kecantikan."""
+    """Makanan jelas (makan siang/spaghetti/dll) — bukan spa/kecantikan/pasta gigi."""
     lower = _normalize_typos(text)
+    # Jangan anggap pasta gigi / odol sebagai makanan.
+    if _contains(lower, ("pasta gigi", "odol", "sikat gigi", "sabun", "shampo", "shampoo")):
+        return False
     meal_phrases = (
         "makan siang",
         "makan malam",
@@ -2128,15 +2130,17 @@ def is_clear_meal_expense(text: str) -> bool:
         "spaghetti",
         "spageti",
         "spagethi",
-        "pasta",
+        "nasi padang",
+        "nasi goreng",
         "pizza",
         "burger",
         "bakso",
         "soto",
-        "nasi padang",
-        "nasi goreng",
     )
     if any(p in lower for p in meal_phrases):
+        return True
+    # "pasta" makanan — bukan "pasta gigi"
+    if re.search(r"\bpasta\b", lower) and "gigi" not in lower:
         return True
     if is_food_delivery(lower) or _contains(lower, _MAKAN):
         return not is_beauty_care_expense(lower)
@@ -2749,13 +2753,15 @@ def classify_from_text(text: str) -> dict[str, str] | None:
 
 def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[str, Any]:
     """
-    Setelah AI parse: hormati AI, kecuali arah uang dari kata kerja jelas salah.
+    Setelah AI parse: RULES LOCK.
 
-    Rule:
-    - hormati jenis eksplisit user ("Pengeluaran …" / "Pemasukan …"),
-    - koreksi jenis jika kata kerja arah jelas (terima→masuk, bayar→keluar),
-    - koreksi dump kategori (Elektronik vs Jajan, GrabFood vs Transport),
-    - isi field yang AI biarkan kosong.
+    Urutan kebenaran:
+      1) Likuiditas sosial / hadiah / makan jelas / beauty (early returns)
+      2) classify_from_text (Layer 1 keyword) — jika kena, MENANG atas AI
+      3) Koreksi dump / kasus khusus hanya jika Layer 1 kosong
+      4) AI dipakai hanya untuk celah yang rule tidak tutup
+
+    Jangan “hormati AI” bila keyword sudah jelas — itu sumber regresi berulang.
     """
     combined = f"{source_text} {parsed.get('keterangan', '')}".strip()
     explicit = detect_explicit_jenis(source_text) or detect_explicit_jenis(combined)
@@ -2953,34 +2959,17 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
                 parsed["jenis"] = "Pengeluaran"
                 ai_jenis = "Pengeluaran"
 
-        # Layer 1 keyword > AI dump / AI salah baca (spagethi→spa→Kesehatan).
+        # RULES LOCK: Layer 1 keyword selalu menang atas tebakan AI.
         rule_hit = classify_from_text(combined)
         rule_kat = str((rule_hit or {}).get("kategori") or "").strip()
         rule_kat_l = rule_kat.lower()
         if rule_hit and rule_kat and not _is_dump_category(rule_kat_l):
-            prefer_rule = _is_dump_category(ai_kat_l)
-            # Makanan jelas mengalahkan AI yang salah bilang Kesehatan/Lifestyle.
-            if rule_kat_l in {"makanan & minuman", "makanan dan minuman"} and ai_kat_l in {
-                "kesehatan & kebersihan diri",
-                "lifestyle & hiburan",
-                "proteksi",
-                "pakaian & aksesoris",
-                "tempat tinggal",
-                "transport",
-                "transportasi",
-                "bisnis & karir",
-                "pendidikan",
-            }:
-                if not is_beauty_care_expense(combined) and not _contains(
-                    combined.lower(), _LAUNDRY
-                ):
-                    prefer_rule = True
-            if prefer_rule:
-                parsed["jenis"] = rule_hit["jenis"]
-                parsed["kategori"] = rule_kat
-                parsed["sifat"] = rule_hit["sifat"]
-                parsed.pop("sub_kategori", None)
-                return parsed
+            parsed["jenis"] = rule_hit["jenis"]
+            parsed["kategori"] = rule_kat
+            parsed["sifat"] = rule_hit["sifat"]
+            parsed.pop("sub_kategori", None)
+            parsed["rule_locked"] = True
+            return parsed
 
         if (
             ai_jenis == "Pengeluaran"

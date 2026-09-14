@@ -1085,31 +1085,46 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
 
 
 def attach_prescription_bucket(parsed: Dict[str, Any]) -> bool:
-    """Attach canonical Laravel category/bucket before Telegram confirmation."""
+    """Attach prescription bucket. Kategori Layer 1 dari bot tidak diganti Laravel."""
     bot_category = str(parsed.get("kategori") or "").strip()
     ok, result, error = resolve_transaction_bucket(parsed)
     if not ok:
         logger.warning("Bucket preview belum tersedia: %s", error)
-        parsed["bucket"] = None if parsed.get("jenis") in {
-            "Pemasukan",
-            "Kewajiban Pajak",
-            "Piutang Keluar",
-            "Piutang Masuk",
-            "Utang Masuk",
-            "Utang Keluar",
-        } else "Belum dapat dicek"
+        # Fallback lokal agar preview tetap bisa jalan tanpa API.
+        try:
+            from bucket_resolver import resolve_bucket
+
+            parsed["bucket"] = resolve_bucket(parsed)
+        except Exception:
+            parsed["bucket"] = None if parsed.get("jenis") in {
+                "Pemasukan",
+                "Kewajiban Pajak",
+                "Piutang Keluar",
+                "Piutang Masuk",
+                "Utang Masuk",
+                "Utang Keluar",
+            } else "Belum dapat dicek"
         return False
 
     laravel_category = str(result.get("category") or "").strip()
-    # Jangan biarkan false-positive Laravel (spa⊂spagethi) menimpa makanan jelas.
-    if (
-        bot_category == "Makanan & Minuman"
-        and laravel_category == "Kesehatan & Kebersihan Diri"
-    ):
-        parsed["kategori"] = bot_category
+    # RULES LOCK: bot kategori menang. Laravel hanya boleh canonical alias / isi dump.
+    from context_rules import _is_dump_category
+
+    if _is_dump_category(bot_category) and laravel_category:
+        parsed["kategori"] = laravel_category
     else:
-        parsed["kategori"] = laravel_category or bot_category
+        parsed["kategori"] = bot_category or laravel_category
     parsed["bucket"] = result.get("bucket")
+    # Jika Laravel mengubah kategori secara diam-diam, bucket lokal lebih selaras.
+    if parsed["kategori"] == bot_category and bot_category:
+        try:
+            from bucket_resolver import resolve_bucket
+
+            local_bucket = resolve_bucket(parsed)
+            if local_bucket:
+                parsed["bucket"] = local_bucket
+        except Exception:
+            pass
     return True
 
 
