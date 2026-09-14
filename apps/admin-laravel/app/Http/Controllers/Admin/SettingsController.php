@@ -34,7 +34,7 @@ class SettingsController extends Controller
         'page_wealthpedia' => ['label' => 'Halaman Wealthpedia', 'icon' => 'fas fa-book'],
         'page_pertemuan' => ['label' => 'Halaman Booking', 'icon' => 'fas fa-calendar-check'],
         'page_pricing' => ['label' => 'Tarif Konsultasi', 'icon' => 'fas fa-money-bill'],
-        'page_bundles' => ['label' => 'Halaman Bundle (Premarital/dll)', 'icon' => 'fas fa-layer-group'],
+        'page_bundles' => ['label' => 'Education / Premarital / Recovery', 'icon' => 'fas fa-layer-group'],
         'page_nav' => ['label' => 'Nav & Footer', 'icon' => 'fas fa-bars'],
         'bot'      => ['label' => 'Integrasi Bot & Email', 'icon' => 'fab fa-telegram'],
         'affiliate'=> ['label' => 'Referral / Affiliate', 'icon' => 'fas fa-handshake'],
