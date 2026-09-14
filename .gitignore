@@ -7,3 +7,17 @@ __pycache__/
 *.pyc
 service_account.json
 **/service_account.json
+
+# Client briefs / contracts / assessments — do not track or redeploy
+/docs/
+shared/docs/*.pdf
+shared/docs/PROPOSAL.md
+shared/docs/PROPOSAL_*.md
+shared/docs/KONTRAK*
+shared/docs/KWITANSI*
+shared/docs/ESTIMASI*
+shared/scripts/generate_kontrak_pdf.py
+shared/scripts/generate_kwitansi_pelunasan_pdf.py
+shared/scripts/generate_proposal_addon_pdf.py
+shared/scripts/generate_vps_cost_pdf.py
+shared/templates/master_finance_workbook.xlsx

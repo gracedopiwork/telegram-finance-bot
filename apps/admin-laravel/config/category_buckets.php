@@ -43,17 +43,27 @@ return [
         'urusan bisnis', 'keperluan bisnis', 'perjalanan bisnis', 'kerja training',
         'meeting kerja', 'meeting kerjaan', 'rapat kerja', 'meeting klien', 'ngopi meeting',
         'kopi meeting', 'konsumsi meeting', 'starbucks meeting', 'makan meeting',
+        'untuk meeting', 'buat meeting', 'ke meeting', 'saat meeting', 'sambil meeting',
         // Transport tujuan bisnis (lokal & jarak jauh)
         'untuk bisnis', 'tujuan bisnis', 'ke bisnis', 'buat bisnis', 'keperluan usaha',
         'ke klien', 'ke client', 'ke meeting', 'ke rapat', 'rapat klien', 'rapat client',
         'ketemu calon klien', 'pitch client', 'pitch klien', 'investor meeting',
         'perjalanan dinas', 'dinas luar', 'acara bisnis', 'event bisnis',
+        // Jawaban singkat klarifikasi ride/bisnis (tanpa frasa panjang)
+        'klarifikasi user: bisnis', 'klarifikasi user: kerja', 'klarifikasi user: networking',
+        'klarifikasi user: klien', 'klarifikasi user: client', 'klarifikasi user: meeting',
+        'klarifikasi user: rapat', 'klarifikasi user: dinas',
         'saya personal trainer', 'aku personal trainer', 'saya atlet', 'atlet profesional',
         'instruktur kebugaran', 'alat kerja langsung',
     ],
     'transport_flexible_keywords' => [
         'gym', 'nongkrong', 'hangout', 'hang out', 'healing', 'cafe', 'kafe', 'mall',
         'bioskop', 'konser', 'liburan', 'staycation', 'wisata', 'tour', 'fitness',
+        // Klarifikasi / silaturahmi / lifestyle (transport bukan wajib)
+        'lifestyle', 'sosial', 'social', 'silahturahmi', 'silaturahmi', 'silaturrahmi',
+        'kekeluargaan', 'bertamu', 'kunjungan', 'gaya hidup', 'kualitas hidup', 'hiburan',
+        'rumah teman', 'rumah sodara', 'rumah saudara', 'rumah keluarga', 'acara keluarga',
+        'acara kekeluargaan',
     ],
     // Catatan: jangan map makan+meeting → Essential; gunakan future_building_context_keywords.
     'essential_categories' => [

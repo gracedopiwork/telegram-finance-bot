@@ -19,6 +19,7 @@ from telegram.ext import (
 )
 
 from ambiguous_suite import format_telegram_chunks
+from offline_classify import classify_offline
 from ai_health import log_ai_health_config, report_ai_event, report_ai_failure
 from claude_ai import analyze_with_claude as claude_parse_json
 from claude_ai import extract_transaction_text_from_image as claude_extract_image_text
@@ -79,12 +80,13 @@ from date_parser import apply_transaction_date, format_recorded_at_label
 from impulsive_rules import (
     PAYDAY_SPLURGE_KEYWORDS,
     REWARD_SPENDING_KEYWORDS,
+    impulse_clarification_copy,
     needs_impulse_clarification,
     resolve_impulsif,
     stamp_planned_cue,
 )
 from nature_rules import refine_sifat_from_context
-from yfd_taxonomy import attach_taxonomy_flags
+from yfd_taxonomy import applies_impulsif, applies_need_want, attach_taxonomy_flags
 
 load_dotenv()
 
@@ -293,19 +295,20 @@ def detect_mood_in_text(text: str) -> str | None:
 
 
 def normalize_taxonomy(parsed: Dict[str, Any]) -> Dict[str, Any]:
-    """Selaraskan jenis & sifat dengan taxonomy YFD (Need/Wants + jenis v1.3)."""
+    """Selaraskan jenis & sifat dengan taxonomy YFD v1.8 (Need/Wants hanya Pengeluaran)."""
     jenis = str(parsed.get("jenis", "Pengeluaran")).strip()
-    sifat = str(parsed.get("sifat", "Need")).strip()
+    sifat_raw = parsed.get("sifat")
+    sifat = str(sifat_raw).strip() if sifat_raw is not None else ""
     sifat_lower = sifat.lower()
 
     if sifat_lower in {"saving/investement", "saving/investment", "saving", "investasi", "investment"}:
         parsed["jenis"] = "Saving/Investment"
-        parsed["sifat"] = "Need"
+        parsed["sifat"] = None
     elif sifat_lower in {"donation", "donasi", "sedekah", "persembahan"}:
         parsed["jenis"] = "Pengeluaran"
         parsed["kategori"] = "Sosial & Keluarga"
         parsed["sifat"] = "Need"
-    elif sifat not in VALID_SIFAT:
+    elif sifat and sifat not in VALID_SIFAT:
         parsed["sifat"] = "Wants" if sifat_lower in {"want", "wants"} else "Need"
 
     if jenis not in VALID_JENIS:
@@ -325,7 +328,9 @@ def normalize_taxonomy(parsed: Dict[str, Any]) -> Dict[str, Any]:
         else:
             parsed["jenis"] = "Pengeluaran"
 
-    if parsed["sifat"] not in VALID_SIFAT:
+    if not applies_need_want(str(parsed.get("jenis") or "")):
+        parsed["sifat"] = None
+    elif parsed.get("sifat") not in VALID_SIFAT:
         parsed["sifat"] = "Need"
 
     return parsed
@@ -398,9 +403,8 @@ async def prompt_impulse_clarification(
     user_id: int,
     *,
     intro: str,
-    from_receipt: bool = False,
+    prompt: str,
 ) -> None:
-    prompt = IMPULSE_PROMPT_RECEIPT_TEXT if from_receipt else IMPULSE_PROMPT_TEXT
     await message.reply_text(
         intro + "\n\n" + prompt,
         reply_markup=build_impulse_keyboard(),
@@ -426,16 +430,15 @@ async def queue_impulse_clarification(
         "basic_mode": basic_mode,
         "from_receipt": from_receipt,
     }
-    intro = (
-        "Struk sudah kebaca. Karena foto biasanya tanpa keterangan impulsif, aku perlu memastikan dulu:"
-        if from_receipt
-        else "Transaksi sudah kebaca. Untuk jajan/cemilan, aku perlu memastikan dulu:"
+    intro, prompt = impulse_clarification_copy(
+        str(parsed.get("jenis") or ""),
+        from_receipt=from_receipt,
     )
     await prompt_impulse_clarification(
         message,
         user_id,
         intro=intro,
-        from_receipt=from_receipt,
+        prompt=prompt,
     )
 
 
@@ -881,14 +884,21 @@ def normalize_ai_result(data: Dict[str, Any], source_text: str = "") -> Dict[str
         raise ValueError("invalid_jenis")
     if not str(data.get("kategori", "")).strip():
         raise ValueError("invalid_kategori")
-    if data["sifat"] not in VALID_SIFAT:
-        raise ValueError("invalid_sifat")
+    if applies_need_want(str(data.get("jenis") or "")):
+        if data.get("sifat") not in VALID_SIFAT:
+            raise ValueError("invalid_sifat")
+    else:
+        data["sifat"] = None
     mood = normalize_mood(str(data["mood"]))
     if not mood:
         raise ValueError("invalid_mood")
     data["mood"] = mood
-    if data["impulsif"] not in VALID_IMPULSIF:
-        raise ValueError("invalid_impulsif")
+    if applies_impulsif(str(data.get("jenis") or "")):
+        if data.get("impulsif") not in VALID_IMPULSIF:
+            # AI boleh kosong; finalize_parsed_transaction yang resolve.
+            data["impulsif"] = "No"
+    else:
+        data["impulsif"] = None
 
     raw_clarification = data.get("needs_clarification", False)
     data["needs_clarification"] = (
@@ -1049,6 +1059,14 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
     if isinstance(flags, list) and flags:
         pretty = ", ".join(flag_labels.get(str(f), str(f)) for f in flags)
         flag_line = f"Flag taxonomy: {pretty}\n"
+    sifat = parsed.get("sifat")
+    sifat_line = f"Sifat: {sifat}\n" if applies_need_want(str(parsed.get("jenis") or "")) and sifat else ""
+    impulsif = parsed.get("impulsif")
+    impulsif_line = (
+        f"Impulsif: {impulsif}\n"
+        if applies_impulsif(str(parsed.get("jenis") or "")) and impulsif in {"Yes", "No"}
+        else ""
+    )
     return (
         f"Aku baca transaksi untuk {greeting_name} seperti ini:\n"
         f"{date_line}"
@@ -1057,9 +1075,9 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
         f"Jenis: {parsed['jenis']}\n"
         f"Kategori: {parsed['kategori']}\n"
         f"Prescription Bucket: {format_prescription_bucket(parsed)}\n"
-        f"Sifat: {parsed['sifat']}\n"
+        f"{sifat_line}"
         f"Mood: {parsed['mood']}\n"
-        f"Impulsif: {parsed['impulsif']}\n"
+        f"{impulsif_line}"
         f"{flag_line}"
         f"{warn_block}\n"
         "Sudah benar?"
@@ -1067,22 +1085,46 @@ def format_transaction_preview(parsed: Dict[str, Any], greeting_name: str) -> st
 
 
 def attach_prescription_bucket(parsed: Dict[str, Any]) -> bool:
-    """Attach canonical Laravel category/bucket before Telegram confirmation."""
+    """Attach prescription bucket. Kategori Layer 1 dari bot tidak diganti Laravel."""
+    bot_category = str(parsed.get("kategori") or "").strip()
     ok, result, error = resolve_transaction_bucket(parsed)
     if not ok:
         logger.warning("Bucket preview belum tersedia: %s", error)
-        parsed["bucket"] = None if parsed.get("jenis") in {
-            "Pemasukan",
-            "Kewajiban Pajak",
-            "Piutang Keluar",
-            "Piutang Masuk",
-            "Utang Masuk",
-            "Utang Keluar",
-        } else "Belum dapat dicek"
+        # Fallback lokal agar preview tetap bisa jalan tanpa API.
+        try:
+            from bucket_resolver import resolve_bucket
+
+            parsed["bucket"] = resolve_bucket(parsed)
+        except Exception:
+            parsed["bucket"] = None if parsed.get("jenis") in {
+                "Pemasukan",
+                "Kewajiban Pajak",
+                "Piutang Keluar",
+                "Piutang Masuk",
+                "Utang Masuk",
+                "Utang Keluar",
+            } else "Belum dapat dicek"
         return False
 
-    parsed["kategori"] = result.get("category") or parsed["kategori"]
+    laravel_category = str(result.get("category") or "").strip()
+    # RULES LOCK: bot kategori menang. Laravel hanya boleh canonical alias / isi dump.
+    from context_rules import _is_dump_category
+
+    if _is_dump_category(bot_category) and laravel_category:
+        parsed["kategori"] = laravel_category
+    else:
+        parsed["kategori"] = bot_category or laravel_category
     parsed["bucket"] = result.get("bucket")
+    # Jika Laravel mengubah kategori secara diam-diam, bucket lokal lebih selaras.
+    if parsed["kategori"] == bot_category and bot_category:
+        try:
+            from bucket_resolver import resolve_bucket
+
+            local_bucket = resolve_bucket(parsed)
+            if local_bucket:
+                parsed["bucket"] = local_bucket
+        except Exception:
+            pass
     return True
 
 
@@ -1199,10 +1241,18 @@ async def save_transaction(
         f"Jenis: {parsed['jenis']}\n"
         f"Kategori: {parsed['kategori']}\n"
         f"Prescription Bucket: {format_prescription_bucket(parsed)}\n"
-        f"Sifat: {parsed['sifat']}\n"
-        f"Mood: {parsed['mood']}\n"
-        f"Impulsif: {parsed['impulsif']}"
-        f"{portal_hint}"
+        + (
+            f"Sifat: {parsed['sifat']}\n"
+            if applies_need_want(str(parsed.get("jenis") or "")) and parsed.get("sifat")
+            else ""
+        )
+        + f"Mood: {parsed['mood']}\n"
+        + (
+            f"Impulsif: {parsed['impulsif']}"
+            if applies_impulsif(str(parsed.get("jenis") or "")) and parsed.get("impulsif") in {"Yes", "No"}
+            else ""
+        )
+        + f"{portal_hint}"
     )
 
 
@@ -1221,6 +1271,7 @@ async def process_note_input(
     mood_resolved: bool = False,
     clarification_resolved: bool = False,
     from_receipt: bool = False,
+    clarify_rounds: int = 0,
 ) -> None:
     text = text.strip()
     if user_id is None:
@@ -1266,12 +1317,17 @@ async def process_note_input(
             settle_q = social_settle_target_question(parsed, text, settle_rows)
             if settle_q:
                 question = settle_q
-        should_ask = question and (
-            not clarification_resolved
-            or parsed.get("needs_clarification") is True
-            or (social_q is not None and question == social_q)
-            or settle_q is not None
-        )
+        # Ambigu → wajib tanya sebelum preview/bucket final. Jangan tebak.
+        should_ask = bool(question)
+        pending_rounds = int((PENDING_CLARIFICATIONS.get(user_id) or {}).get("rounds") or 0)
+        rounds = max(int(clarify_rounds or 0), pending_rounds)
+        if clarification_resolved:
+            rounds = max(rounds, 1)
+        # Struk foto: maksimal 1 putaran (hindari tanya 'perlengkapan' lalu 'mayoritas').
+        max_clarify_rounds = 1 if from_receipt else 2
+        if should_ask and clarification_resolved and rounds >= max_clarify_rounds:
+            # Jawaban masih ambigu setelah batas putaran — jangan jebak user; lanjut preview.
+            should_ask = False
         if should_ask:
             PENDING_CONFIRMATIONS.pop(user_id, None)
             PENDING_MOOD_WAIT.pop(user_id, None)
@@ -1281,6 +1337,7 @@ async def process_note_input(
                 "source_text": text,
                 "settle_choices": settle_rows if settle_q else [],
                 "from_receipt": from_receipt,
+                "rounds": rounds + 1,
             }
             social_jenis = jenis_now in {
                 "Piutang Keluar",
@@ -1376,7 +1433,10 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "/panduan - panduan First Aid (ringkas + link web)\n"
         "/uji - tes kasus ambigu taksonomi (sekali jalan)\n"
         "/uji2 - tes cakupan data baru (semua jenis/kategori)\n"
-        "/uji3 - tes piutang & utang (4 arah likuiditas sosial)\n\n"
+        "/uji3 - tes piutang & utang (4 arah likuiditas sosial)\n"
+        "/uji4 - tes grey area, perhutangan & flag klinis (v1.8)\n"
+        "/uji5 - tes 500 kasus mega (grey/utang/flags/harian)\n"
+        "/cobain <teks> - simulasi klasifikasi offline (tidak disimpan)\n\n"
         "Login dashboard:\n"
         "• **/web** di bot → klik link (tanpa isi form)\n"
         "• Atau buka halaman portal + email & kode lisensi\n\n"
@@ -1643,6 +1703,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             user_id=user_id,
             clarification_resolved=True,
             from_receipt=bool(pending.get("from_receipt")),
+            clarify_rounds=int(pending.get("rounds") or 1),
         )
         return
 
@@ -1759,34 +1820,16 @@ async def mood_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     except Exception:
         pass
 
-    if pending["mode"] == "source_text":
-        combined_input = f"{pending['source_text']}\nmood: {mood_value}"
-        await process_note_input(
-            query.message,
-            combined_input,
-            user_id=user_id,
-            mood_resolved=True,
-            from_receipt=from_receipt,
-        )
-        return
-
-    parsed = pending["parsed"]
-    parsed["mood"] = mood_value
-    finalize_parsed_transaction(
-        parsed,
-        pending.get("source_text", ""),
-        trust_ai_impulsif=not pending.get("basic_mode", True),
-    )
-    attach_prescription_bucket(parsed)
-    greeting_name = pending["greeting_name"]
-    basic_mode = pending.get("basic_mode", False)
-    await present_transaction_preview(
+    # Selalu parse ulang dari teks sumber + mood — jangan pakai hasil AI lama yang salah.
+    source = str(pending.get("source_text") or "").strip()
+    if not source and pending.get("mode") == "parsed":
+        source = str((pending.get("parsed") or {}).get("keterangan") or "").strip()
+    combined_input = f"{source}\nmood: {mood_value}".strip()
+    await process_note_input(
         query.message,
-        user_id,
-        parsed,
-        greeting_name,
-        source_text=pending.get("source_text", ""),
-        basic_mode=basic_mode,
+        combined_input,
+        user_id=user_id,
+        mood_resolved=True,
         from_receipt=from_receipt,
     )
 
@@ -2179,6 +2222,123 @@ async def uji3_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await _run_uji_pack(update, pack="sosial", intro="Menjalankan paket uji piutang & utang...")
 
 
+async def uji4_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
+    user = update.effective_user
+    user_id = user.id if user else 0
+    if not user_id or not is_license_active_for_user(user_id):
+        await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    await update.message.reply_text(
+        "Paket uji grey area & perhutangan (offline).\n\n"
+        "Coba manual (tidak disimpan):\n"
+        "/cobain beli tumbler 150rb\n"
+        "/cobain utang ke ayuti 1jt\n"
+        "/cobain pinjamin ayuti 500k dadakan buat kerja, minggu depan\n"
+        "/cobain bayar cicilan pinjol 500rb\n"
+        "/cobain dibalikin ayuti 500k\n"
+        "/cobain ganti HP utama rusak 4jt"
+    )
+    await _run_uji_pack(
+        update,
+        pack="grey",
+        intro="Menjalankan skor paket uji...",
+    )
+
+
+async def uji5_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
+    user = update.effective_user
+    user_id = user.id if user else 0
+    if not user_id or not is_license_active_for_user(user_id):
+        await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    await update.message.reply_text(
+        "Paket uji 500 kasus (mega) — offline, tidak menyimpan transaksi.\n"
+        "Bisa 10–30 detik. Untuk coba 1 teks: /cobain <teks>"
+    )
+    await _run_uji_pack(
+        update,
+        pack="mega",
+        intro="Menjalankan 500 kasus...",
+    )
+
+
+def format_cobain_result(text: str, parsed: Dict[str, Any]) -> str:
+    """Ringkasan klasifikasi offline untuk /cobain — tanpa simpan transaksi."""
+    jenis = str(parsed.get("jenis") or "—")
+    sifat = parsed.get("sifat")
+    impulsif = parsed.get("impulsif")
+    flags = parsed.get("taxonomy_flags") or []
+    flag_labels = {
+        "risk_alert": "Risk Alert (Pinjol)",
+        "late_pattern": "Pola Keterlambatan",
+        "life_event": "Peristiwa Besar",
+    }
+    flag_txt = ", ".join(flag_labels.get(str(f), str(f)) for f in flags) if flags else "(tidak ada)"
+    sifat_txt = str(sifat) if applies_need_want(jenis) and sifat else "(tidak dievaluasi / di luar scope)"
+    impulsif_txt = (
+        str(impulsif)
+        if applies_impulsif(jenis) and impulsif in {"Yes", "No"}
+        else "(tidak dievaluasi / di luar scope)"
+    )
+    ask = str(parsed.get("clarification_question") or "").strip()
+    ask_line = f"\nKlarifikasi bot:\n{ask}" if ask else "\nKlarifikasi bot: (tidak perlu)"
+    bucket = parsed.get("bucket")
+    bucket_txt = str(bucket) if bucket is not None else "—"
+    return (
+        "🧪 Simulasi offline (TIDAK disimpan)\n"
+        f"Input: {text}\n\n"
+        f"Jenis: {jenis}\n"
+        f"Kategori: {parsed.get('kategori') or '—'}\n"
+        f"Bucket: {bucket_txt}\n"
+        f"Sifat (Need/Want): {sifat_txt}\n"
+        f"Impulsif: {impulsif_txt}\n"
+        f"Flag taxonomy: {flag_txt}\n"
+        f"Nominal: Rp{int(parsed.get('nominal') or 0):,}"
+        f"{ask_line}\n\n"
+        "Tips: /uji4 untuk skor paket, atau /catat untuk simpan beneran."
+    )
+
+
+async def cobain_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
+    user = update.effective_user
+    user_id = user.id if user else 0
+    if not user_id or not is_license_active_for_user(user_id):
+        await update.message.reply_text(ACTIVATE_HELP_TEXT, parse_mode="Markdown")
+        return
+
+    raw = " ".join(context.args).strip() if context.args else ""
+    if not raw and update.message.text:
+        # Support "/cobain teks..." when args parsing fails on some clients.
+        parts = update.message.text.split(maxsplit=1)
+        raw = parts[1].strip() if len(parts) > 1 else ""
+    if not raw:
+        await update.message.reply_text(
+            "Pakai: /cobain <teks transaksi>\n\n"
+            "Contoh:\n"
+            "/cobain utang ke ayuti 1jt\n"
+            "/cobain pinjamin ayuti 500k dadakan buat kerja, minggu depan\n"
+            "/cobain beli iphone 15jt"
+        )
+        return
+
+    try:
+        parsed = classify_offline(raw)
+    except Exception as exc:
+        logger.exception("Gagal /cobain: %s", exc)
+        await update.message.reply_text("Gagal menjalankan simulasi. Coba lagi sebentar.")
+        return
+
+    await update.message.reply_text(format_cobain_result(raw, parsed))
+
+
 async def _run_uji_pack(update: Update, *, pack: str, intro: str) -> None:
     await update.message.reply_text(intro)
     try:
@@ -2387,6 +2547,9 @@ async def post_init(application) -> None:
             BotCommand("kuota", "Sisa kuota AI"),
             BotCommand("hapuskilat", "Hapus transaksi terakhir"),
             BotCommand("activate", "Aktivasi lisensi"),
+            BotCommand("cobain", "Simulasi klasifikasi (tidak disimpan)"),
+            BotCommand("uji4", "Uji grey area & perhutangan"),
+            BotCommand("uji5", "Uji 500 kasus mega"),
         ]
     )
 
@@ -2409,6 +2572,9 @@ def main() -> None:
     app.add_handler(CommandHandler("uji", uji_handler))
     app.add_handler(CommandHandler("uji2", uji2_handler))
     app.add_handler(CommandHandler("uji3", uji3_handler))
+    app.add_handler(CommandHandler("uji4", uji4_handler))
+    app.add_handler(CommandHandler("uji5", uji5_handler))
+    app.add_handler(CommandHandler("cobain", cobain_handler))
     app.add_handler(CallbackQueryHandler(mood_callback_handler, pattern=r"^mood:"))
     app.add_handler(CallbackQueryHandler(impulse_callback_handler, pattern=r"^impulse:"))
     app.add_handler(CallbackQueryHandler(confirm_callback_handler, pattern=r"^confirm:"))

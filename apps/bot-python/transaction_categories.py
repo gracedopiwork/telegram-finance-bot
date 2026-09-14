@@ -1,4 +1,4 @@
-﻿"""Daftar kategori resmi YFD — closed list (YFD AI Taxonomy v1.3)."""
+﻿"""Daftar kategori resmi YFD — closed list (YFD AI Taxonomy v1.8)."""
 
 from __future__ import annotations
 
@@ -237,16 +237,16 @@ def build_system_prompt_rules() -> str:
     jenis_list = " | ".join(f'"{j}"' for j in VALID_JENIS)
 
     return f"""
-Anda adalah parser keuangan pribadi dengan TAXONOMY TERTUTUP (YFD AI Taxonomy v1.3).
+Anda adalah parser keuangan pribadi dengan TAXONOMY TERTUTUP (YFD AI Taxonomy v1.8).
 Ubah input user menjadi JSON VALID dengan schema berikut:
 {{
   "keterangan": string,
   "nominal": integer,
   "jenis": {jenis_list},
   "kategori": string,
-  "sifat": "Need" | "Wants",
+  "sifat": "Need" | "Wants" | null,
   "mood": "Happy" | "Neutral" | "Sad" | "Stressed" | "Angry" | "Tired",
-  "impulsif": "Yes" | "No",
+  "impulsif": "Yes" | "No" | null,
   "tanggal": "YYYY-MM-DD" | null,
   "needs_clarification": boolean,
   "clarification_question": string | null
@@ -254,7 +254,10 @@ Ubah input user menjadi JSON VALID dengan schema berikut:
 
 SCOPE AI (§3.1) — BOLEH:
   - Pilih SATU kategori dari closed list 17 pengeluaran / 12 pemasukan.
-  - Tentukan jenis (6 jenis resmi), sifat Need/Wants, mood, impulsif.
+  - Tentukan jenis (8 jenis resmi), mood (wajib semua jenis).
+  - sifat Need/Wants HANYA untuk jenis Pengeluaran; selain itu isi null.
+  - impulsif Yes/No untuk Pengeluaran, Piutang Keluar, dan Utang Masuk; selain itu isi null
+    (Piutang Masuk / Utang Keluar / Pemasukan / Kewajiban Pajak / Saving — tidak dievaluasi).
   - Untuk grey area: set needs_clarification=true + pertanyaan singkat (bahasa Indonesia).
 
 SCOPE AI (§3.2) — DILARANG:
@@ -263,6 +266,7 @@ SCOPE AI (§3.2) — DILARANG:
     Bucket dihitung sistem dari mapping + sifat — BUKAN oleh Anda.
   - Mengasumsikan konteks grey area tanpa konfirmasi.
   - Menentukan impulsif dari nominal (Impulsif ≠ nominal besar).
+  - Mengisi Need/Want untuk jenis selain Pengeluaran.
 
 CATATAN:
 {policy_block}
@@ -307,8 +311,8 @@ Aturan:
    - "utang ke [nama]" tanpa konteks = AMBIGU → needs_clarification (meminjamkan vs berhutang).
    - Hasil investasi (bunga/dividen cair) = Pemasukan, BUKAN Saving/Investment.
    - Donasi/sedekah/zakat/qurban = Pengeluaran + Sosial & Keluarga (bukan Piutang).
-4) sifat: HANYA Need atau Wants.
-   - Need: kebutuhan hidup/kerja fungsional, tagihan, proteksi, cicilan, hasil/pemasukan.
+4) sifat: HANYA untuk Pengeluaran — nilai Need atau Wants. Jenis lain → sifat=null.
+   - Need: kebutuhan hidup/kerja fungsional, tagihan, proteksi, cicilan.
    - Wants: diskresioner, reward, hiburan, jajan, belanja gaya hidup.
 5) kategori (WAJIB dari closed list):
    - Makanan & Minuman: makan harian, jajan, kopi, boba, GoFood/GrabFood.

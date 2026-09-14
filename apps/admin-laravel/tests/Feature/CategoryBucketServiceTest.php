@@ -205,6 +205,8 @@ class CategoryBucketServiceTest extends TestCase
             'Gojek ke klien untuk bisnis 30rb',
             'Ojek ke rapat client 25rb',
             'Grab untuk bisnis pitching investor 50rb',
+            "grab 45rb\nKlarifikasi user: Bisnis",
+            "grab 45rb\nKlarifikasi user: Kerja",
         ] as $notes) {
             $this->assertBucket(
                 'Future Building',
@@ -322,6 +324,46 @@ class CategoryBucketServiceTest extends TestCase
         ]);
         $this->assertDatabaseCount('bot_transactions', 0);
         $this->assertSame($mappingCount, CategoryBucketMapping::query()->count());
+    }
+
+    public function test_api_preview_spagethi_makan_siang_is_food_not_health(): void
+    {
+        config(['services.bot.internal_api_token' => 'test-token']);
+
+        $response = $this->withToken('test-token')->postJson(
+            '/api/bot/transactions/preview',
+            [
+                'type' => TransactionTaxonomy::TYPE_EXPENSE,
+                'category' => 'Kesehatan & Kebersihan Diri',
+                'sub_category' => '-',
+                'nature' => 'Need',
+                'notes' => 'Spagethi makan siang',
+            ]
+        );
+
+        $response->assertOk()->assertJson([
+            'ok' => true,
+            'category' => 'Makanan & Minuman',
+            'bucket' => 'Essential Living',
+        ]);
+    }
+
+    public function test_api_preview_spa_alone_still_health(): void
+    {
+        config(['services.bot.internal_api_token' => 'test-token']);
+
+        $response = $this->withToken('test-token')->postJson(
+            '/api/bot/transactions/preview',
+            [
+                'type' => TransactionTaxonomy::TYPE_EXPENSE,
+                'category' => 'Lain-lain',
+                'sub_category' => '-',
+                'nature' => 'Wants',
+                'notes' => 'spa 500rb',
+            ]
+        );
+
+        $response->assertOk()->assertJsonPath('category', 'Kesehatan & Kebersihan Diri');
     }
 
     public function test_api_save_returns_same_canonical_bucket_as_preview(): void

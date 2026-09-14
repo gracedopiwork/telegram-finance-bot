@@ -39,6 +39,12 @@ _MONTHS: dict[str, int] = {
 _DATE_PREFIX = r"(?:tgl|tanggal|tgl\.|tgl:)"
 _MONTH_NAMES = "|".join(sorted(_MONTHS.keys(), key=len, reverse=True))
 
+# Setelah kandidat tanggal bertitik/slash: suffix uang → bukan tanggal (14.5k, 26.4 rb).
+_MONEY_SUFFIX_AFTER_DATE = re.compile(
+    r"^\s*(?:rb|br|ribu|k|jt|ht|jta|juta|milyun|miliar)\b",
+    re.IGNORECASE,
+)
+
 
 def _safe_date(year: int, month: int, day: int) -> date | None:
     try:
@@ -50,6 +56,35 @@ def _safe_date(year: int, month: int, day: int) -> date | None:
 def _resolve_year(month: int, day: int, *, today: date) -> int:
     """Tanpa tahun eksplisit: selalu pakai tahun berjalan (Asia/Jakarta)."""
     return today.year
+
+
+def _normalize_year(year_raw: int) -> int:
+    return year_raw + 2000 if year_raw < 100 else year_raw
+
+
+def _interpret_slash_parts(first: int, second: int, year: int) -> date | None:
+    """
+    Interpretasi a/b[/yyyy] untuk user ID + input HP Amerika.
+
+    - Jika salah satu > 12, yang ≤12 pasti bulan → otomatis jelas.
+      8/19/26 → 19 Agu (MM/DD), 19/8/26 → 19 Agu (DD/MM)
+    - Jika keduanya ≤12: default DD/MM (konvensi Indonesia).
+      1/9 → 1 Sep, 9/1 → 9 Jan
+    """
+    if first < 1 or second < 1:
+        return None
+
+    # Ambigu tidak mungkin: salah satu > 12
+    if first > 12 and second <= 12:
+        return _safe_date(year, second, first)  # DD/MM
+    if second > 12 and first <= 12:
+        return _safe_date(year, first, second)  # MM/DD
+
+    # Keduanya bisa jadi bulan → DD/MM (ID)
+    if first <= 12 and second <= 12:
+        return _safe_date(year, second, first)
+
+    return None
 
 
 def _to_recorded_at(d: date, *, now: datetime | None = None, tz: ZoneInfo = DEFAULT_TZ) -> datetime:
@@ -104,21 +139,21 @@ def extract_transaction_date(
         if d is not None:
             return _to_recorded_at(d, now=local_now, tz=tz)
 
-    # tgl 2/7, tanggal 2-7-2026, tgl 02.07.26
+    # tgl 2/7, tanggal 2-7-2026, tgl 02.07.26, tgl 8/19/26 (MM/DD bila hari >12)
     numeric = re.search(
         rf"\b{_DATE_PREFIX}\s*[:.]?\s*(\d{{1,2}})[/.\-](\d{{1,2}})(?:[/.\-](\d{{2,4}}))?\b",
         lower,
         flags=re.IGNORECASE,
     )
     if numeric:
-        day = int(numeric.group(1))
-        month = int(numeric.group(2))
-        if numeric.group(3):
-            year_raw = int(numeric.group(3))
-            year = year_raw + 2000 if year_raw < 100 else year_raw
-        else:
-            year = _resolve_year(month, day, today=today)
-        d = _safe_date(year, month, day)
+        first = int(numeric.group(1))
+        second = int(numeric.group(2))
+        year = (
+            _normalize_year(int(numeric.group(3)))
+            if numeric.group(3)
+            else today.year
+        )
+        d = _interpret_slash_parts(first, second, year)
         if d is not None:
             return _to_recorded_at(d, now=local_now, tz=tz)
 
@@ -174,30 +209,48 @@ def extract_bare_indonesian_date(
     tz: ZoneInfo = DEFAULT_TZ,
 ) -> datetime | None:
     """
-    Tanggal numerik DD/MM di mana pun dalam catatan — selalu hari dulu (konvensi ID).
-    Contoh: '1/9 terima gaji 5k' dan 'terima gaji 1/9 5k' → 1 September.
-    '9/1 ...' → 9 Januari (bukan 1 September).
+    Tanggal numerik di mana pun dalam catatan.
+
+    Default DD/MM (konvensi ID): '1/9' → 1 Sep, '9/1' → 9 Jan.
+    Jika salah satu bagian >12 → otomatis MM/DD atau DD/MM yang valid:
+      '8/19/26' → 19 Agu 2026 (bukan gagal lalu jadi hari ini).
+
+    Jangan salah baca desimal uang sebagai tanggal:
+      'bayar laundry 14.5k 09/09' → 9 Sep (bukan 14 Mei dari 14.5).
     """
     if not text or not text.strip():
         return None
     local_now = (now or datetime.now(tz)).astimezone(tz)
     today = local_now.date()
-    # Ambil pola tanggal pertama yang valid sebagai DD/MM[/YYYY].
+    raw = text.strip()
+
+    slash_hit: datetime | None = None
     for match in re.finditer(
-        r"(?<!\d)(\d{1,2})[/.\-](\d{1,2})(?:[/.\-](\d{2,4}))?(?!\d)",
-        text.strip(),
+        r"(?<!\d)(\d{1,2})([/.\-])(\d{1,2})(?:[/.\-](\d{2,4}))?(?!\d)",
+        raw,
     ):
-        day = int(match.group(1))
-        month = int(match.group(2))
-        if match.group(3):
-            year_raw = int(match.group(3))
-            year = year_raw + 2000 if year_raw < 100 else year_raw
+        # 14.5k / 26.4rb = nominal, bukan tanggal
+        if _MONEY_SUFFIX_AFTER_DATE.match(raw[match.end() :]):
+            continue
+
+        first = int(match.group(1))
+        second = int(match.group(3))
+        sep = match.group(2)
+        if match.group(4):
+            year = _normalize_year(int(match.group(4)))
         else:
-            year = _resolve_year(month, day, today=today)
-        d = _safe_date(year, month, day)
-        if d is not None:
-            return _to_recorded_at(d, now=local_now, tz=tz)
-    return None
+            year = today.year
+        d = _interpret_slash_parts(first, second, year)
+        if d is None:
+            continue
+        recorded = _to_recorded_at(d, now=local_now, tz=tz)
+        # Utamakan slash-date (09/09) atas titik yang ambigu; tetap izinkan 31.08.26
+        if sep == "/":
+            return recorded
+        if slash_hit is None:
+            slash_hit = recorded
+
+    return slash_hit
 
 
 def apply_transaction_date(

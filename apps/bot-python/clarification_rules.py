@@ -1,5 +1,10 @@
 """Deteksi transaksi yang perlu ditanya balik sebelum diklasifikasikan.
 
+PRINSIP YFD (wajib):
+  Jika tujuan/konteks masih ambigu sehingga bucket prescription belum bisa
+  ditentukan dengan yakin — JANGAN menebak. Tanya klarifikasi dulu.
+  Baru setelah jawaban punya marker tujuan yang jelas, lanjut preview/simpan.
+
 Grey area §2.18 / §3.3 — AI WAJIB konfirmasi konteks sebelum bucket final.
 """
 
@@ -113,6 +118,28 @@ def _is_social_open_details_question(question: str) -> bool:
     )
 
 
+def _is_multi_item_category_question(question: str) -> bool:
+    """AI sering tanya pecah kategori / mayoritas di struk multi-item — UX buruk, tebak dominant saja."""
+    q = (question or "").lower()
+    if not q:
+        return False
+    return any(
+        hint in q
+        for hint in (
+            "mayoritas",
+            "kategori utama",
+            "perlu dipecah",
+            "dipecah",
+            "mencakup",
+            "beberapa kategori",
+            "campuran kategori",
+            "yang dimaksud",
+            "item lainnya",
+            "atau perlu dipecah",
+        )
+    )
+
+
 def clarification_question(parsed: dict[str, Any], source_text: str) -> str | None:
     """Return a concise follow-up question when purpose changes the YFD bucket."""
     text = f"{source_text} {parsed.get('keterangan', '')}".lower()
@@ -121,6 +148,7 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
     gift = is_gift_expense(text) or (
         category == "hadiah" and jenis in {"", "Pengeluaran"}
     )
+    already_clarified = "klarifikasi user:" in (source_text or "").lower()
 
     detected_social = detect_social_liquidity_jenis(text) or detect_social_liquidity_jenis(source_text)
     settle = detected_social in {"Utang Keluar", "Piutang Masuk"} or jenis in {
@@ -129,7 +157,13 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
     }
 
     ai_question = str(parsed.get("clarification_question") or "").strip()
+    # Setelah user menjawab 1x: jangan biarkan AI menambah pertanyaan baru
+    # (kasus struk: tanya 'perlengkapan' lalu tanya 'mayoritas' lagi).
+    if already_clarified:
+        ai_question = ""
     if parsed.get("needs_clarification") is True and ai_question:
+        if _is_multi_item_category_question(ai_question):
+            ai_question = ""
         if settle and _is_social_open_details_question(ai_question):
             ai_question = ""
         if gift and (
@@ -200,7 +234,20 @@ def clarification_question(parsed: dict[str, Any], source_text: str) -> str | No
 
 
 def _has_purpose(text: str, markers: tuple[str, ...]) -> bool:
-    return any(marker in text for marker in markers) or "klarifikasi user:" in text
+    """True hanya jika marker tujuan muncul di teks / jawaban klarifikasi.
+
+    Jangan anggap cukup karena ada baris 'Klarifikasi user:' — jawaban kosong
+    atau tidak relevan tetap harus ditanya lagi.
+    """
+    lower = (text or "").lower()
+    if any(marker in lower for marker in markers):
+        return True
+    # Cek khusus blok klarifikasi (jawaban user) agar marker di situ menang.
+    idx = lower.find("klarifikasi user:")
+    if idx >= 0:
+        clar = lower[idx + len("klarifikasi user:") :]
+        return any(marker in clar for marker in markers)
+    return False
 
 
 def _is_ambiguous_utang_arah(text: str, category: str) -> str | None:
@@ -264,13 +311,28 @@ def _is_generic_instrument(text: str, category: str) -> str | None:
     return None if _has_purpose(text, purpose) else "alat_musik"
 
 
+_COFFEE_VENUE_MARKERS = (
+    "kopi",
+    "coffee",
+    "ngopi",
+    "starbucks",
+    "coffeeshop",
+    "coffeshop",
+    "coffee shop",
+    "coffeehouse",
+    "cafe",
+    "kafe",
+    "espresso",
+    "americano",
+)
+
+
 def _is_generic_coffee(text: str, category: str) -> str | None:
-    coffee_cats = {"jajan", "makanan & minuman", "makanan dan minuman", "makan", "bisnis & karir"}
-    if category not in coffee_cats and not any(
-        w in text for w in ("kopi", "coffee", "ngopi", "starbucks")
-    ):
+    coffee_cats = {"jajan", "makanan & minuman", "makanan dan minuman", "makan", "bisnis & karir", "lain-lain", "lain lain", "lainnya"}
+    has_coffee = any(w in text for w in _COFFEE_VENUE_MARKERS)
+    if category not in coffee_cats and not has_coffee:
         return None
-    if not any(w in text for w in ("kopi", "coffee", "ngopi", "starbucks")):
+    if not has_coffee:
         return None
     purpose = (
         "kerja",
@@ -284,6 +346,8 @@ def _is_generic_coffee(text: str, category: str) -> str | None:
         "hiburan",
         "produktif",
         "produktivitas",
+        "bisnis",
+        "kantor",
     )
     return None if _has_purpose(text, purpose) else "kopi"
 
@@ -330,6 +394,19 @@ def _is_generic_transport(text: str, category: str) -> str | None:
         "dinas",
         "pitch",
         "investor",
+        # Jawaban klarifikasi tujuan (wajib / lifestyle / sosial)
+        "wajib",
+        "lifestyle",
+        "sosial",
+        "social",
+        "silahturahmi",
+        "silaturahmi",
+        "silaturrahmi",
+        "kekeluargaan",
+        "hiburan",
+        "gaya hidup",
+        "bertamu",
+        "kunjungan",
     )
     return None if _has_purpose(text, purpose) else "transport"
 

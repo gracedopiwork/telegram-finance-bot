@@ -29,6 +29,51 @@ class ClarificationRulesTests(unittest.TestCase):
         )
         self.assertIn("meeting kerja", question or "")
 
+    def test_coffee_with_empty_klarifikasi_still_asks(self) -> None:
+        """Baris 'Klarifikasi user:' saja BUKAN bukti tujuan — wajib tanya lagi."""
+        question = clarification_question(
+            {"kategori": "Makanan & Minuman", "keterangan": "Beli Kopi"},
+            "beli kopi 50rb\nKlarifikasi user: ok",
+        )
+        self.assertIsNotNone(question)
+        self.assertIn("meeting", (question or "").lower())
+
+    def test_coffee_with_kerja_klarifikasi_skips_ask(self) -> None:
+        question = clarification_question(
+            {"kategori": "Bisnis & Karir", "keterangan": "Beli Kopi"},
+            "beli kopi 50rb\nKlarifikasi user: Kerja",
+        )
+        self.assertIsNone(question)
+
+    def test_transport_with_useless_klarifikasi_still_asks(self) -> None:
+        question = clarification_question(
+            {"kategori": "Transport", "keterangan": "Grab"},
+            "grab 28rb\nKlarifikasi user: ya",
+        )
+        self.assertIsNotNone(question)
+        self.assertIn("wajib", (question or "").lower())
+
+    def test_generic_cafe_coffeshop_requires_clarification(self) -> None:
+        for text in (
+            "ke coffeshop 68 rb",
+            "ke cafe 68rb",
+            "ke kafe 45rb",
+            "coffeeshop 50k",
+        ):
+            question = clarification_question(
+                {"kategori": "Makanan & Minuman", "keterangan": text},
+                text,
+            )
+            self.assertIsNotNone(question, text)
+            self.assertIn("meeting", (question or "").lower(), text)
+
+    def test_cafe_with_meeting_skips_coffee_clarification(self) -> None:
+        question = clarification_question(
+            {"kategori": "Bisnis & Karir", "keterangan": "ke coffeshop untuk meeting"},
+            "ke coffeshop 68 rb untuk meeting",
+        )
+        self.assertIsNone(question)
+
     def test_generic_piano_purchase_requires_clarification(self) -> None:
         question = clarification_question(
             {"kategori": "Alat Musik", "keterangan": "Beli Piano"},
@@ -408,6 +453,40 @@ class ClarificationRulesTests(unittest.TestCase):
         question = clarification_question(
             {"kategori": "Tempat Tinggal", "keterangan": "Ganti tumbler rusak"},
             "beli tumbler karena tumbler lama rusak 200 rb",
+        )
+        self.assertIsNone(question)
+
+    def test_ai_majority_category_question_suppressed(self) -> None:
+        """Struk multi-item: AI jangan tanya mayoritas / pecah kategori."""
+        question = clarification_question(
+            {
+                "kategori": "Makanan & Minuman",
+                "jenis": "Pengeluaran",
+                "needs_clarification": True,
+                "clarification_question": (
+                    "Transaksi ini mencakup air minum (Makanan & Minuman) dan "
+                    "perlengkapan rumah tangga (Tempat Tinggal). "
+                    "Apakah mayoritas nominal untuk perlengkapan rumah tangga? "
+                    "Jika ya, kategori utama = Tempat Tinggal."
+                ),
+            },
+            "Shampo 27.9k\nAir 23.4k\nTas belanja 6.5k",
+        )
+        self.assertIsNone(question)
+
+    def test_after_user_klarifikasi_ai_cannot_ask_second_round(self) -> None:
+        """Kasus Catherina: jawab 'perlengkapan rumah tangga' → jangan nanya lagi."""
+        question = clarification_question(
+            {
+                "kategori": "Tempat Tinggal",
+                "jenis": "Pengeluaran",
+                "needs_clarification": True,
+                "clarification_question": (
+                    "Apakah 'perlengkapan' yang dimaksud adalah perlengkapan "
+                    "rumah tangga atau item lainnya?"
+                ),
+            },
+            "struk Alfamart\nKlarifikasi user: perlengkapan rumah tangga",
         )
         self.assertIsNone(question)
 

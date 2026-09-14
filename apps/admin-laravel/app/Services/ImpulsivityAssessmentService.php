@@ -6,6 +6,7 @@ use App\Models\BotTransaction;
 use App\Models\FinancialBaseline;
 use App\Services\FtsaAiGuidanceService;
 use App\Support\PortalTimezone;
+use App\Support\TransactionTaxonomy;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -69,6 +70,8 @@ class ImpulsivityAssessmentService
     }
     $ftsaProfile = $this->ftsaProfile($baseline);
     $emotionalBalance = $this->emotionalBalanceScore($expenses);
+    $socialImpulse = $this->socialImpulseBreakdown($rows);
+    $taxonomyFlags = $this->taxonomyFlagSummary($rows);
 
     $monthLabel = $this->monthLabelWib($month);
     $core = [
@@ -101,6 +104,8 @@ class ImpulsivityAssessmentService
       'mood_table' => $moodTable,
       'emotional_balance' => $emotionalBalance,
       'ftsa_profile' => $ftsaProfile,
+      'social_impulse' => $socialImpulse,
+      'taxonomy_flags' => $taxonomyFlags,
     ];
 
     $guidanceContext = $this->monthlyGuidanceContext($telegramUserId, $month, $email);
@@ -191,6 +196,8 @@ class ImpulsivityAssessmentService
     }
     $ftsaProfile = $this->ftsaProfile($baseline);
     $score = $this->impulsivityScore($impulsiveRate, $impulsiveAmountShare, $impulsiveRows);
+    $socialImpulse = $this->socialImpulseBreakdown($rows);
+    $taxonomyFlags = $this->taxonomyFlagSummary($rows);
 
     $metrics = [
       'month' => $month,
@@ -207,6 +214,8 @@ class ImpulsivityAssessmentService
       'mood_table' => $moodTable,
       'emotional_balance' => $this->emotionalBalanceScore($expenses),
       'ftsa_profile' => $ftsaProfile,
+      'social_impulse' => $socialImpulse,
+      'taxonomy_flags' => $taxonomyFlags,
     ];
 
     $summaryBlock = $this->buildBehavioralSummaryFindings(
@@ -403,16 +412,16 @@ class ImpulsivityAssessmentService
 
     if ($tiredImpulsive >= 80 && (str_contains($ssdLevel, 'severe') || str_contains($archetype, 'overworker'))) {
       $profileRef = str_contains($ssdLevel, 'severe')
-        ? 'SSD '.($baseline?->ssd_level ?? 'Severe')
-        : ($ftsaProfile['archetype'] ?? 'Overworker');
+        ? 'skor SSD '.($baseline?->ssd_level ?? 'tinggi')
+        : 'pola data yang sering muncul bersama profil FTSA (pilot)';
       $insights[] = sprintf(
-        '%s%% transaksi impulsif saat lelah berkorelasi positif dengan %s.',
+        '%s%% transaksi impulsif saat lelah sering muncul bersama %s — observasi data, bukan diagnosis personal.',
         rtrim(rtrim(number_format($tiredImpulsive, 1, '.', ''), '0'), '.'),
         $profileRef,
       );
     } elseif ($ftsaProfile !== null && $impulsiveRate >= 25) {
       $insights[] = sprintf(
-        'Pola impulsif terlihat pada archetype %s — pantau pemicu emosional yang memicu belanja spontan.',
+        'Pola impulsif terlihat pada data periode ini (konteks FTSA pilot: %s). Pantau pemicu emosional yang memicu belanja spontan.',
         $ftsaProfile['archetype'],
       );
     }
@@ -515,10 +524,138 @@ class ImpulsivityAssessmentService
   }
 
   /**
+   * Taxonomy v1.8 §5.4: Piutang Keluar & Utang Masuk punya Impulsive, tanpa Need/Want.
+   * Panel terpisah — jangan dicampur ke Need×Impulsive matrix (Pengeluaran saja).
+   *
+   * @return array{has_data: bool, items: list<array{type: string, label: string, count: int, impulsive_count: int, planned_count: int, impulsive_share: float, planned_share: float, amount: int, impulsive_amount: int}>}
+   */
+  private function socialImpulseBreakdown(Collection $rows): array
+  {
+    $map = [
+      TransactionTaxonomy::TYPE_RECEIVABLE_OUT => 'Piutang Keluar',
+      TransactionTaxonomy::TYPE_PAYABLE_IN => 'Utang Masuk',
+    ];
+
+    $items = [];
+    foreach ($map as $type => $label) {
+      $set = $rows->where('type', $type);
+      $count = $set->count();
+      $impulsive = $set->filter(fn (BotTransaction $t) => (bool) $t->is_impulsive);
+      $impulsiveCount = $impulsive->count();
+      $plannedCount = max(0, $count - $impulsiveCount);
+
+      $items[] = [
+        'type' => $type,
+        'label' => $label,
+        'count' => $count,
+        'impulsive_count' => $impulsiveCount,
+        'planned_count' => $plannedCount,
+        'impulsive_share' => $count > 0 ? round(($impulsiveCount / $count) * 100, 1) : 0.0,
+        'planned_share' => $count > 0 ? round(($plannedCount / $count) * 100, 1) : 0.0,
+        'amount' => (int) $set->sum('amount'),
+        'impulsive_amount' => (int) $impulsive->sum('amount'),
+      ];
+    }
+
+    return [
+      'has_data' => collect($items)->sum('count') > 0,
+      'items' => $items,
+    ];
+  }
+
+  /**
+   * Flag klinis taxonomy (Risk Alert / Pola Keterlambatan / Peristiwa Besar).
+   *
+   * @return array{
+   *   risk_alert_count: int,
+   *   risk_alert_months: int,
+   *   risk_alert_recurring: bool,
+   *   late_pattern_count: int,
+   *   late_pattern_months: int,
+   *   late_pattern_recurring: bool,
+   *   life_event_count: int,
+   *   has_data: bool,
+   *   lines: list<string>
+   * }
+   */
+  private function taxonomyFlagSummary(Collection $rows): array
+  {
+    $riskMonths = [];
+    $lateMonths = [];
+    $riskCount = 0;
+    $lateCount = 0;
+    $lifeEventCount = 0;
+
+    foreach ($rows as $row) {
+      $flags = $row->taxonomy_flags;
+      if (! is_array($flags) || $flags === []) {
+        continue;
+      }
+      $monthKey = $row->recorded_at?->timezone(PortalTimezone::defaultName())->format('Y-m') ?? '';
+      foreach ($flags as $flag) {
+        $key = strtolower(trim((string) $flag));
+        if ($key === 'risk_alert') {
+          $riskCount++;
+          if ($monthKey !== '') {
+            $riskMonths[$monthKey] = true;
+          }
+        } elseif ($key === 'late_pattern') {
+          $lateCount++;
+          if ($monthKey !== '') {
+            $lateMonths[$monthKey] = true;
+          }
+        } elseif ($key === 'life_event') {
+          $lifeEventCount++;
+        }
+      }
+    }
+
+    $riskMonthCount = count($riskMonths);
+    $lateMonthCount = count($lateMonths);
+    $lines = [];
+    if ($riskCount > 0) {
+      $lines[] = sprintf(
+        'Risk Alert (pinjol/pinjaman tunai): %d transaksi · %d bulan%s',
+        $riskCount,
+        $riskMonthCount,
+        $riskMonthCount >= 2 ? ' · pola berulang' : '',
+      );
+    }
+    if ($lateCount > 0) {
+      $lines[] = sprintf(
+        'Pola Keterlambatan (denda/sanksi): %d transaksi · %d bulan%s',
+        $lateCount,
+        $lateMonthCount,
+        $lateMonthCount >= 2 ? ' · berulang' : '',
+      );
+    }
+    if ($lifeEventCount > 0) {
+      $lines[] = "Peristiwa Besar: {$lifeEventCount} transaksi (pisahkan dari tren bulanan biasa)";
+    }
+
+    return [
+      'risk_alert_count' => $riskCount,
+      'risk_alert_months' => $riskMonthCount,
+      'risk_alert_recurring' => $riskMonthCount >= 2,
+      'late_pattern_count' => $lateCount,
+      'late_pattern_months' => $lateMonthCount,
+      'late_pattern_recurring' => $lateMonthCount >= 2,
+      'life_event_count' => $lifeEventCount,
+      'has_data' => $riskCount + $lateCount + $lifeEventCount > 0,
+      'lines' => $lines,
+    ];
+  }
+
+  /**
    * @return list<array{key: string, label: string, count: int, share: float}>
    */
   private function needImpulsiveMatrix(Collection $expenses): array
   {
+    // Hanya Pengeluaran — Need/Want tidak berlaku untuk jenis lain (taxonomy v1.8 §5.4).
+    $expenses = $expenses->filter(
+      fn (BotTransaction $row) => (string) $row->type === TransactionTaxonomy::TYPE_EXPENSE,
+    );
+
     $cells = [
       'need_planned' => ['key' => 'need_planned', 'label' => 'Need + Terencana', 'count' => 0],
       'need_impulsive' => ['key' => 'need_impulsive', 'label' => 'Need + Impulsif', 'count' => 0],
@@ -923,7 +1060,7 @@ class ImpulsivityAssessmentService
     }
 
     if ($ftsaProfile && str_contains(strtolower((string) $ftsaProfile['archetype']), 'impulsive')) {
-      $insights[] = 'Profil FTSA dominan Impulsive — selaraskan dengan strategi jeda sebelum belanja.';
+      $insights[] = 'Konteks FTSA (pilot) menunjukkan pola Impulsive — selaraskan dengan strategi jeda sebelum belanja (observasional).';
     } elseif (str_contains($dominantPattern, 'Impulsif')) {
       $insights[] = "Pola dominan: {$dominantPattern} saat mood {$dominantMood}.";
     }
@@ -971,11 +1108,11 @@ class ImpulsivityAssessmentService
       $personalized[] = 'Nominal pengeluaran saat mood negatif lebih tinggi — batasi akses e-wallet di malam hari.';
     }
     if ($ftsaProfile) {
-      $personalized[] = "Sesuaikan strategi dengan archetype {$ftsaProfile['archetype']} dari baseline FTSA-32.";
+      $personalized[] = "Pakai konteks FTSA (pilot, observasional: {$ftsaProfile['archetype']}) sebagai bahan pantauan — bukan label diagnosis.";
     }
 
     if (empty($personalized)) {
-      $personalized[] = 'Pertahankan ritme pencatatan harian — konsistensi adalah kunci diagnosis akurat.';
+      $personalized[] = 'Pertahankan ritme pencatatan harian agar pola mood & impulsif lebih terbaca di data.';
     }
 
     return [
@@ -996,26 +1133,26 @@ class ImpulsivityAssessmentService
   ): array {
     $findings = [];
     if ($ftsaProfile) {
-      $findings[] = "Archetype FTSA: {$ftsaProfile['archetype']}.";
+      $findings[] = "Pola FTSA yang tercatat (pilot, observasional): {$ftsaProfile['archetype']} — bukan diagnosis personal.";
     }
-    $findings[] = "Pola dominan: {$dominantPattern}, mood dominan: {$dominantMood}.";
+    $findings[] = "Pola dominan pada data: {$dominantPattern}, mood yang paling sering muncul: {$dominantMood}.";
 
     if ($impulsiveRate >= 40) {
       $leak = $highestLeakage['category'] ?? 'beberapa kategori';
       $summary = "Tingkat impulsifitas tinggi ({$impulsiveRate}%). Kebocoran terbesar di {$leak}.";
-      $interpretation = 'Emosi dan impuls berkontribusi signifikan pada pola pengeluaran.';
+      $interpretation = 'Pada data periode ini, emosi dan impuls tampak berkontribusi pada pola pengeluaran.';
       $priority = 'Coba jeda 10 menit sebelum transaksi non-kebutuhan; batasi notifikasi promo.';
     } elseif (in_array($dominantMood, self::NEGATIVE_MOODS, true) && str_contains($dominantPattern, 'Impulsif')) {
       $summary = "Pola dominan {$dominantPattern} saat mood {$dominantMood}.";
-      $interpretation = 'Pengeluaran impulsif cenderung muncul saat regulasi emosi menurun.';
+      $interpretation = 'Pengeluaran impulsif sering muncul bersamaan dengan mood negatif pada data ini.';
       $priority = 'Pertimbangkan coping non-finansial saat emosi negatif.';
     } elseif ($impulsiveRate <= 15) {
       $summary = 'Kebiasaan belanja cukup terkendali.';
-      $interpretation = 'Kontrol impuls relatif baik — fokus pada optimasi alokasi bucket.';
+      $interpretation = 'Kontrol impuls relatif baik pada data ini — fokus pada optimasi alokasi bucket.';
       $priority = 'Pertahankan konfirmasi preview sebelum simpan di bot.';
     } else {
       $summary = "Pola dominan {$dominantPattern} dengan mood {$dominantMood}.";
-      $interpretation = 'Ada ruang perbaikan pada keputusan belanja spontan.';
+      $interpretation = 'Ada ruang perbaikan pada keputusan belanja spontan berdasarkan data periode ini.';
       $priority = 'Pantau kategori impulsif secara mingguan.';
     }
 

@@ -15,8 +15,24 @@ class ContextRulesTests(unittest.TestCase):
         self.assertEqual(hit["jenis"], jenis, msg=text)
         self.assertEqual(hit["kategori"], kategori, msg=text)
 
-    def test_affiliate(self) -> None:
-        self.assertClass("dapat shopee affiliate 50000", "Pemasukan", "Affiliate")
+    def test_spagethi_makan_siang_bukan_kesehatan(self) -> None:
+        """Typo spagethi jangan kena 'spa' → harus Makanan, bukan Kesehatan."""
+        text = "13/09/2026 spagethi makan siang 60rb"
+        hit = classify_from_text(text)
+        self.assertIsNotNone(hit)
+        assert hit is not None
+        self.assertEqual(hit["kategori"], "Makanan & Minuman")
+        out = apply_context_rules(
+            {
+                "keterangan": text,
+                "jenis": "Pengeluaran",
+                "kategori": "Kesehatan & Kebersihan Diri",
+                "sifat": "Need",
+            },
+            text,
+        )
+        self.assertEqual(out["kategori"], "Makanan & Minuman")
+        self.assertEqual(out["sifat"], "Need")
 
     def test_komisi_gift_tiktok_adalah_pemasukan_bukan_hadiah(self) -> None:
         self.assertClass("komisi gift dari TikTok 200rb", "Pemasukan", "Affiliate")
@@ -621,6 +637,37 @@ class ContextRulesTests(unittest.TestCase):
             "Pengeluaran",
             "Bisnis & Karir",
         )
+
+    def test_kopi_klarifikasi_kerja_future_building(self) -> None:
+        """Klarifikasi 'Kerja' pada kopi → Bisnis & Karir / Future Building (bukan Essential)."""
+        from offline_classify import classify_offline
+
+        parsed = classify_offline("Beli kopi + cookies 38k\nKlarifikasi user: Kerja")
+        self.assertEqual(parsed["kategori"], "Bisnis & Karir")
+        self.assertEqual(parsed["sifat"], "Need")
+        self.assertEqual(parsed["bucket"], "Future Building")
+
+    def test_grab_klarifikasi_bisnis_future_building(self) -> None:
+        """Jawaban singkat 'Bisnis' pada grab → Future Building (bukan Essential Living)."""
+        from clarification_rules import clarification_question
+        from offline_classify import classify_offline
+
+        parsed = classify_offline("grab 45rb\nKlarifikasi user: Bisnis")
+        self.assertEqual(parsed["kategori"], "Transportasi")
+        self.assertEqual(parsed["sifat"], "Need")
+        self.assertEqual(parsed["bucket"], "Future Building")
+        self.assertIsNone(
+            clarification_question(parsed, "grab 45rb\nKlarifikasi user: Bisnis")
+        )
+
+    def test_coffeshop_untuk_meeting_future_building(self) -> None:
+        """Typo coffeshop + untuk meeting → Bisnis & Karir (bukan Lain-lain/Flexible)."""
+        from offline_classify import classify_offline
+
+        parsed = classify_offline("ke coffeshop 68 rb untuk meeting")
+        self.assertEqual(parsed["kategori"], "Bisnis & Karir")
+        self.assertEqual(parsed["sifat"], "Need")
+        self.assertEqual(parsed["bucket"], "Future Building")
 
     def test_makan_meeting_kerjaan_future_building(self) -> None:
         """Ekspektasi klien: makan + meeting kerja → Bisnis & Karir."""

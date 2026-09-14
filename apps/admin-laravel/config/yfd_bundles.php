@@ -37,10 +37,9 @@ return [
         'eyebrow' => 'Education',
         'title' => 'Financial Education Platform',
         'icon' => 'school',
-        'description' => 'Pusat edukasi kesehatan finansial YFD — artikel, webinar, kelas online, e-book, dan komunitas belajar. Literasi finansial adalah hak, bukan privilese.',
+        'description' => 'Pusat edukasi kesehatan Finansial YFD — webinar, workshop, komunitas belajar.',
         'features_label' => 'Cakupan',
         'features' => [
-            'Financial Health Articles',
             'Behavioral Finance Education',
             'Webinar & Workshop',
             'Kelas Online',
@@ -49,15 +48,44 @@ return [
             'Community Learning',
         ],
         'offerings' => [
-            ['icon' => 'cast_for_education', 'title' => 'Webinar & Seminar', 'desc' => 'Sesi live dengan dokter finansial & praktisi — topik cashflow, utang, investasi pemula, dll.', 'status' => 'available'],
-            ['icon' => 'play_lesson', 'title' => 'Kelas Online', 'desc' => 'Modul terstruktur yang bisa diikuti sesuai kecepatan Anda.', 'status' => 'soon'],
-            ['icon' => 'menu_book', 'title' => 'E-book & Practical Guide', 'desc' => 'Panduan praktis kesehatan finansial dalam format digital.', 'status' => 'soon'],
-            ['icon' => 'article', 'title' => 'Artikel & Jurnal', 'desc' => 'Konten edukatif gratis di Wealthpedia.', 'status' => 'free', 'route' => 'company.wealthpedia'],
+            [
+                'icon' => 'cast_for_education',
+                'title' => 'Webinar & Seminar',
+                'desc' => 'Sesi live dengan dokter finansial & praktisi — topik cashflow, utang, investasi pemula, dll.',
+                'status' => 'available',
+            ],
+            [
+                'icon' => 'groups',
+                'title' => 'Workshop',
+                'desc' => 'Workshop khusus sesuai kebutuhan komunitas — misalnya Pre-marital, Employee, dan topik komunitas lainnya.',
+                'status' => 'available',
+            ],
+            [
+                'icon' => 'menu_book',
+                'title' => 'E-book & Practical Guide',
+                'desc' => 'Panduan praktis kesehatan finansial dalam format digital.',
+                'status' => 'soon',
+            ],
+            [
+                'icon' => 'auto_stories',
+                'title' => 'Jurnal',
+                'desc' => 'Jurnal edukasi kesehatan finansial YFD.',
+                'status' => 'soon',
+            ],
         ],
         'pricing' => [],
-        'footnote' => 'Paket webinar, kelas, dan e-book akan dijual terpisah. Untuk info jadwal & harga terbaru, hubungi tim YFD.',
-        'cta_primary' => ['label' => 'Kunjungi Wealthpedia', 'route' => 'company.wealthpedia'],
-        'cta_secondary' => ['label' => 'Tanya Paket Edukasi', 'type' => 'wa', 'wa_topic' => 'Financial Education Platform'],
+        'footnote' => 'Untuk info jadwal webinar, workshop, dan harga terbaru, hubungi tim YFD.',
+        // Bukan Wealthpedia — CTA: daftar workshop & kerjasama.
+        'cta_primary' => [
+            'label' => 'Daftar Workshop',
+            'type' => 'wa',
+            'wa_topic' => 'Daftar Workshop — Financial Education Platform',
+        ],
+        'cta_secondary' => [
+            'label' => 'Kerjasama dengan YFD',
+            'type' => 'wa',
+            'wa_topic' => 'Kerjasama Edukasi dengan YFD',
+        ],
     ],
 
     'premarital' => [
