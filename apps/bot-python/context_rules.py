@@ -579,6 +579,12 @@ _KOPI_JAJAN = (
     "ngopi",
     "kopi",
     "coffee",
+    "coffeeshop",
+    "coffeshop",  # typo umum
+    "coffee shop",
+    "coffeehouse",
+    "cafe",
+    "kafe",
     "starbucks",
     "espresso",
     "americano",
@@ -593,6 +599,8 @@ _KOPI_JAJAN = (
     "dessert",
     "donat",
     "croissant",
+    "cookies",
+    "cookie",
 )
 
 _SOCIAL = (
@@ -695,6 +703,13 @@ _BUSINESS_BUILDING = (
     "kopi meeting",
     "starbucks meeting",
     "makan meeting",
+    "untuk meeting",
+    "buat meeting",
+    "ke meeting",
+    "saat meeting",
+    "lagi meeting",
+    "sambil meeting",
+    "sekalian meeting",
 )
 
 _WORK_MEETING_RE = tuple(
@@ -704,8 +719,10 @@ _WORK_MEETING_RE = tuple(
         r"\brapat\s+kerja\b",
         r"\bmeeting\s+klien\b",
         r"\brapat\s+klien\b",
+        r"\bmeeting\s+bisnis\b",
         r"\bmeeting\s+untuk\s+kerja\b",
         r"\brapat\s+untuk\s+kerja\b",
+        r"\b(?:untuk|buat|ke|saat|lagi|sambil|sekalian)\s+meeting\b",
         # "sambil/sekalian meeting … kerja(an|klien|bisnis)"
         r"\b(?:sekalian|sambil|saat|lagi|pas)\s+meeting\b.{0,40}\b(?:kerja(?:an)?|klien|bisnis)\b",
         r"\b(?:kerja(?:an)?|klien|bisnis)\b.{0,40}\b(?:sekalian|sambil|saat|lagi|pas)\s+meeting\b",
@@ -1619,6 +1636,14 @@ def is_business_building_expense(text: str) -> bool:
     if _contains(lower, _BUSINESS_BUILDING):
         return True
     if _match_any(lower, _WORK_MEETING_RE):
+        return True
+    # Cafe/kopi + kata meeting (meski tanpa 'kerja'): biaya meeting kerja.
+    foodish = (
+        _contains(lower, _KOPI_JAJAN)
+        or _contains(lower, _MAKAN)
+        or is_food_delivery(lower)
+    )
+    if foodish and re.search(r"\bmeeting\b", lower):
         return True
     return is_work_purpose_food_or_drink(lower)
 

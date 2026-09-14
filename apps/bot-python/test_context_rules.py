@@ -631,6 +631,15 @@ class ContextRulesTests(unittest.TestCase):
         self.assertEqual(parsed["sifat"], "Need")
         self.assertEqual(parsed["bucket"], "Future Building")
 
+    def test_coffeshop_untuk_meeting_future_building(self) -> None:
+        """Typo coffeshop + untuk meeting → Bisnis & Karir (bukan Lain-lain/Flexible)."""
+        from offline_classify import classify_offline
+
+        parsed = classify_offline("ke coffeshop 68 rb untuk meeting")
+        self.assertEqual(parsed["kategori"], "Bisnis & Karir")
+        self.assertEqual(parsed["sifat"], "Need")
+        self.assertEqual(parsed["bucket"], "Future Building")
+
     def test_makan_meeting_kerjaan_future_building(self) -> None:
         """Ekspektasi klien: makan + meeting kerja → Bisnis & Karir."""
         self.assertClass(

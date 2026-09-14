@@ -43,6 +43,7 @@ return [
         'urusan bisnis', 'keperluan bisnis', 'perjalanan bisnis', 'kerja training',
         'meeting kerja', 'meeting kerjaan', 'rapat kerja', 'meeting klien', 'ngopi meeting',
         'kopi meeting', 'konsumsi meeting', 'starbucks meeting', 'makan meeting',
+        'untuk meeting', 'buat meeting', 'ke meeting', 'saat meeting', 'sambil meeting',
         // Transport tujuan bisnis (lokal & jarak jauh)
         'untuk bisnis', 'tujuan bisnis', 'ke bisnis', 'buat bisnis', 'keperluan usaha',
         'ke klien', 'ke client', 'ke meeting', 'ke rapat', 'rapat klien', 'rapat client',
