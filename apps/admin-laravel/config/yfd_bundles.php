@@ -37,10 +37,9 @@ return [
         'eyebrow' => 'Education',
         'title' => 'Financial Education Platform',
         'icon' => 'school',
-        'description' => 'Pusat edukasi kesehatan finansial YFD — artikel, webinar, kelas online, e-book, dan komunitas belajar. Literasi finansial adalah hak, bukan privilese.',
+        'description' => 'Pusat edukasi kesehatan Finansial YFD — webinar, workshop, komunitas belajar.',
         'features_label' => 'Cakupan',
         'features' => [
-            'Financial Health Articles',
             'Behavioral Finance Education',
             'Webinar & Workshop',
             'Kelas Online',
@@ -52,12 +51,13 @@ return [
             ['icon' => 'cast_for_education', 'title' => 'Webinar & Seminar', 'desc' => 'Sesi live dengan dokter finansial & praktisi — topik cashflow, utang, investasi pemula, dll.', 'status' => 'available'],
             ['icon' => 'play_lesson', 'title' => 'Kelas Online', 'desc' => 'Modul terstruktur yang bisa diikuti sesuai kecepatan Anda.', 'status' => 'soon'],
             ['icon' => 'menu_book', 'title' => 'E-book & Practical Guide', 'desc' => 'Panduan praktis kesehatan finansial dalam format digital.', 'status' => 'soon'],
-            ['icon' => 'article', 'title' => 'Artikel & Jurnal', 'desc' => 'Konten edukatif gratis di Wealthpedia.', 'status' => 'free', 'route' => 'company.wealthpedia'],
+            ['icon' => 'groups', 'title' => 'Community Learning', 'desc' => 'Komunitas belajar kesehatan finansial bersama peserta YFD.', 'status' => 'soon'],
         ],
         'pricing' => [],
-        'footnote' => 'Paket webinar, kelas, dan e-book akan dijual terpisah. Untuk info jadwal & harga terbaru, hubungi tim YFD.',
-        'cta_primary' => ['label' => 'Kunjungi Wealthpedia', 'route' => 'company.wealthpedia'],
-        'cta_secondary' => ['label' => 'Tanya Paket Edukasi', 'type' => 'wa', 'wa_topic' => 'Financial Education Platform'],
+        'footnote' => 'Untuk info jadwal webinar, workshop, kelas, dan harga terbaru, hubungi tim YFD.',
+        // Wealthpedia punya section sendiri — jangan taruh CTA ke sana di sini.
+        'cta_primary' => ['label' => 'Tanya Paket Edukasi', 'type' => 'wa', 'wa_topic' => 'Financial Education Platform'],
+        'cta_secondary' => null,
     ],
 
     'premarital' => [

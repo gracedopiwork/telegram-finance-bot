@@ -13,7 +13,7 @@
                 ['key' => 'pertemuan', 'label' => 'Konsultasi 1-on-1',     'desc' => 'Sesi privat dengan dokter QWP',                          'route' => 'company.pertemuan',         'icon' => 'forum',         'badge' => null],
                 ['key' => 'premarital','label' => 'Premarital Check Up',   'desc' => 'Kesehatan finansial pasangan sebelum menikah',          'route' => 'company.bundle.premarital', 'icon' => 'diversity_1',   'badge' => null],
                 ['key' => 'recovery',  'label' => 'Recovery Program',      'desc' => 'Pendampingan intensif untuk kondisi finansial darurat',  'route' => 'company.bundle.recovery',   'icon' => 'healing', 'badge' => null],
-                ['key' => 'edukasi',   'label' => 'Education Platform',    'desc' => 'Webinar, kelas online, e-book & Wealthpedia',            'route' => 'company.bundle.education',  'icon' => 'school',        'badge' => null],
+                ['key' => 'edukasi',   'label' => 'Education Platform',    'desc' => 'Webinar, workshop & komunitas belajar',                 'route' => 'company.bundle.education',  'icon' => 'school',        'badge' => null],
             ],
             'cta' => ['label' => 'Lihat semua 7 pilar layanan', 'route' => 'company.layanan'],
         ],
