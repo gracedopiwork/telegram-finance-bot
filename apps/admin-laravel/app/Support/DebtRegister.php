@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\FinancialBaseline;
 use Carbon\CarbonImmutable;
 
 /**
@@ -25,6 +26,12 @@ class DebtRegister
     public const LINKED_EXPENSE_CATEGORY = 'Cicilan & Hutang';
 
     public const MAX_ROWS = 12;
+
+    /**
+     * Nama baris yang disintesis untuk baseline lama yang masih memakai
+     * "Total utang" tunggal (Section 7).
+     */
+    public const PLACEHOLDER_NAME = 'Utang (belum dirinci)';
 
     /**
      * @return array<string, string>
@@ -110,6 +117,66 @@ class DebtRegister
         }
 
         return $out;
+    }
+
+    /**
+     * Baris efektif untuk sebuah baseline.
+     *
+     * Baseline lama menyimpan utang sebagai satu angka `total_debt` tanpa
+     * debt_register. Daripada menulis ulang data produksi lewat migrasi
+     * backfill — yang sulit dibatalkan tanpa staging — baris placeholder-nya
+     * disintesis saat dibaca. Tidak ada baris yang ditulis saat deploy, dan
+     * data pindah sendiri begitu user menyimpan Baseline berikutnya.
+     *
+     * Polanya sama dengan estimasi premi proteksi di TransactionDashboardService:
+     * hitung pengganti saat baca, jangan simpan apa-apa.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function rowsFor(?FinancialBaseline $baseline): array
+    {
+        if ($baseline === null) {
+            return [];
+        }
+
+        $rows = self::rows($baseline->debt_register);
+        if ($rows !== []) {
+            return $rows;
+        }
+
+        $legacy = (int) ($baseline->total_debt ?? 0);
+        if ($legacy <= 0) {
+            return [];
+        }
+
+        return self::rows([[
+            // Kosong: normalizeDebtRegister() yang mencetak ULID asli saat
+            // user pertama kali menyimpan — saat itulah barisnya jadi nyata.
+            'debt_id' => '',
+            'debt_name' => self::PLACEHOLDER_NAME,
+            'debt_type' => 'lainnya',
+            'principal_outstanding' => $legacy,
+            'monthly_installment_reference' => null,
+            'remaining_tenor_months' => null,
+            'linked_expense_category' => self::LINKED_EXPENSE_CATEGORY,
+            // Null disengaja: angka gelondongan ini tidak pernah diverifikasi
+            // sebagai baris register, jadi isStale() menandainya "perlu update".
+            'last_updated' => null,
+        ]]);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     */
+    public static function rowsHaveStale(array $rows): bool
+    {
+        foreach ($rows as $row) {
+            if ($row['is_stale'] ?? false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

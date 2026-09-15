@@ -175,8 +175,8 @@
             @endif
         @endforeach
         @php
-            $debtRows = \App\Support\DebtRegister::rows($baseline->debt_register);
-            $debtStale = \App\Support\DebtRegister::hasStaleRow($baseline->debt_register);
+            $debtRows = \App\Support\DebtRegister::rowsFor($baseline);
+            $debtStale = \App\Support\DebtRegister::rowsHaveStale($debtRows);
             $staleMonths = \App\Support\DebtRegister::staleAfterMonths();
         @endphp
         @if($debtRows !== [])
@@ -223,7 +223,7 @@
                         <tfoot>
                             <tr class="border-t-2 border-slate-300 text-navy-800">
                                 <td class="pt-1.5 pr-3 font-semibold" colspan="2">Total sisa pokok</td>
-                                <td class="pt-1.5 pr-3 font-bold">{{ $fmt((int) (\App\Support\DebtRegister::totalPrincipal($baseline->debt_register) ?? 0)) }}</td>
+                                <td class="pt-1.5 pr-3 font-bold">{{ $fmt((int) array_sum(array_column($debtRows, 'principal_outstanding'))) }}</td>
                                 <td colspan="3"></td>
                             </tr>
                         </tfoot>

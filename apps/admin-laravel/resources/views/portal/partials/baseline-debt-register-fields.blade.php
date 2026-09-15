@@ -7,7 +7,7 @@
         'principal_outstanding' => '', 'monthly_installment_reference' => '',
         'remaining_tenor_months' => '', 'last_updated' => '',
     ];
-    $debts = old('snapshot.debt_register', $existingBaseline?->debt_register ?? []);
+    $debts = old('snapshot.debt_register', DebtRegister::rowsFor($existingBaseline));
     if (! is_array($debts)) {
         $debts = [];
     }

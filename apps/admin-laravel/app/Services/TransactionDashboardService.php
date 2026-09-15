@@ -1324,8 +1324,8 @@ class TransactionDashboardService
             'total_debt' => $baseline->total_debt,
             // Stock (saldo utang, input manual) — beda dari social liquidity
             // active_debt_total yang merupakan flow pinjaman sosial berjalan.
-            'debt_register' => \App\Support\DebtRegister::rows($baseline->debt_register),
-            'debt_register_stale' => \App\Support\DebtRegister::hasStaleRow($baseline->debt_register),
+            'debt_register' => \App\Support\DebtRegister::rowsFor($baseline),
+            'debt_register_stale' => \App\Support\DebtRegister::rowsHaveStale(\App\Support\DebtRegister::rowsFor($baseline)),
             'protection' => [
                 'bpjs' => $baseline->has_bpjs,
                 'health' => $baseline->has_health_insurance,

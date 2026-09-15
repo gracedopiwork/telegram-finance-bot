@@ -1365,7 +1365,7 @@ PROMPT;
      */
     private function debtRegisterLines(FinancialBaseline $baseline): array
     {
-        $rows = DebtRegister::rows($baseline->debt_register ?? null);
+        $rows = DebtRegister::rowsFor($baseline);
         if ($rows === []) {
             return [];
         }
@@ -1391,7 +1391,7 @@ PROMPT;
             $lines[] = $parts;
         }
 
-        if (DebtRegister::hasStaleRow($baseline->debt_register ?? null)) {
+        if (DebtRegister::rowsHaveStale($rows)) {
             $lines[] = '  - Baris bertanda [STALE] belum diperbarui lebih dari '
                 .DebtRegister::staleAfterMonths()
                 .' bulan. Sebut angkanya dengan kualifikasi waktu ("berdasarkan data terakhir kamu update [tanggal], sisa pokok sekitar ..."), bukan sebagai angka pasti.';
