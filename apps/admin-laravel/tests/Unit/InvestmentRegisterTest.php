@@ -94,7 +94,25 @@ class InvestmentRegisterTest extends TestCase
     {
         $this->assertSame('Emas', InvestmentRegister::typeLabel('emas'));
         $this->assertSame('Lainnya', InvestmentRegister::typeLabel('kripto_gelap'));
-        $this->assertSame('Lainnya', InvestmentRegister::typeLabel(null));
+    }
+
+    /**
+     * rows() memanggil typeLabel() dengan null untuk baris tanpa investment_type.
+     * ?? 'Lainnya' menutupi gejalanya, jadi deprecation dinaikkan jadi exception
+     * supaya test ini merah kalau guard null-nya dilepas.
+     */
+    public function test_a_null_type_does_not_index_an_array_with_null(): void
+    {
+        set_error_handler(
+            static fn (int $severity, string $message) => throw new \RuntimeException($message),
+            E_DEPRECATED
+        );
+
+        try {
+            $this->assertSame('Lainnya', InvestmentRegister::typeLabel(null));
+        } finally {
+            restore_error_handler();
+        }
     }
 
     public function test_the_nine_types_are_the_agreed_list(): void

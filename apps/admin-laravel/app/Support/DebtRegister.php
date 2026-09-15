@@ -51,7 +51,10 @@ class DebtRegister
 
     public static function typeLabel(?string $type): string
     {
-        return self::types()[$type] ?? 'Lainnya';
+        // $type di-guard dulu: rows() memanggil ini dengan null untuk baris
+        // tersimpan yang tidak punya debt_type, dan mengindeks array dengan null
+        // adalah deprecation di PHP 8.4.
+        return $type === null ? 'Lainnya' : (self::types()[$type] ?? 'Lainnya');
     }
 
     /**
