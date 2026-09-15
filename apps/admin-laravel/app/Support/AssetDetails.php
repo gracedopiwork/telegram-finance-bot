@@ -40,7 +40,10 @@ class AssetDetails
 
     public static function typeLabel(?string $type): string
     {
-        return self::types()[$type] ?? 'Lainnya';
+        // $type di-guard dulu: rows() memanggil ini dengan null untuk baris
+        // tersimpan yang tidak punya asset_type, dan mengindeks array dengan null
+        // adalah deprecation di PHP 8.4. Pola yang sama dengan DebtRegister.
+        return $type === null ? 'Lainnya' : (self::types()[$type] ?? 'Lainnya');
     }
 
     /**
