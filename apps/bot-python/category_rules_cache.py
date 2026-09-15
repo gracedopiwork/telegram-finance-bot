@@ -17,7 +17,7 @@ _cache: dict[str, Any] | None = None
 _cache_loaded_at: float = 0.0
 _warned_fetch_fail = False
 
-# Fallback statis jika API belum tersedia — YFD AI Taxonomy v1.3 closed list.
+# Fallback statis jika API belum tersedia — YFD AI Taxonomy v1.8 closed list.
 _STATIC_FALLBACK: dict[str, Any] = {
     "version": "static",
     "source": "static",
@@ -58,7 +58,7 @@ _STATIC_FALLBACK: dict[str, Any] = {
     "fallback_sub": "-",
     "natures": ["Need", "Wants"],
     "policy_notes": [
-        "Taxonomy tertutup (YFD AI Taxonomy v1.3): AI HANYA memilih dari 17 kategori resmi (+ kategori pemasukan).",
+        "Taxonomy tertutup (YFD AI Taxonomy v1.8): AI HANYA memilih dari 17 kategori resmi (+ kategori pemasukan).",
         "AI tidak boleh membuat kategori baru. Jika ragu → Lain-lain.",
         "Layer 1 = Kategori (closed list). Layer 2 = Bucket (otomatis dari mapping sistem).",
         "Jenis Kewajiban Pajak (PPh 25/29/28A) dikecualikan dari 4 bucket.",

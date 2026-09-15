@@ -3,11 +3,12 @@
 namespace App\Support;
 
 /**
- * YFD First Aid — jenis transaksi & sifat (taxonomy v1.3 + §5 Likuiditas Sosial).
+ * YFD First Aid — jenis transaksi & sifat (taxonomy v1.8 + §5 Likuiditas Sosial).
  *
  * Jenis: Pemasukan | Pengeluaran | Saving/Investment | Kewajiban Pajak
  *      | Piutang Keluar | Piutang Masuk | Utang Masuk | Utang Keluar
- * Sifat: Need | Wants (hanya dua nilai)
+ * Sifat (Need/Wants): HANYA untuk Pengeluaran (Section 5.4). Jenis lain → null.
+ * Impulsive: Pengeluaran, Piutang Keluar, Utang Masuk. Lainnya tidak dievaluasi.
  *
  * Kewajiban Pajak & Likuiditas Sosial (Piutang + Utang) dikecualikan dari 4 bucket.
  * Piutang = cash kita yang keluar (outstanding piutang).
@@ -56,6 +57,21 @@ class TransactionTaxonomy
         self::NATURE_WANTS,
     ];
 
+    public static function appliesNature(string $type): bool
+    {
+        return $type === self::TYPE_EXPENSE;
+    }
+
+    /** Impulsive in-scope: Pengeluaran + keputusan sosial baru (v1.8 §5.4). */
+    public static function appliesImpulsive(string $type): bool
+    {
+        return in_array($type, [
+            self::TYPE_EXPENSE,
+            self::TYPE_RECEIVABLE_OUT,
+            self::TYPE_PAYABLE_IN,
+        ], true);
+    }
+
     public static function isExcludedFromBuckets(string $type): bool
     {
         return in_array($type, [
@@ -85,7 +101,7 @@ class TransactionTaxonomy
     }
 
     /**
-     * @return array{type: string, nature: string, category: ?string}
+     * @return array{type: string, nature: ?string, category: ?string}
      */
     public static function normalize(string $typeInput, string $natureInput, ?string $category = null): array
     {
@@ -95,7 +111,7 @@ class TransactionTaxonomy
 
         if (in_array($natureKey, ['saving/investement', 'saving/investment', 'saving', 'investasi', 'investment'], true)) {
             $type = self::TYPE_SAVING;
-            $natureRaw = self::NATURE_NEED;
+            $natureRaw = '';
         }
 
         if (in_array($natureKey, ['donation', 'donasi', 'sedekah', 'persembahan', 'qurban', 'kurban'], true)) {
@@ -119,7 +135,7 @@ class TransactionTaxonomy
 
         $type ??= self::TYPE_EXPENSE;
 
-        $nature = self::normalizeNature($natureRaw);
+        $nature = self::normalizeNatureForType($type, $natureRaw);
 
         return [
             'type' => $type,
@@ -178,6 +194,15 @@ class TransactionTaxonomy
         }
 
         return self::NATURE_NEED;
+    }
+
+    public static function normalizeNatureForType(string $type, ?string $value): ?string
+    {
+        if (! self::appliesNature($type)) {
+            return null;
+        }
+
+        return self::normalizeNature($value);
     }
 
     public static function mappingTransactionType(string $type): string

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\PortalAccessService;
 use App\Services\PortalPasswordService;
 use App\Support\PortalSession;
 use Closure;
@@ -9,8 +10,9 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Setelah login pertama (lisensi), wajib buat password sebelum akses dashboard.
- * Login berikutnya cukup email + password — lisensi tidak dipakai ulang di portal.
+ * Setelah login pertama (lisensi) untuk user First Aid, wajib buat password
+ * sebelum akses dashboard. FTSA-only / course korporat boleh tetap pakai
+ * email + lisensi saja — password opsional sampai lanjut beli First Aid.
  */
 class EnsurePortalPasswordSet
 {
@@ -21,6 +23,16 @@ class EnsurePortalPasswordSet
         }
 
         $email = (string) (PortalSession::email($request) ?? '');
+        $telegramUserId = (int) (PortalSession::telegramUserId($request) ?? 0);
+
+        // Course / FTSA Premium standalone: tidak dipaksa buat password.
+        if (
+            PortalSession::userType($request) === 'ftsa_only'
+            || ($email !== '' && app(PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId))
+        ) {
+            return $next($request);
+        }
+
         if ($email === '') {
             return $next($request);
         }

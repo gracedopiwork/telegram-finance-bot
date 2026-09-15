@@ -42,11 +42,29 @@ class PortalOnboardingService
     }
 
     /**
+     * Bundle First Aid + FTSA (SKU gabungan) — tetap butuh /activate bot.
+     */
+    public function isBundleOrder(Order $order): bool
+    {
+        $code = (string) ($order->digitalProduct?->code ?? $order->plan ?? '');
+
+        return app(LicenseEntitlementService::class)->isBundleProductCode($code);
+    }
+
+    /**
+     * FTSA standalone (bukan bundle, bukan upgrade add-on).
+     */
+    public function isPureFtsaProductOrder(Order $order): bool
+    {
+        return $this->isFtsaUnlockOrder($order) && ! $this->isBundleOrder($order);
+    }
+
+    /**
      * Upgrade FTSA: pembeli sudah punya order bot paid pada lisensi yang sama.
      */
     public function isFtsaUpgradeOrder(Order $order): bool
     {
-        if (! $this->isFtsaUnlockOrder($order) || ! $order->license_id) {
+        if (! $this->isPureFtsaProductOrder($order) || ! $order->license_id) {
             return false;
         }
 
@@ -149,19 +167,22 @@ class PortalOnboardingService
     }
 
     /**
-     * @return array{is_ftsa: bool, is_ftsa_upgrade: bool, is_ftsa_only: bool, is_bot_after_ftsa: bool}
+     * @return array{is_ftsa: bool, is_ftsa_upgrade: bool, is_ftsa_only: bool, is_bot_after_ftsa: bool, is_bundle: bool}
      */
     public function orderDeliveryContext(Order $order): array
     {
+        $isBundle = $this->isBundleOrder($order);
         $isFtsa = $this->isFtsaUnlockOrder($order);
-        $isUpgrade = $isFtsa && $this->isFtsaUpgradeOrder($order);
+        $isUpgrade = $this->isFtsaUpgradeOrder($order);
         $isBotAfterFtsa = $this->isBotAfterFtsaOrder($order);
 
         return [
             'is_ftsa' => $isFtsa,
             'is_ftsa_upgrade' => $isUpgrade,
-            'is_ftsa_only' => $isFtsa && ! $isUpgrade,
+            // Bundle unlock FTSA + bot — jangan diperlakukan sebagai FTSA-only (tanpa Telegram).
+            'is_ftsa_only' => $this->isPureFtsaProductOrder($order) && ! $isUpgrade,
             'is_bot_after_ftsa' => $isBotAfterFtsa,
+            'is_bundle' => $isBundle,
         ];
     }
 

@@ -13,6 +13,7 @@ from context_rules import (
     is_gym_income_tool,
     is_gym_lifestyle_expense,
     is_household_durable,
+    is_leisure_purpose_food_or_drink,
     is_leisure_transport_destination,
     is_ride_subscription,
 )
@@ -117,8 +118,11 @@ def refine_sifat_from_context(parsed: dict[str, Any], source_text: str = "") -> 
     """
     Selaraskan Need/Wants dari niat user — hindari Wants otomatis untuk jajan premium
     bila user menyatakan fungsi kerja/produktivitas.
+
+    Taxonomy v1.8 §5.4: Need/Want hanya untuk Pengeluaran; jenis lain → field tidak ada.
     """
     if parsed.get("jenis") != "Pengeluaran":
+        parsed["sifat"] = None
         return parsed
 
     combined = _combined_text(parsed, source_text)
@@ -186,8 +190,8 @@ def refine_sifat_from_context(parsed: dict[str, Any], source_text: str = "") -> 
         parsed["sifat"] = "Need" if is_gym_income_tool(combined) else "Wants"
         return parsed
     if kategori in essential_cats:
-        if kategori in {"Makan", "Makanan & Minuman", "Minuman"} and has_discretionary_framing(
-            combined
+        if kategori in {"Makan", "Makanan & Minuman", "Minuman"} and (
+            has_discretionary_framing(combined) or is_leisure_purpose_food_or_drink(combined)
         ):
             parsed["sifat"] = "Wants"
         elif kategori in {"Transport", "Transportasi"}:

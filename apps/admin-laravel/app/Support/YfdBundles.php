@@ -39,6 +39,42 @@ final class YfdBundles
         $ctaSecondary = SiteCopy::get($prefix.'cta_secondary_label', '');
         if ($ctaSecondary !== '' && isset($bundle['cta_secondary']) && is_array($bundle['cta_secondary'])) {
             $bundle['cta_secondary']['label'] = $ctaSecondary;
+        } elseif ($ctaSecondary !== '' && empty($bundle['cta_secondary'])) {
+            $bundle['cta_secondary'] = [
+                'label' => $ctaSecondary,
+                'type' => 'wa',
+                'wa_topic' => (string) ($bundle['title'] ?? 'YFD'),
+            ];
+        }
+
+        // Produk edukasi / kartu offerings: "Judul|status|icon|deskripsi" per baris
+        // status: available | soon | free
+        $offeringLines = SiteCopy::lines($prefix.'offerings', []);
+        if ($offeringLines !== []) {
+            $offerings = [];
+            foreach ($offeringLines as $line) {
+                $parts = array_map('trim', explode('|', $line, 4));
+                if (($parts[0] ?? '') === '') {
+                    continue;
+                }
+                $status = strtolower((string) ($parts[1] ?? 'soon'));
+                if (! in_array($status, ['available', 'soon', 'free'], true)) {
+                    $status = 'soon';
+                }
+                $row = [
+                    'title' => $parts[0],
+                    'status' => $status,
+                    'icon' => ($parts[2] ?? '') !== '' ? $parts[2] : 'school',
+                    'desc' => $parts[3] ?? '',
+                ];
+                if ($status === 'free') {
+                    $row['route'] = 'company.wealthpedia';
+                }
+                $offerings[] = $row;
+            }
+            if ($offerings !== []) {
+                $bundle['offerings'] = $offerings;
+            }
         }
 
         // Pricing rows: "Label|amount|note" per line (amount kosong = Sesuai kebutuhan)

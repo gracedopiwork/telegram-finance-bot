@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Services\PortalAccessService;
 use App\Services\PortalPasswordService;
 use App\Services\UserDataConsentService;
 use App\Support\PortalSession;
@@ -17,12 +18,17 @@ class AccountController extends Controller
     {
         $email = (string) (PortalSession::email($request) ?? '');
         $telegramUserId = (int) (PortalSession::telegramUserId($request) ?? 0);
+        $isFtsaOnly = PortalSession::userType($request) === 'ftsa_only'
+            || app(PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId);
+        $hasPassword = $passwords->hasPassword($email);
 
         return view('portal.account', [
             'active' => 'account',
             'email' => $email,
-            'hasPassword' => $passwords->hasPassword($email),
-            'mustSetPassword' => $passwords->isReady() && ! $passwords->hasPassword($email),
+            'hasPassword' => $hasPassword,
+            // First Aid: wajib password. FTSA course: opsional (cukup email + lisensi).
+            'mustSetPassword' => ! $isFtsaOnly && $passwords->isReady() && ! $hasPassword,
+            'passwordOptional' => $isFtsaOnly && ! $hasPassword,
             'privacy' => config('portal_privacy'),
             'guide' => config('portal_guide'),
             'consentAccepted' => $telegramUserId > 0 && $consents->hasAcceptedCurrent($telegramUserId),

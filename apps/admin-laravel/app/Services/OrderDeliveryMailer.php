@@ -35,21 +35,17 @@ class OrderDeliveryMailer
 
         $onboarding = app(PortalOnboardingService::class);
 
-        if ($this->isFtsaUnlockOrder($order) && $onboarding->isFtsaUpgradeOrder($order)) {
+        // Bundle First Aid + FTSA: email bot penuh (link Telegram + /activate), bukan template FTSA-only.
+        if ($onboarding->isBundleOrder($order)) {
+            $mailable = new PaidOrderDeliveredMail($order, includeFtsaUnlock: true);
+        } elseif ($onboarding->isPureFtsaProductOrder($order) && $onboarding->isFtsaUpgradeOrder($order)) {
             $mailable = new FtsaUnlockDeliveredMail($order);
-        } elseif ($this->isFtsaUnlockOrder($order)) {
+        } elseif ($onboarding->isPureFtsaProductOrder($order)) {
             $mailable = new FtsaOnlyDeliveredMail($order);
         } else {
             $mailable = new PaidOrderDeliveredMail($order);
         }
 
         Mail::to($order->email)->send($mailable);
-    }
-
-    private function isFtsaUnlockOrder(Order $order): bool
-    {
-        $code = $order->digitalProduct?->code ?? $order->plan;
-
-        return in_array($code, (array) config('portal.ftsa.unlock_product_codes', []), true);
     }
 }

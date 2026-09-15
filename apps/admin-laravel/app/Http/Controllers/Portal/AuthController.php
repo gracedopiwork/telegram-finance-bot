@@ -246,7 +246,15 @@ class AuthController extends Controller
             app(BaselineClaimService::class)->claimForUser($email, $telegramUserId);
         }
 
-        if ($passwords->isReady() && $email !== '' && ! $passwords->hasPassword($email)) {
+        $isFtsaOnly = PortalSession::userType($request) === 'ftsa_only'
+            || app(PortalAccessService::class)->isFtsaOnlyPortalUser($email, $telegramUserId);
+
+        if (
+            ! $isFtsaOnly
+            && $passwords->isReady()
+            && $email !== ''
+            && ! $passwords->hasPassword($email)
+        ) {
             return redirect()->route('portal.account')
                 ->with('warning', 'Login pertama berhasil. Buat password sekarang — login berikutnya cukup email + password (tanpa kode lisensi).');
         }
@@ -261,7 +269,7 @@ class AuthController extends Controller
         $access = app(PortalAccessService::class);
 
         if ($access->isFtsaOnlyPortalUser($email, $telegramUserId)) {
-            return 'Selamat datang di portal FTSA Premium. Isi diagnostik tahap keuangan lalu kuesioner FTSA 1–32.';
+            return 'Selamat datang di portal FTSA. Lanjutkan isi FTSA 1–32.';
         }
 
         if ($access->hasBotPortalAccess($email, $telegramUserId) && $onboarding->userNeedsFinancialDiagnostic($email, $telegramUserId)) {

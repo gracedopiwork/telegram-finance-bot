@@ -35,7 +35,10 @@
 
             <div class="bg-white rounded-2xl shadow-lg border border-slate-200/80 p-8">
                 <h2 class="text-2xl font-extrabold text-navy-800">Masuk Portal</h2>
-                <p class="text-sm text-slate-600 mt-2">Setelah punya password, login cukup <strong>email + password</strong>. Kode lisensi hanya untuk pertama kali.</p>
+                <p class="text-sm text-slate-600 mt-2">
+                    <strong>FTSA / course:</strong> cukup email + kode lisensi (password tidak wajib).<br>
+                    <strong>First Aid:</strong> setelah punya password, login berikutnya cukup email + password.
+                </p>
 
                 <div class="mt-5 rounded-xl border border-emerald-200 bg-emerald-50/80 p-4">
                     <div class="flex items-start gap-3">
@@ -91,16 +94,18 @@
                                class="w-full rounded-xl border-slate-300 text-sm py-2.5 focus:ring-navy-500 focus:border-navy-500"
                                placeholder="Password portal" autocomplete="current-password">
                         <p class="text-[11px] text-slate-500 mt-1">
-                            Belum punya password? Pilih <strong>Pertama kali</strong> dan masuk dengan kode lisensi, lalu buat password di dashboard.
+                            Belum punya password? Pilih <strong>Pertama kali</strong> dan masuk dengan kode lisensi.
+                            Untuk FTSA / course, password tidak wajib.
                         </p>
                     </div>
                     <div id="loginLicenseField" class="hidden">
-                        <label class="block text-sm font-semibold text-navy-800 mb-1.5">Kode Lisensi (password awal)</label>
+                        <label class="block text-sm font-semibold text-navy-800 mb-1.5">Kode Lisensi</label>
                         <input type="text" name="license_key" value="{{ old('license_key') }}"
                                class="w-full rounded-xl border-slate-300 text-sm py-2.5 uppercase focus:ring-navy-500 focus:border-navy-500"
                                placeholder="YFD-XXXX-XXXX" autocomplete="off">
                         <p class="text-[11px] text-slate-500 mt-1">
-                            Hanya untuk login pertama. Setelah masuk, Anda wajib buat password sendiri. Kode lisensi tetap dipakai untuk <code class="text-[10px]">/activate</code> di Telegram.
+                            <strong>FTSA / course:</strong> cukup email + lisensi (password tidak wajib).<br>
+                            <strong>First Aid:</strong> setelah login pertama, buat password — login berikutnya tanpa kode lisensi.
                         </p>
                     </div>
                     <button type="submit" class="w-full rounded-xl bg-navy-800 text-white font-bold py-3 hover:bg-navy-700 transition-colors">

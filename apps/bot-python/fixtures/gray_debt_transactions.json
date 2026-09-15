@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "how_to": "Telegram: /uji4    atau    python test_gray_debt_transactions.py --report",
+  "notes": "Paket fokus grey area §2.18 + perhutangan/likuiditas sosial + flag klinis v1.8 (Risk Alert / late_pattern / life_event) + scope Need/Want & Impulsif §5.4.",
+  "cases": [
+    {"id": "GA01", "group": "grey_tumbler", "severity": "must", "text": "beli tumbler 150rb", "expected": {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "needs_clarification": true}, "why": "grey area rusak vs koleksi"},
+    {"id": "GA02", "group": "grey_tumbler", "severity": "must", "text": "beli tumbler karena tumbler lama rusak 200 rb", "expected": {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
+    {"id": "GA03", "group": "grey_tumbler", "severity": "must", "text": "beli tumbler koleksi 250rb", "expected": {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+
+    {"id": "GA04", "group": "grey_hp", "severity": "must", "text": "beli iphone 15jt", "expected": {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "needs_clarification": true}, "why": "HP tanpa konteks = tanya"},
+    {"id": "GA05", "group": "grey_hp", "severity": "must", "text": "ganti HP utama rusak 4jt", "expected": {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Need", "bucket": "Essential Living", "impulsif": "No", "needs_clarification": false}},
+    {"id": "GA06", "group": "grey_hp", "severity": "must", "text": "beli iphone upgrade model terbaru 15jt", "expected": {"jenis": "Pengeluaran", "kategori": "Lifestyle & Hiburan", "sifat": "Wants", "bucket": "Flexible + Social", "needs_clarification": false}},
+    {"id": "GA07", "group": "grey_laptop", "severity": "must", "text": "beli laptop 12jt", "expected": {"jenis": "Pengeluaran", "needs_clarification": true}},
+
+    {"id": "GA08", "group": "grey_art", "severity": "must", "text": "gaji babysitter 2jt", "expected": {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "needs_clarification": true}, "why": "kerja vs kenyamanan"},
+    {"id": "GA09", "group": "grey_art", "severity": "must", "text": "gaji ART bulanan 1.5jt", "expected": {"jenis": "Pengeluaran", "kategori": "Tempat Tinggal", "needs_clarification": true}},
+    {"id": "GA10", "group": "grey_kopi", "severity": "must", "text": "kopi starbucks 65rb", "expected": {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "needs_clarification": true}},
+    {"id": "GA11", "group": "grey_lain", "severity": "must", "text": "fisioterapi 350rb", "expected": {"jenis": "Pengeluaran", "kategori": "Kesehatan & Kebersihan Diri", "needs_clarification": true}},
+    {"id": "GA12", "group": "grey_lain", "severity": "must", "text": "beli baju 250rb", "expected": {"jenis": "Pengeluaran", "kategori": "Pakaian & Aksesoris", "needs_clarification": true}},
+    {"id": "GA13", "group": "grey_lain", "severity": "must", "text": "tiket pesawat 1.8jt", "expected": {"needs_clarification": true}},
+    {"id": "GA14", "group": "grey_lain", "severity": "must", "text": "dp mobil 20jt", "expected": {"needs_clarification": true, "taxonomy_flags": ["life_event"]}},
+
+    {"id": "PH01", "group": "utang_ambigu", "severity": "must", "text": "utang ke ayuti 1jt", "expected": {"needs_clarification": true}, "why": "arah pinjamkan vs berhutang belum jelas"},
+    {"id": "PH02", "group": "utang_masuk", "severity": "must", "text": "utang ke ayuti 1 juta\nKlarifikasi user: saya yang berhutang", "expected": {"jenis": "Utang Masuk", "sifat": null, "bucket": null}, "why": "v1.8: Need/Want tidak berlaku"},
+    {"id": "PH03", "group": "piutang_keluar", "severity": "must", "text": "utang ke ayuti 1 juta\nKlarifikasi user: saya pinjamkan, nanti balik", "expected": {"jenis": "Piutang Keluar", "sifat": null, "bucket": null}},
+
+    {"id": "PH04", "group": "piutang_keluar", "severity": "must", "text": "pinjamin ayuti 500k dadakan buat kerja, minggu depan", "expected": {"jenis": "Piutang Keluar", "sifat": null, "bucket": null, "impulsif": "Yes", "needs_clarification": false}, "why": "v1.8 impulsif dadakan pada keputusan sosial"},
+    {"id": "PH05", "group": "piutang_keluar", "severity": "must", "text": "pinjamkan ayuti 500k terencana buat kerja, minggu depan", "expected": {"jenis": "Piutang Keluar", "sifat": null, "bucket": null, "impulsif": "No", "needs_clarification": false}},
+    {"id": "PH06", "group": "utang_masuk", "severity": "must", "text": "pinjam ke mama 250k dadakan buat obat, minggu depan", "expected": {"jenis": "Utang Masuk", "sifat": null, "bucket": null, "impulsif": "Yes", "needs_clarification": false}},
+    {"id": "PH07", "group": "utang_masuk", "severity": "must", "text": "pinjam ke mama 250k terencana buat obat, minggu depan", "expected": {"jenis": "Utang Masuk", "sifat": null, "bucket": null, "impulsif": "No", "needs_clarification": false}},
+
+    {"id": "PH08", "group": "piutang_masuk", "severity": "must", "text": "dibalikin ayuti 500k", "expected": {"jenis": "Piutang Masuk", "sifat": null, "bucket": null, "impulsif": null, "needs_clarification": false}, "why": "v1.8: impulsif tidak dievaluasi"},
+    {"id": "PH09", "group": "utang_keluar", "severity": "must", "text": "balikin ke mama 2500000", "expected": {"jenis": "Utang Keluar", "sifat": null, "bucket": null, "impulsif": null, "needs_clarification": false}},
+
+    {"id": "PH10", "group": "bukan_sosial", "severity": "must", "text": "transfer ke mama 500rb", "expected": {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "needs_clarification": false}, "why": "bantuan keluarga tanpa kata pinjam"},
+    {"id": "PH11", "group": "bukan_sosial", "severity": "must", "text": "hadiah beli iphone 15jt buat keluarga. Terencana", "expected": {"jenis": "Pengeluaran", "kategori": "Hadiah", "sifat": "Wants", "impulsif": "No", "needs_clarification": false}, "why": "bukan grey HP user & bukan piutang"},
+    {"id": "PH12", "group": "bukan_sosial", "severity": "must", "text": "pinjam laptop 2jt", "expected": {"jenis": "Pengeluaran", "needs_clarification": true}, "why": "pinjam barang, bukan uang"},
+
+    {"id": "FL01", "group": "risk_alert", "severity": "must", "text": "bayar cicilan pinjol 500rb", "expected": {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "taxonomy_flags": ["risk_alert"], "needs_clarification": true}, "why": "pinjol lembaga + Risk Alert"},
+    {"id": "FL02", "group": "risk_alert", "severity": "must", "text": "bayar cicilan pinjol kebutuhan mendesak 500rb", "expected": {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "taxonomy_flags": ["risk_alert"], "needs_clarification": false}},
+    {"id": "FL03", "group": "late_pattern", "severity": "must", "text": "denda keterlambatan kartu kredit 75rb", "expected": {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "taxonomy_flags": ["late_pattern"], "needs_clarification": false}},
+    {"id": "FL04", "group": "flags_combo", "severity": "must", "text": "bayar denda telat pinjol 50rb", "expected": {"jenis": "Pengeluaran", "kategori": "Cicilan & Hutang", "taxonomy_flags": ["risk_alert", "late_pattern"], "needs_clarification": true}},
+    {"id": "FL05", "group": "life_event", "severity": "must", "text": "dp rumah 50jt", "expected": {"taxonomy_flags": ["life_event"], "impulsif": null}},
+    {"id": "FL06", "group": "life_event", "severity": "must", "text": "mahar pernikahan 10jt", "expected": {"jenis": "Pengeluaran", "kategori": "Biaya Legal, Administrasi & Peristiwa Besar", "taxonomy_flags": ["life_event"]}},
+
+    {"id": "SC01", "group": "scope_v18", "severity": "must", "text": "gaji bulanan 8jt", "expected": {"jenis": "Pemasukan", "impulsif": null}, "why": "Pemasukan: impulsif tidak dievaluasi"},
+    {"id": "SC02", "group": "scope_v18", "severity": "watch", "text": "bayar RS 1jt dari pinjaman ayuti", "expected": {"jenis": "Pengeluaran"}, "why": "belanja dari dana pinjaman tetap Pengeluaran terpisah — pantau kategori Kesehatan"}
+  ]
+}

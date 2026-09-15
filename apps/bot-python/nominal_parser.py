@@ -110,6 +110,78 @@ def _parse_ribu_amount(text: str) -> int | None:
     return None
 
 
+def _parse_line_scaled_amount(line: str) -> int | None:
+    """Satu baris: compound jt / jt / rb|k — untuk jumlah rincian belanja."""
+    lower = line.strip().lower()
+    if not lower:
+        return None
+    compound = _parse_compound_jt_amount(lower)
+    if compound is not None:
+        return compound
+    jt_match = _JT_PATTERN.search(lower)
+    if jt_match:
+        return max(1, int(round(_token_to_float(jt_match.group(1)) * 1_000_000)))
+    return _parse_ribu_amount(lower)
+
+
+def _parse_explicit_total_amount(text: str) -> int | None:
+    for line in text.splitlines():
+        if not re.search(r"\b(?:total|jumlah|grand\s*total)\b", line, flags=re.IGNORECASE):
+            continue
+        amount = _parse_line_scaled_amount(line)
+        if amount is not None:
+            return amount
+        # total 147000 (tanpa suffix)
+        plain = re.search(r"(\d{4,9})(?:[.,]\d{3})?\s*$", line.strip())
+        if plain:
+            return max(1, int(round(_token_to_float(plain.group(1)))))
+    return None
+
+
+def _parse_multi_item_sum(text: str) -> int | None:
+    """
+    Jumlahkan harga per baris / beberapa Xk dalam satu catatan.
+    Kasus Catherina: daftar belanja 6 baris → total, bukan harga item pertama.
+    """
+    cleaned = text.strip()
+    if not cleaned:
+        return None
+
+    explicit = _parse_explicit_total_amount(cleaned)
+    if explicit is not None:
+        return explicit
+
+    lines = [ln.strip() for ln in cleaned.splitlines() if ln.strip()]
+    if len(lines) >= 2:
+        amounts: list[int] = []
+        for line in lines:
+            if re.search(r"\b(?:total|jumlah|grand\s*total)\b", line, flags=re.IGNORECASE):
+                continue
+            amount = _parse_line_scaled_amount(line)
+            if amount is not None:
+                amounts.append(amount)
+        if len(amounts) >= 2:
+            return sum(amounts)
+
+    # Satu baris, beberapa nominal bertanda k/rb: "kopi 25k parkir 10k"
+    if _JT_PATTERN.search(cleaned.lower()) or _parse_compound_jt_amount(cleaned.lower()):
+        return None
+
+    inline: list[int] = []
+    occupied: list[tuple[int, int]] = []
+    for pattern in (_RIBU_ATTACHED, _RIBU_SPACED):
+        for match in pattern.finditer(cleaned):
+            start, end = match.span()
+            if any(start < o_end and end > o_start for o_start, o_end in occupied):
+                continue
+            occupied.append((start, end))
+            inline.append(max(1, int(round(_token_to_float(match.group(1)) * 1_000))))
+    if len(inline) >= 2:
+        return sum(inline)
+
+    return None
+
+
 def _parse_compound_jt_amount(text: str) -> int | None:
     """Gabungan juta + pecahan: 2 jt 5 ratus → 2.500.000."""
     match = _COMPOUND_JT_RATUS.search(text)
@@ -138,6 +210,10 @@ def parse_nominal_from_text(text: str) -> int:
         raise ValueError("invalid_nominal")
 
     lower = cleaned.lower()
+
+    multi_sum = _parse_multi_item_sum(cleaned)
+    if multi_sum is not None:
+        return multi_sum
 
     trailing_plain = _parse_trailing_plain_amount(cleaned)
     if trailing_plain is not None:

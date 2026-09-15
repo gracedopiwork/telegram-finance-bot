@@ -43,6 +43,10 @@ class CategoryBucketService
         if ($selfDev !== null) {
             return $selfDev;
         }
+        $transportPurpose = $this->resolveTransportPurpose($row);
+        if ($transportPurpose !== null) {
+            return $transportPurpose;
+        }
 
         $fromDb = $this->mappingService->resolveBucket($row);
         if ($fromDb !== null) {
@@ -50,6 +54,29 @@ class CategoryBucketService
         }
 
         return $this->resolveLegacy($row);
+    }
+
+    /**
+     * Tujuan ride bisnis/lifestyle mengalahkan mapping Transportasi → Essential.
+     */
+    private function resolveTransportPurpose(BotTransaction $row): ?string
+    {
+        if ($row->type !== TransactionTaxonomy::TYPE_EXPENSE) {
+            return null;
+        }
+        $category = mb_strtolower((string) $row->category);
+        if (! $this->matchesCategory($category, ['transport', 'transportasi'])) {
+            return null;
+        }
+        $combined = mb_strtolower(trim("{$row->notes} {$row->category}"));
+        if ($this->containsAny($combined, config('category_buckets.future_building_context_keywords', []))) {
+            return 'Future Building';
+        }
+        if ($this->containsAny($combined, config('category_buckets.transport_flexible_keywords', []))) {
+            return 'Flexible + Social';
+        }
+
+        return null;
     }
 
     /**

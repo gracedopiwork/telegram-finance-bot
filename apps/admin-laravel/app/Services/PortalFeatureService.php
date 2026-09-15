@@ -9,6 +9,7 @@ class PortalFeatureService
 {
     public function __construct(
         private readonly LicenseEntitlementService $entitlements,
+        private readonly FtsaCourseService $ftsaCourses,
     ) {}
 
     public function canAccessFtsa(int $telegramUserId, ?string $email = null): bool
@@ -18,7 +19,21 @@ class PortalFeatureService
             return true;
         }
 
-        return $this->entitlements->hasActiveFtsaEntitlement($telegramUserId);
+        if ($this->entitlements->hasActiveFtsaEntitlement($telegramUserId)) {
+            return true;
+        }
+
+        // Course perusahaan: aktif selama jendela 1 bulan.
+        if ($email !== '' && $this->ftsaCourses->hasActiveAccessByEmail($email)) {
+            return true;
+        }
+
+        // Setelah terkunci: buka lagi bila sudah punya YFD First Aid (bot) + pernah daftar course.
+        if ($email !== '' && $this->ftsaCourses->canReopenWithFirstAid($email)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

@@ -113,8 +113,67 @@ def test_slash_dates_mid_sentence_are_day_first_not_ai():
     assert format_recorded_at_label(parsed_b["recorded_at"]) == "09/01/2026"
 
 
+def test_us_style_month_day_when_day_gt_12():
+    """'8/19/26' dari HP Amerika = 19 Agustus, jangan gagal jadi hari ini."""
+    now = datetime(2026, 9, 14, 17, 43, tzinfo=TZ)
+    for text in (
+        "8/19/26\n800k gaji minosep",
+        "8/19/26 800k gaji minosep",
+        "tgl 8/19/26 gaji",
+    ):
+        parsed: dict = {}
+        apply_transaction_date(parsed, text, now=now)
+        assert parsed["recorded_at"].astimezone(TZ).date().isoformat() == "2026-08-19", text
+        assert format_recorded_at_label(parsed["recorded_at"]) == "19/08/2026", text
+
+
+def test_id_style_day_month_still_works():
+    now = datetime(2026, 9, 14, 17, 43, tzinfo=TZ)
+    parsed = {}
+    apply_transaction_date(parsed, "19/8/26 800k gaji", now=now)
+    assert parsed["recorded_at"].astimezone(TZ).date().isoformat() == "2026-08-19"
+
+
 def test_ai_tanggal_with_iso_in_text():
     now = datetime(2026, 9, 1, 18, 40, tzinfo=TZ)
     parsed = {"tanggal": "2026-08-15", "keterangan": "gaji"}
     apply_transaction_date(parsed, "gaji tanggal 2026-08-15 sebesar 5k", now=now)
     assert parsed["recorded_at"].astimezone(TZ).date().isoformat() == "2026-08-15"
+
+
+def test_decimal_k_not_parsed_as_date_before_slash_date():
+    """Kasus Catherina: '14.5k 09/09' jangan jadi 14 Mei — titik di nominal, tanggal = 09/09."""
+    now = datetime(2026, 9, 14, 21, 0, tzinfo=TZ)
+    for text in (
+        "bayar laundry 14.5k 09/09",
+        "bayar laundry 14.5k 9/9",
+        "bayar laundry 14,5k 9/9",
+        "makeup 26.4k 31/08",
+    ):
+        parsed: dict = {}
+        apply_transaction_date(parsed, text, now=now)
+        label = format_recorded_at_label(parsed.get("recorded_at"))
+        if "31/08" in text:
+            assert label == "31/08/2026", text
+        else:
+            assert label == "09/09/2026", f"{text} -> {label}"
+
+
+def test_decimal_k_alone_does_not_invent_date():
+    now = datetime(2026, 9, 14, 21, 0, tzinfo=TZ)
+    parsed: dict = {}
+    apply_transaction_date(parsed, "bayar laundry 14.5k", now=now)
+    assert "recorded_at" not in parsed
+
+
+def test_shopping_list_first_amount_not_used_as_date():
+    """Kasus Catherina: 27.9k di baris pertama jangan jadi tanggal 27/09."""
+    now = datetime(2026, 9, 14, 21, 0, tzinfo=TZ)
+    text = (
+        "Shampo Pantene anti ketombe 27.9k\n"
+        "Pepsoden pasta gigi 25.9k\n"
+        "Alfa tissue 41.5k"
+    )
+    parsed = {"tanggal": "2026-09-27"}
+    apply_transaction_date(parsed, text, now=now)
+    assert "recorded_at" not in parsed

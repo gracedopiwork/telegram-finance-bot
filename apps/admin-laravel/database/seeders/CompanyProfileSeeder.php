@@ -381,12 +381,11 @@ class CompanyProfileSeeder extends Seeder
                 'section' => 'main',
                 'eyebrow' => 'Education',
                 'title' => 'Financial Education Platform',
-                'description' => 'Pusat edukasi kesehatan finansial yang menyediakan artikel, jurnal, webinar, dan materi pembelajaran untuk membantu Anda membuat keputusan finansial yang lebih baik.',
+                'description' => 'Pusat edukasi kesehatan Finansial YFD — webinar, workshop, komunitas belajar.',
                 'icon' => 'school',
                 'features' => [
                     'label' => 'Cakupan',
                     'items' => [
-                        'Financial Health Articles',
                         'Behavioral Finance Education',
                         'Webinar & Workshop',
                         'Kelas Online',
@@ -395,7 +394,7 @@ class CompanyProfileSeeder extends Seeder
                         'Community Learning',
                     ],
                 ],
-                'cta_label' => 'Lihat Platform Edukasi',
+                'cta_label' => 'Daftar Workshop',
                 'cta_route' => 'company.bundle.education',
                 'sort' => 5,
             ],

@@ -21,7 +21,7 @@ class DigitalProductMenuService
 
         try {
             $products = CpDigitalProduct::query()
-                ->active()
+                ->publicCatalog()
                 ->featured()
                 ->orderBy('sort')
                 ->orderBy('id')
@@ -30,7 +30,7 @@ class DigitalProductMenuService
 
             if ($products->isEmpty()) {
                 $products = CpDigitalProduct::query()
-                    ->active()
+                    ->publicCatalog()
                     ->orderBy('sort')
                     ->orderBy('id')
                     ->limit(3)

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Services\FtsaCourseService;
 use App\Models\CpDigitalProduct;
 use App\Models\License;
 use App\Models\Order;
@@ -27,6 +28,12 @@ class LicenseEntitlementService
         }
 
         if ($this->isFtsaProductCode($code)) {
+            if ($this->isFtsaCourseProductCode($code)) {
+                $days = max(1, (int) config('portal.ftsa.course_access_days', 30));
+
+                return now()->addDays($days);
+            }
+
             return now()->addMonths($this->ftsaEvaluationMonths());
         }
 
@@ -138,8 +145,21 @@ class LicenseEntitlementService
 
     public function ftsaEntitlementEndsAt(Order $order): ?Carbon
     {
-        if (! $this->isFtsaProductCode($this->productCode($order))) {
+        $code = $this->productCode($order);
+        if (! $this->isFtsaProductCode($code)) {
             return null;
+        }
+
+        // Course: pakai expires_at lisensi (diset ke akhir jendela workshop).
+        if ($this->isFtsaCourseProductCode($code)) {
+            $order->loadMissing('license');
+            $licenseEnds = $order->license?->expires_at;
+            if ($licenseEnds instanceof Carbon) {
+                return $licenseEnds->copy();
+            }
+            if ($licenseEnds !== null) {
+                return Carbon::parse($licenseEnds);
+            }
         }
 
         $start = $order->paid_at ?? $order->created_at;
@@ -151,7 +171,20 @@ class LicenseEntitlementService
             $start = Carbon::parse($start);
         }
 
+        if ($this->isFtsaCourseProductCode($code)) {
+            $days = max(1, (int) config('portal.ftsa.course_access_days', 30));
+
+            return $start->copy()->addDays($days);
+        }
+
         return $start->copy()->addMonths($this->ftsaEvaluationMonths());
+    }
+
+    public function isFtsaCourseProductCode(string $code): bool
+    {
+        $courseCode = trim((string) config('portal.ftsa.course_product_code', FtsaCourseService::PRODUCT_CODE));
+
+        return $code !== '' && $courseCode !== '' && $code === $courseCode;
     }
 
     public function isBotProductCode(string $code): bool

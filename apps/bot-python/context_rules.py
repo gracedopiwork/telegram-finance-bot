@@ -1,6 +1,6 @@
 ﻿"""Rule konteks transaksi YFD — deterministik sebelum/sesudah AI.
 
-Prioritas eksklusif (YFD AI Taxonomy v1.3) — yang di atas menang, tidak ditabrak yang bawah:
+Prioritas eksklusif (YFD AI Taxonomy v1.8) — yang di atas menang, tidak ditabrak yang bawah:
 0) Jenis eksplisit user di awal teks — menang mutlak
 1) Likuiditas sosial (4 arah pinjam-meminjam) mengalahkan Pemasukan DAN
    kategori tujuan (kuliah/obat/RS/kerja). Jatuh tempo bukan jenis transaksi.
@@ -362,7 +362,7 @@ _SKINCARE = (
     "facial",
     "pelembab",
     "lotion wajah",
-    "spa",
+    "spa",  # word-boundary via keyword_in — tidak kena "spagethi"
     "potong rambut",
     "cukur rambut",
     "cukur",
@@ -573,12 +573,26 @@ _MAKAN = (
     "gojek food",
     "gofood",
     "grabfood",
+    "spaghetti",
+    "spageti",
+    "spagethi",  # typo umum
+    "pizza",
+    "burger",
+    "mie",
+    "bakso",
+    "soto",
 )
 
 _KOPI_JAJAN = (
     "ngopi",
     "kopi",
     "coffee",
+    "coffeeshop",
+    "coffeshop",  # typo umum
+    "coffee shop",
+    "coffeehouse",
+    "cafe",
+    "kafe",
     "starbucks",
     "espresso",
     "americano",
@@ -593,6 +607,8 @@ _KOPI_JAJAN = (
     "dessert",
     "donat",
     "croissant",
+    "cookies",
+    "cookie",
 )
 
 _SOCIAL = (
@@ -695,6 +711,13 @@ _BUSINESS_BUILDING = (
     "kopi meeting",
     "starbucks meeting",
     "makan meeting",
+    "untuk meeting",
+    "buat meeting",
+    "ke meeting",
+    "saat meeting",
+    "lagi meeting",
+    "sambil meeting",
+    "sekalian meeting",
 )
 
 _WORK_MEETING_RE = tuple(
@@ -704,8 +727,10 @@ _WORK_MEETING_RE = tuple(
         r"\brapat\s+kerja\b",
         r"\bmeeting\s+klien\b",
         r"\brapat\s+klien\b",
+        r"\bmeeting\s+bisnis\b",
         r"\bmeeting\s+untuk\s+kerja\b",
         r"\brapat\s+untuk\s+kerja\b",
+        r"\b(?:untuk|buat|ke|saat|lagi|sambil|sekalian)\s+meeting\b",
         # "sambil/sekalian meeting … kerja(an|klien|bisnis)"
         r"\b(?:sekalian|sambil|saat|lagi|pas)\s+meeting\b.{0,40}\b(?:kerja(?:an)?|klien|bisnis)\b",
         r"\b(?:kerja(?:an)?|klien|bisnis)\b.{0,40}\b(?:sekalian|sambil|saat|lagi|pas)\s+meeting\b",
@@ -1614,11 +1639,104 @@ def is_discretionary_social_giving(text: str) -> bool:
 
 
 def is_business_building_expense(text: str) -> bool:
-    """Biaya bisnis/konten ATAU konsumsi meeting kerja → Future Building."""
+    """Biaya bisnis/konten ATAU konsumsi meeting/kerja → Future Building."""
     lower = text.lower()
     if _contains(lower, _BUSINESS_BUILDING):
         return True
-    return _match_any(lower, _WORK_MEETING_RE)
+    if _match_any(lower, _WORK_MEETING_RE):
+        return True
+    # Cafe/kopi + kata meeting (meski tanpa 'kerja'): biaya meeting kerja.
+    foodish = (
+        _contains(lower, _KOPI_JAJAN)
+        or _contains(lower, _MAKAN)
+        or is_food_delivery(lower)
+    )
+    if foodish and re.search(r"\bmeeting\b", lower):
+        return True
+    return is_work_purpose_food_or_drink(lower)
+
+
+def is_work_purpose_food_or_drink(text: str) -> bool:
+    """
+    Kopi/makan + tujuan kerja (teks atau klarifikasi) → Bisnis & Karir / Future Building.
+
+    Contoh: 'beli kopi 38k' + Klarifikasi user: Kerja
+    Bukan: klarifikasi nongkrong/healing (itu Flexible / Wants).
+    """
+    lower = text.lower()
+    foodish = (
+        _contains(lower, _KOPI_JAJAN)
+        or _contains(lower, _MAKAN)
+        or is_food_delivery(lower)
+        or "cookies" in lower
+        or "cookie" in lower
+    )
+    if not foodish:
+        return False
+
+    clar = _klarifikasi_section(lower)
+    work_tokens = (
+        "kerja",
+        "bisnis",
+        "meeting",
+        "rapat",
+        "klien",
+        "client",
+        "kantor",
+        "produktif",
+        "networking",
+        "urusan kerja",
+        "keperluan kerja",
+    )
+    leisure_tokens = (
+        "nongkrong",
+        "healing",
+        "hiburan",
+        "santai",
+        "lifestyle",
+        "pribadi",
+        "sendiri",
+    )
+    if clar:
+        if any(t in clar for t in leisure_tokens) and not any(
+            t in clar for t in ("kerja", "bisnis", "meeting", "rapat", "klien", "client", "kantor")
+        ):
+            return False
+        return any(t in clar for t in work_tokens)
+
+    return _contains(
+        lower,
+        (
+            "untuk kerja",
+            "buat kerja",
+            "keperluan kerja",
+            "urusan kerja",
+            "saat kerja",
+            "lagi kerja",
+        ),
+    )
+
+
+def is_leisure_purpose_food_or_drink(text: str) -> bool:
+    """Kopi/makan + klarifikasi nongkrong/healing → Wants / Flexible + Social."""
+    lower = text.lower()
+    foodish = (
+        _contains(lower, _KOPI_JAJAN)
+        or _contains(lower, _MAKAN)
+        or is_food_delivery(lower)
+        or "cookies" in lower
+        or "cookie" in lower
+    )
+    if not foodish:
+        return False
+    clar = _klarifikasi_section(lower)
+    if not clar:
+        return False
+    leisure = ("nongkrong", "healing", "hiburan", "santai", "lifestyle", "pribadi", "sendiri")
+    work = ("kerja", "bisnis", "meeting", "rapat", "klien", "client", "kantor")
+    if any(t in clar for t in work):
+        return False
+    return any(t in clar for t in leisure)
 
 
 def is_ride_subscription(text: str) -> bool:
@@ -1994,6 +2112,41 @@ def is_beauty_care_expense(text: str) -> bool:
     return True
 
 
+def is_clear_meal_expense(text: str) -> bool:
+    """Makanan jelas (makan siang/spaghetti/dll) — bukan spa/kecantikan/pasta gigi."""
+    lower = _normalize_typos(text)
+    # Jangan anggap pasta gigi / odol sebagai makanan.
+    if _contains(lower, ("pasta gigi", "odol", "sikat gigi", "sabun", "shampo", "shampoo")):
+        return False
+    meal_phrases = (
+        "makan siang",
+        "makan malam",
+        "makan pagi",
+        "makan sore",
+        "sarapan",
+        "brunch",
+        "lunch",
+        "dinner",
+        "spaghetti",
+        "spageti",
+        "spagethi",
+        "nasi padang",
+        "nasi goreng",
+        "pizza",
+        "burger",
+        "bakso",
+        "soto",
+    )
+    if any(p in lower for p in meal_phrases):
+        return True
+    # "pasta" makanan — bukan "pasta gigi"
+    if re.search(r"\bpasta\b", lower) and "gigi" not in lower:
+        return True
+    if is_food_delivery(lower) or _contains(lower, _MAKAN):
+        return not is_beauty_care_expense(lower)
+    return False
+
+
 def is_denda_sanksi(text: str) -> bool:
     lower = text.lower()
     if _contains(lower, ("denda pajak", "sanksi pajak")):
@@ -2007,6 +2160,7 @@ _LEISURE_TRANSPORT_DEST = (
     "ke gym",
     "ke fitness",
     "ke cafe",
+    "ke kafe",
     "ke mall",
     "ke bioskop",
     "ke konser",
@@ -2020,6 +2174,83 @@ _LEISURE_TRANSPORT_DEST = (
     "ke will fitness",
     "dari kos ke gym",
     "dari cafe",
+    # Sosial / silaturahmi / lifestyle (bukan transport wajib)
+    "lifestyle",
+    "sosial",
+    "social",
+    "silahturahmi",
+    "silaturahmi",
+    "silaturrahmi",
+    "kekeluargaan",
+    "bertamu",
+    "kunjungan",
+    "hangout",
+    "hang out",
+    "gaya hidup",
+    "kualitas hidup",
+    "hiburan",
+    "ke rumah teman",
+    "ke rumah sodara",
+    "ke rumah saudara",
+    "ke rumah keluarga",
+    "ke rumah cia",
+    "rumah teman",
+    "rumah sodara",
+    "rumah saudara",
+    "rumah keluarga",
+    "acara keluarga",
+    "acara kekeluargaan",
+)
+
+# Jawaban klarifikasi tujuan ride → Flexible + Social / Wants
+_TRANSPORT_PURPOSE_FLEXIBLE = (
+    "lifestyle",
+    "sosial",
+    "social",
+    "silahturahmi",
+    "silaturahmi",
+    "silaturrahmi",
+    "kekeluargaan",
+    "nongkrong",
+    "healing",
+    "hangout",
+    "hang out",
+    "cafe",
+    "kafe",
+    "mall",
+    "bioskop",
+    "konser",
+    "liburan",
+    "wisata",
+    "tour",
+    "staycation",
+    "bertamu",
+    "kunjungan",
+    "gaya hidup",
+    "kualitas hidup",
+    "hiburan",
+    "gym",
+    "fitness",
+    "pilates",
+    "yoga",
+)
+
+# Jawaban klarifikasi → Essential Living / Need
+_TRANSPORT_PURPOSE_ESSENTIAL = (
+    "wajib",
+    "kantor",
+    "office",
+    "sekolah",
+    "kampus",
+    "klinik",
+    "apotek",
+    "rumah sakit",
+    "ke rs",
+    "pulang kerja",
+    "kerja rutin",
+    "ke kantor",
+    "ke sekolah",
+    "ke klinik",
 )
 
 _BUSINESS_TRANSPORT_DEST = (
@@ -2063,11 +2294,46 @@ _BUSINESS_TRANSPORT_DEST = (
 )
 
 
+def _klarifikasi_section(text: str) -> str:
+    lower = (text or "").lower()
+    idx = lower.find("klarifikasi user:")
+    return lower[idx:] if idx >= 0 else ""
+
+
+def _has_transport_flexible_purpose(text: str) -> bool:
+    """Lifestyle/sosial/silahturahmi — dari teks atau jawaban klarifikasi user."""
+    lower = (text or "").lower()
+    clar = _klarifikasi_section(lower)
+    blob = clar if clar else lower
+    if any(k in blob for k in _TRANSPORT_PURPOSE_ESSENTIAL):
+        # Klarifikasi "wajib/kantor" mengalahkan kata lifestyle di teks lama
+        if clar and any(k in clar for k in _TRANSPORT_PURPOSE_ESSENTIAL):
+            return False
+    return any(k in blob for k in _TRANSPORT_PURPOSE_FLEXIBLE) or any(
+        k in lower for k in _LEISURE_TRANSPORT_DEST
+    )
+
+
 def is_business_transport_destination(text: str) -> bool:
     """Tujuan ride bisnis/kerja → Future Building / Need."""
     lower = text.lower()
     if not is_transport_ride(lower):
         return False
+    clar = _klarifikasi_section(lower)
+    if clar and any(
+        k in clar
+        for k in (
+            "bisnis",
+            "kerja",
+            "networking",
+            "klien",
+            "client",
+            "meeting",
+            "rapat",
+            "dinas",
+        )
+    ) and not any(k in clar for k in _TRANSPORT_PURPOSE_FLEXIBLE):
+        return True
     return _contains(lower, _BUSINESS_TRANSPORT_DEST)
 
 
@@ -2078,18 +2344,40 @@ def is_leisure_transport_destination(text: str) -> bool:
         return False
     if is_business_transport_destination(lower):
         return False
+    clar = _klarifikasi_section(lower)
+    if clar and any(k in clar for k in _TRANSPORT_PURPOSE_ESSENTIAL):
+        return False
+    if clar and any(k in clar for k in _TRANSPORT_PURPOSE_FLEXIBLE):
+        return True
+    if _has_transport_flexible_purpose(lower):
+        return True
     if _contains(lower, _LEISURE_TRANSPORT_DEST):
         return True
     # "grab … gym/fitness" tanpa kata "ke" eksplisit
     if _contains(lower, ("gym", "fitness", "pilates", "yoga", "crossfit")):
         return True
+    # Kunjung rumah orang (bukan pulang ke rumah sendiri)
+    if re.search(r"\b(?:ke\s+)?rumah\s+[a-zA-Z]{2,}\b", lower) and not re.search(
+        r"\bpulang\s+ke\s+rumah\b|\brumah\s+sendiri\b|\bke\s+kos\b|\bke\s+kontrakan\b",
+        lower,
+    ):
+        # Hindari "rumah sakit"
+        if "rumah sakit" not in lower and "rumahsakit" not in lower:
+            return True
     return False
 
 
 def transport_ride_sifat(text: str) -> str:
     if is_business_transport_destination(text):
         return "Need"
-    return "Wants" if is_leisure_transport_destination(text) else "Need"
+    if is_leisure_transport_destination(text):
+        return "Wants"
+    clar = _klarifikasi_section(text)
+    if clar and any(k in clar for k in _TRANSPORT_PURPOSE_FLEXIBLE):
+        return "Wants"
+    if clar and any(k in clar for k in _TRANSPORT_PURPOSE_ESSENTIAL):
+        return "Need"
+    return "Need"
 
 
 def is_electronics_expense(text: str) -> bool:
@@ -2435,12 +2723,18 @@ def classify_from_text(text: str) -> dict[str, str] | None:
     if _contains(lower, _SOCIAL):
         return {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "sifat": "Wants"}
     if has_essential_living_intent(lower):
+        if is_leisure_purpose_food_or_drink(lower):
+            return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Wants"}
         if _contains(lower, _KOPI_JAJAN) and not is_drinking_water_expense(lower):
             return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
         return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
     # Jajan dulu (kata "jajan"/kue), baru makan/delivery — hindari GrabFood → Transport.
-    if _contains(lower, _KOPI_JAJAN):
-        return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Wants"}
+    if is_leisure_purpose_food_or_drink(lower) or _contains(lower, _KOPI_JAJAN):
+        return {
+            "jenis": "Pengeluaran",
+            "kategori": "Makanan & Minuman",
+            "sifat": "Wants" if (is_leisure_purpose_food_or_drink(lower) or _contains(lower, _KOPI_JAJAN)) else "Need",
+        }
     if is_food_delivery(lower) or _contains(lower, _MAKAN):
         return {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need"}
     if is_electronics_expense(lower):
@@ -2459,13 +2753,15 @@ def classify_from_text(text: str) -> dict[str, str] | None:
 
 def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[str, Any]:
     """
-    Setelah AI parse: hormati AI, kecuali arah uang dari kata kerja jelas salah.
+    Setelah AI parse: RULES LOCK.
 
-    Rule:
-    - hormati jenis eksplisit user ("Pengeluaran …" / "Pemasukan …"),
-    - koreksi jenis jika kata kerja arah jelas (terima→masuk, bayar→keluar),
-    - koreksi dump kategori (Elektronik vs Jajan, GrabFood vs Transport),
-    - isi field yang AI biarkan kosong.
+    Urutan kebenaran:
+      1) Likuiditas sosial / hadiah / makan jelas / beauty (early returns)
+      2) classify_from_text (Layer 1 keyword) — jika kena, MENANG atas AI
+      3) Koreksi dump / kasus khusus hanya jika Layer 1 kosong
+      4) AI dipakai hanya untuk celah yang rule tidak tutup
+
+    Jangan “hormati AI” bila keyword sudah jelas — itu sumber regresi berulang.
     """
     combined = f"{source_text} {parsed.get('keterangan', '')}".strip()
     explicit = detect_explicit_jenis(source_text) or detect_explicit_jenis(combined)
@@ -2502,7 +2798,37 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         parsed["kategori"] = "Hadiah"
         parsed["sifat"] = "Wants"
         parsed.pop("sub_kategori", None)
-    elif is_beauty_care_expense(combined):
+        return parsed
+
+    # Makan siang/spaghetti/dll — paksa Makanan SEBELUM AI/beauty (spagethi≠spa).
+    # Kecuali konsumsi meeting kerja → Bisnis & Karir.
+    if (
+        is_clear_meal_expense(combined)
+        and explicit != "Pemasukan"
+        and not is_business_building_expense(combined)
+    ):
+        parsed["jenis"] = "Pengeluaran"
+        parsed["kategori"] = "Makanan & Minuman"
+        if is_leisure_purpose_food_or_drink(combined) or _contains(
+            lower_combined, _KOPI_JAJAN
+        ):
+            parsed["sifat"] = "Wants"
+        else:
+            parsed["sifat"] = "Need"
+        parsed.pop("sub_kategori", None)
+        parsed["needs_clarification"] = False
+        parsed["clarification_question"] = None
+        return parsed
+
+    if is_business_building_expense(combined) and explicit != "Pemasukan":
+        if is_clear_meal_expense(combined) or _contains(lower_combined, _KOPI_JAJAN):
+            parsed["jenis"] = "Pengeluaran"
+            parsed["kategori"] = "Bisnis & Karir"
+            parsed["sifat"] = "Need"
+            parsed.pop("sub_kategori", None)
+            return parsed
+
+    if is_beauty_care_expense(combined):
         parsed["jenis"] = "Pengeluaran"
         parsed["kategori"] = "Kesehatan & Kebersihan Diri"
         parsed["sifat"] = "Wants"
@@ -2633,17 +2959,17 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
                 parsed["jenis"] = "Pengeluaran"
                 ai_jenis = "Pengeluaran"
 
-        # Layer 1 keyword > AI dump. "Lain-lain" berarti model tidak tahu,
-        # bukan izin menimpa taksonomi yang sudah ada di classify_from_text.
-        if _is_dump_category(ai_kat_l):
-            rule_hit = classify_from_text(combined)
-            rule_kat = str((rule_hit or {}).get("kategori") or "").strip()
-            if rule_hit and rule_kat and not _is_dump_category(rule_kat):
-                parsed["jenis"] = rule_hit["jenis"]
-                parsed["kategori"] = rule_kat
-                parsed["sifat"] = rule_hit["sifat"]
-                parsed.pop("sub_kategori", None)
-                return parsed
+        # RULES LOCK: Layer 1 keyword selalu menang atas tebakan AI.
+        rule_hit = classify_from_text(combined)
+        rule_kat = str((rule_hit or {}).get("kategori") or "").strip()
+        rule_kat_l = rule_kat.lower()
+        if rule_hit and rule_kat and not _is_dump_category(rule_kat_l):
+            parsed["jenis"] = rule_hit["jenis"]
+            parsed["kategori"] = rule_kat
+            parsed["sifat"] = rule_hit["sifat"]
+            parsed.pop("sub_kategori", None)
+            parsed["rule_locked"] = True
+            return parsed
 
         if (
             ai_jenis == "Pengeluaran"
