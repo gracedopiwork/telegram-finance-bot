@@ -7,7 +7,10 @@
         'start_year' => '', 'target_years' => '', 'target_amount' => '',
         'realized_principal' => '', 'realized_actual' => '', 'last_updated' => '',
     ];
-    $investments = old('snapshot.investment_register', $existingBaseline?->investment_register ?? []);
+    // rowsFor(): baseline lama yang masih menyimpan "Total investasi" tunggal
+    // ter-prefill jadi satu baris, bukan baris kosong. Tanpa ini user lama
+    // membuka form, menekan Simpan, dan total_investment-nya terhapus diam-diam.
+    $investments = old('snapshot.investment_register', InvestmentRegister::rowsFor($existingBaseline));
     if (! is_array($investments)) {
         $investments = [];
     }

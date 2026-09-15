@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\FinancialBaseline;
 use Carbon\CarbonImmutable;
 
 /**
@@ -25,6 +26,12 @@ class InvestmentRegister
     public const MAX_ROWS = 12;
 
     /**
+     * Tujuan baris yang disintesis untuk baseline lama yang masih memakai
+     * "Total investasi" tunggal.
+     */
+    public const PLACEHOLDER_PURPOSE = 'Investasi (belum dirinci)';
+
+    /**
      * @return array<string, string>
      */
     public static function types(): array
@@ -44,7 +51,9 @@ class InvestmentRegister
 
     public static function typeLabel(?string $type): string
     {
-        return self::types()[$type] ?? 'Lainnya';
+        // $type di-guard dulu: mengindeks array dengan null memicu deprecation
+        // di PHP 8.4, dan baris lama memang bisa tidak punya jenis sama sekali.
+        return $type === null ? 'Lainnya' : (self::types()[$type] ?? 'Lainnya');
     }
 
     /**
@@ -155,6 +164,88 @@ class InvestmentRegister
     }
 
     /**
+     * Baris efektif untuk sebuah baseline.
+     *
+     * Baseline lama menyimpan investasi sebagai satu angka `total_investment`
+     * tanpa investment_register. Daripada menulis ulang data produksi lewat
+     * migrasi backfill — yang sulit dibatalkan tanpa staging — baris
+     * placeholder-nya disintesis saat dibaca. Tidak ada baris yang ditulis saat
+     * deploy, dan data pindah sendiri begitu user menyimpan Baseline berikutnya.
+     *
+     * Polanya sama dengan DebtRegister::rowsFor(): hitung pengganti saat baca,
+     * jangan simpan apa-apa.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function rowsFor(?FinancialBaseline $baseline): array
+    {
+        if ($baseline === null) {
+            return [];
+        }
+
+        $rows = self::rows($baseline->investment_register);
+        if ($rows !== []) {
+            return $rows;
+        }
+
+        $legacy = (int) ($baseline->total_investment ?? 0);
+        if ($legacy <= 0) {
+            return [];
+        }
+
+        return self::rows([[
+            // Kosong: normalizeInvestmentRegister() yang mencetak ULID asli saat
+            // user pertama kali menyimpan — saat itulah barisnya jadi nyata.
+            'investment_id' => '',
+            'investment_type' => 'lainnya',
+            'purpose' => self::PLACEHOLDER_PURPOSE,
+            'start_year' => null,
+            'target_years' => null,
+            'target_amount' => null,
+            // Angka lama adalah nilai yang dipegang sekarang, bukan modal yang
+            // disetor. Pokok dibiarkan null supaya yield tampil "—" daripada
+            // mengarang 0% dari modal yang tidak pernah diketahui.
+            'realized_principal' => null,
+            'realized_actual' => $legacy,
+            // Null disengaja: angka gelondongan ini tidak pernah diverifikasi
+            // sebagai baris register, jadi isStale() menandainya "perlu update".
+            'last_updated' => null,
+        ]]);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     */
+    public static function rowsHaveStale(array $rows): bool
+    {
+        foreach ($rows as $row) {
+            if ($row['is_stale'] ?? false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Yield portofolio ditimbang uang, bukan rata-rata persen antar baris —
+     * rata-rata persen membuat posisi 1 juta punya bobot sama dengan 1 miliar.
+     *
+     * Satu-satunya implementasi aturan itu; totalYieldPercent() mendelegasi ke sini.
+     *
+     * @param  list<array<string, mixed>>  $rows
+     */
+    public static function rowsYieldPercent(array $rows): ?float
+    {
+        $principal = (int) array_sum(array_column($rows, 'realized_principal'));
+
+        return self::yieldPercent(
+            $principal ?: null,
+            (int) array_sum(array_column($rows, 'realized_actual')),
+        );
+    }
+
+    /**
      * Total realisasi aktual — inilah yang mengisi kolom total_investment supaya
      * semua konsumen lama (gate onboarding, dashboard, prompt FTSA) tetap jalan.
      */
@@ -168,13 +259,9 @@ class InvestmentRegister
         return self::sum($raw, 'realized_principal');
     }
 
-    /**
-     * Yield portofolio ditimbang uang, bukan rata-rata persen antar baris.
-     * Rata-rata persen membuat posisi 1 juta punya bobot sama dengan 1 miliar.
-     */
     public static function totalYieldPercent(mixed $raw): ?float
     {
-        return self::yieldPercent(self::totalPrincipal($raw), self::totalActual($raw));
+        return self::rowsYieldPercent(self::rows($raw));
     }
 
     public static function hasStaleRow(mixed $raw): bool

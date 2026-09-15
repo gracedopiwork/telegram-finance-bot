@@ -1328,8 +1328,8 @@ class TransactionDashboardService
             'debt_register_stale' => \App\Support\DebtRegister::rowsHaveStale(\App\Support\DebtRegister::rowsFor($baseline)),
             // Stock juga (nilai portofolio, input manual) — yield diturunkan di
             // InvestmentRegister, tidak pernah disimpan.
-            'investment_register' => \App\Support\InvestmentRegister::rows($baseline->investment_register),
-            'investment_register_stale' => \App\Support\InvestmentRegister::hasStaleRow($baseline->investment_register),
+            'investment_register' => \App\Support\InvestmentRegister::rowsFor($baseline),
+            'investment_register_stale' => \App\Support\InvestmentRegister::rowsHaveStale(\App\Support\InvestmentRegister::rowsFor($baseline)),
             'protection' => [
                 'bpjs' => $baseline->has_bpjs,
                 'health' => $baseline->has_health_insurance,

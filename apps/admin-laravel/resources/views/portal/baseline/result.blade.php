@@ -175,10 +175,10 @@
             @endif
         @endforeach
         @php
-            $invRows = \App\Support\InvestmentRegister::rows($baseline->investment_register);
-            $invStale = \App\Support\InvestmentRegister::hasStaleRow($baseline->investment_register);
+            $invRows = \App\Support\InvestmentRegister::rowsFor($baseline);
+            $invStale = \App\Support\InvestmentRegister::rowsHaveStale($invRows);
             $invStaleMonths = \App\Support\InvestmentRegister::staleAfterMonths();
-            $invTotalYield = \App\Support\InvestmentRegister::totalYieldPercent($baseline->investment_register);
+            $invTotalYield = \App\Support\InvestmentRegister::rowsYieldPercent($invRows);
             $invYieldClass = fn ($y) => $y === null
                 ? 'text-slate-500'
                 : ($y < 0 ? 'text-rose-600' : 'text-emerald-700');
@@ -233,8 +233,8 @@
                         <tfoot>
                             <tr class="border-t-2 border-slate-300 text-navy-800">
                                 <td class="pt-1.5 pr-3 font-semibold" colspan="5">Total</td>
-                                <td class="pt-1.5 pr-3 font-bold">{{ $fmt((int) (\App\Support\InvestmentRegister::totalPrincipal($baseline->investment_register) ?? 0)) }}</td>
-                                <td class="pt-1.5 pr-3 font-bold">{{ $fmt((int) (\App\Support\InvestmentRegister::totalActual($baseline->investment_register) ?? 0)) }}</td>
+                                <td class="pt-1.5 pr-3 font-bold">{{ $fmt((int) array_sum(array_column($invRows, 'realized_principal'))) }}</td>
+                                <td class="pt-1.5 pr-3 font-bold">{{ $fmt((int) array_sum(array_column($invRows, 'realized_actual'))) }}</td>
                                 <td class="pt-1.5 pr-3 font-bold {{ $invYieldClass($invTotalYield) }}">{{ \App\Support\InvestmentRegister::formatYield($invTotalYield) }}</td>
                                 <td></td>
                             </tr>

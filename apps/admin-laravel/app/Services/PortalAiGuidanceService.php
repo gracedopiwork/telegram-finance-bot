@@ -1365,7 +1365,7 @@ PROMPT;
      */
     private function investmentRegisterLines(FinancialBaseline $baseline): array
     {
-        $rows = InvestmentRegister::rows($baseline->investment_register ?? null);
+        $rows = InvestmentRegister::rowsFor($baseline);
         if ($rows === []) {
             return [];
         }
@@ -1396,15 +1396,15 @@ PROMPT;
             $lines[] = $parts;
         }
 
-        $totalYield = InvestmentRegister::totalYieldPercent($baseline->investment_register ?? null);
+        $totalYield = InvestmentRegister::rowsYieldPercent($rows);
         $lines[] = sprintf(
             '  - Total portofolio: pokok Rp %s, aktual Rp %s, yield %s (ditimbang nilai, bukan rata-rata persen antar baris).',
-            number_format((int) (InvestmentRegister::totalPrincipal($baseline->investment_register ?? null) ?? 0), 0, ',', '.'),
-            number_format((int) (InvestmentRegister::totalActual($baseline->investment_register ?? null) ?? 0), 0, ',', '.'),
+            number_format((int) array_sum(array_column($rows, 'realized_principal')), 0, ',', '.'),
+            number_format((int) array_sum(array_column($rows, 'realized_actual')), 0, ',', '.'),
             InvestmentRegister::formatYield($totalYield),
         );
 
-        if (InvestmentRegister::hasStaleRow($baseline->investment_register ?? null)) {
+        if (InvestmentRegister::rowsHaveStale($rows)) {
             $lines[] = '  - Baris bertanda [STALE] belum diperbarui lebih dari '
                 .InvestmentRegister::staleAfterMonths()
                 .' bulan. Sebut nilai dan yield-nya dengan kualifikasi waktu ("berdasarkan data terakhir kamu update [tanggal], ..."), bukan sebagai angka pasti.';
