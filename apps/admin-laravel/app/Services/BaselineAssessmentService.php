@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\DebtRegister;
 use Carbon\Carbon;
 
 class BaselineAssessmentService
@@ -234,6 +235,17 @@ class BaselineAssessmentService
             'snapshot.protection_policies.*.coverage' => 'nullable|string|max:255',
             'snapshot.protection_policies.*.active_year' => 'nullable|string|max:20',
             'snapshot.protection_policies.*.payment_duration' => 'nullable|string|max:80',
+
+            // Debt Register (Section 3). last_updated & linked_expense_category
+            // di-set server, sengaja tidak diterima dari input.
+            'snapshot.debt_register' => 'nullable|array|max:'.DebtRegister::MAX_ROWS,
+            'snapshot.debt_register.*.debt_id' => 'nullable|string|max:32',
+            'snapshot.debt_register.*.debt_name' => 'nullable|string|max:120',
+            'snapshot.debt_register.*.debt_type' => 'nullable|string|in:'.implode(',', array_keys(DebtRegister::types())),
+            'snapshot.debt_register.*.principal_outstanding' => 'nullable|integer|min:0',
+            'snapshot.debt_register.*.monthly_installment_reference' => 'nullable|integer|min:0',
+            'snapshot.debt_register.*.remaining_tenor_months' => 'nullable|integer|min:0|max:600',
+            'snapshot.debt_register_submitted' => 'sometimes|boolean',
         ];
     }
 

@@ -174,6 +174,66 @@
                 </div>
             @endif
         @endforeach
+        @php
+            $debtRows = \App\Support\DebtRegister::rowsFor($baseline);
+            $debtStale = \App\Support\DebtRegister::rowsHaveStale($debtRows);
+            $staleMonths = \App\Support\DebtRegister::staleAfterMonths();
+        @endphp
+        @if($debtRows !== [])
+            <div class="rounded-xl bg-slate-50 p-3 sm:col-span-2 lg:col-span-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div class="text-xs text-slate-500">Daftar utang</div>
+                    <a href="{{ route('portal.baseline.create') }}" class="text-xs font-semibold text-navy-700 hover:underline">Perbarui →</a>
+                </div>
+                @if($debtStale)
+                    <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900 mb-3">
+                        Sebagian data belum diperbarui lebih dari {{ $staleMonths }} bulan, jadi sisa pokok di bawah
+                        mungkin sudah tidak akurat. Perbarui angkanya agar analisis tetap relevan.
+                    </div>
+                @endif
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-xs">
+                        <thead>
+                            <tr class="text-left text-slate-500">
+                                <th class="pb-1 pr-3 font-medium">Nama</th>
+                                <th class="pb-1 pr-3 font-medium">Jenis</th>
+                                <th class="pb-1 pr-3 font-medium">Sisa pokok</th>
+                                <th class="pb-1 pr-3 font-medium">Cicilan/bulan</th>
+                                <th class="pb-1 pr-3 font-medium">Tenor sisa</th>
+                                <th class="pb-1 font-medium">Update terakhir</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach($debtRows as $debt)
+                            <tr class="border-t border-slate-200 text-navy-800">
+                                <td class="py-1.5 pr-3 font-medium">{{ $debt['debt_name'] }}</td>
+                                <td class="py-1.5 pr-3">{{ $debt['debt_type_label'] }}</td>
+                                <td class="py-1.5 pr-3">{{ $debt['principal_outstanding'] !== null ? $fmt((int) $debt['principal_outstanding']) : '—' }}</td>
+                                <td class="py-1.5 pr-3">{{ $debt['monthly_installment_reference'] !== null ? $fmt((int) $debt['monthly_installment_reference']) : '—' }}</td>
+                                <td class="py-1.5 pr-3">{{ $debt['remaining_tenor_months'] !== null ? $debt['remaining_tenor_months'].' bulan' : '—' }}</td>
+                                <td class="py-1.5 whitespace-nowrap">
+                                    {{ $debt['last_updated_label'] }}
+                                    @if($debt['is_stale'])
+                                        <span class="ml-1 text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-semibold">perlu update</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-t-2 border-slate-300 text-navy-800">
+                                <td class="pt-1.5 pr-3 font-semibold" colspan="2">Total sisa pokok</td>
+                                <td class="pt-1.5 pr-3 font-bold">{{ $fmt((int) array_sum(array_column($debtRows, 'principal_outstanding'))) }}</td>
+                                <td colspan="3"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-2">
+                    Sisa pokok diisi manual dan dikonfirmasi tiap evaluasi 3 bulan — tidak dihitung dari transaksi cicilan harian.
+                </p>
+            </div>
+        @endif
         <div class="rounded-xl bg-slate-50 p-3 sm:col-span-2 lg:col-span-3">
             <div class="text-xs text-slate-500 mb-2">Proteksi</div>
             <div class="flex flex-wrap gap-1.5">

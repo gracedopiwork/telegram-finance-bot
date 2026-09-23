@@ -1,4 +1,4 @@
-"""Tests for canonical Laravel bucket preview used by Telegram."""
+﻿"""Tests for canonical Laravel bucket preview used by Telegram."""
 
 from __future__ import annotations
 

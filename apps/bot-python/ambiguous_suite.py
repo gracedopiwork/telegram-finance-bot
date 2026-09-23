@@ -1,4 +1,4 @@
-"""Paket uji kasus ambigu — dipakai unittest dan perintah /uji di Telegram."""
+﻿"""Paket uji kasus ambigu — dipakai unittest dan perintah /uji di Telegram."""
 
 from __future__ import annotations
 

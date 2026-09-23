@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\FinancialBaseline;
+use App\Support\DebtRegister;
 use App\Models\PortalGuidanceSnapshot;
 use App\Support\PortalTimezone;
 use Illuminate\Support\Facades\Cache;
@@ -1338,7 +1339,6 @@ PROMPT;
             'cash_savings' => 'Tabungan',
             'total_investment' => 'Investasi',
             'total_asset' => 'Total aset',
-            'total_debt' => 'Utang',
             'emergency_fund' => 'Dana darurat',
         ] as $field => $label) {
             if ($baseline->{$field} !== null && (int) $baseline->{$field} > 0) {
@@ -1346,11 +1346,58 @@ PROMPT;
             }
         }
 
+        $lines = array_merge($lines, $this->debtRegisterLines($baseline));
+
         if ($lines === []) {
             return '';
         }
 
         return "- Baseline keuangan:\n".$this->linesBlock($lines);
+    }
+
+    /**
+     * Debt Register untuk prompt. Sisa pokok SELALU dibawa bersama tanggal
+     * update-nya, karena angkanya input manual per siklus 3 bulan — bukan
+     * hasil hitung dari transaksi. Kalau sudah stale, AI diberi instruksi
+     * eksplisit supaya tidak menyebutnya sebagai fakta pasti (Section 3.4 & 5).
+     *
+     * @return list<string>
+     */
+    private function debtRegisterLines(FinancialBaseline $baseline): array
+    {
+        $rows = DebtRegister::rowsFor($baseline);
+        if ($rows === []) {
+            return [];
+        }
+
+        $lines = ['- Debt Register (sisa pokok = input manual user, TIDAK dihitung dari transaksi cicilan):'];
+        foreach ($rows as $row) {
+            $parts = sprintf(
+                '  - %s (%s): sisa pokok Rp %s per update terakhir %s',
+                $row['debt_name'],
+                $row['debt_type_label'],
+                number_format((int) ($row['principal_outstanding'] ?? 0), 0, ',', '.'),
+                $row['last_updated_label'],
+            );
+            if ($row['monthly_installment_reference'] !== null) {
+                $parts .= sprintf(', cicilan Rp %s/bln', number_format((int) $row['monthly_installment_reference'], 0, ',', '.'));
+            }
+            if ($row['remaining_tenor_months'] !== null) {
+                $parts .= sprintf(', tenor sisa %d bulan', (int) $row['remaining_tenor_months']);
+            }
+            if ($row['is_stale']) {
+                $parts .= ' [STALE]';
+            }
+            $lines[] = $parts;
+        }
+
+        if (DebtRegister::rowsHaveStale($rows)) {
+            $lines[] = '  - Baris bertanda [STALE] belum diperbarui lebih dari '
+                .DebtRegister::staleAfterMonths()
+                .' bulan. Sebut angkanya dengan kualifikasi waktu ("berdasarkan data terakhir kamu update [tanggal], sisa pokok sekitar ..."), bukan sebagai angka pasti.';
+        }
+
+        return $lines;
     }
 
     /**
