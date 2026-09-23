@@ -13,6 +13,7 @@ use App\Services\FtsaEvaluationService;
 use App\Services\PortalAccessService;
 use App\Services\PortalFeatureService;
 use App\Services\PortalOnboardingService;
+use App\Support\AssetDetails;
 use App\Support\DebtRegister;
 use App\Support\FinancialBaselineSchema;
 use App\Support\InvestmentRegister;
@@ -306,9 +307,15 @@ class BaselineController extends Controller
             $investmentCleared = (bool) ($snapshot['investment_register_submitted'] ?? false)
                 && ($payload['investment_register'] ?? null) === null;
 
+            // Idem untuk aset: user yang menjual semua asetnya harus bisa
+            // mengosongkan rinciannya, bukan mendapatkannya kembali dari merge.
+            $assetCleared = (bool) ($snapshot['asset_details_submitted'] ?? false)
+                && ($payload['asset_details'] ?? null) === null;
+
             $forceOverwrite = array_merge(
                 $debtCleared ? ['debt_register', 'total_debt'] : [],
                 $investmentCleared ? ['investment_register', 'total_investment'] : [],
+                $assetCleared ? ['asset_details', 'total_asset'] : [],
             );
 
             if ($recordToUpdate !== null) {
@@ -433,6 +440,8 @@ class BaselineController extends Controller
      */
     private function buildBaselinePayload(Request $request, int $telegramUserId, array $result, array $snapshot, bool $ftsaUnlocked, ?FinancialBaseline $existing = null): array
     {
+        $assetDetails = $this->normalizeAssetDetails($snapshot['asset_details'] ?? null);
+
         $payload = [
             'telegram_user_id' => $telegramUserId,
             'email' => $this->sessionEmail($request),
@@ -447,7 +456,7 @@ class BaselineController extends Controller
             'cash_savings' => $this->nullableInt($snapshot['cash_savings'] ?? null),
             'total_investment' => $this->nullableInt($snapshot['total_investment'] ?? null),
             'total_asset' => $this->nullableInt($snapshot['total_asset'] ?? null),
-            'asset_details' => $this->normalizeAssetDetails($snapshot['asset_details'] ?? null),
+            'asset_details' => $assetDetails,
             'total_debt' => $this->nullableInt($snapshot['total_debt'] ?? null),
             'has_bpjs' => (bool) ($snapshot['has_bpjs'] ?? false),
             'has_health_insurance' => (bool) ($snapshot['has_health_insurance'] ?? false),
@@ -471,6 +480,16 @@ class BaselineController extends Controller
             $jobType = $this->normalizeJobType($snapshot['job_type'] ?? null);
             $payload['job_type'] = $jobType;
             $payload['tax_scheme'] = $this->taxSchemeForJobType($jobType);
+        }
+
+        // total_asset jadi turunan dari Rincian aset: user mengisi barisnya,
+        // angka totalnya dihitung — pola yang sama dengan total_debt/total_investment.
+        // Kosong hanya boleh menimpa kalau form memang mengirim tabelnya.
+        $assetSubmitted = (bool) ($snapshot['asset_details_submitted'] ?? false);
+        if ($assetDetails !== null) {
+            $payload['total_asset'] = AssetDetails::total($assetDetails);
+        } elseif ($assetSubmitted) {
+            $payload['total_asset'] = null;
         }
 
         if (\Illuminate\Support\Facades\Schema::hasColumn('financial_baselines', 'debt_register')) {
@@ -602,9 +621,12 @@ class BaselineController extends Controller
         }
 
         if (isset($snapshot['asset_details']) && is_array($snapshot['asset_details'])) {
-            foreach (['rumah', 'tanah', 'apartemen', 'mobil', 'lainnya'] as $field) {
-                if (array_key_exists($field, $snapshot['asset_details']) && $snapshot['asset_details'][$field] === '') {
-                    $snapshot['asset_details'][$field] = null;
+            foreach ($snapshot['asset_details'] as $idx => $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+                if (($row['asset_value'] ?? '') === '') {
+                    $snapshot['asset_details'][$idx]['asset_value'] = null;
                 }
             }
         }
@@ -650,7 +672,15 @@ class BaselineController extends Controller
     }
 
     /**
-     * @return array<string, int>|null
+     * Rincian aset per item. Aturannya sejajar dengan Daftar Investasi:
+     * baris kosong dibuang, jenis tak dikenal jatuh ke 'lainnya', dan baris yang
+     * hanya berisi angka tetap dapat nama dari label jenisnya supaya tidak pernah
+     * tampil tanpa identitas.
+     *
+     * Tidak ada asset_id / last_updated: aset belum punya siklus verifikasi
+     * per baris seperti utang dan investasi, jadi tidak ada yang perlu diikat.
+     *
+     * @return list<array{asset_name: string, asset_type: string, asset_value: ?int}>|null
      */
     private function normalizeAssetDetails(mixed $value): ?array
     {
@@ -658,12 +688,33 @@ class BaselineController extends Controller
             return null;
         }
 
+        $validTypes = array_keys(AssetDetails::types());
         $out = [];
-        foreach (['rumah', 'tanah', 'apartemen', 'mobil', 'lainnya'] as $key) {
-            $amount = $this->nullableInt($value[$key] ?? null);
-            if ($amount !== null && $amount > 0) {
-                $out[$key] = $amount;
+
+        foreach ($value as $row) {
+            if (! is_array($row)) {
+                continue;
             }
+
+            $name = trim((string) ($row['asset_name'] ?? ''));
+            $amount = $this->nullableInt($row['asset_value'] ?? null);
+
+            // Jenis selalu terkirim (select punya nilai default), jadi baris kosong
+            // dikenali dari nama + nilainya, bukan dari jenisnya.
+            if ($name === '' && $amount === null) {
+                continue;
+            }
+
+            $type = (string) ($row['asset_type'] ?? 'lainnya');
+            if (! in_array($type, $validTypes, true)) {
+                $type = 'lainnya';
+            }
+
+            $out[] = [
+                'asset_name' => $name !== '' ? $name : AssetDetails::typeLabel($type),
+                'asset_type' => $type,
+                'asset_value' => $amount,
+            ];
         }
 
         return $out === [] ? null : $out;

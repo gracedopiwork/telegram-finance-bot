@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\FinancialBaseline;
+use App\Support\AssetDetails;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -78,5 +79,30 @@ class FinancialBaselineFactory extends Factory
     public function withInvestmentRegister(array $rows): self
     {
         return $this->state(fn () => ['investment_register' => $rows]);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     */
+    public function withAssetDetails(array $rows): self
+    {
+        return $this->state(fn () => [
+            'asset_details' => $rows,
+            'total_asset' => AssetDetails::total($rows),
+        ]);
+    }
+
+    /**
+     * Baseline lama yang masih menyimpan Rincian aset sebagai map jenis => nilai
+     * (pra tabel per item). Dipakai untuk menguji pembacaan bentuk lama.
+     *
+     * @param  array<string, int>  $map
+     */
+    public function withLegacyAssetDetails(array $map): self
+    {
+        return $this->state(fn () => [
+            'asset_details' => $map,
+            'total_asset' => AssetDetails::total($map),
+        ]);
     }
 }

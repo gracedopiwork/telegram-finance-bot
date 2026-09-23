@@ -100,7 +100,7 @@
                 <tr>
                     {{-- Sengaja <td>, bukan input: tanpa name= baris ini tidak ikut
                          terkirim dan tidak bisa diisi user. --}}
-                    <td class="px-2 py-2 font-semibold text-navy-800" colspan="2">Total sisa pokok</td>
+                    <td class="px-2 py-2 font-semibold text-navy-800" colspan="2">Total</td>
                     <td class="px-2 py-2 font-bold text-navy-800" id="debt-total-principal"
                         data-debt-total>{{ number_format($debtTotal, 0, ',', '.') }}</td>
                     <td colspan="4"></td>

@@ -1,9 +1,6 @@
 @php
     $existingBaseline = $existingBaseline ?? null;
-    $assetDetails = old('snapshot.asset_details', $existingBaseline?->asset_details ?? []);
-    if (! is_array($assetDetails)) {
-        $assetDetails = [];
-    }
+    $protectionChecked = fn (string $field) => (bool) old("snapshot.{$field}", $existingBaseline?->{$field});
     $policies = old('snapshot.protection_policies', $existingBaseline?->protection_policies ?? []);
     if (! is_array($policies) || $policies === []) {
         $policies = [
@@ -17,26 +14,24 @@
     $maxPolicies = 12;
 @endphp
 
-<div>
-    <div class="text-sm font-semibold text-navy-800 mb-2">Rincian aset</div>
-    <p class="text-xs text-slate-500 mb-3">Pecah total aset ke jenis utama (opsional).</p>
-    <div class="grid sm:grid-cols-2 gap-3">
+<fieldset>
+    <legend class="text-sm font-semibold text-navy-800 mb-2">Proteksi yang dimiliki</legend>
+    <div class="flex flex-wrap gap-4">
         @foreach([
-            'rumah' => 'Rumah (Rp)',
-            'tanah' => 'Tanah (Rp)',
-            'apartemen' => 'Apartemen (Rp)',
-            'mobil' => 'Mobil (Rp)',
-            'lainnya' => 'Aset lain (Rp)',
+            'has_bpjs' => 'BPJS',
+            'has_health_insurance' => 'Asuransi kesehatan',
+            'has_income_protection' => 'Income protection',
+            'has_life_insurance' => 'Asuransi jiwa',
         ] as $field => $label)
-            <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">{{ $label }}</label>
-                <input type="number" name="snapshot[asset_details][{{ $field }}]" min="0" step="1000"
-                       value="{{ $assetDetails[$field] ?? '' }}"
-                       class="w-full rounded-lg border-slate-300 text-sm" placeholder="0">
-            </div>
+            <label class="inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" name="snapshot[{{ $field }}]" value="1"
+                       class="rounded border-slate-300 text-navy-600"
+                       @checked($protectionChecked($field))>
+                {{ $label }}
+            </label>
         @endforeach
     </div>
-</div>
+</fieldset>
 
 <div>
     <div class="flex flex-wrap items-center justify-between gap-2 mb-2">

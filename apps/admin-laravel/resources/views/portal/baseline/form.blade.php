@@ -26,7 +26,6 @@
     $existingFs = $existingFs ?? [];
     $existingBaseline = $existingBaseline ?? null;
     $snapshotValue = fn (string $field) => old("snapshot.{$field}", $existingBaseline?->{$field});
-    $snapshotChecked = fn (string $field) => (bool) old("snapshot.{$field}", $existingBaseline?->{$field});
     $fsValue = fn (string $key) => old("fs.{$key}", $existingFs[$key] ?? null);
     $formAction = $formMode === 'ftsa' ? route('portal.ftsa.store') : route('portal.baseline.store');
 @endphp
@@ -225,8 +224,7 @@
                 'avg_monthly_income' => 'Rata-rata pendapatan bulanan (Rp)',
                 'emergency_fund' => 'Dana darurat (Rp)',
                 'cash_savings' => 'Cash / tabungan (Rp)',
-                'total_asset' => 'Total aset (Rp)',
-                ];
+            ];
         @endphp
         {{-- Snapshot keuangan --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -282,29 +280,14 @@
                         </div>
                     @endforeach
                 </div>
-                <fieldset>
-                    <legend class="text-sm font-semibold text-navy-800 mb-2">Proteksi yang dimiliki</legend>
-                    <div class="flex flex-wrap gap-4">
-                        @foreach([
-                            'has_bpjs' => 'BPJS',
-                            'has_health_insurance' => 'Asuransi kesehatan',
-                            'has_income_protection' => 'Income protection',
-                            'has_life_insurance' => 'Asuransi jiwa',
-                        ] as $field => $label)
-                            <label class="inline-flex items-center gap-2 text-sm">
-                                <input type="checkbox" name="snapshot[{{ $field }}]" value="1"
-                                       class="rounded border-slate-300 text-navy-600"
-                                       @checked($snapshotChecked($field))>
-                                {{ $label }}
-                            </label>
-                        @endforeach
-                    </div>
-                </fieldset>
-                @include('portal.partials.baseline-investment-register-fields', ['existingBaseline' => $existingBaseline ?? null])
+                {{-- Urutan neraca: aset, utang, proteksi, lalu investasi. --}}
+                @include('portal.partials.baseline-asset-details-fields', ['existingBaseline' => $existingBaseline ?? null])
 
                 @include('portal.partials.baseline-debt-register-fields', ['existingBaseline' => $existingBaseline ?? null])
 
-                @include('portal.partials.baseline-asset-protection-fields', ['existingBaseline' => $existingBaseline ?? null])
+                @include('portal.partials.baseline-protection-fields', ['existingBaseline' => $existingBaseline ?? null])
+
+                @include('portal.partials.baseline-investment-register-fields', ['existingBaseline' => $existingBaseline ?? null])
             </div>
         </div>
         @endif
