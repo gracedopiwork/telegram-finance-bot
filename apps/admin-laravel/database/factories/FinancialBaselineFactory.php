@@ -62,4 +62,21 @@ class FinancialBaselineFactory extends Factory
     {
         return $this->state(fn () => ['debt_register' => $rows]);
     }
+
+    /**
+     * Baseline lama yang masih memakai field "Total investasi" tunggal
+     * (pra Daftar Investasi).
+     */
+    public function withLegacyTotalInvestment(int $amount = 2_000_000): self
+    {
+        return $this->state(fn () => ['total_investment' => $amount]);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     */
+    public function withInvestmentRegister(array $rows): self
+    {
+        return $this->state(fn () => ['investment_register' => $rows]);
+    }
 }

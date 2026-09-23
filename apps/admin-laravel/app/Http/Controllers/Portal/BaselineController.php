@@ -15,6 +15,7 @@ use App\Services\PortalFeatureService;
 use App\Services\PortalOnboardingService;
 use App\Support\DebtRegister;
 use App\Support\FinancialBaselineSchema;
+use App\Support\InvestmentRegister;
 use App\Support\PortalSession;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -300,11 +301,21 @@ class BaselineController extends Controller
             $debtCleared = (bool) ($snapshot['debt_register_submitted'] ?? false)
                 && ($payload['debt_register'] ?? null) === null;
 
+            // Idem untuk investasi: user yang mencairkan semua portofolionya harus
+            // bisa mengosongkan tabelnya, bukan mendapatkannya kembali dari merge.
+            $investmentCleared = (bool) ($snapshot['investment_register_submitted'] ?? false)
+                && ($payload['investment_register'] ?? null) === null;
+
+            $forceOverwrite = array_merge(
+                $debtCleared ? ['debt_register', 'total_debt'] : [],
+                $investmentCleared ? ['investment_register', 'total_investment'] : [],
+            );
+
             if ($recordToUpdate !== null) {
                 $payload = $this->mergeExistingSnapshotFields(
                     $recordToUpdate,
                     $payload,
-                    $debtCleared ? ['debt_register', 'total_debt'] : [],
+                    $forceOverwrite,
                 );
                 $recordToUpdate->update($payload);
                 $savedBaseline = $recordToUpdate->fresh();
@@ -485,6 +496,29 @@ class BaselineController extends Controller
             }
         }
 
+        if (\Illuminate\Support\Facades\Schema::hasColumn('financial_baselines', 'investment_register')) {
+            $investments = $this->normalizeInvestmentRegister(
+                $snapshot['investment_register'] ?? null,
+                is_array($existing?->investment_register) ? $existing->investment_register : null,
+            );
+
+            // Kosong hanya boleh menimpa kalau form memang mengirim tabelnya —
+            // alasan yang sama dengan debt_register di atas.
+            $investmentSubmitted = (bool) ($snapshot['investment_register_submitted'] ?? false);
+            if ($investments !== null || $investmentSubmitted) {
+                $payload['investment_register'] = $investments;
+            }
+
+            // total_investment jadi turunan dari realisasi aktual: semua konsumen
+            // lama (gate onboarding, dashboard, overview FTSA) tetap membaca satu
+            // angka seperti biasa.
+            if ($investments !== null) {
+                $payload['total_investment'] = InvestmentRegister::totalActual($investments);
+            } elseif ($investmentSubmitted) {
+                $payload['total_investment'] = null;
+            }
+        }
+
         $flags = $this->protectionFlagsFromPolicies($payload['protection_policies'] ?? null);
         $payload['has_bpjs'] = $payload['has_bpjs'] || $flags['has_bpjs'];
         $payload['has_health_insurance'] = $payload['has_health_insurance'] || $flags['has_health_insurance'];
@@ -530,6 +564,7 @@ class BaselineController extends Controller
             'has_life_insurance',
             'protection_policies',
             'debt_register',
+            'investment_register',
         ] as $field) {
             if (! array_key_exists($field, $payload)) {
                 continue;
@@ -593,6 +628,19 @@ class BaselineController extends Controller
                 foreach (['principal_outstanding', 'monthly_installment_reference', 'remaining_tenor_months'] as $field) {
                     if (($row[$field] ?? '') === '') {
                         $snapshot['debt_register'][$idx][$field] = null;
+                    }
+                }
+            }
+        }
+
+        if (isset($snapshot['investment_register']) && is_array($snapshot['investment_register'])) {
+            foreach ($snapshot['investment_register'] as $idx => $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+                foreach (['start_year', 'target_years', 'target_amount', 'realized_principal', 'realized_actual'] as $field) {
+                    if (($row[$field] ?? '') === '') {
+                        $snapshot['investment_register'][$idx][$field] = null;
                     }
                 }
             }
@@ -730,6 +778,93 @@ class BaselineController extends Controller
                 'monthly_installment_reference' => $installment,
                 'remaining_tenor_months' => $tenor,
                 'linked_expense_category' => DebtRegister::LINKED_EXPENSE_CATEGORY,
+                'last_updated' => $lastUpdated,
+            ];
+        }
+
+        return $out === [] ? null : $out;
+    }
+
+    /**
+     * Daftar Investasi.
+     *
+     * Aturannya sejajar dengan Debt Register:
+     * 1. investment_id immutable — identitas baris. Ini yang membuat last_updated
+     *    bisa diikat ke baris yang sama walau tujuannya diubah.
+     * 2. last_updated hanya bergerak kalau realisasi pokok / aktual benar-benar
+     *    berubah. Mengganti tujuan atau jenis bukan verifikasi ulang angka, jadi
+     *    tidak boleh me-reset jam staleness.
+     * 3. yield tidak pernah disimpan — selalu dihitung dari dua kolom realisasi,
+     *    supaya tidak mungkin berbeda dari angka yang dirangkumnya.
+     *
+     * @param  list<array<string, mixed>>|null  $existing
+     * @return list<array<string, mixed>>|null
+     */
+    private function normalizeInvestmentRegister(mixed $value, ?array $existing): ?array
+    {
+        if (! is_array($value)) {
+            return null;
+        }
+
+        $previous = [];
+        foreach ($existing ?? [] as $row) {
+            if (is_array($row) && ! empty($row['investment_id'])) {
+                $previous[(string) $row['investment_id']] = $row;
+            }
+        }
+
+        $today = now()->toDateString();
+        $validTypes = array_keys(InvestmentRegister::types());
+        $out = [];
+
+        foreach ($value as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $purpose = trim((string) ($row['purpose'] ?? ''));
+            $startYear = $this->nullableInt($row['start_year'] ?? null);
+            $targetYears = $this->nullableInt($row['target_years'] ?? null);
+            $targetAmount = $this->nullableInt($row['target_amount'] ?? null);
+            $principal = $this->nullableInt($row['realized_principal'] ?? null);
+            $actual = $this->nullableInt($row['realized_actual'] ?? null);
+
+            // Jenis selalu terkirim (select punya nilai default), jadi baris kosong
+            // dikenali dari tujuan + semua angkanya, bukan dari jenisnya.
+            if ($purpose === '' && $startYear === null && $targetYears === null
+                && $targetAmount === null && $principal === null && $actual === null) {
+                continue;
+            }
+
+            $type = (string) ($row['investment_type'] ?? 'lainnya');
+            if (! in_array($type, $validTypes, true)) {
+                $type = 'lainnya';
+            }
+
+            $investmentId = trim((string) ($row['investment_id'] ?? ''));
+            $prior = $investmentId !== '' ? ($previous[$investmentId] ?? null) : null;
+            if ($investmentId === '' || $prior === null) {
+                $investmentId = (string) Str::ulid();
+                $prior = null;
+            }
+
+            $changed = $prior === null
+                || $this->nullableInt($prior['realized_principal'] ?? null) !== $principal
+                || $this->nullableInt($prior['realized_actual'] ?? null) !== $actual;
+
+            $lastUpdated = $changed
+                ? $today
+                : (string) ($prior['last_updated'] ?? $today);
+
+            $out[] = [
+                'investment_id' => $investmentId,
+                'investment_type' => $type,
+                'purpose' => $purpose !== '' ? $purpose : 'Investasi',
+                'start_year' => $startYear,
+                'target_years' => $targetYears,
+                'target_amount' => $targetAmount,
+                'realized_principal' => $principal,
+                'realized_actual' => $actual,
                 'last_updated' => $lastUpdated,
             ];
         }

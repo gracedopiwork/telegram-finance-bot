@@ -175,6 +175,79 @@
             @endif
         @endforeach
         @php
+            $invRows = \App\Support\InvestmentRegister::rowsFor($baseline);
+            $invStale = \App\Support\InvestmentRegister::rowsHaveStale($invRows);
+            $invStaleMonths = \App\Support\InvestmentRegister::staleAfterMonths();
+            $invTotalYield = \App\Support\InvestmentRegister::rowsYieldPercent($invRows);
+            $invYieldClass = fn ($y) => $y === null
+                ? 'text-slate-500'
+                : ($y < 0 ? 'text-rose-600' : 'text-emerald-700');
+        @endphp
+        @if($invRows !== [])
+            <div class="rounded-xl bg-slate-50 p-3 sm:col-span-2 lg:col-span-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div class="text-xs text-slate-500">Daftar investasi</div>
+                    <a href="{{ route('portal.baseline.create') }}" class="text-xs font-semibold text-navy-700 hover:underline">Perbarui &rarr;</a>
+                </div>
+                @if($invStale)
+                    <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900 mb-3">
+                        Sebagian data belum diperbarui lebih dari {{ $invStaleMonths }} bulan, jadi nilai dan yield di bawah
+                        mungkin sudah tidak akurat. Perbarui angkanya agar analisis tetap relevan.
+                    </div>
+                @endif
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-xs">
+                        <thead>
+                            <tr class="text-left text-slate-500">
+                                <th class="pb-1 pr-3 font-medium">Jenis</th>
+                                <th class="pb-1 pr-3 font-medium">Tujuan</th>
+                                <th class="pb-1 pr-3 font-medium">Mulai</th>
+                                <th class="pb-1 pr-3 font-medium">Target (tahun)</th>
+                                <th class="pb-1 pr-3 font-medium">Target nominal</th>
+                                <th class="pb-1 pr-3 font-medium">Realisasi pokok</th>
+                                <th class="pb-1 pr-3 font-medium">Realisasi aktual</th>
+                                <th class="pb-1 pr-3 font-medium">Yield</th>
+                                <th class="pb-1 font-medium">Terakhir diupdate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach($invRows as $inv)
+                            <tr class="border-t border-slate-200 text-navy-800">
+                                <td class="py-1.5 pr-3 font-medium">{{ $inv['investment_type_label'] }}</td>
+                                <td class="py-1.5 pr-3">{{ $inv['purpose'] !== '' ? $inv['purpose'] : '—' }}</td>
+                                <td class="py-1.5 pr-3">{{ $inv['start_year'] ?? '—' }}</td>
+                                <td class="py-1.5 pr-3">{{ $inv['target_years'] !== null ? $inv['target_years'].' tahun' : '—' }}</td>
+                                <td class="py-1.5 pr-3">{{ $inv['target_amount'] !== null ? $fmt((int) $inv['target_amount']) : '—' }}</td>
+                                <td class="py-1.5 pr-3">{{ $inv['realized_principal'] !== null ? $fmt((int) $inv['realized_principal']) : '—' }}</td>
+                                <td class="py-1.5 pr-3">{{ $inv['realized_actual'] !== null ? $fmt((int) $inv['realized_actual']) : '—' }}</td>
+                                <td class="py-1.5 pr-3 font-semibold {{ $invYieldClass($inv['yield_percent']) }}">{{ $inv['yield_label'] }}</td>
+                                <td class="py-1.5 whitespace-nowrap">
+                                    {{ $inv['last_updated_label'] }}
+                                    @if($inv['is_stale'])
+                                        <span class="ml-1 text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-semibold">perlu update</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-t-2 border-slate-300 text-navy-800">
+                                <td class="pt-1.5 pr-3 font-semibold" colspan="5">Total</td>
+                                <td class="pt-1.5 pr-3 font-bold">{{ $fmt((int) array_sum(array_column($invRows, 'realized_principal'))) }}</td>
+                                <td class="pt-1.5 pr-3 font-bold">{{ $fmt((int) array_sum(array_column($invRows, 'realized_actual'))) }}</td>
+                                <td class="pt-1.5 pr-3 font-bold {{ $invYieldClass($invTotalYield) }}">{{ \App\Support\InvestmentRegister::formatYield($invTotalYield) }}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-2">
+                    Realisasi aktual diisi manual dan dikonfirmasi tiap evaluasi 3 bulan — nilainya mengikuti harga pasar,
+                    tidak dihitung dari transaksi harian. Yield membandingkan realisasi aktual terhadap realisasi pokok.
+                </p>
+            </div>
+        @endif
+        @php
             $debtRows = \App\Support\DebtRegister::rowsFor($baseline);
             $debtStale = \App\Support\DebtRegister::rowsHaveStale($debtRows);
             $staleMonths = \App\Support\DebtRegister::staleAfterMonths();

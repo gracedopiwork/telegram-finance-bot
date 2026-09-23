@@ -51,6 +51,48 @@ class BaselineRowRepeaterTest extends TestCase
         $this->assertStringNotContainsString('<input', $cell[0]);
     }
 
+    public function test_investment_row_reindex_regex_includes_the_closing_bracket(): void
+    {
+        $this->portalLogin();
+
+        $html = $this->get('/portal/baseline/baru')->assertStatus(200)->getContent();
+
+        $this->assertStringContainsString(
+            'investment_register]\[\d+]',
+            $html,
+            'Regex reindex Daftar investasi harus cocok dengan snapshot[investment_register][N][...].'
+        );
+
+        $this->assertStringNotContainsString(
+            "replace(/investment_register\[\\d+]/",
+            $html,
+            'Regex reindex tanpa "]" sebelum indeks tidak pernah cocok — jangan dipakai.'
+        );
+    }
+
+    public function test_investment_total_and_yield_cells_are_not_inputs(): void
+    {
+        $this->portalLogin();
+
+        $html = $this->get('/portal/baseline/baru')->assertStatus(200)->getContent();
+
+        // Total dan yield diturunkan dari baris. Begitu jadi input dengan name=,
+        // user bisa mengirim angka yang tidak cocok dengan barisnya sendiri.
+        foreach ([
+            'data-investment-total-principal',
+            'data-investment-total-actual',
+            'data-investment-total-yield',
+            'data-investment-yield',
+        ] as $marker) {
+            $this->assertStringContainsString($marker, $html);
+
+            preg_match('/<td[^>]*'.preg_quote($marker, '/').'[^>]*>/', $html, $cell);
+            $this->assertNotEmpty($cell, "Sel {$marker} tidak ditemukan.");
+            $this->assertStringNotContainsString('name=', $cell[0]);
+            $this->assertStringNotContainsString('<input', $cell[0]);
+        }
+    }
+
     public function test_protection_rows_render_with_sequential_indices(): void
     {
         $this->portalLogin();
