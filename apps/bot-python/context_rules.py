@@ -1510,7 +1510,9 @@ def is_interest_income(text: str) -> bool:
     lower = text.lower()
     if _contains(lower, _BUNGA):
         return True
-    if "bunga" in lower and any(
+    # "bunga" wajib di awal kata: "tabungan" mengandung "bunga" (ta-bunga-n), begitu juga
+    # "tabunganku". Batas kiri saja, bukan batas kata penuh — sufiks "bunganya" tetap bunga.
+    if re.search(r"(?<![a-z])bunga", lower) and any(
         token in lower
         for token in ("investasi", "deposito", "tabungan", "reksa", "obligasi", "sbn", "saham", "bank", "rp", "ribu")
     ):

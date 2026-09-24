@@ -18,6 +18,13 @@
     {"id": "N13", "group": "saving", "severity": "must", "text": "nabung emas antam 500rb", "expected": {"jenis": "Saving/Investment", "kategori": "Investasi & Tabungan", "needs_clarification": false}},
     {"id": "N14", "group": "saving", "severity": "must", "text": "topup dana darurat 2jt", "expected": {"jenis": "Saving/Investment", "bucket": "Protection", "needs_clarification": false}},
 
+    {"id": "N90", "group": "saving", "severity": "must", "text": "tabungan 1400000", "expected": {"jenis": "Saving/Investment", "kategori": "Investasi & Tabungan", "needs_clarification": false}},
+    {"id": "N91", "group": "saving", "severity": "must", "text": "tabungan bulanan 1jt", "expected": {"jenis": "Saving/Investment", "kategori": "Investasi & Tabungan", "needs_clarification": false}},
+    {"id": "N92", "group": "saving", "severity": "must", "text": "tabunganku 500rb", "expected": {"jenis": "Saving/Investment", "kategori": "Investasi & Tabungan", "needs_clarification": false}},
+    {"id": "N93", "group": "saving", "severity": "must", "text": "isi tabungan 2jt", "expected": {"jenis": "Saving/Investment", "kategori": "Investasi & Tabungan", "needs_clarification": false}},
+    {"id": "N94", "group": "income", "severity": "must", "text": "dapat bunga tabungan 30rb", "expected": {"jenis": "Pemasukan", "kategori": "Bunga Investasi", "bucket": null, "needs_clarification": false}},
+    {"id": "N95", "group": "income", "severity": "must", "text": "bunganya 50rb dari deposito", "expected": {"jenis": "Pemasukan", "kategori": "Bunga Investasi", "bucket": null, "needs_clarification": false}},
+
     {"id": "N15", "group": "food", "severity": "must", "text": "nasi padang 35rb", "expected": {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
     {"id": "N16", "group": "food", "severity": "must", "text": "beli galon aqua 22rb", "expected": {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "sifat": "Need", "bucket": "Essential Living", "needs_clarification": false}},
     {"id": "N17", "group": "food", "severity": "must", "text": "gofood ayam geprek 42rb", "expected": {"jenis": "Pengeluaran", "kategori": "Makanan & Minuman", "needs_clarification": false}},
