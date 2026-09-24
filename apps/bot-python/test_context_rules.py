@@ -520,6 +520,58 @@ class ContextRulesTests(unittest.TestCase):
     def test_reksadana(self) -> None:
         self.assertClass("nabung reksadana 500rb", "Saving/Investment", "Investasi & Tabungan")
 
+    # --- Regresi: "tabungan" mengandung "bunga" (ta-bunga-n) ---
+    # Laporan produksi: "tabungan 1.400.000" tersimpan sebagai Pemasukan/Bunga Investasi,
+    # sehingga uang masuk ke "Pendapatan bulan ini", bukan "Saving".
+
+    def test_tabungan_bentuk_kata_benda_adalah_saving(self) -> None:
+        """Kata benda "tabungan" — bukan hanya kata kerja "nabung"."""
+        for text in (
+            "tabungan 1400000",
+            "tabungan 1.400.000",
+            "tabungan bulanan 1jt",
+            "tabungan pendidikan 2jt",
+            "tabunganku 500rb",
+            "isi tabungan 1jt",
+        ):
+            with self.subTest(text=text):
+                self.assertClass(text, "Saving/Investment", "Investasi & Tabungan")
+
+    def test_bunga_asli_tetap_pemasukan(self) -> None:
+        """Perbaikan batas kiri tidak boleh mematikan deteksi bunga yang sebenarnya."""
+        for text in (
+            "bunga deposito 50rb",
+            "terima bunga 20000 dari bank",
+            "dapat bunga tabungan 30rb",
+            "bunga obligasi cair 100rb",
+            "hasil bunga deposito 5000",
+        ):
+            with self.subTest(text=text):
+                self.assertClass(text, "Pemasukan", "Bunga Investasi")
+
+    def test_bunga_bersufiks_tetap_pemasukan(self) -> None:
+        """Batas kiri saja, bukan batas kata penuh: "bunganya" tetap bunga."""
+        self.assertClass("bunganya 50rb dari deposito", "Pemasukan", "Bunga Investasi")
+
+    def test_nabung_tidak_berubah(self) -> None:
+        """Kata kerja yang sudah benar sebelum perbaikan tetap sama."""
+        self.assertClass("nabung 950000", "Saving/Investment", "Investasi & Tabungan")
+        self.assertClass("menabung 1400000", "Saving/Investment", "Investasi & Tabungan")
+        self.assertClass("nabung emas 1jt", "Saving/Investment", "Investasi & Tabungan")
+
+    # --- Karakterisasi: BUG YANG MASIH ADA, menunggu Stage 2 ---
+    # "bunga" itu homonim: bunga bank DAN bunga tanaman. Tes di bawah ini sengaja
+    # menegaskan perilaku yang MASIH SALAH, supaya terbukti perbaikan "tabungan"
+    # tidak mengubah apa pun di sini. Stage 2 akan membalik ekspektasi ini.
+    # Jangan dipakai sebagai acuan perilaku yang benar.
+
+    def test_karakterisasi_bunga_homonim_masih_salah(self) -> None:
+        """BUG: beli bunga (tanaman) tercatat sebagai Pemasukan. Diperbaiki di Stage 2."""
+        self.assertClass("beli bunga 50rb", "Pemasukan", "Bunga Investasi")
+        self.assertClass("order bunga 50rb", "Pemasukan", "Bunga Investasi")
+        # Arah sudah benar (Pemasukan) tapi kategori salah — seharusnya Penjualan.
+        self.assertClass("dapat order bunga 50rb", "Pemasukan", "Bunga Investasi")
+
     def test_headset_lifestyle_bukan_jajan(self) -> None:
         hit = classify_from_text("beli headset 350rb")
         self.assertIsNotNone(hit)
