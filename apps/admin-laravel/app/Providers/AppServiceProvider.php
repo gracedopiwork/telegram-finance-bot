@@ -84,7 +84,14 @@ class AppServiceProvider extends ServiceProvider
                     'footer_blurb' => Setting::val('page.footer.blurb', 'Pusat kesehatan finansial pertama di Indonesia — pendekatan dokter untuk dompet yang lebih sehat.'),
                     'footer_col_layanan' => Setting::val('page.footer.col_layanan', 'Layanan'),
                     'footer_col_perusahaan' => Setting::val('page.footer.col_perusahaan', 'Perusahaan'),
-                    'footer_copyright_extra' => Setting::val('page.footer.copyright_extra', 'Founded by dr. Ayuti Bulaan QWP & dr. Catherine QWP.'),
+                    'footer_copyright_extra' => Setting::val('page.footer.copyright_extra', 'Founded by dr. Ayuti Bulaan QWP & dr. Catherina QWP.'),
+                    'svc_checkup' => Setting::val('page.nav.svc_checkup', 'Financial Health Check Up (FHCU)'),
+                    'svc_consult' => Setting::val('page.nav.svc_consult', 'Consultation with Financial Planner'),
+                    'svc_premarital' => Setting::val('page.nav.svc_premarital', 'Pre Marital Financial Health Check Up'),
+                    'svc_recovery' => Setting::val('page.nav.svc_recovery', 'Financial Recovery Program'),
+                    'svc_education' => Setting::val('page.nav.svc_education', 'Financial Health Education Platform'),
+                    'svc_first_aid' => Setting::val('page.nav.svc_first_aid', 'First Aid by YFD'),
+                    'svc_ftsa' => Setting::val('page.nav.svc_ftsa', 'Financial Trauma Self-Assessment (FTSA)'),
                 ]);
                 // Keep AdminLTE brand/auth/preloader logo in sync with Site Settings.
                 config([
@@ -121,7 +128,14 @@ class AppServiceProvider extends ServiceProvider
                     'footer_blurb' => 'Pusat kesehatan finansial pertama di Indonesia — pendekatan dokter untuk dompet yang lebih sehat.',
                     'footer_col_layanan' => 'Layanan',
                     'footer_col_perusahaan' => 'Perusahaan',
-                    'footer_copyright_extra' => 'Founded by dr. Ayuti Bulaan QWP & dr. Catherine QWP.',
+                    'footer_copyright_extra' => 'Founded by dr. Ayuti Bulaan QWP & dr. Catherina QWP.',
+                    'svc_checkup' => 'Financial Health Check Up (FHCU)',
+                    'svc_consult' => 'Consultation with Financial Planner',
+                    'svc_premarital' => 'Pre Marital Financial Health Check Up',
+                    'svc_recovery' => 'Financial Recovery Program',
+                    'svc_education' => 'Financial Health Education Platform',
+                    'svc_first_aid' => 'First Aid by YFD',
+                    'svc_ftsa' => 'Financial Trauma Self-Assessment (FTSA)',
                 ]);
                 config([
                     'adminlte.logo_img' => 'images/yfd-logo.png',

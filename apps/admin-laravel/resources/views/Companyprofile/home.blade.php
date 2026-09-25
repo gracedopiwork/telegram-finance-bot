@@ -94,9 +94,9 @@
                 // Setiap item HARUS punya halaman tersendiri biar nggak duplikat / dead-end.
                 // Item pertama dihighlight jadi "pintu masuk utama" YFD.
                 $quick = [
-                    ['type' => 'url', 'target' => $primaryCheckupUrl, 'icon' => 'monitor_heart',        'label' => 'Health Check Up', 'badge' => 'Gratis'],
-                    ['type' => 'route', 'target' => 'company.produk',      'icon' => 'send',                 'label' => 'YFD First Aid',   'badge' => 'New'],
-                    ['type' => 'route', 'target' => 'company.pertemuan',   'icon' => 'forum',                'label' => 'Konsultasi'],
+                    ['type' => 'url', 'target' => $primaryCheckupUrl, 'icon' => 'monitor_heart',        'label' => ($siteNav['svc_checkup'] ?? null) ?: 'Financial Health Check Up (FHCU)', 'badge' => 'Gratis'],
+                    ['type' => 'route', 'target' => 'company.produk',      'icon' => 'send',                 'label' => ($siteNav['svc_first_aid'] ?? null) ?: 'First Aid by YFD',   'badge' => 'New'],
+                    ['type' => 'route', 'target' => 'company.pertemuan',   'icon' => 'forum',                'label' => ($siteNav['svc_consult'] ?? null) ?: 'Consultation with Financial Planner'],
                     ['type' => 'route', 'target' => 'company.layanan',     'icon' => 'apps',                 'label' => 'Semua Layanan'],
                     ['type' => 'route', 'target' => 'company.penasihat',   'icon' => 'medical_information',  'label' => 'Tim Dokter'],
                     ['type' => 'route', 'target' => 'company.informasi',   'icon' => 'help',                 'label' => 'FAQ'],
@@ -302,7 +302,7 @@
         </p>
         <p class="text-body-md opacity-80 mb-1">— Filosofi YFD</p>
         <p class="text-caption opacity-60">
-            Founder: dr. Ayuti Bulaan QWP &nbsp;·&nbsp; Co-Founder: dr. Catherine QWP
+            Founder: dr. Ayuti Bulaan QWP &nbsp;·&nbsp; Co-Founder: dr. Catherina QWP
         </p>
         <div class="flex flex-col sm:flex-row justify-center gap-3 mt-10">
             <a href="{{ route('company.tentang') }}" class="btn btn-gold btn-lg justify-center">

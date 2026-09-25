@@ -1,5 +1,6 @@
 @php
     $active = $active ?? '';
+    $siteNav = $siteNav ?? [];
 
     // Item dropdown "Layanan" — kolom kiri = jasa (perlu interaksi manusia),
     // kolom kanan = produk digital self-serve (diisi dari admin: Produk Digital → Featured).
@@ -9,11 +10,11 @@
             'title' => 'Jasa & Pendampingan',
             'icon'  => 'stethoscope',
             'items' => [
-                ['key' => 'paket',     'label' => 'Health Check Up',       'desc' => 'Screening kesehatan finansial gratis — 3–5 menit',       'route' => 'checkup.show',              'icon' => 'monitor_heart', 'badge' => 'Gratis'],
-                ['key' => 'pertemuan', 'label' => 'Konsultasi 1-on-1',     'desc' => 'Sesi privat dengan dokter QWP',                          'route' => 'company.pertemuan',         'icon' => 'forum',         'badge' => null],
-                ['key' => 'premarital','label' => 'Premarital Check Up',   'desc' => 'Kesehatan finansial pasangan sebelum menikah',          'route' => 'company.bundle.premarital', 'icon' => 'diversity_1',   'badge' => null],
-                ['key' => 'recovery',  'label' => 'Recovery Program',      'desc' => 'Pendampingan intensif untuk kondisi finansial darurat',  'route' => 'company.bundle.recovery',   'icon' => 'healing', 'badge' => null],
-                ['key' => 'edukasi',   'label' => 'Education Platform',    'desc' => 'Webinar, workshop & komunitas belajar',                 'route' => 'company.bundle.education',  'icon' => 'school',        'badge' => null],
+                ['key' => 'paket',     'label' => ($siteNav['svc_checkup'] ?? null) ?: 'Financial Health Check Up (FHCU)', 'desc' => 'Screening kesehatan finansial gratis — 3–5 menit', 'route' => 'checkup.show', 'icon' => 'monitor_heart', 'badge' => 'Gratis'],
+                ['key' => 'pertemuan', 'label' => ($siteNav['svc_consult'] ?? null) ?: 'Consultation with Financial Planner', 'desc' => 'Sesi privat dengan financial planner', 'route' => 'company.pertemuan', 'icon' => 'forum', 'badge' => null],
+                ['key' => 'premarital','label' => ($siteNav['svc_premarital'] ?? null) ?: 'Pre Marital Financial Health Check Up', 'desc' => 'Kesehatan finansial pasangan sebelum menikah', 'route' => 'company.bundle.premarital', 'icon' => 'diversity_1', 'badge' => null],
+                ['key' => 'recovery',  'label' => ($siteNav['svc_recovery'] ?? null) ?: 'Financial Recovery Program', 'desc' => 'Pendampingan intensif untuk kondisi finansial darurat', 'route' => 'company.bundle.recovery', 'icon' => 'healing', 'badge' => null],
+                ['key' => 'edukasi',   'label' => ($siteNav['svc_education'] ?? null) ?: 'Financial Health Education Platform', 'desc' => 'Webinar, workshop & komunitas belajar', 'route' => 'company.bundle.education', 'icon' => 'school', 'badge' => null],
             ],
             'cta' => ['label' => 'Lihat semua 7 pilar layanan', 'route' => 'company.layanan'],
         ],
@@ -574,12 +575,12 @@
         <div class="md:col-span-3">
             <h5 class="text-label-md text-secondary-fixed mb-4">{{ ($siteNav['footer_col_layanan'] ?? null) ?: 'Layanan' }}</h5>
             <ul class="space-y-2.5 text-[13.5px] opacity-90">
-                <li><a href="{{ route('checkup.show') }}" class="hover:text-secondary-fixed-dim transition-all">Health Check Up</a></li>
+                <li><a href="{{ route('checkup.show') }}" class="hover:text-secondary-fixed-dim transition-all">{{ ($siteNav['svc_checkup'] ?? null) ?: 'Financial Health Check Up (FHCU)' }}</a></li>
                 <li><a href="{{ route('company.paket') }}" class="hover:text-secondary-fixed-dim transition-all">Tarif Konsultasi</a></li>
-                <li><a href="{{ route('company.pertemuan') }}" class="hover:text-secondary-fixed-dim transition-all">Konsultasi</a></li>
-                <li><a href="{{ route('company.bundle.premarital') }}" class="hover:text-secondary-fixed-dim transition-all">Premarital Check Up</a></li>
-                <li><a href="{{ route('company.bundle.education') }}" class="hover:text-secondary-fixed-dim transition-all">Education Platform</a></li>
-                <li><a href="{{ route('company.bundle.recovery') }}" class="hover:text-secondary-fixed-dim transition-all">Recovery Program</a></li>
+                <li><a href="{{ route('company.pertemuan') }}" class="hover:text-secondary-fixed-dim transition-all">{{ ($siteNav['svc_consult'] ?? null) ?: 'Consultation with Financial Planner' }}</a></li>
+                <li><a href="{{ route('company.bundle.premarital') }}" class="hover:text-secondary-fixed-dim transition-all">{{ ($siteNav['svc_premarital'] ?? null) ?: 'Pre Marital Financial Health Check Up' }}</a></li>
+                <li><a href="{{ route('company.bundle.education') }}" class="hover:text-secondary-fixed-dim transition-all">{{ ($siteNav['svc_education'] ?? null) ?: 'Financial Health Education Platform' }}</a></li>
+                <li><a href="{{ route('company.bundle.recovery') }}" class="hover:text-secondary-fixed-dim transition-all">{{ ($siteNav['svc_recovery'] ?? null) ?: 'Financial Recovery Program' }}</a></li>
             </ul>
         </div>
 
@@ -613,7 +614,7 @@
 
     <div class="relative border-t border-on-primary/10">
         <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-5 flex flex-col sm:flex-row justify-between items-center gap-3 text-caption opacity-70">
-            <span>© {{ date('Y') }} {{ $yfd['brand'] }} Indonesia. {{ ($siteNav['footer_copyright_extra'] ?? null) ?: 'Founded by dr. Ayuti Bulaan QWP & dr. Catherine QWP.' }}</span>
+            <span>© {{ date('Y') }} {{ $yfd['brand'] }} Indonesia. {{ ($siteNav['footer_copyright_extra'] ?? null) ?: 'Founded by dr. Ayuti Bulaan QWP & dr. Catherina QWP.' }}</span>
             <div class="flex gap-5">
                 <a href="#" class="hover:text-secondary-fixed-dim">Kebijakan Privasi</a>
                 <a href="#" class="hover:text-secondary-fixed-dim">Syarat &amp; Ketentuan</a>

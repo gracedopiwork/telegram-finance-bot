@@ -101,24 +101,45 @@
                 </a>
             </div>
 
-            {{-- Founder Card --}}
+            {{-- Founder Card — foto dari Admin → Tim Dokter bila ada --}}
             <div class="md:col-span-2 lg:col-span-2 bg-surface-container-low border border-outline-variant p-8 rounded-2xl">
                 <p class="font-label-md text-label-md text-secondary tracking-widest mb-4">FOUNDER YFD</p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div class="flex items-center gap-4">
-                        <div class="w-16 h-16 rounded-full bg-primary-container text-on-primary grid place-items-center font-bold text-xl flex-shrink-0">AB</div>
-                        <div>
-                            <h4 class="font-headline-md text-[18px] font-bold text-primary">dr. Ayuti Bulaan QWP</h4>
-                            <p class="font-caption text-caption text-on-surface-variant">Founder &amp; Financial Doctor</p>
+                    @forelse(($advisors ?? collect()) as $a)
+                        <div class="flex items-center gap-4">
+                            @if($a->photo_path)
+                                <img src="{{ $a->photo_url }}" alt="{{ $a->name }}"
+                                     class="w-16 h-16 rounded-full object-cover flex-shrink-0 border border-outline-variant">
+                            @else
+                                <div class="w-16 h-16 rounded-full bg-primary-container text-on-primary grid place-items-center overflow-hidden flex-shrink-0">
+                                    <span class="material-symbols-outlined text-[32px]">person</span>
+                                </div>
+                            @endif
+                            <div>
+                                <h4 class="font-headline-md text-[18px] font-bold text-primary">{{ $a->name }}@if(!str_contains(strtolower($a->name), 'qwp')) QWP@endif</h4>
+                                <p class="font-caption text-caption text-on-surface-variant">{{ $a->role_label }}</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="w-16 h-16 rounded-full bg-primary text-on-primary grid place-items-center font-bold text-xl flex-shrink-0">C</div>
-                        <div>
-                            <h4 class="font-headline-md text-[18px] font-bold text-primary">dr. Catherine QWP</h4>
-                            <p class="font-caption text-caption text-on-surface-variant">Co-Founder &amp; Financial Doctor</p>
+                    @empty
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-full bg-primary-container text-on-primary grid place-items-center flex-shrink-0">
+                                <span class="material-symbols-outlined text-[32px]">person</span>
+                            </div>
+                            <div>
+                                <h4 class="font-headline-md text-[18px] font-bold text-primary">dr. Ayuti Bulaan QWP</h4>
+                                <p class="font-caption text-caption text-on-surface-variant">Founder &amp; Financial Doctor</p>
+                            </div>
                         </div>
-                    </div>
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-full bg-primary text-on-primary grid place-items-center flex-shrink-0">
+                                <span class="material-symbols-outlined text-[32px]">person</span>
+                            </div>
+                            <div>
+                                <h4 class="font-headline-md text-[18px] font-bold text-primary">dr. Catherina QWP</h4>
+                                <p class="font-caption text-caption text-on-surface-variant">Co-Founder &amp; Financial Doctor</p>
+                            </div>
+                        </div>
+                    @endforelse
                 </div>
             </div>
         </div>

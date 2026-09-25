@@ -267,7 +267,7 @@ class CompanyProfileSeeder extends Seeder
                 'sort' => 1,
             ],
             [
-                'name' => 'dr. Catherine',
+                'name' => 'dr. Catherina',
                 'role_label' => 'Co-Founder & Financial Doctor',
                 'badges' => ['Dokter Umum', 'QWP', 'Co-Founder'],
                 'years_exp' => 'YFD',
@@ -462,7 +462,7 @@ class CompanyProfileSeeder extends Seeder
             [
                 'category' => 'Umum',
                 'question' => 'Apa itu Your Financial Doctor (YFD)?',
-                'answer'   => 'YFD adalah pusat kesehatan finansial pertama di Indonesia, didirikan oleh dua dokter umum (dr. Ayuti Bulaan QWP & dr. Catherine QWP). Kami menggunakan pendekatan kesehatan untuk membantu masyarakat memahami kondisi finansial mereka secara objektif dan membangun pondasi keuangan yang kokoh.',
+                'answer'   => 'YFD adalah pusat kesehatan finansial pertama di Indonesia, didirikan oleh dua dokter umum (dr. Ayuti Bulaan QWP & dr. Catherina QWP). Kami menggunakan pendekatan kesehatan untuk membantu masyarakat memahami kondisi finansial mereka secara objektif dan membangun pondasi keuangan yang kokoh.',
                 'sort' => 1,
             ],
             [

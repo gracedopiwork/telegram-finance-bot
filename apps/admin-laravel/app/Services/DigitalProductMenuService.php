@@ -125,7 +125,7 @@ class DigitalProductMenuService
         return [
             [
                 'key' => 'produk',
-                'label' => 'YFD First Aid',
+                'label' => 'First Aid by YFD',
                 'desc' => 'Catat keuangan via chat — AI auto-parse ke dashboard web',
                 'route' => null,
                 'icon' => 'send',

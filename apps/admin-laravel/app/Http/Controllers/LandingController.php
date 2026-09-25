@@ -442,6 +442,7 @@ class LandingController extends Controller
         return view('Companyprofile.informasi', [
             'active' => 'informasi',
             'faqs'   => CpFaq::active()->orderBy('sort')->get(),
+            'advisors' => CpAdvisor::active()->orderBy('sort')->orderBy('id')->get(),
             'page'   => $this->settingsByGroup('page_informasi'),
         ]);
     }

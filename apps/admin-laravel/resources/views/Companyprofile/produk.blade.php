@@ -241,7 +241,7 @@
 
 {{-- ============== Cara Pakai (3 langkah) ============== --}}
 <section id="cara-pakai" class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-20">
-    <div class="text-center mb-12 max-w-2xl mx-auto">
+    <div class="text-left mb-12 max-w-2xl">
         <span class="text-label-md text-secondary block mb-3">CARA PAKAI</span>
         <h2 class="font-heading text-headline-lg text-primary mb-3">4 langkah dari beli sampai dashboard.</h2>
         <p class="text-body-md text-on-surface-variant">Tidak perlu install aplikasi tambahan. Cukup punya Telegram & Gmail.</p>
@@ -325,10 +325,10 @@
 {{-- ============== Daftar produk (semua yang Aktif di katalog publik) ============== --}}
 @if($others->count())
 <section class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-20">
-    <div class="text-center mb-12 max-w-2xl mx-auto">
+    <div class="text-left mb-12 max-w-2xl">
         <span class="text-label-md text-secondary block mb-3">DAFTAR PRODUK</span>
         <h2 class="font-heading text-headline-lg text-primary mb-3">Semua produk digital YFD</h2>
-        <p class="text-body-md text-on-surface-variant">Pilih paket yang sesuai — bot First Aid, FTSA, atau bundle lengkap.</p>
+        <p class="text-body-md text-on-surface-variant">Pilih paket yang sesuai — First Aid by YFD, FTSA, atau bundle lengkap.</p>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         @foreach($others as $p)
@@ -430,13 +430,13 @@
             <div class="grid grid-cols-2 gap-3">
                 <a href="{{ $primaryCheckupUrl }}" class="bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl p-5 transition">
                     <span class="material-symbols-outlined text-secondary-fixed text-[28px] mb-2 block">monitor_heart</span>
-                    <div class="font-bold text-[15px]">Health Check Up</div>
+                    <div class="font-bold text-[15px]">{{ ($siteNav['svc_checkup'] ?? null) ?: 'Financial Health Check Up (FHCU)' }}</div>
                     <div class="text-[12.5px] text-white/70 mt-1">Diagnosa kondisi finansial</div>
                 </a>
                 <a href="{{ route('company.pertemuan') }}" class="bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl p-5 transition">
                     <span class="material-symbols-outlined text-secondary-fixed text-[28px] mb-2 block">forum</span>
-                    <div class="font-bold text-[15px]">Konsultasi 1-on-1</div>
-                    <div class="text-[12.5px] text-white/70 mt-1">Sesi dengan dokter QWP</div>
+                    <div class="font-bold text-[15px]">{{ ($siteNav['svc_consult'] ?? null) ?: 'Consultation with Financial Planner' }}</div>
+                    <div class="text-[12.5px] text-white/70 mt-1">Sesi dengan financial planner</div>
                 </a>
             </div>
         </div>
@@ -450,8 +450,7 @@
         <div>
             <h3 class="font-heading text-[18px] font-bold text-primary mb-2">YFD Bukan Agen Produk Keuangan</h3>
             <p class="text-body-md text-on-surface-variant">
-                Kami tidak menjual asuransi, reksadana, atau saham. Tools digital kami berfokus pada
-                <strong>edukasi & pendampingan</strong> — Anda tetap memegang kendali penuh atas keputusan finansial.
+                {{ ($page['page.produk.disclaimer_body'] ?? null) ?: 'Kami tidak menjual asuransi, produk investasi, atau menjadi manajer investasi. Tools digital kami berfokus pada edukasi & pendampingan — Anda tetap memegang kendali penuh atas keputusan finansial.' }}
             </p>
         </div>
     </div>

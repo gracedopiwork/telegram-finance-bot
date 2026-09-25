@@ -1,6 +1,7 @@
 @extends('Companyprofile.layouts.main')
 
-@section('title', 'Wealthpedia — Literasi Finansial YFD')
+@section('title', ($page['page.wealthpedia.meta_title'] ?? null) ?: 'Wealthpedia — Literasi Finansial YFD')
+@section('description', ($page['page.wealthpedia.meta_description'] ?? null) ?: 'Pustaka edukasi kesehatan finansial dari YFD — artikel, insight perilaku, dan panduan praktis.')
 
 @section('content')
 
@@ -8,7 +9,7 @@
 
     {{-- ============== Hero ============== --}}
     <header class="mb-16 text-center">
-        <span class="font-label-md text-label-md text-secondary tracking-widest block mb-3">EDUCATION PLATFORM</span>
+        <span class="font-label-md text-label-md text-secondary tracking-widest block mb-3">{{ ($page['page.wealthpedia.hero_eyebrow'] ?? null) ?: 'FINANCIAL HEALTH EDUCATION PLATFORM' }}</span>
         <h1 class="font-display-lg text-display-lg text-primary mb-6 max-w-4xl mx-auto">
             {{ ($page['page.wealthpedia.hero_title'] ?? null) ?: 'Wealthpedia' }}
         </h1>
@@ -34,7 +35,7 @@
     <section class="mb-20">
         <div class="flex items-end justify-between mb-8 gap-4">
             <div class="max-w-3xl">
-                <h2 class="font-headline-lg text-headline-lg text-primary mb-2">{{ $homeCopy['wealthpedia.cat_title'] ?? 'Kategori Edukasi' }}</h2>
+                <h2 class="font-headline-lg text-headline-lg text-primary mb-2">{{ ($page['page.wealthpedia.h2_categories'] ?? null) ?: ($homeCopy['wealthpedia.cat_title'] ?? 'Kategori Edukasi') }}</h2>
                 <p class="font-body-md text-body-md text-on-surface-variant">
                     {{ $homeCopy['wealthpedia.cat_subtitle'] ?? 'Temukan artikel berdasarkan bidang pembahasan. Setiap kategori dirancang untuk membantu Anda membangun kesehatan finansial secara menyeluruh, mulai dari pola pikir, perilaku, hingga strategi keuangan.' }}
                 </p>
@@ -73,7 +74,7 @@
     <section class="mb-20">
         <div class="flex items-end justify-between mb-8">
             <div>
-                <h2 class="font-headline-lg text-headline-lg text-primary mb-2">Artikel Pilihan</h2>
+                <h2 class="font-headline-lg text-headline-lg text-primary mb-2">{{ ($page['page.wealthpedia.h2_featured'] ?? null) ?: ($page['page.wealthpedia.featured_title'] ?? null) ?: 'Artikel Pilihan' }}</h2>
                 <p class="font-body-md text-body-md text-on-surface-variant">Topik paling banyak dibaca minggu ini.</p>
             </div>
         </div>
@@ -120,7 +121,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div>
                 <span class="font-label-md text-label-md text-secondary-fixed tracking-widest block mb-3">FOLLOW US</span>
-                <h2 class="font-headline-lg text-headline-lg mb-4">Mini-Edukasi Harian di Social Media</h2>
+                <h2 class="font-headline-lg text-headline-lg mb-4">{{ ($page['page.wealthpedia.h2_social'] ?? null) ?: 'Mini-Edukasi Harian di Social Media' }}</h2>
                 <p class="font-body-md text-body-md opacity-90 mb-6">
                     Konten singkat, praktis, dan langsung bisa dipraktikkan — terbit reguler di Instagram, TikTok, dan Threads YFD.
                 </p>
