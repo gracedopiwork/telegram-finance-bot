@@ -582,6 +582,25 @@ class ContextRulesTests(unittest.TestCase):
             self.assertEqual(out["sifat"], "Wants", text)
             self.assertEqual(out["bucket"], "Flexible + Social", text)
 
+    def test_tabungan_is_saving_not_bunga_income(self) -> None:
+        """'bunga' ⊂ 'tabungan' jangan jadi Pemasukan / Bunga Investasi."""
+        from offline_classify import classify_offline
+
+        for text in (
+            "tabungan 950k",
+            "Investasi & Tabungan: Saving 1400000",
+            "saving 1.4jt",
+            "nabung 950k",
+        ):
+            out = classify_offline(text)
+            self.assertEqual(out["jenis"], "Saving/Investment", text)
+            self.assertEqual(out["kategori"], "Investasi & Tabungan", text)
+            self.assertNotEqual(out["jenis"], "Pemasukan", text)
+
+        bunga = classify_offline("terima bunga tabungan 50k")
+        self.assertEqual(bunga["jenis"], "Pemasukan")
+        self.assertEqual(bunga["kategori"], "Bunga Investasi")
+
     def test_tips_grab_driver_hadiah(self) -> None:
         self.assertClass("memberikan tips ke bapak grab 5k", "Pengeluaran", "Hadiah")
 

@@ -303,6 +303,8 @@ _SAVING_LABELS: tuple[tuple[str, str], ...] = (
     ("topup ipot", "Saham"),
     ("nabung", "Tabungan"),
     ("tabungan", "Tabungan"),
+    ("saving", "Tabungan"),
+    ("savings", "Tabungan"),
     ("investasi", "Investasi"),
 )
 
@@ -1510,7 +1512,8 @@ def is_interest_income(text: str) -> bool:
     lower = text.lower()
     if _contains(lower, _BUNGA):
         return True
-    if "bunga" in lower and any(
+    # WAJIB word-boundary: "bunga" ⊂ "tabungan" — jangan samakan nabung dengan bunga.
+    if re.search(r"\bbunga\b", lower) and any(
         token in lower
         for token in ("investasi", "deposito", "tabungan", "reksa", "obligasi", "sbn", "saham", "bank", "rp", "ribu")
     ):
@@ -2467,7 +2470,7 @@ def is_saving_action(text: str) -> bool:
         return True
     if _contains(lower, _SAVING_ACTION):
         return True
-    if any(k in lower for k in ("nabung", "tabungan", "investasi", "deposito")):
+    if any(k in lower for k in ("nabung", "tabungan", "saving", "savings", "investasi", "deposito")):
         return True
     return False
 
