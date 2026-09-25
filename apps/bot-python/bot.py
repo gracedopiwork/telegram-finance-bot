@@ -221,6 +221,9 @@ MOOD_ALIASES = {
     "sedih": "Sad",
     "kecewa": "Sad",
     "kesepian": "Sad",
+    "badmood": "Sad",
+    "bad mood": "Sad",
+    "bad-mood": "Sad",
     "stressed": "Stressed",
     "cemas": "Stressed",
     "overthinking": "Stressed",
@@ -228,6 +231,7 @@ MOOD_ALIASES = {
     "angry": "Angry",
     "marah": "Angry",
     "frustrasi": "Angry",
+    "frustasi": "Angry",
     "frustrated": "Angry",
     "tired": "Tired",
     "ngantuk": "Tired",
@@ -254,9 +258,18 @@ MOOD_KEYWORDS: Dict[str, tuple[str, ...]] = {
         "gajianan",
     ),
     "Neutral": ("biasa saja", "biasa aja", "lumayan", "neutral"),
-    "Sad": ("sedih banget", "kecewa", "kesepian", "sedih", "sad"),
+    "Sad": (
+        "sedih banget",
+        "kecewa",
+        "kesepian",
+        "badmood",
+        "bad mood",
+        "bad-mood",
+        "sedih",
+        "sad",
+    ),
     "Stressed": ("overwhelmed", "overthinking", "cemas", "stress", "stressed", "panik"),
-    "Angry": ("frustrasi", "marah", "kesal", "angry", "jengkel"),
+    "Angry": ("frustrasi", "frustasi", "marah", "kesal", "angry", "jengkel"),
     "Tired": ("burnout", "ngantuk", "lelah", "kecapean", "capek", "cape", "tired"),
 }
 
@@ -336,6 +349,42 @@ def normalize_taxonomy(parsed: Dict[str, Any]) -> Dict[str, Any]:
     return parsed
 
 
+def enrich_keterangan_from_source(parsed: Dict[str, Any], source_text: str) -> None:
+    """Pertahankan konteks user (mis. 'lihat pidato…') jika AI memendekkan keterangan."""
+    src = (source_text or "").strip()
+    if not src:
+        return
+    # Ambil catatan utama (buang mood:/klarifikasi)
+    base = re.sub(r"\nmood\s*:.*$", "", src, flags=re.IGNORECASE | re.MULTILINE)
+    base = re.sub(
+        r"\nklarifikasi user:.*$",
+        "",
+        base,
+        flags=re.IGNORECASE | re.MULTILINE | re.DOTALL,
+    ).strip()
+    cleaned = re.sub(
+        r"\b(?:tgl|tanggal)\s*\d{1,2}[/.\-]\d{1,2}(?:[/.\-]\d{2,4})?\b",
+        "",
+        base,
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(r"\brp\.?\s*[\d.,]+", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(
+        r"\b\d+(?:[.,]\d+)?\s*(?:rb|br|ribu|k|jt|juta)?\b",
+        "",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" ,.-")
+    if len(cleaned) < 8:
+        return
+
+    ket = str(parsed.get("keterangan") or "").strip()
+    # Pakai teks user jika AI jauh lebih pendek / kehilangan kata konteks.
+    if not ket or (len(cleaned) >= len(ket) + 8 and cleaned.lower() not in ket.lower()):
+        parsed["keterangan"] = cleaned
+
+
 def finalize_parsed_transaction(
     parsed: Dict[str, Any],
     source_text: str = "",
@@ -354,6 +403,7 @@ def finalize_parsed_transaction(
     normalize_category_fields(parsed, source_text)
     normalize_saving_fields(parsed, source_text)
     refine_sifat_from_context(parsed, source_text)
+    enrich_keterangan_from_source(parsed, source_text)
     attach_taxonomy_flags(parsed, source_text)
     stamp_planned_cue(parsed, source_text)
     ai_val = str(parsed.get("impulsif", "")).strip() if trust_ai_impulsif else None
@@ -999,11 +1049,14 @@ def analyze_without_gemini(user_text: str) -> Dict[str, Any]:
         mood = "Happy"
     elif any(keyword in lower_text for keyword in ["senang", "happy"]):
         mood = "Happy"
-    elif any(keyword in lower_text for keyword in ["sedih", "kecewa", "kesepian"]):
+    elif any(
+        keyword in lower_text
+        for keyword in ["sedih", "kecewa", "kesepian", "badmood", "bad mood", "bad-mood"]
+    ):
         mood = "Sad"
     elif any(keyword in lower_text for keyword in ["cemas", "overthinking", "overwhelmed", "stressed", "panik"]):
         mood = "Stressed"
-    elif any(keyword in lower_text for keyword in ["marah", "frustrasi", "kesal", "angry"]):
+    elif any(keyword in lower_text for keyword in ["marah", "frustrasi", "frustasi", "kesal", "angry"]):
         mood = "Angry"
     elif any(keyword in lower_text for keyword in ["ngantuk", "lelah", "burnout", "kecapean", "capek", "cape", "tired"]):
         mood = "Tired"

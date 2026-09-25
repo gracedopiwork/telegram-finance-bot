@@ -559,6 +559,29 @@ class ContextRulesTests(unittest.TestCase):
     def test_donasi_grab_driver_social(self) -> None:
         self.assertClass("donasi ke bapak grab 5k", "Pengeluaran", "Sosial & Keluarga")
 
+    def test_donasi_seragam_bukan_makanan(self) -> None:
+        """'nasi' di dalam 'donasi' jangan jadi Makanan & Minuman."""
+        text = "Donasi seragam sekolah anak pedalaman Rp 1.800.000"
+        self.assertClass(text, "Pengeluaran", "Sosial & Keluarga")
+        from offline_classify import classify_offline
+
+        out = classify_offline(text)
+        self.assertEqual(out["kategori"], "Sosial & Keluarga")
+        self.assertEqual(out["sifat"], "Wants")
+        self.assertEqual(out["bucket"], "Flexible + Social")
+
+    def test_traktir_teman_social_not_essential(self) -> None:
+        for text in (
+            "Tgl 20/09/2026 traktir makan teman 45k",
+            "Tgl 20/09/2026 bayarin makan teman 45k",
+        ):
+            self.assertClass(text, "Pengeluaran", "Sosial & Keluarga")
+            from offline_classify import classify_offline
+
+            out = classify_offline(text)
+            self.assertEqual(out["sifat"], "Wants", text)
+            self.assertEqual(out["bucket"], "Flexible + Social", text)
+
     def test_tips_grab_driver_hadiah(self) -> None:
         self.assertClass("memberikan tips ke bapak grab 5k", "Pengeluaran", "Hadiah")
 

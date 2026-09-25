@@ -25,6 +25,24 @@ class MoodDetectionTests(unittest.TestCase):
         # word-boundary: 'escape' jangan kena 'cape'
         self.assertIsNone(detect_mood_in_text("escape room ticket 150k"))
 
+    def test_badmood_is_sad(self) -> None:
+        self.assertEqual(
+            detect_mood_in_text(
+                "Tgl 19/09/2026 jajan croissants 58k lagi badmood lihat pidato Prabowo"
+            ),
+            "Sad",
+        )
+        self.assertEqual(normalize_mood("badmood"), "Sad")
+
+    def test_frustasi_typo_is_angry(self) -> None:
+        self.assertEqual(
+            detect_mood_in_text(
+                "Tgl 19/09/2026 jajan snack frustasi lihat pidato Prabowo 58k"
+            ),
+            "Angry",
+        )
+        self.assertEqual(normalize_mood("frustasi"), "Angry")
+
 
 if __name__ == "__main__":
     unittest.main()

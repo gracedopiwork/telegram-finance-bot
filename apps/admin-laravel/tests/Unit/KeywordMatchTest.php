@@ -23,5 +23,7 @@ class KeywordMatchTest extends TestCase
         $this->assertTrue(KeywordMatch::contains('tumbler ganti yang rusak', 'tumbler'));
         $this->assertTrue(KeywordMatch::contains('premi asuransi jiwa', 'premi asuransi'));
         $this->assertFalse(KeywordMatch::contains('cushion premium', 'premi asuransi'));
+        $this->assertFalse(KeywordMatch::contains('donasi seragam sekolah', 'nasi'));
+        $this->assertTrue(KeywordMatch::contains('nasi padang 45rb', 'nasi'));
     }
 }

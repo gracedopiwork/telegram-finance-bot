@@ -1624,6 +1624,55 @@ def is_social_giving(text: str) -> bool:
     return _match_any(lower, _TIP_PATTERNS)
 
 
+_SOCIAL_TREAT_RE = (
+    re.compile(r"\b(?:traktir|treat|netreat|nge\s*treat)\b", re.IGNORECASE),
+    re.compile(
+        r"\b(?:bayarin|bayarkan)\s+(?:makan|kopi|minum|jajan|snack|cafe|kafe|makanan)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:makan|kopi|jajan|snack|cafe|kafe)\s+"
+        r"(?:teman|temen|pacar|gebetan|kolega|sahabat|teman[- ]teman)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:traktir|bayarin|bayarkan|treat)\s+(?:teman|temen|pacar|gebetan|kolega|sahabat)\b",
+        re.IGNORECASE,
+    ),
+)
+
+
+def is_social_treat_or_pay_for_others(text: str) -> bool:
+    """Traktir / bayarin makan teman → Sosial (Flexible), bukan Essential Living."""
+    lower = _normalize_typos(text)
+    if (
+        is_lending_to_others(lower)
+        or is_social_debt_borrow(lower)
+        or is_social_debt_repay(lower)
+        or is_receivable_repay(lower)
+    ):
+        return False
+    if is_social_giving(lower):
+        return False
+    if _match_any(lower, _SOCIAL_TREAT_RE):
+        return True
+    foodish = (
+        _contains(lower, _MAKAN)
+        or _contains(lower, _KOPI_JAJAN)
+        or is_food_delivery(lower)
+        or "jajan" in lower
+        or "snack" in lower
+    )
+    if not foodish:
+        return False
+    return bool(
+        re.search(
+            r"\b(?:teman|temen|pacar|gebetan|kolega|sahabat|teman[- ]teman)\b",
+            lower,
+        )
+    )
+
+
 def is_discretionary_social_giving(text: str) -> bool:
     """Hadiah/tip/donasi spontan — Wants & cenderung impulsif (bukan zakat/sedekah wajib)."""
     lower = text.lower()
@@ -2115,6 +2164,9 @@ def is_beauty_care_expense(text: str) -> bool:
 def is_clear_meal_expense(text: str) -> bool:
     """Makanan jelas (makan siang/spaghetti/dll) — bukan spa/kecantikan/pasta gigi."""
     lower = _normalize_typos(text)
+    # Donasi/traktir sosial bukan meal Essential.
+    if is_social_giving(lower) or is_social_treat_or_pay_for_others(lower):
+        return False
     # Jangan anggap pasta gigi / odol sebagai makanan.
     if _contains(lower, ("pasta gigi", "odol", "sikat gigi", "sabun", "shampo", "shampoo")):
         return False
@@ -2618,6 +2670,9 @@ def classify_from_text(text: str) -> dict[str, str] | None:
         if is_gift_expense(lower) or _contains(lower, _GIFT_MARKERS + ("tip", "tips")):
             return {"jenis": "Pengeluaran", "kategori": "Hadiah", "sifat": "Wants"}
         return {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "sifat": "Wants"}
+    # Traktir / bayarin makan teman → Sosial (bukan Essential Living / Need).
+    if is_social_treat_or_pay_for_others(lower):
+        return {"jenis": "Pengeluaran", "kategori": "Sosial & Keluarga", "sifat": "Wants"}
     if is_business_building_expense(lower):
         return {"jenis": "Pengeluaran", "kategori": "Bisnis & Karir", "sifat": "Need"}
     # Traveling: hotel/staycation/liburan/wisata (bukan grab/ojek lokal).
@@ -2800,12 +2855,29 @@ def apply_context_rules(parsed: dict[str, Any], source_text: str = "") -> dict[s
         parsed.pop("sub_kategori", None)
         return parsed
 
+    if is_social_giving(combined) and explicit != "Pemasukan":
+        parsed["jenis"] = "Pengeluaran"
+        parsed["kategori"] = "Sosial & Keluarga"
+        parsed["sifat"] = "Wants"
+        parsed.pop("sub_kategori", None)
+        return parsed
+
+    if is_social_treat_or_pay_for_others(combined) and explicit != "Pemasukan":
+        parsed["jenis"] = "Pengeluaran"
+        parsed["kategori"] = "Sosial & Keluarga"
+        parsed["sifat"] = "Wants"
+        parsed.pop("sub_kategori", None)
+        return parsed
+
     # Makan siang/spaghetti/dll — paksa Makanan SEBELUM AI/beauty (spagethi≠spa).
     # Kecuali konsumsi meeting kerja → Bisnis & Karir.
+    # Kecuali donasi/traktir sosial → jangan timpa jadi Essential.
     if (
         is_clear_meal_expense(combined)
         and explicit != "Pemasukan"
         and not is_business_building_expense(combined)
+        and not is_social_giving(combined)
+        and not is_social_treat_or_pay_for_others(combined)
     ):
         parsed["jenis"] = "Pengeluaran"
         parsed["kategori"] = "Makanan & Minuman"
@@ -3321,6 +3393,8 @@ Contoh klasifikasi WAJIB diikuti (kategori = closed list YFD AI Taxonomy):
 - "kopi susu 28rb" → Pengeluaran / Makanan & Minuman / Wants
 - "beli aqua 1.5L 7k" → Pengeluaran / Makanan & Minuman / Need
 - "donasi ke bapak grab 5k" → Pengeluaran / Sosial & Keluarga / Wants
+- "traktir makan teman 45k" / "bayarin makan teman 45k" → Sosial & Keluarga / Wants (bukan Essential)
+- "Donasi seragam sekolah anak pedalaman" → Sosial & Keluarga (bukan Makanan; nasi≠donasi)
 - "Hadiah beli iphone 15jt buat keluarga. Terencana" → Pengeluaran / Hadiah / Wants (BUKAN Likuiditas Sosial; BUKAN grey area HP)
 - "beli iphone 15jt" → Pengeluaran / Lifestyle & Hiburan — WAJIB klarifikasi HP rusak vs upgrade vs bisnis
 - "terima hadiah uang 1jt" → Pemasukan / Lain-lain (BUKAN kategori Hadiah)
