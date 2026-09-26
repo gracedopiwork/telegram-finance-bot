@@ -157,6 +157,7 @@ class CategoryBucketServiceTest extends TestCase
             ['Kesehatan & Kebersihan Diri', 'Bayar dokter dan obat'],
             ['Tempat Tinggal', 'Bayar token listrik'],
             ['Tempat Tinggal', 'Bayar tagihan air PDAM'],
+            ['Tempat Tinggal', 'Bayar kos dan listrik'],
             ['Pendidikan', 'Bayar uang sekolah anak'],
             ['Cicilan & Hutang', 'Bayar cicilan motor'],
         ] as [$category, $notes]) {
@@ -168,6 +169,25 @@ class CategoryBucketServiceTest extends TestCase
                 $notes,
             );
         }
+    }
+
+    public function test_bayar_kos_listrik_is_essential_not_protection(): void
+    {
+        $this->assertBucket(
+            'Essential Living',
+            TransactionTaxonomy::TYPE_EXPENSE,
+            'Tempat Tinggal',
+            'Need',
+            'Bayar kos dan listrik',
+        );
+        // Proteksi salah label + catatan sewa kos tetap Essential Living.
+        $this->assertBucket(
+            'Essential Living',
+            TransactionTaxonomy::TYPE_EXPENSE,
+            'Proteksi',
+            'Need',
+            'Bayar kos dan listrik Rp 2042000',
+        );
     }
 
     public function test_context_changes_bucket_without_changing_transaction_type(): void

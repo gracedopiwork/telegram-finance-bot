@@ -288,6 +288,58 @@ def resolve_household_durable(
     return "Flexible + Social"
 
 
+_HOUSING_INVESTMENT = (
+    "pbb investasi",
+    "pbb disewakan",
+    "pbb dikoskan",
+    "properti disewakan",
+    "properti dikoskan",
+    "kpr investasi",
+    "kpr disewakan",
+    "kpr dikoskan",
+)
+_HOUSING_RENT_UTILITY = (
+    "kontrakan",
+    "sewa kos",
+    "sewa kost",
+    "uang kos",
+    "bayar kos",
+    "listrik",
+    "token listrik",
+    "pln",
+    "pdam",
+    "tagihan air",
+    "ipl",
+    "wifi rumah",
+    "sewa rumah",
+    "bayar sewa",
+    "uang sewa",
+)
+_HOUSING_RIDE_MARKERS = ("grab", "gojek", "ojek", "maxim", "grabbike", "grabcar")
+
+
+def resolve_housing_rent_utilities(*, jenis: str, notes: str, kategori: str) -> str | None:
+    """Sewa kos/utilitas tinggal = Essential Living (bukan Protection).
+
+    Tidak menelan ride 'dari kos ke …' (Transportasi).
+    """
+    if jenis != "Pengeluaran":
+        return None
+    category = kategori.strip().lower()
+    combined = f"{notes} {kategori}".strip().lower()
+    if category in {"transport", "transportasi"}:
+        return None
+    if any_keyword(combined, _HOUSING_RIDE_MARKERS):
+        return None
+    if any_keyword(combined, _HOUSING_INVESTMENT):
+        return None
+    strong = any_keyword(combined, _HOUSING_RENT_UTILITY)
+    bare_kos = keyword_in(combined, "kos") or keyword_in(combined, "kost")
+    if not strong and not (bare_kos and category == "tempat tinggal"):
+        return None
+    return "Essential Living"
+
+
 def resolve_from_mappings(
     *,
     jenis: str,
@@ -443,6 +495,9 @@ def resolve_bucket(parsed: dict[str, Any]) -> str | None:
     household = resolve_household_durable(jenis=jenis, sifat=sifat, notes=notes, kategori=kategori)
     if household is not None:
         return household
+    housing = resolve_housing_rent_utilities(jenis=jenis, notes=notes, kategori=kategori)
+    if housing is not None:
+        return housing
     gym = resolve_paid_sport(jenis=jenis, notes=notes, kategori=kategori)
     if gym is not None:
         return gym

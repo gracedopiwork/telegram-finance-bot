@@ -35,6 +35,11 @@ class CategoryBucketService
         if ($household !== null) {
             return $household;
         }
+        // Sewa kos/listrik/utilitas tinggal = Essential Living (bukan Protection).
+        $housing = $this->resolveHousingRentUtilities($row);
+        if ($housing !== null) {
+            return $housing;
+        }
         $gym = $this->resolvePaidSport($row);
         if ($gym !== null) {
             return $gym;
@@ -150,6 +155,53 @@ class CategoryBucketService
         }
 
         return 'Future Building';
+    }
+
+    /**
+     * Sewa kos / utilitas tempat tinggal → Essential Living.
+     * Melindungi dari mapping Proteksi yang salah di DB admin.
+     * Tidak menelan ride "dari kos ke …" (Transportasi).
+     */
+    private function resolveHousingRentUtilities(BotTransaction $row): ?string
+    {
+        if ($row->type !== TransactionTaxonomy::TYPE_EXPENSE) {
+            return null;
+        }
+
+        $category = mb_strtolower((string) $row->category);
+        $combined = mb_strtolower(trim("{$row->notes} {$row->category}"));
+
+        if ($this->matchesCategory($category, ['transport', 'transportasi'])) {
+            return null;
+        }
+        if (KeywordMatch::containsAny($combined, ['grab', 'gojek', 'ojek', 'maxim', 'grabbike', 'grabcar'])) {
+            return null;
+        }
+
+        $investment = [
+            'pbb investasi', 'pbb disewakan', 'pbb dikoskan',
+            'properti disewakan', 'properti dikoskan',
+            'kpr investasi', 'kpr disewakan', 'kpr dikoskan',
+        ];
+        if (KeywordMatch::containsAny($combined, $investment)) {
+            return null;
+        }
+
+        $rentUtility = [
+            'kontrakan', 'sewa kos', 'sewa kost', 'uang kos', 'bayar kos',
+            'listrik', 'token listrik', 'pln', 'pdam', 'tagihan air', 'ipl',
+            'wifi rumah', 'sewa rumah', 'bayar sewa', 'uang sewa',
+        ];
+        $strongHit = KeywordMatch::containsAny($combined, $rentUtility);
+        $bareKos = KeywordMatch::contains($combined, 'kos')
+            || KeywordMatch::contains($combined, 'kost');
+        $isHousingCategory = $this->matchesCategory($category, ['tempat tinggal']);
+
+        if (! $strongHit && ! ($bareKos && $isHousingCategory)) {
+            return null;
+        }
+
+        return 'Essential Living';
     }
 
     /**

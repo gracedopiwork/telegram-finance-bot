@@ -1270,7 +1270,22 @@ async def save_transaction(
             await message.reply_text(body)
             return
         parsed["kategori"] = canonical.get("category") or parsed["kategori"]
-        parsed["bucket"] = canonical.get("bucket")
+        # Samakan dengan preview: jangan biarkan ringkasan "Tercatat" beda bucket
+        # dari yang user baru saja konfirmasi (regresi: kos/listrik → Protection).
+        confirmed_bucket = parsed.get("bucket")
+        laravel_bucket = canonical.get("bucket")
+        parsed["bucket"] = laravel_bucket
+        try:
+            from bucket_resolver import resolve_bucket
+
+            local_bucket = resolve_bucket(parsed)
+            if local_bucket:
+                parsed["bucket"] = local_bucket
+            elif confirmed_bucket is not None:
+                parsed["bucket"] = confirmed_bucket
+        except Exception:
+            if confirmed_bucket is not None:
+                parsed["bucket"] = confirmed_bucket
 
     if not saved_db:
         await message.reply_text("Gagal menyimpan transaksi. Hubungi admin YFD.")

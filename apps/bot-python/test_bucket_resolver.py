@@ -117,6 +117,23 @@ class BucketResolverTests(unittest.TestCase):
         self.assertEqual(parsed["sifat"], "Need")
         self.assertEqual(parsed["bucket"], "Essential Living")
 
+    def test_bayar_kos_listrik_essential_not_protection(self) -> None:
+        from bucket_resolver import resolve_bucket
+
+        parsed = {
+            "jenis": "Pengeluaran",
+            "kategori": "Tempat Tinggal",
+            "keterangan": "Bayar kos dan listrik",
+            "sifat": "Need",
+        }
+        self.assertEqual(resolve_bucket(parsed), "Essential Living")
+        # Mislabel Proteksi tetap dikoreksi ke Essential Living.
+        parsed["kategori"] = "Proteksi"
+        self.assertEqual(resolve_bucket(parsed), "Essential Living")
+        # Ride dari kos tidak boleh kena aturan sewa kos.
+        ride = classify_offline("Grab dari kos ke gym Imam Bonjol 21000")
+        self.assertEqual(ride["bucket"], "Flexible + Social")
+
 
 if __name__ == "__main__":
     unittest.main()
