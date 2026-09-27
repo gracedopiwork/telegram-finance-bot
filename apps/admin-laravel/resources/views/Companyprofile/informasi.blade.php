@@ -116,7 +116,7 @@
                                 </div>
                             @endif
                             <div>
-                                <h4 class="font-headline-md text-[18px] font-bold text-primary">{{ $a->name }}@if(!str_contains(strtolower($a->name), 'qwp')) QWP@endif</h4>
+                                <h4 class="font-headline-md text-[18px] font-bold text-primary">{{ str_contains(strtolower($a->name), 'qwp') ? $a->name : $a->name.' QWP' }}</h4>
                                 <p class="font-caption text-caption text-on-surface-variant">{{ $a->role_label }}</p>
                             </div>
                         </div>
