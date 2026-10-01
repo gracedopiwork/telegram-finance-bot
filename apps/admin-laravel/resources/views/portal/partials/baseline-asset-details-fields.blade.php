@@ -65,7 +65,7 @@
                         </select>
                     </td>
                     <td class="px-2 py-2">
-                        <input type="number" name="snapshot[asset_details][{{ $i }}][asset_value]" min="0" step="1000"
+                        <input type="number" name="snapshot[asset_details][{{ $i }}][asset_value]" min="0" step="1"
                                value="{{ $row['asset_value'] ?? '' }}"
                                class="w-full rounded border-slate-300 text-sm" placeholder="900000000">
                     </td>
@@ -174,7 +174,7 @@
         tr.innerHTML =
             '<td class="px-2 py-2"><input type="text" name="' + name('asset_name') + '" class="w-full rounded border-slate-300 text-sm" placeholder="Rumah"></td>' +
             '<td class="px-2 py-2"><select name="' + name('asset_type') + '" class="w-full rounded border-slate-300 text-sm">' + options + '</select></td>' +
-            '<td class="px-2 py-2"><input type="number" name="' + name('asset_value') + '" min="0" step="1000" class="w-full rounded border-slate-300 text-sm" placeholder="900000000"></td>' +
+            '<td class="px-2 py-2"><input type="number" name="' + name('asset_value') + '" min="0" step="1" class="w-full rounded border-slate-300 text-sm" placeholder="900000000"></td>' +
             '<td class="px-2 py-2 text-right align-middle"><button type="button" class="asset-remove-row inline-flex items-center justify-center rounded-md text-rose-600 hover:bg-rose-50 p-1" aria-label="Hapus baris" title="Hapus baris"><span class="material-symbols-outlined text-base">close</span></button></td>';
         body.appendChild(tr);
         bindRemove(tr.querySelector('.asset-remove-row'));
