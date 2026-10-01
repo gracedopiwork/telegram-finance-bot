@@ -297,6 +297,12 @@ class BaselineController extends Controller
 
             $payload = $this->buildBaselinePayload($request, $telegramUserId, $result, $snapshot, $ftsaUnlocked, $recordToUpdate);
 
+            // Hanya diagnostik tahap keuangan yang dihitung sebagai check-up.
+            // Simpan snapshot / FTSA tidak boleh memajukan tanggalnya.
+            if ($snapshotOnlySave || $isFtsaOnly) {
+                $payload = $this->keepCheckupDates($recordToUpdate, $payload);
+            }
+
             // User melunasi semua utang: tabel dikirim tapi kosong. Tanpa ini
             // merge mengembalikan baris lama dan utang "hidup lagi".
             $debtCleared = (bool) ($snapshot['debt_register_submitted'] ?? false)
@@ -411,6 +417,7 @@ class BaselineController extends Controller
                 : [];
             $result = $service->assess($validated, true);
             $payload = $this->buildBaselinePayload($request, $telegramUserId, $result, [], true, $existing);
+            $payload = $this->keepCheckupDates($existing, $payload);
 
             if ($existing !== null) {
                 $payload = $this->mergeExistingSnapshotFields($existing, $payload);
@@ -556,6 +563,25 @@ class BaselineController extends Controller
             $payload['ssd_level'] = null;
             $payload['esd_level'] = null;
         }
+
+        return $payload;
+    }
+
+    /**
+     * assessed_at = tanggal "Last check up"; next_review_at turunannya.
+     * Keduanya hanya bergerak saat user mengisi ulang diagnostik.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function keepCheckupDates(?FinancialBaseline $existing, array $payload): array
+    {
+        if ($existing?->assessed_at === null) {
+            return $payload;
+        }
+
+        $payload['assessed_at'] = $existing->assessed_at;
+        $payload['next_review_at'] = $existing->next_review_at;
 
         return $payload;
     }
