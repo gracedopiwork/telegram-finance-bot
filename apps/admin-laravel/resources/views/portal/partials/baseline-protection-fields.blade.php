@@ -68,7 +68,7 @@
                                placeholder="BPJS / Asuransi jiwa">
                     </td>
                     <td class="px-2 py-2">
-                        <input type="number" name="snapshot[protection_policies][{{ $i }}][annual_premium]" min="0" step="1000"
+                        <input type="number" name="snapshot[protection_policies][{{ $i }}][annual_premium]" min="0" step="1"
                                value="{{ $row['annual_premium'] ?? '' }}"
                                class="w-full rounded border-slate-300 text-sm" placeholder="1800000">
                     </td>
@@ -154,7 +154,7 @@
         tr.setAttribute('data-protection-row', '');
         tr.innerHTML =
             '<td class="px-2 py-2"><input type="text" name="snapshot[protection_policies][' + i + '][type]" class="w-full rounded border-slate-300 text-sm" placeholder="BPJS / Asuransi jiwa"></td>' +
-            '<td class="px-2 py-2"><input type="number" name="snapshot[protection_policies][' + i + '][annual_premium]" min="0" step="1000" class="w-full rounded border-slate-300 text-sm" placeholder="1800000"></td>' +
+            '<td class="px-2 py-2"><input type="number" name="snapshot[protection_policies][' + i + '][annual_premium]" min="0" step="1" class="w-full rounded border-slate-300 text-sm" placeholder="1800000"></td>' +
             '<td class="px-2 py-2"><input type="text" name="snapshot[protection_policies][' + i + '][coverage]" class="w-full rounded border-slate-300 text-sm" placeholder="Rp 500.000.000 / faskes"></td>' +
             '<td class="px-2 py-2"><input type="text" name="snapshot[protection_policies][' + i + '][active_year]" class="w-full rounded border-slate-300 text-sm" placeholder="2020"></td>' +
             '<td class="px-2 py-2"><input type="text" name="snapshot[protection_policies][' + i + '][payment_duration]" class="w-full rounded border-slate-300 text-sm" placeholder="5 tahun / Continue"></td>' +

@@ -274,7 +274,7 @@
                     @foreach($snapshotFields as $field => $label)
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">{{ $label }}</label>
-                            <input type="number" name="snapshot[{{ $field }}]" min="0" step="1000"
+                            <input type="number" name="snapshot[{{ $field }}]" min="0" step="1"
                                    value="{{ $snapshotValue($field) }}"
                                    class="w-full rounded-lg border-slate-300 text-sm" placeholder="0">
                         </div>

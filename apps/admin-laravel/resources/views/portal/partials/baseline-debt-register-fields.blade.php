@@ -70,12 +70,12 @@
                         </select>
                     </td>
                     <td class="px-2 py-2">
-                        <input type="number" name="snapshot[debt_register][{{ $i }}][principal_outstanding]" min="0" step="1000"
+                        <input type="number" name="snapshot[debt_register][{{ $i }}][principal_outstanding]" min="0" step="1"
                                value="{{ $row['principal_outstanding'] ?? '' }}"
                                class="w-full rounded border-slate-300 text-sm" placeholder="450000000">
                     </td>
                     <td class="px-2 py-2">
-                        <input type="number" name="snapshot[debt_register][{{ $i }}][monthly_installment_reference]" min="0" step="1000"
+                        <input type="number" name="snapshot[debt_register][{{ $i }}][monthly_installment_reference]" min="0" step="1"
                                value="{{ $row['monthly_installment_reference'] ?? '' }}"
                                class="w-full rounded border-slate-300 text-sm" placeholder="4200000">
                     </td>
@@ -190,8 +190,8 @@
         tr.innerHTML =
             '<td class="px-2 py-2"><input type="hidden" name="snapshot[debt_register][' + i + '][debt_id]" value=""><input type="text" name="snapshot[debt_register][' + i + '][debt_name]" class="w-full rounded border-slate-300 text-sm" placeholder="KPR BCA"></td>' +
             '<td class="px-2 py-2"><select name="snapshot[debt_register][' + i + '][debt_type]" class="w-full rounded border-slate-300 text-sm">' + options + '</select></td>' +
-            '<td class="px-2 py-2"><input type="number" name="snapshot[debt_register][' + i + '][principal_outstanding]" min="0" step="1000" class="w-full rounded border-slate-300 text-sm" placeholder="450000000"></td>' +
-            '<td class="px-2 py-2"><input type="number" name="snapshot[debt_register][' + i + '][monthly_installment_reference]" min="0" step="1000" class="w-full rounded border-slate-300 text-sm" placeholder="4200000"></td>' +
+            '<td class="px-2 py-2"><input type="number" name="snapshot[debt_register][' + i + '][principal_outstanding]" min="0" step="1" class="w-full rounded border-slate-300 text-sm" placeholder="450000000"></td>' +
+            '<td class="px-2 py-2"><input type="number" name="snapshot[debt_register][' + i + '][monthly_installment_reference]" min="0" step="1" class="w-full rounded border-slate-300 text-sm" placeholder="4200000"></td>' +
             '<td class="px-2 py-2"><input type="number" name="snapshot[debt_register][' + i + '][remaining_tenor_months]" min="0" max="600" step="1" class="w-full rounded border-slate-300 text-sm" placeholder="96"></td>' +
             '<td class="px-2 py-2 text-slate-500 whitespace-nowrap">&mdash;</td>' +
             '<td class="px-2 py-2 text-right align-middle"><button type="button" class="debt-remove-row inline-flex items-center justify-center rounded-md text-rose-600 hover:bg-rose-50 p-1" aria-label="Hapus baris" title="Hapus baris"><span class="material-symbols-outlined text-base">close</span></button></td>';

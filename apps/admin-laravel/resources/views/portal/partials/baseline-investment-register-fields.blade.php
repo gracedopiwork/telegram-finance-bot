@@ -105,17 +105,17 @@
                                class="w-full rounded border-slate-300 text-sm" placeholder="21">
                     </td>
                     <td class="px-2 py-2">
-                        <input type="number" name="snapshot[investment_register][{{ $i }}][target_amount]" min="0" step="1000"
+                        <input type="number" name="snapshot[investment_register][{{ $i }}][target_amount]" min="0" step="1"
                                value="{{ $row['target_amount'] ?? '' }}"
                                class="w-full rounded border-slate-300 text-sm" placeholder="5000000000">
                     </td>
                     <td class="px-2 py-2">
-                        <input type="number" name="snapshot[investment_register][{{ $i }}][realized_principal]" min="0" step="1000"
+                        <input type="number" name="snapshot[investment_register][{{ $i }}][realized_principal]" min="0" step="1"
                                value="{{ $row['realized_principal'] ?? '' }}"
                                class="w-full rounded border-slate-300 text-sm" placeholder="100000000">
                     </td>
                     <td class="px-2 py-2">
-                        <input type="number" name="snapshot[investment_register][{{ $i }}][realized_actual]" min="0" step="1000"
+                        <input type="number" name="snapshot[investment_register][{{ $i }}][realized_actual]" min="0" step="1"
                                value="{{ $row['realized_actual'] ?? '' }}"
                                class="w-full rounded border-slate-300 text-sm" placeholder="80000000">
                     </td>
@@ -291,9 +291,9 @@
             '<td class="px-2 py-2"><input type="text" name="' + name('purpose') + '" class="w-full rounded border-slate-300 text-sm" placeholder="Dana Pensiun"></td>' +
             '<td class="px-2 py-2"><input type="number" name="' + name('start_year') + '" min="1980" max="{{ now()->year + 1 }}" step="1" class="w-full rounded border-slate-300 text-sm" placeholder="2025"></td>' +
             '<td class="px-2 py-2"><input type="number" name="' + name('target_years') + '" min="1" max="80" step="1" class="w-full rounded border-slate-300 text-sm" placeholder="21"></td>' +
-            '<td class="px-2 py-2"><input type="number" name="' + name('target_amount') + '" min="0" step="1000" class="w-full rounded border-slate-300 text-sm" placeholder="5000000000"></td>' +
-            '<td class="px-2 py-2"><input type="number" name="' + name('realized_principal') + '" min="0" step="1000" class="w-full rounded border-slate-300 text-sm" placeholder="100000000"></td>' +
-            '<td class="px-2 py-2"><input type="number" name="' + name('realized_actual') + '" min="0" step="1000" class="w-full rounded border-slate-300 text-sm" placeholder="80000000"></td>' +
+            '<td class="px-2 py-2"><input type="number" name="' + name('target_amount') + '" min="0" step="1" class="w-full rounded border-slate-300 text-sm" placeholder="5000000000"></td>' +
+            '<td class="px-2 py-2"><input type="number" name="' + name('realized_principal') + '" min="0" step="1" class="w-full rounded border-slate-300 text-sm" placeholder="100000000"></td>' +
+            '<td class="px-2 py-2"><input type="number" name="' + name('realized_actual') + '" min="0" step="1" class="w-full rounded border-slate-300 text-sm" placeholder="80000000"></td>' +
             '<td class="px-2 py-2 font-semibold whitespace-nowrap text-slate-500" data-investment-yield>&mdash;</td>' +
             '<td class="px-2 py-2 text-slate-500 whitespace-nowrap">&mdash;</td>' +
             '<td class="px-2 py-2 text-right align-middle"><button type="button" class="investment-remove-row inline-flex items-center justify-center rounded-md text-rose-600 hover:bg-rose-50 p-1" aria-label="Hapus baris" title="Hapus baris"><span class="material-symbols-outlined text-base">close</span></button></td>';
