@@ -6,9 +6,11 @@ dan Utang Masuk. Jenis lain tidak dievaluasi (bukan 'No' sebagai keputusan).
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
-from context_rules import is_discretionary_social_giving
+from context_rules import is_discretionary_social_giving, is_drinking_water_expense
+from keyword_match import any_keyword
 from yfd_taxonomy import applies_impulsif
 
 VALID_IMPULSIF = frozenset({"Yes", "No"})
@@ -271,6 +273,53 @@ NEGATIVE_MOODS_FOR_IMPULSE = frozenset({"Sad", "Stressed", "Angry", "Tired"})
 # Belanja kecil (kopi/snack harian) jangan dilabel impulsif hanya karena mood negatif.
 MIN_NOMINAL_FOR_IMPULSE = 50_000
 
+# Belanja dapur (bahan makanan, masak sendiri, air minum) — tidak ditanya terencana walau
+# kategorinya Makanan & Minuman. Kata tunggal seperti telur/sayur/daging/pasar sengaja tidak
+# masuk: "nasi telur", "sayur asem", "steak daging", "pasar malam" itu makan di luar.
+GROCERY_KEYWORDS = (
+    "belanja bulanan",
+    "belanja mingguan",
+    "belanja dapur",
+    "belanja sayur",
+    "belanja daging",
+    "belanja ikan",
+    "belanja ke pasar",
+    "belanja di pasar",
+    "sembako",
+    "kebutuhan pokok",
+    "bahan pokok",
+    "bahan makanan",
+    "bahan masak",
+    "stok kulkas",
+    "isi kulkas",
+    "stok makanan",
+    "frozen food",
+    "gula pasir",
+    "minyak goreng",
+    "tukang sayur",
+    "abang sayur",
+    "warung sayur",
+    "mlijo",
+)
+
+# Indomaret/Alfamart = belanja dapur. Family Mart, Lawson, AEON, Papaya, Indomaret Point
+# sengaja tidak masuk: separuh isinya makanan siap santap, jadi tetap ditanya.
+# Supermarket hanya dihitung setelah kata "belanja" — "makan di food court transmart" itu makan.
+_GROCERY_PATTERNS = tuple(
+    re.compile(pattern)
+    for pattern in (
+        r"\bberas\b",
+        r"\bsupermarket\b",
+        r"\bke pasar\b(?!\s+(?:malam|kaget|senggol))",
+        r"\b(?:indomaret|indomart)\b(?!\s+point)",
+        r"\b(?:alfamart|alfamidi)\b",
+        r"\bbelanja\b.*\b(?:superindo|hypermart|transmart|lotte ?mart|ranch market|hero|giant"
+        r"|grand lucky|farmers market)\b",
+        r"\d\s*(?:kg|kilo|liter|ltr|krat|karung|dus|kardus)\b",
+        r"\bse(?:kilo|liter|karung|krat|papan|dus|kardus)\b",
+    )
+)
+
 
 def _combined_text(parsed: dict[str, Any], source_text: str) -> str:
     return f"{parsed.get('keterangan', '')} {source_text}".lower()
@@ -381,6 +430,26 @@ def is_receipt_discretionary_food(parsed: dict[str, Any], combined: str) -> bool
     return any(keyword in combined for keyword in RECEIPT_DISCRETIONARY_KEYWORDS)
 
 
+def is_grocery_purchase(combined: str) -> bool:
+    """Belanja dapur — bahan makanan, masak sendiri, air minum (taxonomy: Kebutuhan pokok)."""
+    return (
+        any_keyword(combined, GROCERY_KEYWORDS)
+        or any(pattern.search(combined) for pattern in _GROCERY_PATTERNS)
+        or is_drinking_water_expense(combined)
+    )
+
+
+def is_eating_out_clarification(parsed: dict[str, Any], source_text: str = "") -> bool:
+    """Makan >= MIN_NOMINAL_FOR_IMPULSE (bukan belanja dapur) — selalu tanya terencana."""
+    if str(parsed.get("jenis") or "").strip() != "Pengeluaran":
+        return False
+    if str(parsed.get("kategori") or "").strip() not in FOOD_CATEGORIES:
+        return False
+    if int(parsed.get("nominal", 0) or 0) < MIN_NOMINAL_FOR_IMPULSE:
+        return False
+    return not is_grocery_purchase(_combined_text(parsed, source_text))
+
+
 def needs_impulse_clarification(
     parsed: dict[str, Any],
     source_text: str = "",
@@ -389,12 +458,16 @@ def needs_impulse_clarification(
 ) -> bool:
     """
     True bila impulsif in-scope tapi tanpa sinyal jelas.
+    - Makan >= MIN_NOMINAL_FOR_IMPULSE (bukan belanja dapur): selalu tanya, sinyal teks diabaikan.
     - Pengeluaran: jajan/snack (atau F&B dari foto struk) — perilaku lama dipertahankan.
     - Piutang Keluar / Utang Masuk (v1.8): wajib tanya jika tidak ada signal §3.5.
     """
     jenis = str(parsed.get("jenis") or "").strip()
     if not applies_impulsif(jenis):
         return False
+
+    if is_eating_out_clarification(parsed, source_text):
+        return True
 
     combined = _combined_text(parsed, source_text)
 
@@ -424,8 +497,13 @@ def needs_impulse_clarification(
     return is_discretionary_snack(parsed, combined)
 
 
-def impulse_clarification_copy(jenis: str, *, from_receipt: bool = False) -> tuple[str, str]:
-    """(intro, prompt) untuk klarifikasi impulsif — wording §5.1 / §5A.1 / jajan."""
+def impulse_clarification_copy(
+    jenis: str,
+    *,
+    from_receipt: bool = False,
+    eating_out: bool = False,
+) -> tuple[str, str]:
+    """(intro, prompt) untuk klarifikasi impulsif — wording §5.1 / §5A.1 / struk / makan / jajan."""
     jenis = str(jenis or "").strip()
     if jenis == "Piutang Keluar":
         return (
@@ -451,6 +529,8 @@ def impulse_clarification_copy(jenis: str, *, from_receipt: bool = False) -> tup
                 "Untuk transaksi dari foto ini, apakah pembeliannya *terencana*?"
             ),
         )
+    if eating_out:
+        return ("Transaksi sudah kebaca. Aku perlu memastikan dulu:", "Apakah ini *terencana*?")
     return (
         "Transaksi sudah kebaca. Untuk jajan/cemilan, aku perlu memastikan dulu:",
         (

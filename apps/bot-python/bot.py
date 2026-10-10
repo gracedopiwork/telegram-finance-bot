@@ -81,6 +81,7 @@ from impulsive_rules import (
     PAYDAY_SPLURGE_KEYWORDS,
     REWARD_SPENDING_KEYWORDS,
     impulse_clarification_copy,
+    is_eating_out_clarification,
     needs_impulse_clarification,
     resolve_impulsif,
     stamp_planned_cue,
@@ -472,6 +473,11 @@ async def queue_impulse_clarification(
     basic_mode: bool = False,
     from_receipt: bool = False,
 ) -> None:
+    intro, prompt = impulse_clarification_copy(
+        str(parsed.get("jenis") or ""),
+        from_receipt=from_receipt,
+        eating_out=is_eating_out_clarification(parsed, source_text),
+    )
     PENDING_CONFIRMATIONS.pop(user_id, None)
     PENDING_IMPULSE_WAIT[user_id] = {
         "parsed": parsed,
@@ -479,16 +485,23 @@ async def queue_impulse_clarification(
         "source_text": source_text.strip(),
         "basic_mode": basic_mode,
         "from_receipt": from_receipt,
+        "prompt": prompt,
     }
-    intro, prompt = impulse_clarification_copy(
-        str(parsed.get("jenis") or ""),
-        from_receipt=from_receipt,
-    )
     await prompt_impulse_clarification(
         message,
         user_id,
         intro=intro,
         prompt=prompt,
+    )
+
+
+async def reprompt_impulse_clarification(message, user_id: int) -> None:
+    """Balasan teks tidak dikenali — tanya ulang dengan pertanyaan yang sama."""
+    await prompt_impulse_clarification(
+        message,
+        user_id,
+        intro="Pilih dengan menekan tombol di bawah, atau balas *terencana* / *tidak terencana*:",
+        prompt=PENDING_IMPULSE_WAIT[user_id]["prompt"],
     )
 
 
@@ -1825,13 +1838,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return
         impulse_value = normalize_impulse_reply(text)
         if not impulse_value:
-            pending_impulse = PENDING_IMPULSE_WAIT[user_id]
-            await prompt_impulse_clarification(
-                update.message,
-                user_id,
-                intro="Pilih dengan menekan tombol di bawah, atau balas *terencana* / *tidak terencana*:",
-                from_receipt=bool(pending_impulse.get("from_receipt")),
-            )
+            await reprompt_impulse_clarification(update.message, user_id)
             return
 
         pending = PENDING_IMPULSE_WAIT.pop(user_id)
