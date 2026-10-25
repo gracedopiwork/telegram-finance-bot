@@ -97,7 +97,10 @@
     $serviceLabel = $isPremarital
         ? 'Premarital Financial Health Check Up'
         : ($isRecovery ? 'Financial Recovery Program' : 'Financial Consultation');
-    $recoveryFrom = ConsultationPricing::formatRupiah($consultationMeta['recovery_from'] ?? 150_000);
+    $priceUnit = (string) config('consultation_pricing.session_unit', '/jam');
+    $rolePriceText = fn (string $role) => isset($sessionRolePrices[$role]) && $sessionRolePrices[$role]->isFixed()
+        ? ConsultationPricing::formatRupiah($sessionRolePrices[$role]->amount)
+        : 'tarif sesuai tahap FHCU';
     $hasSlots = ($openSlots ?? collect())->isNotEmpty();
     $serviceTypeValue = $isPremarital ? 'premarital' : ($isRecovery ? 'recovery' : 'standard');
 @endphp
@@ -188,7 +191,7 @@
                                     @if($isPremarital)
                                         Sesi individu + couple · dokter yang sama
                                     @elseif($isRecovery)
-                                        Estimasi mulai {{ $recoveryFrom }}/sesi
+                                        Tarif {{ ConsultationPricing::formatRupiah($servicePrice->amount) }} · konsultasi awal
                                     @else
                                         Konsultasi 1-on-1 via WhatsApp
                                     @endif
@@ -221,9 +224,9 @@
                         <label for="sessionRole" class="font-label-md text-label-md text-on-surface-variant">Jenis sesi yang dibooking sekarang *</label>
                         <select id="sessionRole" name="session_role" required class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
                             <option value="">— pilih —</option>
-                            <option value="male" {{ old('session_role') === 'male' ? 'selected' : '' }}>Sesi 1-on-1 male</option>
-                            <option value="female" {{ old('session_role') === 'female' ? 'selected' : '' }}>Sesi 1-on-1 female</option>
-                            <option value="couple" {{ old('session_role') === 'couple' ? 'selected' : '' }}>Sesi couple (+ follow-up dijadwalkan admin)</option>
+                            <option value="male" {{ old('session_role') === 'male' ? 'selected' : '' }}>Sesi 1-on-1 male — {{ $rolePriceText('male') }}</option>
+                            <option value="female" {{ old('session_role') === 'female' ? 'selected' : '' }}>Sesi 1-on-1 female — {{ $rolePriceText('female') }}</option>
+                            <option value="couple" {{ old('session_role') === 'couple' ? 'selected' : '' }}>Sesi couple (+ follow-up dijadwalkan admin) — {{ $rolePriceText('couple') }}</option>
                         </select>
                     </div>
                     @endif
@@ -278,23 +281,20 @@
                         </div>
                     </div>
 
-                    @if(!$isRecovery && !$isPremarital)
+                    @if(!$isRecovery && !$isPremarital && !$servicePrice->isFixed())
                     <div>
-                        <label class="font-label-md text-label-md text-on-surface-variant block mb-3">Tahap Finansial (hasil FHCU)</label>
-                        <select name="stage" id="stageSelect" class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
-                            <option value="">— otomatis dari FHCU (email) —</option>
-                            @foreach($consultationTiers as $stageKey => $tier)
-                                <option value="{{ $stageKey }}"
-                                        data-range="{{ ConsultationPricing::formatRange($tier) }}"
-                                        {{ ($selectedStage ?? '') === $stageKey || old('stage') === $stageKey ? 'selected' : '' }}>
-                                    {{ $tier['label'] }} — {{ ConsultationPricing::formatRange($tier) }}{{ $consultationMeta['period'] ?? '/sesi' }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <p id="stageFeeHint" class="font-caption text-caption text-on-surface-variant mt-2 hidden"></p>
-                        <p class="font-caption text-caption text-on-surface-variant mt-1">
-                            Tarif final mengikuti tahap dari FHCU email Anda (berlaku ≤3 bulan).
+                        <label class="font-label-md text-label-md text-on-surface-variant block mb-3">Tarif Sesi</label>
+                        <p class="font-body-md text-body-md text-on-surface">
+                            Tarif mengikuti tahap FHCU email Anda (berlaku ≤3 bulan).
                         </p>
+                        <ul id="stagePriceList" class="mt-3 grid grid-cols-1 sm:grid-cols-4 gap-2">
+                            @foreach($servicePrice->stages as $row)
+                                <li class="flex items-center justify-between gap-3 sm:block rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm">
+                                    <span class="block font-semibold text-on-surface">{{ $row['label'] }}</span>
+                                    <span class="whitespace-nowrap text-on-surface-variant">{{ ConsultationPricing::formatRupiah($row['amount']) }}{{ $priceUnit }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
                     </div>
                     @endif
 
@@ -487,8 +487,6 @@
     const slotGrid = document.getElementById('slotGrid');
     const slotIdInput = document.getElementById('slotIdInput');
     const selectedDateLabel = document.getElementById('selectedDateLabel');
-    const stageSelect = document.getElementById('stageSelect');
-    const stageFeeHint = document.getElementById('stageFeeHint');
     const advisorSelect = document.getElementById('advisorSelect');
     const advisorIdInput = document.getElementById('advisorIdInput');
     const calendarBlock = document.getElementById('calendarBlock');
@@ -694,21 +692,6 @@
             if (viewMonth > 11) { viewMonth = 0; viewYear += 1; }
             renderCalendar();
         });
-    }
-
-    function updateStageHint() {
-        if (!stageSelect || !stageFeeHint) return;
-        const opt = stageSelect.options[stageSelect.selectedIndex];
-        if (!opt || !opt.value) {
-            stageFeeHint.classList.add('hidden');
-            return;
-        }
-        stageFeeHint.textContent = 'Tarif sesi: ' + (opt.dataset.range || '-') + '.';
-        stageFeeHint.classList.remove('hidden');
-    }
-    if (stageSelect) {
-        stageSelect.addEventListener('change', updateStageHint);
-        updateStageHint();
     }
 
     if (isPremarital && advisorSelect) {
