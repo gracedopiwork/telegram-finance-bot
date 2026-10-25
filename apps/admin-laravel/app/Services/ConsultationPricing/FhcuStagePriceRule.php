@@ -19,12 +19,7 @@ final class FhcuStagePriceRule implements PriceRule
 
     public function quote(string $email): PriceQuote
     {
-        $status = $this->fhcu->forEmail($email);
-
-        if (in_array($status['status'], ['missing', 'expired'], true)) {
-            throw new FhcuRequiredException($status['status'], $status['message']);
-        }
-
+        $status = $this->fhcu->requireFor($email);
         if (! $status['valid']) {
             throw ValidationException::withMessages(['email' => $status['message']]);
         }

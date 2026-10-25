@@ -27,7 +27,7 @@ class ConsultationPriceRulesTest extends TestCase
 
     private function lookupReturning(string $status, ?string $stageKey): void
     {
-        $this->mock(FhcuStatusLookup::class, function (MockInterface $mock) use ($status, $stageKey) {
+        $this->partialMock(FhcuStatusLookup::class, function (MockInterface $mock) use ($status, $stageKey) {
             $mock->shouldReceive('forEmail')->andReturn($this->fhcuStatus($status, $stageKey));
         });
     }
@@ -37,16 +37,26 @@ class ConsultationPriceRulesTest extends TestCase
         return $this->app->make(ConsultationPriceRules::class);
     }
 
-    public function test_fixed_rule_ignores_fhcu(): void
+    public function test_fixed_rule_ignores_fhcu_stage(): void
     {
-        $this->mock(FhcuStatusLookup::class, function (MockInterface $mock) {
-            $mock->shouldNotReceive('forEmail');
-        });
+        $this->lookupReturning('valid', 'comfortable');
 
         $quote = $this->rules()->for('recovery', null)->quote('klien@example.com');
 
         $this->assertSame(150_000, $quote->amount);
         $this->assertNull($quote->stageKey);
+    }
+
+    public function test_premarital_couple_never_looks_up_fhcu(): void
+    {
+        $this->mock(FhcuStatusLookup::class, function (MockInterface $mock) {
+            $mock->shouldNotReceive('forEmail', 'requireFor');
+        });
+
+        $rule = $this->rules()->for('premarital', 'couple');
+
+        $this->assertFalse($rule->requiresFhcu());
+        $this->assertSame(500_000, $rule->quote('klien@example.com')->amount);
     }
 
     public function test_fhcu_rule_prices_by_stage(): void
@@ -59,16 +69,18 @@ class ConsultationPriceRulesTest extends TestCase
         $this->assertSame('growing', $quote->stageKey);
     }
 
-    public function test_fhcu_rule_missing_or_expired_throws_fhcu_required(): void
+    public function test_missing_or_expired_fhcu_throws_fhcu_required(): void
     {
-        foreach (['missing', 'expired'] as $status) {
-            $this->lookupReturning($status, $status === 'expired' ? 'steady' : null);
+        foreach ([['premarital', 'female'], ['recovery', null]] as [$service, $role]) {
+            foreach (['missing', 'expired'] as $status) {
+                $this->lookupReturning($status, $status === 'expired' ? 'steady' : null);
 
-            try {
-                $this->rules()->for('premarital', 'female')->quote('klien@example.com');
-                $this->fail("FHCU {$status} harus ditolak");
-            } catch (FhcuRequiredException $e) {
-                $this->assertSame($status, $e->status);
+                try {
+                    $this->rules()->for($service, $role)->quote('klien@example.com');
+                    $this->fail("{$service}: FHCU {$status} harus ditolak");
+                } catch (FhcuRequiredException $e) {
+                    $this->assertSame($status, $e->status);
+                }
             }
         }
     }
@@ -87,6 +99,7 @@ class ConsultationPriceRulesTest extends TestCase
 
     public function test_changing_config_changes_price(): void
     {
+        $this->lookupReturning('valid', 'growing');
         config(['consultation_pricing.services.recovery.default.price' => 175_000]);
 
         $quote = $this->rules()->for('recovery', null)->quote('klien@example.com');

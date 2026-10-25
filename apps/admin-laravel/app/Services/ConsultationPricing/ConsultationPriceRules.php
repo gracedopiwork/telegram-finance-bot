@@ -7,7 +7,8 @@ use Illuminate\Validation\ValidationException;
 /**
  * Memilih aturan tarif untuk (service_type, session_role) dari
  * config('consultation_pricing.services'). Kombinasi tak dikenal ditolak —
- * tidak ada fallback ke tarif lain.
+ * tidak ada fallback ke tarif lain. Tarif tetap wajib FHCU kecuali
+ * `requires_fhcu => false`; tarif tahap FHCU selalu wajib FHCU.
  */
 class ConsultationPriceRules
 {
@@ -24,7 +25,12 @@ class ConsultationPriceRules
         $label = (string) ($config['label'] ?? '');
 
         return match ($config['rule'] ?? null) {
-            'fixed' => new FixedPriceRule((int) ($config['price'] ?? 0), $label),
+            'fixed' => new FixedPriceRule(
+                (int) ($config['price'] ?? 0),
+                $label,
+                $this->fhcu,
+                (bool) ($config['requires_fhcu'] ?? true),
+            ),
             'fhcu_stage' => new FhcuStagePriceRule($this->fhcu, $label),
             default => throw $this->unknownService(),
         };

@@ -4,12 +4,37 @@ namespace App\Services\ConsultationPricing;
 
 use App\Models\FinancialBaseline;
 use App\Support\ConsultationPricing;
+use Illuminate\Validation\ValidationException;
 
 /**
- * Status FHCU terbaru untuk satu email (dipakai aturan tarif berbasis tahap).
+ * Status FHCU terbaru untuk satu email (dipakai aturan tarif yang mewajibkan FHCU).
  */
 class FhcuStatusLookup
 {
+    /**
+     * Email wajib punya FHCU yang masih berlaku. Status 'no_stage' tetap dikembalikan
+     * (FHCU ada) — aturan berbasis tahap yang memutuskan.
+     *
+     * @return array{valid: bool, status: string, baseline: ?FinancialBaseline, stage_key: ?string, message: string}
+     *
+     * @throws FhcuRequiredException belum ada FHCU ('missing') atau sudah lewat masa berlaku ('expired')
+     * @throws ValidationException email kosong
+     */
+    public function requireFor(string $email): array
+    {
+        $status = $this->forEmail($email);
+
+        if (in_array($status['status'], ['missing', 'expired'], true)) {
+            throw new FhcuRequiredException($status['status'], $status['message']);
+        }
+
+        if ($status['status'] === 'missing_email') {
+            throw ValidationException::withMessages(['email' => $status['message']]);
+        }
+
+        return $status;
+    }
+
     /**
      * @return array{valid: bool, status: string, baseline: ?FinancialBaseline, stage_key: ?string, message: string}
      */

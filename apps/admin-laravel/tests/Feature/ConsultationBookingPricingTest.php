@@ -41,14 +41,21 @@ class ConsultationBookingPricingTest extends TestCase
         $this->assertNull(ConsultationSlot::sole()->stage_key);
     }
 
-    public function test_recovery_without_fhcu_is_booked_at_150000(): void
+    public function test_recovery_without_valid_fhcu_is_refused(): void
     {
-        $this->book($this->openSlot(), [
-            'service_type' => 'recovery',
-            'situation' => 'Financial burnout',
-        ])->assertRedirect('https://pivot.test/pay/1');
+        $this->fhcu('expired@example.com', 'growing', now()->subMonths(4));
 
-        $this->assertCharged(150_000);
+        foreach (['baru@example.com' => 'Belum ada data FHCU', 'expired@example.com' => 'lebih dari 3 bulan'] as $email => $message) {
+            $this->book($this->openSlot(), [
+                'email' => $email,
+                'service_type' => 'recovery',
+                'situation' => 'Financial burnout',
+            ])->assertSessionHasErrors('email');
+            $this->assertStringContainsString($message, session('errors')->first('email'));
+        }
+
+        $this->assertSame(0, Order::query()->count());
+        $this->assertSame([], $this->pivotPaymentAmounts());
     }
 
     public function test_premarital_couple_is_500000_without_fhcu(): void
@@ -141,6 +148,7 @@ class ConsultationBookingPricingTest extends TestCase
         Setting::put('pricing.recovery_from', '1', 'text', 'page_pricing');
 
         $this->fhcu('growing@example.com', 'growing');
+        $this->fhcu('recovery@example.com', 'comfortable');
         $this->book($this->openSlot(), ['email' => 'growing@example.com'])
             ->assertRedirect('https://pivot.test/pay/1');
         $this->book($this->openSlot(['starts_at' => now(ConsultationSlot::BOOKING_TIMEZONE)->addDays(4)->setTime(10, 0)->format('Y-m-d H:i:s')]), [

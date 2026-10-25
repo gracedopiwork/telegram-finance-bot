@@ -24,6 +24,7 @@ return [
     /*
      * Aturan tarif per layanan (service_type) dan jenis sesi (session_role; 'default' bila tanpa role).
      * rule 'fhcu_stage' = tarif tahap FHCU email customer (lihat `stages`); rule 'fixed' = `price`.
+     * Semua booking wajib FHCU dulu; tarif 'fixed' bisa dikecualikan dengan `requires_fhcu => false`.
      * Kombinasi yang tidak ada di sini ditolak saat booking.
      */
     'services' => [
@@ -33,10 +34,11 @@ return [
         'premarital' => [
             'male' => ['rule' => 'fhcu_stage', 'label' => 'Premarital — sesi 1-on-1 male'],
             'female' => ['rule' => 'fhcu_stage', 'label' => 'Premarital — sesi 1-on-1 female'],
-            'couple' => ['rule' => 'fixed', 'price' => 500_000, 'label' => 'Premarital — sesi couple + 1× follow-up'],
+            // Pasangan sudah FHCU masing-masing saat booking sesi male/female.
+            'couple' => ['rule' => 'fixed', 'price' => 500_000, 'requires_fhcu' => false, 'label' => 'Premarital — sesi couple + 1× follow-up'],
         ],
         'recovery' => [
-            'default' => ['rule' => 'fixed', 'price' => 150_000, 'label' => 'Financial Recovery — konsultasi awal'],
+            'default' => ['rule' => 'fixed', 'price' => 150_000, 'requires_fhcu' => true, 'label' => 'Financial Recovery — konsultasi awal'],
         ],
     ],
 
