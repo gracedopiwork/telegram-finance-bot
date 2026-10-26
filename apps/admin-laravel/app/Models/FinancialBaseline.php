@@ -47,6 +47,9 @@ class FinancialBaseline extends Model
         'ssd_level',
         'esd_level',
         'answers_json',
+        'research_consent',
+        'research_consent_at',
+        'research_consent_version',
     ];
 
     protected function casts(): array
@@ -55,6 +58,8 @@ class FinancialBaseline extends Model
             'assessed_at' => 'datetime',
             'next_review_at' => 'datetime',
             'answers_json' => 'array',
+            'research_consent' => 'boolean',
+            'research_consent_at' => 'datetime',
             'asset_details' => 'array',
             'protection_policies' => 'array',
             'debt_register' => 'array',

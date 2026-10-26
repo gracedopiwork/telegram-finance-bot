@@ -48,6 +48,39 @@ return [
             'body' => 'YFD First Aid merupakan alat pencatatan, edukasi, dan pemahaman Financial Health. Hasil sistem tidak dimaksudkan sebagai jaminan hasil finansial tertentu.',
         ],
     ],
+
+    /**
+     * Blok kedua di /kebijakan-privasi: FHCU & Konsultasi (Batch 1 W2).
+     * Draf engineer — menunggu persetujuan founder sebelum deploy. Sengaja tidak menaikkan
+     * 'version' di atas: itu memaksa semua user First Aid menyetujui ulang.
+     */
+    'fhcu_title' => 'Financial Health Check-Up (FHCU) & Konsultasi',
+    'fhcu_sections' => [
+        [
+            'heading' => 'Data yang dikumpulkan',
+            'body' => 'Saat mengisi Financial Health Check-Up (FHCU), kami menyimpan jawaban check-up, email, dan hasil tahap finansial kamu.',
+        ],
+        [
+            'heading' => 'Tujuan penggunaan',
+            'body' => 'Data FHCU digunakan untuk menampilkan dan mengirim hasil check-up ke email kamu, menentukan tarif konsultasi sesuai tahap finansialmu, dan menghubungimu terkait layanan yang kamu minta.',
+        ],
+        [
+            'heading' => 'Persetujuan penggunaan layanan',
+            'body' => 'Dengan mengisi FHCU, atau membayar dan menghadiri konsultasi, kamu menyetujui penggunaan data untuk tujuan di atas.',
+        ],
+        [
+            'heading' => 'Penelitian',
+            'body' => 'Data FHCU hanya digunakan untuk penelitian YFD bila kamu memilih "Saya bersedia" di halaman pengantar FHCU. Data yang digunakan akan dianalisis secara agregat (data gabungan). Email dan informasi yang secara langsung mengidentifikasi individu tidak akan dicantumkan dalam publikasi hasil penelitian. Apa pun pilihanmu, kamu tetap dapat menyelesaikan FHCU dan menerima hasil personalmu.',
+        ],
+        [
+            'heading' => 'Analytics',
+            'body' => 'Website ini memakai Google Analytics 4 dan Meta Pixel untuk mencatat kunjungan halaman. Email dan jawaban FHCU tidak dikirim ke layanan tersebut.',
+        ],
+        [
+            'heading' => 'Hak kamu & kontak',
+            'body' => 'Untuk melihat, mengoreksi, atau menghapus data FHCU-mu, hubungi WhatsApp Admin YFD di +62 851-1122-8911.',
+        ],
+    ],
     'purchase_summary' => 'Data transaksi dan Financial Health kamu bersifat pribadi, tidak bisa dilihat pengguna lain, dan hanya diakses tim internal jika benar-benar diperlukan untuk layanan kamu dan dengan persetujuanmu.',
 
     /**

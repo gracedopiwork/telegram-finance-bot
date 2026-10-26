@@ -72,7 +72,9 @@ Route::get('/landing',       [LandingController::class, 'home'])->name('landing'
 | Financial Health Check-Up (gratis di landing — tanpa login)
 |--------------------------------------------------------------------------
 */
-Route::get('/check-up', [PublicCheckupController::class, 'show'])->name('checkup.show');
+Route::get('/check-up', [PublicCheckupController::class, 'intro'])->name('checkup.show');
+Route::post('/check-up/mulai', [PublicCheckupController::class, 'start'])->name('checkup.start');
+Route::get('/check-up/isi', [PublicCheckupController::class, 'form'])->name('checkup.form');
 Route::post('/check-up', [PublicCheckupController::class, 'store'])->name('checkup.store');
 Route::get('/check-up/hasil', [PublicCheckupController::class, 'result'])->name('checkup.result');
 
