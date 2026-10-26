@@ -2,10 +2,11 @@
 
 /**
  * Tarif konsultasi YFD (berbayar, per sesi 1 jam) + overtime.
- * Sumber: Brief payment gateway PIVOT Prioritas.
+ * Sumber: Brief payment gateway PIVOT Prioritas + price sheet founder (Batch 1, 2026-10-25).
  * Screening / Financial Health Check-Up = GRATIS (lihat /check-up).
  *
- * Nominal bisa di-override dari Admin Site Settings (group pricing) bila ada.
+ * Tarif sesi yang DITAGIH hanya dari file ini (`services` + `stages.*.session_price`);
+ * Site Settings admin tidak mengubah tagihan sesi. Ubah tarif = ubah file ini + deploy.
  */
 return [
     'standard_from' => 100_000,
@@ -16,6 +17,30 @@ return [
     'fhcu_valid_months' => 3,
     'multi_session_note' => 'Satu kasus bisa membutuhkan lebih dari satu pertemuan — tim YFD akan menjelaskan rencana sesi setelah screening.',
     'overtime_disclosure' => 'Sesi standar 1 jam. Jika sesi diperpanjang (maks. 2 jam total), dikenakan biaya Over time sesuai tahap finansial Anda — ditagihkan via payment gateway setelah sesi.',
+
+    // Satuan tarif yang tampil di halaman booking.
+    'session_unit' => '/jam',
+
+    /*
+     * Aturan tarif per layanan (service_type) dan jenis sesi (session_role; 'default' bila tanpa role).
+     * rule 'fhcu_stage' = tarif tahap FHCU email customer (lihat `stages`); rule 'fixed' = `price`.
+     * Semua booking wajib FHCU dulu; tarif 'fixed' bisa dikecualikan dengan `requires_fhcu => false`.
+     * Kombinasi yang tidak ada di sini ditolak saat booking.
+     */
+    'services' => [
+        'standard' => [
+            'default' => ['rule' => 'fhcu_stage', 'label' => 'Financial Consultation — sesi 1 jam'],
+        ],
+        'premarital' => [
+            'male' => ['rule' => 'fhcu_stage', 'label' => 'Premarital — sesi 1-on-1 male'],
+            'female' => ['rule' => 'fhcu_stage', 'label' => 'Premarital — sesi 1-on-1 female'],
+            // Pasangan sudah FHCU masing-masing saat booking sesi male/female.
+            'couple' => ['rule' => 'fixed', 'price' => 500_000, 'requires_fhcu' => false, 'label' => 'Premarital — sesi couple + 1× follow-up'],
+        ],
+        'recovery' => [
+            'default' => ['rule' => 'fixed', 'price' => 150_000, 'requires_fhcu' => true, 'label' => 'Financial Recovery — konsultasi awal'],
+        ],
+    ],
 
     'stages' => [
         'surviving' => [

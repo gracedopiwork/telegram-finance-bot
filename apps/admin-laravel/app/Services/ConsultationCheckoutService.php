@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\ConsultationSlot;
 use App\Models\Order;
 use App\Models\Setting;
+use App\Services\ConsultationPricing\ConsultationPriceRules;
+use App\Services\ConsultationPricing\FhcuRequiredException;
 use App\Support\ConsultationPricing;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -19,22 +21,26 @@ class ConsultationCheckoutService
     public function __construct(
         private ConsultationSlotService $slots,
         private PivotService $pivot,
+        private ConsultationPriceRules $prices,
     ) {}
 
     /**
      * Hold slot + create Pivot redirect payment for consultation session.
+     * Tarif dari ConsultationPriceRules (service_type + session_role), dihitung sebelum slot di-hold.
      *
      * @param  array{
      *   name: string,
      *   email: string,
      *   phone?: ?string,
      *   age?: ?int,
-     *   stage_key: string,
      *   situation?: ?string,
      *   condition?: ?string,
-     *   service_type?: string
+     *   service_type?: string,
+     *   session_role?: ?string
      * }  $guest
      * @return array{order: Order, slot: ConsultationSlot, payment_url: string}
+     *
+     * @throws FhcuRequiredException layanan bertarif FHCU tanpa FHCU valid (missing/expired)
      */
     public function holdAndCreateSessionPayment(ConsultationSlot $slot, array $guest): array
     {
@@ -45,45 +51,26 @@ class ConsultationCheckoutService
         }
 
         $email = strtolower(trim((string) $guest['email']));
-        $fhcu = ConsultationPricing::fhcuStatusForEmail($email);
-        if (! $fhcu['valid']) {
-            throw ValidationException::withMessages([
-                'email' => $fhcu['message'],
-            ]);
-        }
-
-        $stageKey = $fhcu['stage_key']
-            ?? ConsultationPricing::normalizeStageKey($guest['stage_key'] ?? null);
-        $amount = ConsultationPricing::sessionAmount($stageKey);
-        if ($stageKey === null || $amount < 1) {
-            throw ValidationException::withMessages([
-                'stage' => 'Tahap finansial / tarif sesi tidak valid.',
-            ]);
-        }
-
-        $tier = ConsultationPricing::forStage($stageKey);
         $serviceType = $guest['service_type'] ?? 'standard';
+        $quote = $this->prices->for($serviceType, $guest['session_role'] ?? null)->quote($email);
+        $amount = $quote->amount;
 
         $held = $this->slots->holdSlot($slot, [
             'name' => $guest['name'],
             'phone' => $guest['phone'] ?? null,
             'age' => $guest['age'] ?? null,
-            'stage' => ($tier['label'] ?? $stageKey).' — '.ConsultationPricing::formatRupiah($amount),
-            'stage_key' => $stageKey,
+            'stage' => $quote->stageLabel !== null
+                ? $quote->stageLabel.' — '.ConsultationPricing::formatRupiah($amount)
+                : null,
+            'stage_key' => $quote->stageKey,
             'amount_due' => $amount,
             'situation' => $guest['situation'] ?? null,
             'condition' => $guest['condition'] ?? null,
             'service_type' => $serviceType,
         ]);
 
-        $order = DB::transaction(function () use ($held, $guest, $email, $stageKey, $amount, $serviceType, $tier) {
+        $order = DB::transaction(function () use ($held, $guest, $email, $quote) {
             $orderCode = 'YFD-CS-'.Str::upper(Str::random(8));
-            $productName = match ($serviceType) {
-                'recovery' => 'Financial Recovery — sesi konsultasi',
-                'premarital' => 'Premarital Check Up — sesi konsultasi',
-                default => 'Financial Consultation — sesi 1 jam',
-            };
-
             $order = Order::query()->create([
                 'order_code' => $orderCode,
                 'full_name' => trim((string) $guest['name']),
@@ -91,15 +78,16 @@ class ConsultationCheckoutService
                 'phone' => isset($guest['phone']) ? trim((string) $guest['phone']) : null,
                 'plan' => self::KIND_SESSION,
                 'order_kind' => self::KIND_SESSION,
-                'product_name' => $productName.' ('.$tier['label'].')',
-                'amount' => $amount,
-                'original_price' => $amount,
+                'product_name' => $quote->label,
+                'amount' => $quote->amount,
+                'original_price' => $quote->amount,
                 'discount_amount' => 0,
                 'currency' => 'IDR',
                 'status' => 'pending',
                 'payment_gateway' => 'pivot',
                 'consultation_slot_id' => $held->id,
-                'admin_note' => 'Booking '.$held->booking_code.' · tahap '.$stageKey,
+                'admin_note' => 'Booking '.$held->booking_code.' · '
+                    .($quote->stageKey !== null ? 'tahap '.$quote->stageKey : 'tarif tetap'),
             ]);
 
             $held->order_id = $order->id;
