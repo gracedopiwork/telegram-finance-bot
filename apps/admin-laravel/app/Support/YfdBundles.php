@@ -2,8 +2,10 @@
 
 namespace App\Support;
 
+use App\Services\ConsultationPricing\ConsultationPriceRules;
+
 /**
- * Bundle layanan (recovery / education / premarital) — config + override Site Settings.
+ * Bundle layanan (konsultasi / recovery / education / premarital) — config + override Site Settings.
  */
 final class YfdBundles
 {
@@ -92,6 +94,15 @@ final class YfdBundles
                 ];
             }
             $bundle['pricing'] = $pricing;
+        }
+
+        // Tarif per tahap FHCU: dari aturan yang sama dengan tagihan, menimpa override Site Settings
+        // agar halaman tidak pernah berbeda dari yang ditagih.
+        if (! empty($bundle['pricing_from_stages'])) {
+            $bundle['pricing'] = array_map(
+                fn (array $stage) => ['label' => $stage['label'], 'amount' => $stage['amount']],
+                app(ConsultationPriceRules::class)->for('standard', null)->display()->stages,
+            );
         }
 
         return $bundle;

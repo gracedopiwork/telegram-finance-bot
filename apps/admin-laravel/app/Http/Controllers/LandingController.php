@@ -83,16 +83,6 @@ class LandingController extends Controller
         ]);
     }
 
-    public function paket()
-    {
-        return view('Companyprofile.paket', [
-            'active' => 'paket',
-            'consultationTiers' => ConsultationPricing::stages(),
-            'consultationMeta' => ConsultationPricing::meta(),
-            'page' => $this->settingsByGroup('page_paket'),
-        ]);
-    }
-
     public function penasihat()
     {
         return view('Companyprofile.penasihat', [

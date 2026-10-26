@@ -148,8 +148,8 @@
                             Checkout YFD First Aid
                         </a>
                     @endif
-                    <a href="{{ route('company.paket') }}" class="btn btn-ghost btn-lg">
-                        Lihat Tarif Konsultasi
+                    <a href="{{ route('company.konsultasi') }}" class="btn btn-ghost btn-lg">
+                        Lihat Detail Konsultasi
                     </a>
                 @endif
                 <a href="{{ route('checkup.show') }}" class="btn btn-ghost btn-lg">Check-Up Ulang</a>

@@ -204,8 +204,8 @@
                 <a href="{{ $primaryCheckupUrl }}" @if($primaryCheckupNewTab) target="_blank" rel="noopener noreferrer" @endif class="inline-block bg-secondary-container text-on-secondary-container px-8 py-3 rounded font-bold shadow-lg hover:scale-105 transition-transform">
                     Mulai Screening Gratis
                 </a>
-                <a href="{{ route('company.paket') }}" class="inline-block border border-white/30 text-white px-8 py-3 rounded font-bold hover:bg-white/10 transition-colors">
-                    Lihat Tarif Konsultasi
+                <a href="{{ route('company.konsultasi') }}" class="inline-block border border-white/30 text-white px-8 py-3 rounded font-bold hover:bg-white/10 transition-colors">
+                    Lihat Detail Konsultasi
                 </a>
                 <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 border border-white/30 text-white px-8 py-3 rounded hover:bg-white/10 transition-colors">
                     <span class="material-symbols-outlined">chat</span> Konsultasi Gratis

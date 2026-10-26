@@ -200,9 +200,9 @@
                 <span class="material-symbols-outlined">monitor_heart</span>
                 Mulai Screening Gratis
             </a>
-            <a href="{{ route('company.paket') }}" class="border border-primary-container text-primary-container px-12 py-4 rounded-lg font-label-md text-label-md hover:bg-primary-container/5 transition-all flex items-center justify-center gap-2">
+            <a href="{{ route('company.konsultasi') }}" class="border border-primary-container text-primary-container px-12 py-4 rounded-lg font-label-md text-label-md hover:bg-primary-container/5 transition-all flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined">payments</span>
-                Lihat Tarif Konsultasi
+                Lihat Detail Konsultasi
             </a>
             <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="border border-white/30 text-white px-12 py-4 rounded-lg font-label-md text-label-md hover:bg-white/10 transition-all flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined">chat</span>

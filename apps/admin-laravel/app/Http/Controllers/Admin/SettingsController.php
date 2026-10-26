@@ -27,7 +27,6 @@ class SettingsController extends Controller
         'values'   => ['label' => 'Core Values (6)', 'icon' => 'fas fa-heart'],
         'page_tentang' => ['label' => 'Halaman Tentang', 'icon' => 'fas fa-info-circle'],
         'page_layanan' => ['label' => 'Halaman Layanan', 'icon' => 'fas fa-hand-holding-medical'],
-        'page_paket' => ['label' => 'Halaman Paket/Tarif', 'icon' => 'fas fa-tags'],
         'page_produk' => ['label' => 'Halaman Produk', 'icon' => 'fas fa-box'],
         'page_penasihat' => ['label' => 'Halaman Tim Dokter', 'icon' => 'fas fa-user-md'],
         'page_informasi' => ['label' => 'Halaman Informasi/FAQ', 'icon' => 'fas fa-question-circle'],
