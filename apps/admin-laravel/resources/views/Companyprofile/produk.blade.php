@@ -433,7 +433,7 @@
                     <div class="font-bold text-[15px]">{{ ($siteNav['svc_checkup'] ?? null) ?: 'Financial Health Check Up (FHCU)' }}</div>
                     <div class="text-[12.5px] text-white/70 mt-1">Diagnosa kondisi finansial</div>
                 </a>
-                <a href="{{ route('company.pertemuan') }}" class="bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl p-5 transition">
+                <a href="{{ route('company.konsultasi') }}" class="bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl p-5 transition">
                     <span class="material-symbols-outlined text-secondary-fixed text-[28px] mb-2 block">forum</span>
                     <div class="font-bold text-[15px]">{{ ($siteNav['svc_consult'] ?? null) ?: 'Consultation with Financial Planner' }}</div>
                     <div class="text-[12.5px] text-white/70 mt-1">Sesi dengan financial planner</div>

@@ -46,7 +46,7 @@
                         </div>
                         <div class="form-group col-12">
                             <label>CTA Route (nama route Laravel)</label>
-                            <input type="text" name="cta_route" value="{{ old('cta_route', $service->cta_route) }}" class="form-control font-monospace" placeholder="company.paket">
+                            <input type="text" name="cta_route" value="{{ old('cta_route', $service->cta_route) }}" class="form-control font-monospace" placeholder="company.konsultasi">
                         </div>
                     </div>
                 </div>

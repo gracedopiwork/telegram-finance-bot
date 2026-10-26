@@ -51,7 +51,8 @@ Route::get('/layanan',       [LandingController::class, 'layanan'])->name('compa
 Route::get('/layanan/recovery', [LandingController::class, 'bundle'])->defaults('slug', 'recovery')->name('company.bundle.recovery');
 Route::get('/layanan/edukasi',  [LandingController::class, 'bundle'])->defaults('slug', 'edukasi')->name('company.bundle.education');
 Route::get('/layanan/premarital', [LandingController::class, 'bundle'])->defaults('slug', 'premarital')->name('company.bundle.premarital');
-Route::get('/paket',         [LandingController::class, 'paket'])->name('company.paket');
+Route::get('/layanan/konsultasi', [LandingController::class, 'bundle'])->defaults('slug', 'konsultasi')->name('company.konsultasi');
+Route::permanentRedirect('/paket', '/layanan/konsultasi');
 Route::get('/penasihat',     [LandingController::class, 'penasihat'])->name('company.penasihat');
 Route::get('/produk',        [LandingController::class, 'produk'])->name('company.produk');
 Route::get('/wealthpedia',   [LandingController::class, 'wealthpedia'])->name('company.wealthpedia');

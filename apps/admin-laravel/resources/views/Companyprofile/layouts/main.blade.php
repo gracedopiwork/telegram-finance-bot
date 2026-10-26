@@ -11,7 +11,7 @@
             'icon'  => 'stethoscope',
             'items' => [
                 ['key' => 'paket',     'label' => ($siteNav['svc_checkup'] ?? null) ?: 'Financial Health Check Up (FHCU)', 'desc' => 'Screening kesehatan finansial gratis — 3–5 menit', 'route' => 'checkup.show', 'icon' => 'monitor_heart', 'badge' => 'Gratis'],
-                ['key' => 'pertemuan', 'label' => ($siteNav['svc_consult'] ?? null) ?: 'Consultation with Financial Planner', 'desc' => 'Sesi privat dengan financial planner', 'route' => 'company.pertemuan', 'icon' => 'forum', 'badge' => null],
+                ['key' => 'pertemuan', 'label' => ($siteNav['svc_consult'] ?? null) ?: 'Consultation with Financial Planner', 'desc' => 'Sesi privat dengan financial planner', 'route' => 'company.konsultasi', 'icon' => 'forum', 'badge' => null],
                 ['key' => 'premarital','label' => ($siteNav['svc_premarital'] ?? null) ?: 'Pre Marital Financial Health Check Up', 'desc' => 'Kesehatan finansial pasangan sebelum menikah', 'route' => 'company.bundle.premarital', 'icon' => 'diversity_1', 'badge' => null],
                 ['key' => 'recovery',  'label' => ($siteNav['svc_recovery'] ?? null) ?: 'Financial Recovery Program', 'desc' => 'Pendampingan intensif untuk kondisi finansial darurat', 'route' => 'company.bundle.recovery', 'icon' => 'healing', 'badge' => null],
                 ['key' => 'edukasi',   'label' => ($siteNav['svc_education'] ?? null) ?: 'Financial Health Education Platform', 'desc' => 'Webinar, workshop & komunitas belajar', 'route' => 'company.bundle.education', 'icon' => 'school', 'badge' => null],
@@ -576,8 +576,7 @@
             <h5 class="text-label-md text-secondary-fixed mb-4">{{ ($siteNav['footer_col_layanan'] ?? null) ?: 'Layanan' }}</h5>
             <ul class="space-y-2.5 text-[13.5px] opacity-90">
                 <li><a href="{{ route('checkup.show') }}" class="hover:text-secondary-fixed-dim transition-all">{{ ($siteNav['svc_checkup'] ?? null) ?: 'Financial Health Check Up (FHCU)' }}</a></li>
-                <li><a href="{{ route('company.paket') }}" class="hover:text-secondary-fixed-dim transition-all">Tarif Konsultasi</a></li>
-                <li><a href="{{ route('company.pertemuan') }}" class="hover:text-secondary-fixed-dim transition-all">{{ ($siteNav['svc_consult'] ?? null) ?: 'Consultation with Financial Planner' }}</a></li>
+                <li><a href="{{ route('company.konsultasi') }}" class="hover:text-secondary-fixed-dim transition-all">{{ ($siteNav['svc_consult'] ?? null) ?: 'Consultation with Financial Planner' }}</a></li>
                 <li><a href="{{ route('company.bundle.premarital') }}" class="hover:text-secondary-fixed-dim transition-all">{{ ($siteNav['svc_premarital'] ?? null) ?: 'Pre Marital Financial Health Check Up' }}</a></li>
                 <li><a href="{{ route('company.bundle.education') }}" class="hover:text-secondary-fixed-dim transition-all">{{ ($siteNav['svc_education'] ?? null) ?: 'Financial Health Education Platform' }}</a></li>
                 <li><a href="{{ route('company.bundle.recovery') }}" class="hover:text-secondary-fixed-dim transition-all">{{ ($siteNav['svc_recovery'] ?? null) ?: 'Financial Recovery Program' }}</a></li>

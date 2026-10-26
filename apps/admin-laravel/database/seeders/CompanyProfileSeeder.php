@@ -352,7 +352,7 @@ class CompanyProfileSeeder extends Seeder
                     'footnote' => "Konsultasi dokter financial/sesi: Start Rp 100k (minimal 60 menit).\nTarif konsultasi mitra profesional (misalnya: Tax analyst, Psikolog, psikiater, hipnoterapi, dsb.) tergantung kebutuhan tiap individu.",
                 ],
                 'cta_label' => 'Lihat Paket Konsultasi',
-                'cta_route' => 'company.pertemuan',
+                'cta_route' => 'company.konsultasi',
                 'sort' => 3,
             ],
             [

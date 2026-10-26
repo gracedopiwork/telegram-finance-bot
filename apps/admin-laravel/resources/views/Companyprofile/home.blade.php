@@ -96,7 +96,7 @@
                 $quick = [
                     ['type' => 'url', 'target' => $primaryCheckupUrl, 'icon' => 'monitor_heart',        'label' => ($siteNav['svc_checkup'] ?? null) ?: 'Financial Health Check Up (FHCU)', 'badge' => 'Gratis'],
                     ['type' => 'route', 'target' => 'company.produk',      'icon' => 'send',                 'label' => ($siteNav['svc_first_aid'] ?? null) ?: 'First Aid by YFD',   'badge' => 'New'],
-                    ['type' => 'route', 'target' => 'company.pertemuan',   'icon' => 'forum',                'label' => ($siteNav['svc_consult'] ?? null) ?: 'Consultation with Financial Planner'],
+                    ['type' => 'route', 'target' => 'company.konsultasi',  'icon' => 'forum',                'label' => ($siteNav['svc_consult'] ?? null) ?: 'Consultation with Financial Planner'],
                     ['type' => 'route', 'target' => 'company.layanan',     'icon' => 'apps',                 'label' => 'Semua Layanan'],
                     ['type' => 'route', 'target' => 'company.penasihat',   'icon' => 'medical_information',  'label' => 'Tim Dokter'],
                     ['type' => 'route', 'target' => 'company.informasi',   'icon' => 'help',                 'label' => 'FAQ'],
