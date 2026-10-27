@@ -19,6 +19,7 @@ use App\Services\ConsultationSlotService;
 use App\Support\ConsultationPricing;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -217,6 +218,17 @@ class LandingController extends Controller
 
     public function pertemuan()
     {
+        // Lanjutan dari hasil FHCU: pulihkan isian booking yang diparkir (slot dipilih ulang).
+        $pending = session('booking.pending');
+        if (request()->boolean('lanjut') && is_array($pending)) {
+            $type = (string) ($pending['service_type'] ?? 'standard');
+
+            return redirect()->route('company.pertemuan', array_filter([
+                'type' => $type !== 'standard' ? $type : null,
+                'stage' => is_string(request('stage')) ? request('stage') : null,
+            ]))->withInput($pending);
+        }
+
         $stageKey = request('stage');
         $consultationType = request('type', 'standard');
         if (! in_array($consultationType, ['standard', 'recovery', 'premarital'], true)) {
@@ -427,17 +439,19 @@ class LandingController extends Controller
                 'service_type' => $serviceType,
                 'session_role' => $sessionRole,
             ]);
-        } catch (FhcuRequiredException $e) {
-            return back()
-                ->withInput()
-                ->withErrors(['email' => $e->getMessage()])
-                ->with('error', $e->getMessage());
+        } catch (FhcuRequiredException) {
+            // Belum ada / kedaluwarsa FHCU: simpan booking (tanpa slot — slot tidak di-hold) lalu ke pengantar FHCU.
+            $request->session()->put('booking.pending', Arr::except($data, ['slot_id']));
+
+            return redirect()->route('checkup.show');
         } catch (ValidationException $e) {
             return back()
                 ->withInput()
                 ->withErrors($e->errors())
                 ->with('error', collect($e->errors())->flatten()->first());
         }
+
+        $request->session()->forget('booking.pending');
 
         return redirect()->away($result['payment_url']);
     }

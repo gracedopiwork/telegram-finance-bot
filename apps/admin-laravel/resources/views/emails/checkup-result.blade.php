@@ -48,13 +48,10 @@
         tidak dihapus setelah email terkirim.
     </p>
 
-    @php
-        $firstAidCheckoutUrl = url('/checkout/'.\App\Services\PortalCheckoutService::BOT_PRODUCT_CODE);
-    @endphp
     <p style="margin-top: 1.75rem;">
-        <a href="{{ $firstAidCheckoutUrl }}" target="_blank" rel="noopener"
+        <a href="{{ url('/layanan/konsultasi') }}" target="_blank" rel="noopener"
            style="display: inline-block; background: {{ $navy }}; color: #ffffff !important; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: 600;">
-            Checkout YFD First Aid
+            Booking Konsultasi
         </a>
     </p>
     <p style="margin-top: 0.75rem;">
