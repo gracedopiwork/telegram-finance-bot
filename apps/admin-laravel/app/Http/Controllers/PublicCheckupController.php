@@ -19,7 +19,18 @@ use Illuminate\View\View;
 
 class PublicCheckupController extends Controller
 {
-    public function show(Request $request): View|RedirectResponse
+    /** Halaman pengantar FHCU; tombolnya membuka wizard di /check-up/isi. */
+    public function intro(): View|RedirectResponse
+    {
+        if (! FinancialBaselineSchema::isReady()) {
+            return redirect()->route('company.home')
+                ->with('error', 'Check-up sementara tidak tersedia. Coba lagi nanti.');
+        }
+
+        return view('checkup.intro');
+    }
+
+    public function form(Request $request): View|RedirectResponse
     {
         if (! FinancialBaselineSchema::isReady()) {
             return redirect()->route('company.home')

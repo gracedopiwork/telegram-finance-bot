@@ -615,7 +615,7 @@
         <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-5 flex flex-col sm:flex-row justify-between items-center gap-3 text-caption opacity-70">
             <span>© {{ date('Y') }} {{ $yfd['brand'] }} Indonesia. {{ ($siteNav['footer_copyright_extra'] ?? null) ?: 'Founded by dr. Ayuti Bulaan QWP & dr. Catherina QWP.' }}</span>
             <div class="flex gap-5">
-                <a href="#" class="hover:text-secondary-fixed-dim">Kebijakan Privasi</a>
+                <a href="{{ route('company.privacy') }}" class="hover:text-secondary-fixed-dim">Kebijakan Privasi</a>
                 <a href="#" class="hover:text-secondary-fixed-dim">Syarat &amp; Ketentuan</a>
             </div>
         </div>
