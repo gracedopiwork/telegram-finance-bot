@@ -109,27 +109,11 @@ class BaselineClaimService
             $this->copyMissingScores($primary, $other);
         }
 
-        $merge = [
+        $primary->update([
             'telegram_user_id' => $telegramUserId,
             'email' => $email,
             'answers_json' => $mergedAnswers,
-        ];
-
-        // Pilihan persetujuan penelitian ikut baris dengan pilihan terbaru, bukan baris utama:
-        // baris yang dihapus di bawah bisa jadi satu-satunya yang menyimpan pilihan itu.
-        $consentSource = $rows
-            ->filter(fn (FinancialBaseline $row) => $row->research_consent_at !== null)
-            ->sortByDesc(fn (FinancialBaseline $row) => $row->research_consent_at->getTimestamp())
-            ->first();
-        if ($consentSource !== null) {
-            $merge += [
-                'research_consent' => $consentSource->research_consent,
-                'research_consent_at' => $consentSource->research_consent_at,
-                'research_consent_version' => $consentSource->research_consent_version,
-            ];
-        }
-
-        $primary->update($merge);
+        ]);
 
         $duplicateIds = $rows->where('id', '!=', $primary->id)->pluck('id')->all();
         if ($duplicateIds !== []) {

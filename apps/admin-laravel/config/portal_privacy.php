@@ -50,9 +50,9 @@ return [
     ],
 
     /**
-     * Blok kedua di /kebijakan-privasi: FHCU & Konsultasi (Batch 1 W2).
-     * Draf engineer — menunggu persetujuan founder sebelum deploy. Sengaja tidak menaikkan
-     * 'version' di atas: itu memaksa semua user First Aid menyetujui ulang.
+     * Blok kedua di /kebijakan-privasi: FHCU & Konsultasi (Batch 1 W2). Teks disetujui founder
+     * lewat mock 2026-10-27. Sengaja tidak menaikkan 'version' di atas: itu memaksa semua user
+     * First Aid menyetujui ulang.
      */
     'fhcu_title' => 'Financial Health Check-Up (FHCU) & Konsultasi',
     'fhcu_sections' => [
@@ -62,15 +62,11 @@ return [
         ],
         [
             'heading' => 'Tujuan penggunaan',
-            'body' => 'Data FHCU digunakan untuk menampilkan dan mengirim hasil check-up ke email kamu, menentukan tarif konsultasi sesuai tahap finansialmu, dan menghubungimu terkait layanan yang kamu minta.',
+            'body' => 'Data FHCU digunakan untuk menampilkan dan mengirim hasil check-up ke email kamu dan menghubungimu terkait layanan yang kamu minta.',
         ],
         [
             'heading' => 'Persetujuan penggunaan layanan',
             'body' => 'Dengan mengisi FHCU, atau membayar dan menghadiri konsultasi, kamu menyetujui penggunaan data untuk tujuan di atas.',
-        ],
-        [
-            'heading' => 'Penelitian',
-            'body' => 'Data FHCU hanya digunakan untuk penelitian YFD bila kamu memilih "Saya bersedia" di halaman pengantar FHCU. Data yang digunakan akan dianalisis secara agregat (data gabungan). Email dan informasi yang secara langsung mengidentifikasi individu tidak akan dicantumkan dalam publikasi hasil penelitian. Apa pun pilihanmu, kamu tetap dapat menyelesaikan FHCU dan menerima hasil personalmu.',
         ],
         [
             'heading' => 'Analytics',

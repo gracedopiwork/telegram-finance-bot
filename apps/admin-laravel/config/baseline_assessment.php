@@ -3,10 +3,6 @@
 return [
     'review_months' => 3,
 
-    // Versi teks persetujuan penelitian di intro FHCU (/check-up). Naikkan setiap kali
-    // founder mengubah kata-katanya; nilai lama tetap bermakna di baris yang sudah tersimpan.
-    'research_consent_version' => '2026-10-25',
-
     'likert_labels' => [
         1 => 'Sangat Tidak Sesuai',
         2 => 'Tidak Sesuai',

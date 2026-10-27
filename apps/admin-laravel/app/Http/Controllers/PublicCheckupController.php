@@ -19,10 +19,7 @@ use Illuminate\View\View;
 
 class PublicCheckupController extends Controller
 {
-    /** Pilihan persetujuan penelitian dari halaman pengantar (bool). */
-    private const SESSION_RESEARCH_CONSENT = 'checkup.research_consent';
-
-    /** Halaman pengantar FHCU + pilihan persetujuan penelitian. */
+    /** Halaman pengantar FHCU; tombolnya membuka wizard di /check-up/isi. */
     public function intro(): View|RedirectResponse
     {
         if (! FinancialBaselineSchema::isReady()) {
@@ -31,18 +28,6 @@ class PublicCheckupController extends Controller
         }
 
         return view('checkup.intro');
-    }
-
-    public function start(Request $request): RedirectResponse
-    {
-        $request->validate(
-            ['research_consent' => 'required|in:0,1'],
-            ['research_consent.required' => 'Pilih salah satu: Saya bersedia atau Saya tidak bersedia.']
-        );
-
-        $request->session()->put(self::SESSION_RESEARCH_CONSENT, $request->boolean('research_consent'));
-
-        return redirect()->route('checkup.form');
     }
 
     public function form(Request $request): View|RedirectResponse
@@ -54,11 +39,6 @@ class PublicCheckupController extends Controller
 
         if (PortalSession::isAuthenticated($request)) {
             return redirect()->route('portal.diagnostic');
-        }
-
-        // Wizard hanya bisa diisi setelah memilih di halaman pengantar.
-        if (! is_bool($request->session()->get(self::SESSION_RESEARCH_CONSENT))) {
-            return redirect()->route('checkup.show');
         }
 
         $diagnostic = app(DiagnosticConfigService::class);
@@ -116,16 +96,14 @@ class PublicCheckupController extends Controller
             $validated['ftsa'] = $existing->answers_json['ftsa'] ?? [];
         }
 
-        $consent = $this->researchConsentPayload($request);
-
         try {
             $result = $service->assess($validated, $includeFtsa);
 
             if ($existing !== null) {
-                $existing->update($this->buildUpdatePayload($email, $telegramUserId, $result, $existing) + $consent);
+                $existing->update($this->buildUpdatePayload($email, $telegramUserId, $result, $existing));
                 $baseline = $existing->fresh();
             } else {
-                $payload = $this->buildGuestPayload($email, $result) + $consent;
+                $payload = $this->buildGuestPayload($email, $result);
                 if ($telegramUserId > 0) {
                     $payload['telegram_user_id'] = $telegramUserId;
                 }
@@ -263,26 +241,6 @@ class PublicCheckupController extends Controller
         }
 
         return $payload;
-    }
-
-    /**
-     * Kolom persetujuan penelitian untuk disimpan bersama submit FHCU ini.
-     * Tanpa pilihan di session → kosong, sehingga nilai lama di baris tidak tersentuh.
-     *
-     * @return array<string, mixed>
-     */
-    private function researchConsentPayload(Request $request): array
-    {
-        $choice = $request->session()->get(self::SESSION_RESEARCH_CONSENT);
-        if (! is_bool($choice)) {
-            return [];
-        }
-
-        return [
-            'research_consent' => $choice,
-            'research_consent_at' => now(),
-            'research_consent_version' => (string) config('baseline_assessment.research_consent_version'),
-        ];
     }
 
     /**
