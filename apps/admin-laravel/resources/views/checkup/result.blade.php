@@ -6,9 +6,7 @@
 @section('content')
 @php
     use App\Support\ConsultationPricing;
-    // Sama dengan blok form FHCU (checkup/form.blade.php .checkup-wizard) untuk semua tahap:
-    // mint transparan di atas bg-background. Warna panel per tahap di admin tidak dipakai di sini.
-    $panelTint = config('yfd_brand.mint_light').'33';
+    $panelColor = $stageDisplay['panel_color'] ?? '#7EC8C8';
     $logo = asset($yfd['logo'] ?? 'images/yfd-logo.png');
 @endphp
 
@@ -19,7 +17,7 @@
             <div class="rounded-3xl overflow-hidden shadow-2xl border border-black/5 bg-white">
                 <div class="grid md:grid-cols-2 min-h-[420px]">
                     {{-- Panel kiri: teks + skor --}}
-                    <div class="p-8 sm:p-10 flex flex-col justify-center text-slate-900 bg-background" style="background-image: linear-gradient({{ $panelTint }}, {{ $panelTint }})">
+                    <div class="p-8 sm:p-10 flex flex-col justify-center text-slate-900" style="background-color: {{ $panelColor }}">
                         <div class="flex items-center gap-3 mb-8">
                             <img src="{{ $logo }}" alt="YFD" class="h-10 w-auto bg-white/90 rounded-lg px-2 py-1">
                             <span class="font-extrabold text-lg tracking-tight">{{ $yfd['short'] ?? 'YFD' }}</span>
