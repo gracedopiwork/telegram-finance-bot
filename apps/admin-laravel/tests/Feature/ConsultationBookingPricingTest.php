@@ -41,17 +41,16 @@ class ConsultationBookingPricingTest extends TestCase
         $this->assertNull(ConsultationSlot::sole()->stage_key);
     }
 
-    public function test_recovery_without_valid_fhcu_is_refused(): void
+    public function test_recovery_without_valid_fhcu_is_sent_to_check_up(): void
     {
         $this->fhcu('expired@example.com', 'growing', now()->subMonths(4));
 
-        foreach (['baru@example.com' => 'Belum ada data FHCU', 'expired@example.com' => 'lebih dari 3 bulan'] as $email => $message) {
+        foreach (['baru@example.com', 'expired@example.com'] as $email) {
             $this->book($this->openSlot(), [
                 'email' => $email,
                 'service_type' => 'recovery',
                 'situation' => 'Financial burnout',
-            ])->assertSessionHasErrors('email');
-            $this->assertStringContainsString($message, session('errors')->first('email'));
+            ])->assertRedirect(route('checkup.show'));
         }
 
         $this->assertSame(0, Order::query()->count());

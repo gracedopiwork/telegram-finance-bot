@@ -21,6 +21,7 @@
             @if(session('error'))
                 <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 px-4 py-3 text-sm">{{ session('error') }}</div>
             @endif
+            @include('checkup.partials.booking-banner')
 
             <div class="checkup-wizard rounded-2xl p-6 sm:p-8 space-y-4 text-slate-800">
                 <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Kenali Kesehatan Finansialmu</h1>

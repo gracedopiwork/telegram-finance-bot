@@ -57,6 +57,7 @@
             @if(session('warning'))
                 <div class="mb-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 text-sm">{{ session('warning') }}</div>
             @endif
+            @include('checkup.partials.booking-banner')
 
             <div class="checkup-progress mb-4">
                 <div class="checkup-progress-bar" id="progressBar" style="width: {{ round(100 / max(1, $totalSteps)) }}%"></div>
