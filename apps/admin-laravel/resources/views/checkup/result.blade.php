@@ -102,10 +102,11 @@
                             </p>
                         @endif
                     </div>
-                    <div class="flex flex-col gap-2 shrink-0">
-                        <a href="{{ $continueBookingUrl ?? route('company.konsultasi') }}" class="btn btn-gold btn-lg text-center">
-                            <span class="material-symbols-outlined text-[20px]">event_available</span>
-                            Konsultasi dengan Financial Planner
+                    <div class="flex flex-col gap-2 md:shrink-0">
+                        {{-- Mobile: lebar penuh dan boleh 2 baris agar teks tidak mepet tepi tombol. --}}
+                        <a href="{{ $continueBookingUrl ?? route('company.konsultasi') }}" class="btn btn-gold btn-lg w-full md:w-auto !whitespace-normal md:!whitespace-nowrap leading-snug">
+                            <span class="material-symbols-outlined text-[20px] shrink-0">event_available</span>
+                            <span class="text-left max-w-[11rem] md:max-w-none">Konsultasi dengan Financial Planner</span>
                         </a>
                     </div>
                 </div>
