@@ -35,7 +35,9 @@
         {{-- Content --}}
         <div class="space-y-6 order-1 lg:order-2">
             <h1 class="font-display-lg text-display-lg text-primary">{{ $b['title'] }}</h1>
-            <p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">{{ $b['description'] }}</p>
+            <p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+                @if(!empty($b['description_lead']))<strong class="text-on-surface">{{ $b['description_lead'] }}</strong> @endif{{ $b['description'] }}
+            </p>
 
             @if(!empty($b['features']))
                 <div>
@@ -51,9 +53,37 @@
                 </div>
             @endif
 
+            @if(!empty($b['note']))
+                @php
+                    [$noteBefore, $noteAfter] = array_pad(explode(':link', $b['note'], 2), 2, '');
+                    $noteLink = $b['note_link'] ?? null;
+                @endphp
+                <p class="font-body-md text-body-md text-on-surface" data-bundle-note>
+                    <span class="font-semibold">Notes:</span>
+                    {{ $noteBefore }}@if($noteLink)<a href="{{ route($noteLink['route']) }}" class="font-semibold text-primary-container underline hover:no-underline">{{ $noteLink['label'] }}</a>@endif{{ $noteAfter }}
+                </p>
+            @endif
+
+            @if(!empty($b['steps']))
+                <ol class="space-y-4" data-bundle-steps>
+                    @foreach($b['steps'] as $step)
+                        <li class="flex items-start gap-4">
+                            <span class="flex-none w-8 h-8 rounded-full bg-primary-container text-on-primary font-bold flex items-center justify-center">{{ $loop->iteration }}</span>
+                            <div>
+                                <div class="font-body-md font-semibold text-on-surface">{{ $step['title'] }}</div>
+                                <div class="text-sm text-on-surface-variant">{{ $step['body'] }}</div>
+                            </div>
+                        </li>
+                    @endforeach
+                </ol>
+            @endif
+
             @if(!empty($b['pricing']))
                 <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 space-y-3">
                     <p class="font-label-md text-label-md text-primary font-semibold">Tarif</p>
+                    @if(!empty($b['pricing_intro']))
+                        <p class="text-sm text-on-surface-variant">{{ $b['pricing_intro'] }}</p>
+                    @endif
                     @foreach($b['pricing'] as $row)
                         <div class="flex flex-wrap justify-between gap-2 border-b border-outline-variant/60 pb-3 last:border-0 last:pb-0">
                             <div>
@@ -62,7 +92,7 @@
                                     <div class="text-sm text-on-surface-variant">{{ $row['note'] }}</div>
                                 @endif
                             </div>
-                            <div class="font-bold text-primary-container whitespace-nowrap">{{ $fmt($row['amount'] ?? null) }}</div>
+                            <div class="font-bold text-primary-container whitespace-nowrap">{{ $fmt($row['amount'] ?? null) }}@if(isset($row['amount']) && !empty($b['pricing_period'])){{ $b['pricing_period'] }}@endif</div>
                         </div>
                     @endforeach
                 </div>
@@ -73,7 +103,8 @@
             @endif
 
             <div class="flex flex-wrap gap-3 pt-2">
-                @if(!empty($b['cta_primary']))
+                @foreach(!empty($b['cta_secondary_first']) ? ['secondary', 'primary'] : ['primary', 'secondary'] as $ctaSlot)
+                @if($ctaSlot === 'primary' && !empty($b['cta_primary']))
                     @php $cta = $b['cta_primary']; @endphp
                     @if(($cta['type'] ?? '') === 'wa')
                         <button type="button" onclick="openBundleWa('{{ $cta['wa_topic'] ?? $b['title'] }}')"
@@ -87,8 +118,7 @@
                             <span class="material-symbols-outlined">arrow_forward</span>
                         </a>
                     @endif
-                @endif
-                @if(!empty($b['cta_secondary']))
+                @elseif($ctaSlot === 'secondary' && !empty($b['cta_secondary']))
                     @php $cta2 = $b['cta_secondary']; @endphp
                     @if(($cta2['type'] ?? '') === 'wa')
                         <button type="button" onclick="openBundleWa('{{ $cta2['wa_topic'] ?? $b['title'] }}')"
@@ -102,6 +132,7 @@
                         </a>
                     @endif
                 @endif
+                @endforeach
             </div>
         </div>
     </div>

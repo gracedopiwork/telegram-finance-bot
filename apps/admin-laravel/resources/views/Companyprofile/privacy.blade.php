@@ -23,6 +23,18 @@
         @endforeach
     </div>
 
+    @if(!empty($privacy['fhcu_sections']))
+        <h2 id="fhcu" class="font-heading text-headline-md text-primary mt-12 mb-6">{{ $privacy['fhcu_title'] }}</h2>
+        <div class="space-y-6">
+            @foreach($privacy['fhcu_sections'] as $section)
+                <div>
+                    <h3 class="font-heading text-lg text-primary mb-2">{{ $section['heading'] }}</h3>
+                    <p class="text-body-md text-on-surface-variant leading-relaxed whitespace-pre-line">{{ $section['body'] }}</p>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
     <p class="mt-10 text-sm text-on-surface-variant">
         Permintaan hak subjek data: WhatsApp Admin YFD <strong>{{ $privacy['contact_wa'] ?? '+62 851-1122-8911' }}</strong>.
     </p>

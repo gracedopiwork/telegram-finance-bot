@@ -83,41 +83,34 @@
                         Dashboard Anda sudah bisa dipakai — lanjutkan ke menu transaksi dan pantau kesehatan finansial.
                     @endif
                 @else
-                    Saat Anda membeli YFD First Aid / Bot, gunakan email yang sama — dashboard akan langsung mengenali hasil check-up ini.
+                    Saat booking konsultasi, gunakan email yang sama — hasil check-up ini langsung dikenali.
                 @endif
             </div>
 
-            @php
-                $firstAidCheckoutCode = \App\Services\PortalCheckoutService::BOT_PRODUCT_CODE;
-                $firstAidCheckoutUrl = route('checkout.show', $firstAidCheckoutCode);
-            @endphp
-
-            @if($consultationTier ?? null)
-                <div class="mt-6 rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 md:p-8">
-                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div>
-                            <h2 class="font-headline-md text-headline-md text-primary mb-2">Lanjut ke YFD First Aid</h2>
-                            <p class="text-sm text-on-surface-variant mb-3">
-                                Hasil check-up Anda: tahap <strong>{{ $consultationTier['label'] }}</strong>.
-                                Langkah berikutnya: checkout YFD First Aid untuk catat keuangan via bot Telegram + dashboard web.
-                            </p>
+            <div class="mt-6 rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 md:p-8">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <h2 class="font-headline-md text-headline-md text-primary mb-2">Langkah berikutnya</h2>
+                        <p class="text-sm text-on-surface-variant mb-3">
+                            Hasil check-up Anda: tahap <strong>{{ $consultationStagePrice['label'] ?? ($stageDisplay['label'] ?? $baseline->stage_label) }}</strong>.
+                            Bahas hasilnya bersama Financial Planner di sesi konsultasi 1-on-1.
+                        </p>
+                        @if($consultationStagePrice)
                             <p class="text-xs text-on-surface-variant max-w-lg">
-                                Screening ini <strong>gratis</strong>.
-                                Estimasi tarif konsultasi 1-on-1 (opsional):
-                                <strong>{{ ConsultationPricing::formatRange($consultationTier) }}</strong>
-                                {{ $consultationMeta['period'] ?? '/sesi' }}.
+                                Tarif konsultasi 1-on-1 untuk tahap {{ $consultationStagePrice['label'] }}:
+                                <strong>{{ ConsultationPricing::formatRupiah((int) $consultationStagePrice['amount']) }}</strong>/jam.
                             </p>
-                        </div>
-                        <div class="flex flex-col gap-2 shrink-0">
-                            <a href="{{ $firstAidCheckoutUrl }}"
-                               class="btn btn-gold btn-lg text-center">
-                                <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
-                                Checkout YFD First Aid
-                            </a>
-                        </div>
+                        @endif
+                    </div>
+                    <div class="flex flex-col gap-2 md:shrink-0">
+                        {{-- Mobile: lebar penuh, satu baris; font/ikon/padding diperkecil agar muat di layar 360px. --}}
+                        <a href="{{ $continueBookingUrl ?? route('company.konsultasi') }}" class="btn btn-gold btn-lg w-full md:w-auto !gap-1.5 md:!gap-2 !px-3 md:!px-[1.6rem] !text-[13px] md:!text-[15px]">
+                            <span class="material-symbols-outlined !text-[18px] md:!text-[20px] shrink-0">event_available</span>
+                            Konsultasi dengan Financial Planner
+                        </a>
                     </div>
                 </div>
-            @endif
+            </div>
 
             <div class="flex flex-wrap gap-3 mt-8 justify-center">
                 @if($fromPortal && !empty($portalNextUrl))
@@ -140,16 +133,6 @@
                     <a href="{{ route('portal.dashboard') }}" class="btn btn-gold btn-lg">
                         <span class="material-symbols-outlined text-[20px]">dashboard</span>
                         Buka Dashboard
-                    </a>
-                @else
-                    @if(!($consultationTier ?? null))
-                        <a href="{{ $firstAidCheckoutUrl }}" class="btn btn-gold btn-lg">
-                            <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
-                            Checkout YFD First Aid
-                        </a>
-                    @endif
-                    <a href="{{ route('company.paket') }}" class="btn btn-ghost btn-lg">
-                        Lihat Tarif Konsultasi
                     </a>
                 @endif
                 <a href="{{ route('checkup.show') }}" class="btn btn-ghost btn-lg">Check-Up Ulang</a>

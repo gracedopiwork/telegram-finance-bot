@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FinancialBaseline;
 use App\Services\BaselineAssessmentService;
 use App\Services\CheckupResultMailer;
+use App\Services\ConsultationPricing\ConsultationPriceRules;
 use App\Services\DiagnosticConfigService;
 use App\Services\FtsaAnswerSummaryService;
 use App\Services\PortalAccessService;
@@ -19,7 +20,18 @@ use Illuminate\View\View;
 
 class PublicCheckupController extends Controller
 {
-    public function show(Request $request): View|RedirectResponse
+    /** Halaman pengantar FHCU; tombolnya membuka wizard di /check-up/isi. */
+    public function intro(): View|RedirectResponse
+    {
+        if (! FinancialBaselineSchema::isReady()) {
+            return redirect()->route('company.home')
+                ->with('error', 'Check-up sementara tidak tersedia. Coba lagi nanti.');
+        }
+
+        return view('checkup.intro');
+    }
+
+    public function form(Request $request): View|RedirectResponse
     {
         if (! FinancialBaselineSchema::isReady()) {
             return redirect()->route('company.home')
@@ -37,7 +49,7 @@ class PublicCheckupController extends Controller
                 ->with('error', 'Konfigurasi check-up belum siap.');
         }
 
-        $prefillEmail = old('email');
+        $prefillEmail = old('email') ?: $request->session()->get('booking.pending.email');
         if (! $prefillEmail && PortalSession::isAuthenticated($request)) {
             $prefillEmail = PortalSession::email($request);
         }
@@ -145,6 +157,25 @@ class PublicCheckupController extends Controller
             (string) $baseline->financial_stage,
             (int) $baseline->financial_stage_score,
         );
+
+        // Tarif dari rule yang sama dengan yang menagih (config stages.*.session_price), bukan Site Settings.
+        $stageKey = ConsultationPricing::normalizeStageKey((string) $baseline->financial_stage);
+        $stagePrice = collect(app(ConsultationPriceRules::class)->for('standard', null)->display()->stages)
+            ->firstWhere('key', $stageKey);
+
+        // Booking yang diparkir menunggu FHCU (email sama) → tawarkan lanjutkan booking dengan tahap ini.
+        $pending = $request->session()->get('booking.pending');
+        $continueBookingUrl = null;
+        if (is_array($pending)
+            && strtolower(trim((string) ($pending['email'] ?? ''))) === strtolower(trim((string) $baseline->email))) {
+            $type = (string) ($pending['service_type'] ?? 'standard');
+            $continueBookingUrl = route('company.pertemuan', array_filter([
+                'type' => $type !== 'standard' ? $type : null,
+                'stage' => $stageKey,
+                'lanjut' => 1,
+            ]));
+        }
+
         $fromPortal = PortalSession::isAuthenticated($request);
         $portalEmail = (string) (PortalSession::email($request) ?? $baseline->email ?? '');
         $access = app(PortalAccessService::class);
@@ -178,8 +209,8 @@ class PublicCheckupController extends Controller
             'portalHomeRoute' => $portalHomeRoute,
             'portalNextUrl' => $portalNextUrl,
             'portalNextLabel' => $portalNextLabel,
-            'consultationTier' => ConsultationPricing::forStage((string) $baseline->financial_stage),
-            'consultationMeta' => config('consultation_pricing'),
+            'consultationStagePrice' => $stagePrice,
+            'continueBookingUrl' => $continueBookingUrl,
         ]);
     }
 

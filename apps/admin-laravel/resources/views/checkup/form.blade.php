@@ -43,6 +43,7 @@
     .checkup-ok-btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .checkup-progress { height: 4px; background: rgba(13,43,78,0.12); border-radius: 999px; overflow: hidden; }
     .checkup-progress-bar { height: 100%; background: {{ config('yfd_brand.mint') }}; transition: width .25s; }
+    .checkup-notice { background: rgba(255,255,255,0.55); }
 </style>
 @endpush
 
@@ -56,6 +57,7 @@
             @if(session('warning'))
                 <div class="mb-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 text-sm">{{ session('warning') }}</div>
             @endif
+            @include('checkup.partials.booking-banner')
 
             <div class="checkup-progress mb-4">
                 <div class="checkup-progress-bar" id="progressBar" style="width: {{ round(100 / max(1, $totalSteps)) }}%"></div>
@@ -78,9 +80,17 @@
                            class="w-full rounded-lg border-slate-400/50 bg-white/60 px-4 py-3 text-sm"
                            placeholder="nama@email.com">
                     @error('email')<p class="text-rose-700 text-xs mt-2">{{ $message }}</p>@enderror
-                    <div class="mt-6 flex gap-3">
+
+                    {{-- Pemberitahuan data (bukan pilihan) — revisi founder 2026-10-27. --}}
+                    <div class="checkup-notice mt-5 rounded-xl px-4 py-4 sm:px-5 text-sm leading-relaxed text-slate-700" role="note">
+                        <p class="font-heading font-extrabold text-[15px] mb-1.5" style="color: {{ config('yfd_brand.navy') }}">🔒 Privasi Anda Penting</p>
+                        <p>Jawaban check-up Anda digunakan untuk menampilkan dan mengirim hasil ke email ini. Data check-up juga dapat diolah secara <strong>agregat (digabung dengan data pengguna lain) dan tanpa mengidentifikasi Anda</strong> untuk meningkatkan layanan dan menyusun <strong>YFD Data Insight</strong>, sesuai ketentuan <strong>UU Pelindungan Data Pribadi</strong>.</p>
+                        <p class="mt-2">Ingin tahu lebih lanjut? Baca <a href="{{ route('company.privacy') }}" target="_blank" rel="noopener" class="font-semibold underline" style="color: {{ config('yfd_brand.navy') }}">Kebijakan Privasi ↗</a> — halaman terbuka di tab baru, jadi jawaban Anda di sini tidak hilang.</p>
+                    </div>
+
+                    <div class="mt-6 flex flex-wrap gap-3">
                         <button type="button" class="checkup-ok-btn" data-action="back">Kembali</button>
-                        <button type="submit" class="checkup-ok-btn">Lihat Hasil</button>
+                        <button type="submit" class="checkup-ok-btn">Lanjutkan &amp; Lihat Hasil</button>
                     </div>
                 </div>
 

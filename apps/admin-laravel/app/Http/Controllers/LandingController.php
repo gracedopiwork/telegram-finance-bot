@@ -13,10 +13,13 @@ use App\Models\GoogleBusinessConnection;
 use App\Models\GoogleBusinessReview;
 use App\Models\Setting;
 use App\Services\ConsultationCheckoutService;
+use App\Services\ConsultationPricing\ConsultationPriceRules;
+use App\Services\ConsultationPricing\FhcuRequiredException;
 use App\Services\ConsultationSlotService;
 use App\Support\ConsultationPricing;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -78,16 +81,6 @@ class LandingController extends Controller
             'services' => CpService::active()->orderBy('sort')->get(),
             'partners' => CpPartner::active()->orderBy('sort')->orderBy('id')->get(),
             'page'     => $this->settingsByGroup('page_layanan'),
-        ]);
-    }
-
-    public function paket()
-    {
-        return view('Companyprofile.paket', [
-            'active' => 'paket',
-            'consultationTiers' => ConsultationPricing::stages(),
-            'consultationMeta' => ConsultationPricing::meta(),
-            'page' => $this->settingsByGroup('page_paket'),
         ]);
     }
 
@@ -225,6 +218,17 @@ class LandingController extends Controller
 
     public function pertemuan()
     {
+        // Lanjutan dari hasil FHCU: pulihkan isian booking yang diparkir (slot dipilih ulang).
+        $pending = session('booking.pending');
+        if (request()->boolean('lanjut') && is_array($pending)) {
+            $type = (string) ($pending['service_type'] ?? 'standard');
+
+            return redirect()->route('company.pertemuan', array_filter([
+                'type' => $type !== 'standard' ? $type : null,
+                'stage' => is_string(request('stage')) ? request('stage') : null,
+            ]))->withInput($pending);
+        }
+
         $stageKey = request('stage');
         $consultationType = request('type', 'standard');
         if (! in_array($consultationType, ['standard', 'recovery', 'premarital'], true)) {
@@ -306,9 +310,18 @@ class LandingController extends Controller
             default => 'pertemuan',
         };
 
+        $prices = app(ConsultationPriceRules::class);
+        $sessionRolePrices = [];
+        if ($isPremarital) {
+            foreach (['male', 'female', 'couple'] as $role) {
+                $sessionRolePrices[$role] = $prices->for('premarital', $role)->display();
+            }
+        }
+
         return view('Companyprofile.pertemuan', [
             'active' => $active,
-            'consultationTiers' => ConsultationPricing::stages(),
+            'servicePrice' => $isPremarital ? null : $prices->for($consultationType, null)->display(),
+            'sessionRolePrices' => $sessionRolePrices,
             'consultationMeta' => ConsultationPricing::meta(),
             'selectedStage' => is_string($stageKey) ? $stageKey : null,
             'selectedType' => $consultationType,
@@ -385,11 +398,10 @@ class LandingController extends Controller
             'email' => 'required|email|max:200',
             'phone' => 'nullable|string|max:40',
             'age' => 'nullable|integer|min:15|max:99',
-            'stage' => 'nullable|string|max:80',
             'situation' => 'nullable|string|max:200',
             'condition' => 'nullable|string|max:2000',
             'service_type' => 'nullable|in:standard,recovery,premarital',
-            'session_role' => 'nullable|in:male,female,couple',
+            'session_role' => 'nullable|required_if:service_type,premarital|in:male,female,couple',
         ]);
 
         $slot = ConsultationSlot::with('advisor')->findOrFail((int) $data['slot_id']);
@@ -422,17 +434,24 @@ class LandingController extends Controller
                 'email' => $data['email'],
                 'phone' => $data['phone'] ?? null,
                 'age' => isset($data['age']) ? (int) $data['age'] : null,
-                'stage_key' => $data['stage'] ?? null,
                 'situation' => $data['situation'] ?? null,
                 'condition' => $condition,
                 'service_type' => $serviceType,
+                'session_role' => $sessionRole,
             ]);
+        } catch (FhcuRequiredException) {
+            // Belum ada / kedaluwarsa FHCU: simpan booking (tanpa slot — slot tidak di-hold) lalu ke pengantar FHCU.
+            $request->session()->put('booking.pending', Arr::except($data, ['slot_id']));
+
+            return redirect()->route('checkup.show');
         } catch (ValidationException $e) {
             return back()
                 ->withInput()
                 ->withErrors($e->errors())
                 ->with('error', collect($e->errors())->flatten()->first());
         }
+
+        $request->session()->forget('booking.pending');
 
         return redirect()->away($result['payment_url']);
     }
