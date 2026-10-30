@@ -110,7 +110,7 @@ class BookingFhcuGateTest extends TestCase
             'checkup.result_id' => $baseline->id,
         ])->get(route('checkup.result'))
             ->assertOk()
-            ->assertSee('Lanjutkan Booking Konsultasi')
+            ->assertSee('Konsultasi dengan Financial Planner')
             ->assertSee(e(route('company.pertemuan', ['stage' => 'growing', 'lanjut' => 1])), false);
 
         $this->withSession([
@@ -118,7 +118,8 @@ class BookingFhcuGateTest extends TestCase
             'checkup.result_id' => $baseline->id,
         ])->get(route('checkup.result'))
             ->assertOk()
-            ->assertDontSee('Lanjutkan Booking Konsultasi')
+            ->assertSee('Konsultasi dengan Financial Planner')
+            ->assertDontSee('lanjut=1', false)
             ->assertSee(e(route('company.konsultasi')), false);
     }
 
