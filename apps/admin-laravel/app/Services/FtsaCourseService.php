@@ -165,8 +165,13 @@ class FtsaCourseService
                 'paid_at' => now(),
             ]);
 
+            // Satu lisensi per email: lisensi yang sudah ada bisa membawa First Aid (12 bulan / lifetime).
+            // Course tidak boleh memotong masa itu — hanya memperpanjang bila lebih pendek dari jendela course.
+            $existing = $this->licenses->findExistingLicenseForEmail($email);
             $license = $this->licenses->resolveLicenseForPaidOrder($order);
-            $license->expires_at = $accessEndsAt;
+            if ($existing === null || ($license->expires_at !== null && $license->expires_at->lt($accessEndsAt))) {
+                $license->expires_at = $accessEndsAt;
+            }
             $license->status = 'active';
             $license->save();
 
