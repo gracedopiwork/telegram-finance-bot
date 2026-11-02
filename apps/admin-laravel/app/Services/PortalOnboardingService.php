@@ -20,7 +20,8 @@ class PortalOnboardingService
             (array) config('portal.bot_only_product_codes', ['yfd-bot-telegram'])
         )));
 
-        return $codes !== [] ? $codes : ['yfd-bot-telegram'];
+        // Kode bot yang dibekukan tetap dikenali walau env PORTAL_BOT_ONLY_PRODUCT_CODES menggantinya.
+        return array_values(array_unique(array_merge($codes, ['yfd-bot-telegram'])));
     }
 
     /**
