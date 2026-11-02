@@ -223,12 +223,10 @@ class LicenseEntitlementService
             (array) config('portal.bot_only_product_codes', ['yfd-bot-telegram'])
         )));
 
-        if ($codes === []) {
-            $codes = ['yfd-bot-telegram'];
-        }
-
         $ftsaCodes = $this->ftsaProductCodes();
-        $aliases = ['yfd-first-aid', 'yfd-bot', 'yfd-telegram-bot'];
+        // yfd-bot-telegram = kode produk bot yang dibekukan; order lama memakainya di kolom plan.
+        // Selalu dikenali, walau env menggantinya dan baris produknya sudah dihapus admin.
+        $aliases = ['yfd-bot-telegram', 'yfd-first-aid', 'yfd-bot', 'yfd-telegram-bot'];
         $featured = CpDigitalProduct::query()
             ->active()
             ->featured()
