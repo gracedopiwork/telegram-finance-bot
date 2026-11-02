@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Services\FtsaCourseService;
 use App\Models\CpDigitalProduct;
+use App\Models\FtsaCourseRegistrant;
 use App\Models\License;
 use App\Models\Order;
 use Carbon\Carbon;
@@ -150,15 +151,11 @@ class LicenseEntitlementService
             return null;
         }
 
-        // Course: pakai expires_at lisensi (diset ke akhir jendela workshop).
+        // Course: jendela akses disimpan per pendaftaran — bukan expires_at lisensi, yang bisa membawa First Aid.
         if ($this->isFtsaCourseProductCode($code)) {
-            $order->loadMissing('license');
-            $licenseEnds = $order->license?->expires_at;
-            if ($licenseEnds instanceof Carbon) {
-                return $licenseEnds->copy();
-            }
-            if ($licenseEnds !== null) {
-                return Carbon::parse($licenseEnds);
+            $courseEnds = FtsaCourseRegistrant::query()->where('order_id', $order->id)->value('access_ends_at');
+            if ($courseEnds !== null) {
+                return Carbon::parse($courseEnds);
             }
         }
 
