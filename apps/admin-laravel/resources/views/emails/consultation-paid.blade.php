@@ -14,7 +14,7 @@
         @if($slot)
             <tr><td style="padding: 6px 0; color: #52525b;">Kode Booking</td><td style="padding: 6px 0; font-weight: 700;">{{ $slot->booking_code }}</td></tr>
         @endif
-        <tr><td style="padding: 6px 0; color: #52525b;">Produk</td><td style="padding: 6px 0;">{{ $order->product_name }}</td></tr>
+        <tr><td style="padding: 6px 0; color: #52525b;">Produk</td><td style="padding: 6px 0;">{{ $order->displayProductName() }}</td></tr>
         @if($slot)
             <tr><td style="padding: 6px 0; color: #52525b;">Jadwal</td><td style="padding: 6px 0; font-weight: 600;">{{ $slot->labelSchedule() }}</td></tr>
             @if($slot->advisor)

@@ -10,8 +10,10 @@ use App\Mail\ConsultationPaidMail;
 use App\Models\ConsultationSlot;
 use App\Models\CpAdvisor;
 use App\Models\Order;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\BookingPaidAdminNotifier;
+use App\Services\ConsultationSlotService;
 use App\Services\FonnteClient;
 use App\Services\TelegramBotClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -281,5 +283,33 @@ class ConsultationPostPaymentTest extends TestCase
             ->assertOk()
             ->assertSee('Kembali ke Beranda')
             ->assertDontSee('Konfirmasi booking Anda dengan admin kami');
+    }
+
+    public function test_product_name_follows_site_settings_layanan_label_everywhere(): void
+    {
+        Mail::fake();
+        Setting::put('page.nav.svc_consult', 'Konsultasi Financial Planner YFD', 'text', 'page_nav');
+        Setting::bust();
+        $order = $this->heldBooking('paid');
+        $order->load('consultationSlot.advisor');
+
+        $page = $this->get('/checkout/finish/done?order_id='.$order->order_code)->assertOk();
+        $page->assertSee('Konsultasi Financial Planner YFD')->assertDontSee('sesi 1 jam (Steady)');
+
+        dispatch_sync(new SendConsultationPaidEmailJob($order->id));
+        Mail::assertSent(ConsultationPaidMail::class, function (ConsultationPaidMail $mail) {
+            $html = $mail->render();
+
+            return str_contains($html, 'Konsultasi Financial Planner YFD') && ! str_contains($html, 'sesi 1 jam');
+        });
+
+        $wa = rawurldecode((string) parse_url(app(ConsultationSlotService::class)->paidGuestWhatsAppUrl($order->consultationSlot, $order), PHP_URL_QUERY));
+        $this->assertStringContainsString('*Layanan:* Konsultasi Financial Planner YFD', $wa);
+        $this->assertStringContainsString('Layanan: Konsultasi Financial Planner YFD', app(BookingPaidAdminNotifier::class)->message($order));
+
+        // Tanpa setting: default sama dengan dropdown homepage.
+        Setting::query()->where('key', 'page.nav.svc_consult')->delete();
+        Setting::bust();
+        $this->assertSame('Consultation with Financial Planner', $order->consultationSlot->fresh()->serviceLabel());
     }
 }

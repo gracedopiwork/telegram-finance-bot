@@ -46,7 +46,7 @@
                     <p class="text-sm text-on-surface mb-1"><strong>Kode Order:</strong> {{ $order->order_code }}</p>
                     <p class="text-sm text-on-surface mb-1"><strong>Kode Booking:</strong> {{ $order->consultationSlot->booking_code }}</p>
                     <p class="text-sm text-on-surface mb-1"><strong>Jadwal:</strong> {{ $order->consultationSlot->labelSchedule() }}</p>
-                    <p class="text-sm text-on-surface"><strong>Produk:</strong> {{ $order->product_name }}</p>
+                    <p class="text-sm text-on-surface"><strong>Produk:</strong> {{ $order->displayProductName() }}</p>
                 </div>
             @endif
         @elseif($order->status === 'paid' && $order->license)
@@ -159,7 +159,7 @@
         <div class="bg-white border border-outline-variant rounded-2xl p-6 max-w-md mx-auto text-left mb-8">
             <dl class="text-[13.5px] space-y-2">
                 <div class="flex justify-between"><dt class="text-on-surface-variant">Order Code</dt><dd class="font-semibold">{{ $order->order_code }}</dd></div>
-                <div class="flex justify-between"><dt class="text-on-surface-variant">Produk</dt><dd class="font-semibold text-right">{{ $order->product_name ?? $order->plan }}</dd></div>
+                <div class="flex justify-between"><dt class="text-on-surface-variant">Produk</dt><dd class="font-semibold text-right">{{ $order->displayProductName() }}</dd></div>
                 <div class="flex justify-between"><dt class="text-on-surface-variant">Total</dt><dd class="font-bold text-primary-container">Rp {{ number_format($order->amount, 0, ',', '.') }}</dd></div>
                 <div class="flex justify-between"><dt class="text-on-surface-variant">Status</dt>
                     <dd>

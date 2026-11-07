@@ -101,6 +101,20 @@ class Order extends Model
             : number_format($this->amount, 0, ',', '.') . ' ' . $this->currency;
     }
 
+    /**
+     * Nama produk untuk pembeli. Sesi konsultasi: nama layanan dari Site Settings (sama dengan
+     * dropdown Layanan homepage), bukan product_name tersimpan (label config + tahap). Order lain
+     * dan overtime: product_name apa adanya.
+     */
+    public function displayProductName(): string
+    {
+        if ((string) ($this->order_kind ?: $this->plan) === 'consultation_session' && $this->consultationSlot) {
+            return $this->consultationSlot->serviceLabel();
+        }
+
+        return (string) ($this->product_name ?? $this->plan ?? '');
+    }
+
     public function isAdminComplimentary(): bool
     {
         return $this->payment_gateway === 'admin'
