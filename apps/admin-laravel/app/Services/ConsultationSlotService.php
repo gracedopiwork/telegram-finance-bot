@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ConsultationSlot;
 use App\Models\CpAdvisor;
+use App\Models\Order;
 use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -105,25 +106,20 @@ class ConsultationSlotService
         return $this->whatsAppUrl($this->holdSlot($slot, $guest));
     }
 
-    public function paidGuestWhatsAppUrl(ConsultationSlot $slot): string
+    public function paidGuestWhatsAppUrl(ConsultationSlot $slot, Order $order): string
     {
         $wa = Setting::val('contact.wa_number', '6285111228911') ?: '6285111228911';
-        $service = match ($slot->service_type) {
-            'recovery' => 'Financial Recovery Program',
-            'premarital' => 'Premarital Financial Health Check Up',
-            default => 'Financial Consultation',
-        };
         $hours = ConsultationSlot::INTAKE_FORM_HOURS;
         $lines = [
-            'Halo Tim YFD, booking konsultasi saya sudah *lunas*.',
+            'Halo Tim YFD, saya ingin konfirmasi booking konsultasi yang sudah *lunas*.',
             '',
+            '*Kode order:* '.$order->order_code,
             '*Kode booking:* '.($slot->booking_code ?? '—'),
             '*Nama:* '.($slot->guest_name ?? '-'),
-            '*Layanan:* '.$service,
-            '*Jadwal:* '.$slot->labelDate().' · '.$slot->starts_at->format('H:i').' WIB',
+            '*Layanan:* '.$slot->serviceLabel(),
+            '*Jadwal:* '.$slot->labelSchedule(),
             '',
-            'Slot sudah dikunci setelah pembayaran Midtrans.',
-            "Mohon kirim 2 link form screening. Saya akan isi paling lambat {$hours} jam sebelum sesi agar planner sempat pelajari kasus dan fokus solusi saat pertemuan.",
+            "Mohon kirimkan 2 link form yang perlu saya isi. Saya akan mengisinya paling lambat {$hours} jam sebelum sesi agar planner sempat mempelajari kasus saya dan fokus ke solusi saat pertemuan.",
             '',
             'Terima kasih.',
         ];

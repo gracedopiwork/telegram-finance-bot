@@ -142,6 +142,21 @@ class ConsultationSlot extends Model
         return $this->starts_at->translatedFormat('l, d M Y');
     }
 
+    /** "Sabtu, 10 Okt 2026 · 20:00 WIB" — dipakai halaman sukses, email, dan pesan WA/Telegram. */
+    public function labelSchedule(): string
+    {
+        return $this->labelDate().' · '.$this->starts_at->format('H:i').' WIB';
+    }
+
+    public function serviceLabel(): string
+    {
+        return match ($this->service_type) {
+            'recovery' => 'Financial Recovery Program',
+            'premarital' => 'Premarital Financial Health Check Up',
+            default => 'Financial Consultation',
+        };
+    }
+
     public static function generateBookingCode(): string
     {
         do {

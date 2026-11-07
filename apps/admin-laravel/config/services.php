@@ -77,7 +77,18 @@ return [
     'fonnte' => [
         'api_url' => env('FONNTE_API_URL', 'https://api.fonnte.com/send'),
         'token' => env('FONNTE_TOKEN'),
-        'timeout' => (int) env('FONNTE_TIMEOUT', 30),
+        'timeout' => (int) env('FONNTE_TIMEOUT', 10),
+    ],
+
+    /**
+     * Notif "BOOKING LUNAS" ke tim YFD (BookingPaidAdminNotifier). Daftar dipisah koma.
+     * Kanal: email | telegram | wa. Setiap penerima = satu job queue tersendiri.
+     */
+    'booking_notify' => [
+        'channels' => array_values(array_filter(array_map('trim', explode(',', (string) env('BOOKING_NOTIFY_CHANNELS', 'email'))))),
+        'emails' => array_values(array_filter(array_map('trim', explode(',', (string) env('BOOKING_NOTIFY_EMAILS', 'admin.findoc@yourfinancialdoctor.id'))))),
+        'telegram_ids' => array_values(array_filter(array_map('trim', explode(',', (string) env('BOOKING_NOTIFY_TELEGRAM_IDS', ''))))),
+        'wa' => array_values(array_filter(array_map('trim', explode(',', (string) env('BOOKING_NOTIFY_WA', ''))))),
     ],
 
     'google_site_verification' => env('GOOGLE_SITE_VERIFICATION'),

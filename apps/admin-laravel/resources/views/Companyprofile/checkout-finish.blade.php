@@ -38,16 +38,14 @@
 
         @if($order->status === 'paid' && $isConsultation)
             <p class="text-body-md text-on-surface-variant max-w-xl mx-auto mb-6">
-                Pembayaran <strong>lunas</strong>. Jadwal konsultasi Anda sudah dikunci.
-                Admin akan mengirim <strong>2 link form</strong> via WhatsApp — mohon diisi
-                paling lambat <strong>{{ \App\Models\ConsultationSlot::INTAKE_FORM_HOURS }} jam sebelum sesi</strong>
-                agar planner sempat pelajari kasus dan fokus ke solusi saat pertemuan.
+                @include('partials.consultation-paid-instruction')
             </p>
             @if($order->consultationSlot)
                 <div class="bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 max-w-lg mx-auto text-left mb-6">
                     <p class="text-[11px] font-bold uppercase tracking-wider text-primary mb-2">Detail booking</p>
-                    <p class="text-sm text-on-surface mb-1"><strong>Kode:</strong> {{ $order->consultationSlot->booking_code }}</p>
-                    <p class="text-sm text-on-surface mb-1"><strong>Jadwal:</strong> {{ $order->consultationSlot->labelDate() }} · {{ $order->consultationSlot->starts_at->format('H:i') }} WIB</p>
+                    <p class="text-sm text-on-surface mb-1"><strong>Kode Order:</strong> {{ $order->order_code }}</p>
+                    <p class="text-sm text-on-surface mb-1"><strong>Kode Booking:</strong> {{ $order->consultationSlot->booking_code }}</p>
+                    <p class="text-sm text-on-surface mb-1"><strong>Jadwal:</strong> {{ $order->consultationSlot->labelSchedule() }}</p>
                     <p class="text-sm text-on-surface"><strong>Produk:</strong> {{ $order->product_name }}</p>
                 </div>
             @endif
@@ -195,19 +193,30 @@
     @endif
 
     <div class="flex flex-wrap gap-3 justify-center">
-        @if(!$isFtsaOnly && !empty($telegramBotUrl))
-            {{-- Pakai https://t.me/... saja. tg:// sering gagal di HP (WebView payment / Chrome). --}}
-            <a href="{{ $telegramBotUrl }}" target="_blank" rel="noopener" class="btn btn-primary">
-                <span class="material-symbols-outlined text-[18px]">smart_toy</span> Buka bot di Telegram
+        @if($isConsultation)
+            @if(!empty($consultationWaUrl) && $order->status === 'paid')
+                <a href="{{ $consultationWaUrl }}" target="_blank" rel="noopener" class="btn btn-primary">
+                    <span class="material-symbols-outlined text-[18px]">chat</span> Konfirmasi booking Anda dengan admin kami
+                </a>
+            @else
+                <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="btn btn-outline-primary">
+                    <span class="material-symbols-outlined text-[18px]">chat</span> Chat Tim YFD via WA
+                </a>
+            @endif
+        @else
+            @if(!$isFtsaOnly && !empty($telegramBotUrl))
+                {{-- Pakai https://t.me/... saja. tg:// sering gagal di HP (WebView payment / Chrome). --}}
+                <a href="{{ $telegramBotUrl }}" target="_blank" rel="noopener" class="btn btn-primary">
+                    <span class="material-symbols-outlined text-[18px]">smart_toy</span> Buka bot di Telegram
+                </a>
+            @endif
+            <a href="{{ route('company.home') }}" class="btn btn-outline-primary">
+                <span class="material-symbols-outlined text-[18px]">home</span> Kembali ke Beranda
+            </a>
+            <a href="{{ $waBookingUrl }}" target="_blank" rel="noopener" class="btn btn-outline-primary">
+                <span class="material-symbols-outlined text-[18px]">chat</span> Chat Tim YFD via WA
             </a>
         @endif
-        <a href="{{ route('company.home') }}" class="btn btn-outline-primary">
-            <span class="material-symbols-outlined text-[18px]">home</span> Kembali ke Beranda
-        </a>
-        <a href="{{ $consultationWaUrl ?? $waBookingUrl }}" target="_blank" rel="noopener" class="btn btn-outline-primary">
-            <span class="material-symbols-outlined text-[18px]">chat</span>
-            {{ !empty($consultationWaUrl) ? 'Buka ringkasan booking di WhatsApp' : 'Chat Tim YFD via WA' }}
-        </a>
     </div>
 </section>
 

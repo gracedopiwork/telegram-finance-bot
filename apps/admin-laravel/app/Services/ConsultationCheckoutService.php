@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Jobs\SendConsultationPaidEmailJob;
 use App\Models\ConsultationSlot;
 use App\Models\Order;
-use App\Models\Setting;
 use App\Services\ConsultationPricing\ConsultationPriceRules;
 use App\Services\ConsultationPricing\FhcuRequiredException;
 use App\Support\ConsultationPricing;
@@ -22,6 +22,7 @@ class ConsultationCheckoutService
         private ConsultationSlotService $slots,
         private PivotService $pivot,
         private ConsultationPriceRules $prices,
+        private BookingPaidAdminNotifier $adminNotifier,
     ) {}
 
     /**
@@ -218,6 +219,11 @@ class ConsultationCheckoutService
             || filled($order->consultation_slot_id);
     }
 
+    /**
+     * Kunci slot (sinkron, supaya halaman sukses langsung menampilkan jadwal terkunci) lalu
+     * antrekan notif admin + email pembeli. Aman dipanggil berkali-kali (webhook + sync
+     * halaman sukses bisa sama-sama melihat order pending): klaim atomik menjamin sekali kirim.
+     */
     public function markConsultationPaid(Order $order): void
     {
         if (! $this->isConsultationOrder($order)) {
@@ -231,68 +237,26 @@ class ConsultationCheckoutService
 
         if ($slot && (string) ($order->order_kind ?: $order->plan) === self::KIND_SESSION) {
             $this->slots->confirmPayment($slot);
-            $this->notifyAdminPaid($slot, $order);
+
+            if ($this->claim($order, 'admin_notified_at')) {
+                $this->adminNotifier->dispatchFor($order);
+            }
+
+            if ($this->claim($order, 'purchase_delivery_queued_at')) {
+                SendConsultationPaidEmailJob::dispatch($order->id);
+            }
+
+            return;
         }
+
+        // Overtime / tanpa slot: tidak ada email booking; tandai selesai seperti sebelumnya.
+        Order::whereKey($order->id)->whereNull('purchase_delivery_sent_at')
+            ->update(['purchase_delivery_sent_at' => now()]);
     }
 
-    public function notifyAdminPaid(ConsultationSlot $slot, Order $order): void
+    /** UPDATE … WHERE col IS NULL: hanya satu pemanggil yang menang. */
+    private function claim(Order $order, string $column): bool
     {
-        $wa = Setting::val('contact.wa_number', '6285111228911') ?: '6285111228911';
-        $service = match ($slot->service_type) {
-            'recovery' => 'Financial Recovery Program',
-            'premarital' => 'Premarital Financial Health Check Up',
-            default => 'Financial Consultation',
-        };
-        $advisorName = $slot->advisor?->name ?? 'Dokter YFD';
-
-        $lines = [
-            '✅ *BOOKING LUNAS* — siap dijadwalkan',
-            '',
-            '*Kode booking:* '.($slot->booking_code ?? '—'),
-            '*Order:* '.$order->order_code,
-            '*Status bayar:* LUNAS via Pivot',
-            '*Nominal:* '.$order->amountLabel(),
-            '',
-            '*Nama:* '.($slot->guest_name ?? $order->full_name),
-            '*Email:* '.$order->email,
-        ];
-        if ($slot->guest_phone || $order->phone) {
-            $lines[] = '*No. WA:* '.($slot->guest_phone ?: $order->phone);
-        }
-        $lines[] = '*Layanan:* '.$service;
-        $lines[] = '*Jadwal:* '.$slot->labelDate().' · '.$slot->starts_at->format('H:i').' WIB';
-        $lines[] = '*Dokter:* '.$advisorName;
-        if ($slot->financial_stage) {
-            $lines[] = '*Tahap finansial:* '.$slot->financial_stage;
-        }
-        if ($slot->situation) {
-            $lines[] = '*Kondisi:* '.$slot->situation;
-        }
-        if ($slot->notes) {
-            $lines[] = '';
-            $lines[] = '*Cerita / keluhan:*';
-            $lines[] = $slot->notes;
-        }
-        $lines[] = '';
-        $lines[] = 'Pembayaran sudah diverifikasi sistem. Tidak perlu konfirmasi transfer manual.';
-        $lines[] = '';
-        $lines[] = 'Tindak lanjut admin: kirim 2 link form screening ke klien. Klien wajib isi paling lambat '.ConsultationSlot::INTAKE_FORM_HOURS.' jam sebelum sesi.';
-
-        $url = 'https://wa.me/'.$wa.'?text='.rawurlencode(implode("\n", $lines));
-
-        // Prefer Fonnte if available; otherwise leave admin_note with WA draft link.
-        try {
-            $fonnte = app(FonnteClient::class);
-            if (method_exists($fonnte, 'sendText') && filled($wa)) {
-                $fonnte->sendText($wa, implode("\n", $lines));
-
-                return;
-            }
-        } catch (\Throwable) {
-            // fall through
-        }
-
-        $order->admin_note = trim((string) $order->admin_note."\nWA admin draft: ".$url);
-        $order->save();
+        return Order::whereKey($order->id)->whereNull($column)->update([$column => now()]) === 1;
     }
 }

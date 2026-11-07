@@ -214,7 +214,7 @@ class CheckoutController extends Controller
         $consultationWaUrl = null;
         if ($order && $order->isConsultationOrder() && $order->consultationSlot) {
             $consultationWaUrl = app(\App\Services\ConsultationSlotService::class)
-                ->paidGuestWhatsAppUrl($order->consultationSlot);
+                ->paidGuestWhatsAppUrl($order->consultationSlot, $order);
         }
 
         return view('Companyprofile.checkout-finish', [

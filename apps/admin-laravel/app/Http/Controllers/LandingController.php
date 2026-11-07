@@ -17,6 +17,7 @@ use App\Services\ConsultationPricing\ConsultationPriceRules;
 use App\Services\ConsultationPricing\FhcuRequiredException;
 use App\Services\ConsultationSlotService;
 use App\Support\ConsultationPricing;
+use App\Support\PhoneNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -396,13 +397,20 @@ class LandingController extends Controller
             'advisor_id' => 'nullable|integer|exists:cp_advisors,id',
             'name' => 'required|string|max:200',
             'email' => 'required|email|max:200',
-            'phone' => 'nullable|string|max:40',
+            'phone' => 'required|string|max:40',
             'age' => 'nullable|integer|min:15|max:99',
             'situation' => 'nullable|string|max:200',
             'condition' => 'nullable|string|max:2000',
             'service_type' => 'nullable|in:standard,recovery,premarital',
             'session_role' => 'nullable|required_if:service_type,premarital|in:male,female,couple',
         ]);
+
+        $data['phone'] = PhoneNumber::normalizeIndonesia($data['phone']);
+        if (! PhoneNumber::isValidIndonesiaMobile($data['phone'])) {
+            throw ValidationException::withMessages([
+                'phone' => 'Nomor WhatsApp tidak valid. Gunakan format 08xxxxxxxxxx atau 628xxxxxxxxxx.',
+            ]);
+        }
 
         $slot = ConsultationSlot::with('advisor')->findOrFail((int) $data['slot_id']);
         $serviceType = $data['service_type'] ?? 'standard';
@@ -432,7 +440,7 @@ class LandingController extends Controller
             $result = app(ConsultationCheckoutService::class)->holdAndCreateSessionPayment($slot, [
                 'name' => $data['name'],
                 'email' => $data['email'],
-                'phone' => $data['phone'] ?? null,
+                'phone' => $data['phone'],
                 'age' => isset($data['age']) ? (int) $data['age'] : null,
                 'situation' => $data['situation'] ?? null,
                 'condition' => $condition,

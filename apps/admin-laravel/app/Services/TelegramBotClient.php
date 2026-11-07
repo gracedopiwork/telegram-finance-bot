@@ -20,7 +20,7 @@ class TelegramBotClient
         }
 
         try {
-            $response = Http::timeout(15)->asForm()->post(
+            $response = Http::timeout(5)->asForm()->post(
                 "https://api.telegram.org/bot{$token}/sendMessage",
                 [
                     'chat_id' => $chatId,

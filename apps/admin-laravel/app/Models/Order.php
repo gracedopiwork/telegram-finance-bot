@@ -40,6 +40,8 @@ class Order extends Model
     protected $casts = [
         'paid_at'                   => 'datetime',
         'purchase_delivery_sent_at' => 'datetime',
+        'admin_notified_at'         => 'datetime',
+        'purchase_delivery_queued_at' => 'datetime',
         'amount'                    => 'integer',
         'original_price'            => 'integer',
         'discount_amount'           => 'integer',

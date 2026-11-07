@@ -197,6 +197,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('orders/{order}/sync-payment', [OrdersController::class, 'syncPayment'])->name('orders.syncPayment');
     Route::post('orders/{order}/resend-delivery', [OrdersController::class, 'resendDelivery'])->name('orders.resendDelivery');
     Route::post('orders/{order}/resend-delivery-email', [OrdersController::class, 'resendDeliveryEmail'])->name('orders.resendDeliveryEmail');
+    Route::post('orders/{order}/resend-consultation-email', [OrdersController::class, 'resendConsultationEmail'])->name('orders.resendConsultationEmail');
     Route::post('orders/{order}/purge-customer-data', [OrdersController::class, 'purgeCustomerData'])->name('orders.purgeCustomerData');
     Route::post('orders/{order}/affiliate', [OrdersController::class, 'upsertAffiliate'])->name('orders.affiliate');
     Route::post('orders/{order}/referrer', [OrdersController::class, 'upsertReferrer'])->name('orders.referrer');
