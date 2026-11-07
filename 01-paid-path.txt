@@ -1,0 +1,5 @@
+DeliverPaidOrderJob (paid path, worker stopped): 30 ms
+slot=confirmed admin_notified_at=set purchase_delivery_queued_at=set purchase_delivery_sent_at=null
+jobs row: App\Jobs\SendBookingAdminNotificationJob
+jobs row: App\Jobs\SendBookingAdminNotificationJob
+jobs row: App\Jobs\SendConsultationPaidEmailJob

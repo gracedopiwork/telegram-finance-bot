@@ -1,0 +1,17 @@
+$ php artisan queue:work database --stop-when-empty
+  2026-11-07 10:37:54 App\Jobs\SendBookingAdminNotificationJob ....... RUNNING
+  2026-11-07 10:37:54 App\Jobs\SendBookingAdminNotificationJob .. 48.49ms DONE
+  2026-11-07 10:37:54 App\Jobs\SendBookingAdminNotificationJob ....... RUNNING
+  2026-11-07 10:37:54 App\Jobs\SendBookingAdminNotificationJob ... 1.74ms DONE
+  2026-11-07 10:37:54 App\Jobs\SendConsultationPaidEmailJob .......... RUNNING
+  2026-11-07 10:37:54 App\Jobs\SendConsultationPaidEmailJob ...... 4.67ms DONE
+
+$ after worker
+jobs=0 failed_jobs=0 purchase_delivery_sent_at=set
+
+$ mail log (MAIL_MAILER=log) + skip line
+To: founder@example.com
+Subject: BOOKING LUNAS — YFD-78P1OOO3 ·
+[2026-11-07 10:37:54] local.WARNING: Notif admin booking dilewati: TELEGRAM_BOT_TOKEN kosong {"order_id":1} 
+To: klien@example.com
+Subject: Booking konsultasi lunas — YFD-78P1OOO3

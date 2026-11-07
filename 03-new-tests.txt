@@ -1,0 +1,19 @@
+   PASS  Tests\Feature\BookingWhatsAppRequiredTest
+  ✓ booking without whatsapp is rejected for every service type          0.45s  
+  ✓ invalid whatsapp is rejected                                         0.01s  
+  ✓ whatsapp is stored normalised on order and slot                      0.03s  
+  ✓ parked booking keeps normalised whatsapp                             0.01s  
+  ✓ form marks whatsapp required                                         0.03s  
+   PASS  Tests\Feature\ConsultationPostPaymentTest
+  ✓ paid webhook confirms slot and queues notifications without sending… 0.03s  
+  ✓ notifications are queued once when webhook and finish page both del… 0.01s  
+  ✓ finish page sync marks paid and queues without sending in request    0.03s  
+  ✓ admin email job sends plain booking summary                          0.01s  
+  ✓ telegram failure throws so the queue retries                         0.03s  
+  ✓ telegram job without token is skipped not retried                    0.01s  
+  ✓ buyer email job sends codes schedule and marks sent                  0.02s  
+  ✓ buyer email failure leaves sent at empty                             0.01s  
+  ✓ admin resend queues buyer email only                                 0.02s  
+  ✓ paid finish page has new copy and single whatsapp button             0.02s  
+  ✓ paid digital order still shows bot and home buttons                  0.02s  
+  Tests:    16 passed (80 assertions)
