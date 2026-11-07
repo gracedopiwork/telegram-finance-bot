@@ -332,8 +332,8 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-2">
-                            <label for="bf-phone" class="font-label-md text-label-md text-on-surface-variant">No. WhatsApp (opsional)</label>
-                            <input id="bf-phone" type="text" name="phone" value="{{ old('phone') }}" placeholder="08…"
+                            <label for="bf-phone" class="font-label-md text-label-md text-on-surface-variant">No. WhatsApp *</label>
+                            <input id="bf-phone" type="tel" inputmode="tel" name="phone" required maxlength="40" value="{{ old('phone') }}" placeholder="08…"
                                    class="w-full border-outline-variant rounded-lg focus:ring-primary-container focus:border-primary-container bg-surface">
                         </div>
                         <div class="space-y-2">

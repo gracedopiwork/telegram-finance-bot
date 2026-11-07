@@ -12,7 +12,8 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Dijalankan sinkron (tanpa queue worker) agar email/WA terkirim langsung setelah webhook Midtrans.
+ * Dijalankan sinkron setelah order lunas (webhook Pivot / sync halaman sukses / admin).
+ * Produk digital: email/WA lisensi langsung. Konsultasi: kunci slot di sini, notifikasi lewat queue.
  */
 class DeliverPaidOrderJob
 {
@@ -31,11 +32,9 @@ class DeliverPaidOrderJob
         }
 
         if ($consultationCheckout->isConsultationOrder($order)) {
+            // Kunci slot sinkron; notif admin + email pembeli diantrekan (lihat markConsultationPaid).
             try {
                 $consultationCheckout->markConsultationPaid($order);
-                if ($order->purchase_delivery_sent_at === null) {
-                    Order::whereKey($order->id)->update(['purchase_delivery_sent_at' => now()]);
-                }
             } catch (\Throwable $e) {
                 Log::warning('Konfirmasi booking konsultasi gagal', [
                     'order_code' => $order->order_code,

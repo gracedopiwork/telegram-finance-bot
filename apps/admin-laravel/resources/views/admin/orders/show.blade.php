@@ -327,6 +327,42 @@
         </div>
         @endif
 
+        {{-- Booking konsultasi: notif admin + email pembeli (dikirim worker yfd-queue) --}}
+        @if($order->status === 'paid' && $order->isConsultationOrder() && $order->consultation_slot_id)
+            <div class="card card-outline card-info">
+                <div class="card-header">
+                    <h3 class="card-title mb-0"><i class="fas fa-envelope mr-2"></i>Notifikasi booking</h3>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-2">
+                        Notif tim YFD:
+                        @if($order->admin_notified_at)
+                            <span class="badge badge-success">Diantrekan</span> {{ $order->admin_notified_at->format('d M Y H:i') }}
+                        @else
+                            <span class="badge badge-secondary">Belum</span>
+                        @endif
+                    </p>
+                    <p class="small mb-2">
+                        Email pembeli:
+                        @if($order->purchase_delivery_sent_at)
+                            <span class="badge badge-success">Terkirim</span> {{ $order->purchase_delivery_sent_at->format('d M Y H:i') }}
+                        @elseif($order->purchase_delivery_queued_at)
+                            <span class="badge badge-warning">Diantrekan</span> — belum terkirim; cek <code>yfd-queue</code> / <code>failed_jobs</code>
+                        @else
+                            <span class="badge badge-secondary">Belum</span>
+                        @endif
+                        → <strong>{{ $order->email ?: '—' }}</strong>
+                    </p>
+                    <form method="post" action="{{ route('admin.orders.resendConsultationEmail', $order) }}" class="js-confirm-form" data-msg="Kirim ulang email konfirmasi booking ke {{ $order->email }}?">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-outline-primary btn-block" @disabled(trim((string) $order->email) === '')>
+                            <i class="fas fa-envelope mr-1"></i>Kirim ulang email konfirmasi booking
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @endif
+
         {{-- Pengiriman ringkasan (bot + lisensi) --}}
         @if($order->status === 'paid' && $order->license)
             @php

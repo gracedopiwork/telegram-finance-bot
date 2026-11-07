@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\DeliverPaidOrderJob;
+use App\Jobs\SendConsultationPaidEmailJob;
 use App\Models\CpDigitalProduct;
 use App\Models\License;
 use App\Models\Order;
@@ -424,6 +425,25 @@ class OrdersController extends Controller
 
         return redirect()->back()
             ->with('success', 'Email aktivasi terkirim ke '.$order->email.'.');
+    }
+
+    /** Kirim ulang email konfirmasi booking ke pembeli (lewat queue). Notif admin tidak diulang. */
+    public function resendConsultationEmail(Order $order)
+    {
+        if ($order->status !== 'paid' || ! $order->isConsultationOrder() || ! $order->consultation_slot_id) {
+            return redirect()->back()
+                ->with('error', 'Hanya booking konsultasi lunas yang bisa dikirim email konfirmasi.');
+        }
+
+        if (trim((string) $order->email) === '') {
+            return redirect()->back()
+                ->with('error', 'Order ini belum punya alamat email.');
+        }
+
+        SendConsultationPaidEmailJob::dispatch($order->id);
+
+        return redirect()->back()
+            ->with('success', 'Email konfirmasi booking diantrekan ke '.$order->email.'. Status berubah "Terkirim" setelah worker mengirimnya.');
     }
 
     public function destroy(Order $order, CustomerDataPurgeService $purge)

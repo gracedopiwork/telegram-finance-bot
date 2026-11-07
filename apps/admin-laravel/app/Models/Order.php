@@ -40,6 +40,8 @@ class Order extends Model
     protected $casts = [
         'paid_at'                   => 'datetime',
         'purchase_delivery_sent_at' => 'datetime',
+        'admin_notified_at'         => 'datetime',
+        'purchase_delivery_queued_at' => 'datetime',
         'amount'                    => 'integer',
         'original_price'            => 'integer',
         'discount_amount'           => 'integer',
@@ -97,6 +99,20 @@ class Order extends Model
         return ($this->currency === 'IDR' || ! $this->currency)
             ? 'Rp ' . number_format($this->amount, 0, ',', '.')
             : number_format($this->amount, 0, ',', '.') . ' ' . $this->currency;
+    }
+
+    /**
+     * Nama produk untuk pembeli. Sesi konsultasi: nama layanan dari Site Settings (sama dengan
+     * dropdown Layanan homepage), bukan product_name tersimpan (label config + tahap). Order lain
+     * dan overtime: product_name apa adanya.
+     */
+    public function displayProductName(): string
+    {
+        if ((string) ($this->order_kind ?: $this->plan) === 'consultation_session' && $this->consultationSlot) {
+            return $this->consultationSlot->serviceLabel();
+        }
+
+        return (string) ($this->product_name ?? $this->plan ?? '');
     }
 
     public function isAdminComplimentary(): bool

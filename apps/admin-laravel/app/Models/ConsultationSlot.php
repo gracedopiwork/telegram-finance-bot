@@ -142,6 +142,28 @@ class ConsultationSlot extends Model
         return $this->starts_at->translatedFormat('l, d M Y');
     }
 
+    /** "Sabtu, 10 Okt 2026 · 20:00 WIB" — dipakai halaman sukses, email, dan pesan WA/Telegram. */
+    public function labelSchedule(): string
+    {
+        return $this->labelDate().' · '.$this->starts_at->format('H:i').' WIB';
+    }
+
+    /**
+     * Nama layanan = label menu "Layanan" di Site Settings (grup page_nav), sama dengan dropdown
+     * Layanan di homepage. Dibaca saat ditampilkan, jadi edit admin langsung berlaku di halaman
+     * sukses, email pembeli, template WA, dan notif admin. Default = default AppServiceProvider.
+     */
+    public function serviceLabel(): string
+    {
+        [$key, $default] = match ($this->service_type) {
+            'recovery' => ['page.nav.svc_recovery', 'Financial Recovery Program'],
+            'premarital' => ['page.nav.svc_premarital', 'Pre Marital Financial Health Check Up'],
+            default => ['page.nav.svc_consult', 'Consultation with Financial Planner'],
+        };
+
+        return trim((string) Setting::val($key, $default)) ?: $default;
+    }
+
     public static function generateBookingCode(): string
     {
         do {
