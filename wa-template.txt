@@ -1,0 +1,17 @@
+Template pesan WA tombol "Konfirmasi booking Anda dengan admin kami"
+Sumber: ConsultationSlotService::paidGuestWhatsAppUrl(ConsultationSlot $slot, Order $order)
+Tujuan: https://wa.me/{contact.wa_number}?text={pesan, rawurlencode}
+(*…* = tebal di WhatsApp)
+
+----
+Halo Tim YFD, saya ingin konfirmasi booking konsultasi yang sudah *lunas*.
+
+*Kode order:* {orders.order_code}
+*Kode booking:* {consultation_slots.booking_code}
+*Nama:* {consultation_slots.guest_name}
+*Layanan:* {Financial Consultation | Financial Recovery Program | Premarital Financial Health Check Up}
+*Jadwal:* {hari, dd Mmm yyyy} · {HH:mm} WIB
+
+Mohon kirimkan 2 link form yang perlu saya isi. Saya akan mengisinya paling lambat {ConsultationSlot::INTAKE_FORM_HOURS = 8} jam sebelum sesi agar planner sempat mempelajari kasus saya dan fokus ke solusi saat pertemuan.
+
+Terima kasih.
