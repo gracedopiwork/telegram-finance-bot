@@ -7,7 +7,7 @@ Nominal: Rp 500.000
 Nama: Catherina Fransiska
 Email: klien@example.com
 No. WA: 6281234567890
-Layanan: Financial Consultation
+Layanan: Consultation with Financial Planner
 Jadwal: Selasa, 10 Nov 2026 · 20:00 WIB
 Dokter: dr. Ayuti Bulaan
 Tahap finansial: Steady — Rp 500.000
